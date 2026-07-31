@@ -139,6 +139,16 @@ namespace BigLineconnect.Relay
             public DateTime CreatedAt { get; set; } = DateTime.Now;
         }
 
+        public class SupportCreateDto
+        {
+            public string? Id { get; set; }
+            public string? Name { get; set; }
+            public string? Issue { get; set; }
+            public string? Token { get; set; }
+            public string? TenantId { get; set; }
+            public bool RequiresConfirmation { get; set; }
+        }
+
         public class SupportHistoryEntry
         {
             public string Id { get; set; } = "";
@@ -642,51 +652,24 @@ namespace BigLineconnect.Relay
                 }
             });
 
-            app.MapPost("/api/support/create", async context =>
+            app.MapPost("/api/support/create", (SupportCreateDto dto) =>
             {
-                try
+                if (dto != null && !string.IsNullOrEmpty(dto.Id))
                 {
-                    using var reader = new StreamReader(context.Request.Body);
-                    string body = await reader.ReadToEndAsync();
-                    using var doc = System.Text.Json.JsonDocument.Parse(body);
-                    var root = doc.RootElement;
-                    string id = root.TryGetProperty("id", out var idElem) ? (idElem.GetString() ?? "") : "";
-                    string name = root.TryGetProperty("name", out var nameElem) ? (nameElem.GetString() ?? "") : "";
-                    string issue = root.TryGetProperty("issue", out var issueElem) ? (issueElem.GetString() ?? "") : "";
-                    string token = root.TryGetProperty("token", out var tokenElem) ? (tokenElem.GetString() ?? "") : "";
-                    string tenantId = root.TryGetProperty("tenantId", out var tElem) ? (tElem.GetString() ?? "BIGLINE") : "BIGLINE";
-                    if (string.IsNullOrEmpty(tenantId)) tenantId = "BIGLINE";
-
-                    bool requiresConfirmation = false;
-                    if (root.TryGetProperty("requiresConfirmation", out var rcElem))
+                    string tenantId = string.IsNullOrEmpty(dto.TenantId) ? "BIGLINE" : dto.TenantId;
+                    var req = new SupportRequest
                     {
-                        if (rcElem.ValueKind == System.Text.Json.JsonValueKind.True)
-                        {
-                            requiresConfirmation = true;
-                        }
-                        else if (rcElem.ValueKind == System.Text.Json.JsonValueKind.String && (rcElem.GetString() ?? "").Equals("true", StringComparison.OrdinalIgnoreCase))
-                        {
-                            requiresConfirmation = true;
-                        }
-                    }
-                    
-                    if (!string.IsNullOrEmpty(id))
-                    {
-                        var req = new SupportRequest { Id = id, Name = name, Issue = issue, Token = token, TenantId = tenantId, RequiresConfirmation = requiresConfirmation };
-                        ActiveSupportRequests[id] = req;
-                        context.Response.StatusCode = StatusCodes.Status200OK;
-                        await context.Response.WriteAsync("Success");
-                    }
-                    else
-                    {
-                        context.Response.StatusCode = StatusCodes.Status400BadRequest;
-                    }
+                        Id = dto.Id,
+                        Name = dto.Name ?? "",
+                        Issue = dto.Issue ?? "",
+                        Token = dto.Token ?? "",
+                        TenantId = tenantId,
+                        RequiresConfirmation = dto.RequiresConfirmation
+                    };
+                    ActiveSupportRequests[dto.Id] = req;
+                    return Results.Ok("Success");
                 }
-                catch (Exception ex)
-                {
-                    context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-                    await context.Response.WriteAsync($"Error: {ex.Message}");
-                }
+                return Results.BadRequest("Invalid Data");
             });
 
             app.MapGet("/api/support/check", async context =>
