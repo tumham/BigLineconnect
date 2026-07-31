@@ -1,0 +1,894 @@
+using System;
+using System.Drawing;
+using System.IO;
+using System.Reflection;
+using System.Windows.Forms;
+using System.Net.WebSockets;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text.Json;
+
+namespace BigLineconnect
+{
+    public class MainWindow : Form
+    {
+        private static MainWindow? _instance;
+        public static MainWindow? Instance => _instance;
+
+        // Windows Service & Address Book Controls
+        private GroupBox? _addressBookGroup;
+        private ListView? _addressBookListView;
+        private Button? _addAddressButton;
+        private Button? _deleteAddressButton;
+
+        public class SavedConnection
+        {
+            public string Name { get; set; } = "";
+            public string Id { get; set; } = "";
+            public string Password { get; set; } = "";
+        }
+
+        private List<SavedConnection> _savedConnections = new();
+
+        private PictureBox? _logoBox;
+        private Label? _titleLabel;
+        
+        // Relay Server settings group
+        private GroupBox? _serverGroup;
+        private TextBox? _relayUrlTextBox;
+        private Button? _reconnectButton;
+
+        // AnyDesk columns
+        private GroupBox? _thisDeskGroup;
+        private Label? _idLabel;
+        
+        private GroupBox? _remoteDeskGroup;
+        private TextBox? _remoteIdTextBox;
+        private Button? _connectButton;
+
+        private Label? _logLabel;
+        private TextBox? _logTextBox;
+        private NotifyIcon? _notifyIcon;
+
+        // Unattended Access & Clipboard Sync
+        private GroupBox? _securityGroup;
+        private CheckBox? _usePasswordCheckBox;
+        private TextBox? _passwordTextBox;
+        private Label? _passwordLabel;
+        private System.Windows.Forms.Timer? _clipboardTimer;
+        private string _lastClipboardText = "";
+
+        public bool UsePassword => _usePasswordCheckBox?.Checked ?? false;
+        public string AccessPassword => _passwordTextBox?.Text ?? "";
+
+        public MainWindow()
+        {
+            _instance = this;
+            InitializeComponent();
+            LoadLogoAndIcon();
+            AppendLog("Uygulama başlatıldı. Sunucuya bağlanılıyor...");
+            LoadAddressBook();
+        }
+
+        private void InitializeComponent()
+        {
+            Program.LoadSecuritySettings();
+            this.Text = "BigLineconnect - Uzaktan Kontrol";
+            this.Size = new Size(880, 680);
+            this.MinimumSize = new Size(880, 680);
+            this.StartPosition = FormStartPosition.CenterScreen;
+            this.BackColor = Color.FromArgb(26, 28, 35); // Sleek Dark theme
+            this.ForeColor = Color.White;
+            this.Font = new Font("Segoe UI", 9.5F, FontStyle.Regular);
+
+            // PictureBox for Logo
+            _logoBox = new PictureBox
+            {
+                Location = new Point(215, 10),
+                Size = new Size(450, 80),
+                SizeMode = PictureBoxSizeMode.Zoom
+            };
+            this.Controls.Add(_logoBox);
+
+            // 1. Relay Server config group
+            _serverGroup = new GroupBox
+            {
+                Text = " Bulut Sunucu Ayarları ",
+                Location = new Point(20, 100),
+                Size = new Size(520, 70),
+                ForeColor = Color.FromArgb(241, 196, 15),
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold)
+            };
+            this.Controls.Add(_serverGroup);
+
+            // Load saved relay URL from config.txt
+            string configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "config.txt");
+            string defaultUrl = "ws://213.142.159.18:5080/register-host";
+            if (File.Exists(configPath))
+            {
+                try
+                {
+                    string savedUrl = File.ReadAllText(configPath).Trim();
+                    if (!string.IsNullOrEmpty(savedUrl))
+                    {
+                        defaultUrl = savedUrl;
+                    }
+                }
+                catch { }
+            }
+
+            _relayUrlTextBox = new TextBox
+            {
+                Text = defaultUrl,
+                Location = new Point(15, 25),
+                Size = new Size(370, 25),
+                BackColor = Color.FromArgb(15, 16, 22),
+                ForeColor = Color.White,
+                BorderStyle = BorderStyle.FixedSingle,
+                Font = new Font("Consolas", 10F)
+            };
+            _serverGroup.Controls.Add(_relayUrlTextBox);
+
+            _reconnectButton = new Button
+            {
+                Text = "Bağlan",
+                Location = new Point(395, 22),
+                Size = new Size(110, 30),
+                BackColor = Color.FromArgb(241, 196, 15),
+                ForeColor = Color.Black,
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand
+            };
+            _reconnectButton.FlatAppearance.BorderSize = 0;
+            _reconnectButton.Click += ReconnectButton_Click;
+            _serverGroup.Controls.Add(_reconnectButton);
+
+            // 2. This Desk Group (Bu Masaüstü ID)
+            _thisDeskGroup = new GroupBox
+            {
+                Text = " Bu Bilgisayar (Your Address) ",
+                Location = new Point(20, 185),
+                Size = new Size(245, 120),
+                ForeColor = Color.FromArgb(241, 196, 15),
+                Font = new Font("Segoe UI", 9.5F, FontStyle.Bold)
+            };
+            this.Controls.Add(_thisDeskGroup);
+
+            _idLabel = new Label
+            {
+                Text = "--- --- ---",
+                Location = new Point(10, 45),
+                Size = new Size(225, 45),
+                Font = new Font("Segoe UI", 20F, FontStyle.Bold),
+                ForeColor = Color.White,
+                TextAlign = ContentAlignment.MiddleCenter
+            };
+            _thisDeskGroup.Controls.Add(_idLabel);
+
+            // 3. Remote Desk Group (Uzaktaki Masa)
+            _remoteDeskGroup = new GroupBox
+            {
+                Text = " Karşı Bilgisayar (Remote Address) ",
+                Location = new Point(295, 185),
+                Size = new Size(245, 120),
+                ForeColor = Color.FromArgb(241, 196, 15),
+                Font = new Font("Segoe UI", 9.5F, FontStyle.Bold)
+            };
+            this.Controls.Add(_remoteDeskGroup);
+
+            _remoteIdTextBox = new TextBox
+            {
+                Location = new Point(15, 35),
+                Size = new Size(215, 30),
+                BackColor = Color.FromArgb(15, 16, 22),
+                ForeColor = Color.White,
+                BorderStyle = BorderStyle.FixedSingle,
+                Font = new Font("Segoe UI", 12F, FontStyle.Bold),
+                TextAlign = HorizontalAlignment.Center
+            };
+            _remoteIdTextBox.KeyPress += RemoteIdTextBox_KeyPress;
+            _remoteDeskGroup.Controls.Add(_remoteIdTextBox);
+
+            _connectButton = new Button
+            {
+                Text = "Bağlantı Kur",
+                Location = new Point(15, 75),
+                Size = new Size(215, 33),
+                BackColor = Color.FromArgb(46, 204, 113), // Green
+                ForeColor = Color.Black,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
+                Cursor = Cursors.Hand
+            };
+            _connectButton.FlatAppearance.BorderSize = 0;
+            _connectButton.Click += ConnectButton_Click;
+            _remoteDeskGroup.Controls.Add(_connectButton);
+
+            // 3.5 Security Settings Group (Unattended access password)
+            _securityGroup = new GroupBox
+            {
+                Text = " Kişisel Erişim & Güvenlik Ayarları ",
+                Location = new Point(20, 315),
+                Size = new Size(520, 135),
+                ForeColor = Color.FromArgb(241, 196, 15),
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold)
+            };
+            this.Controls.Add(_securityGroup);
+
+            _usePasswordCheckBox = new CheckBox
+            {
+                Text = "Kişisel Erişim Şifresi Kullan (Şifresiz Giriş)",
+                Location = new Point(15, 25),
+                Size = new Size(270, 25),
+                ForeColor = Color.White,
+                Font = new Font("Segoe UI", 9F, FontStyle.Regular),
+                Cursor = Cursors.Hand,
+                Checked = Program.UsePassword
+            };
+            _usePasswordCheckBox.CheckedChanged += (s, ev) => {
+                if (_passwordTextBox != null) _passwordTextBox.Enabled = _usePasswordCheckBox.Checked;
+                Program.UsePassword = _usePasswordCheckBox.Checked;
+                Program.SaveSecuritySettings();
+            };
+            _securityGroup.Controls.Add(_usePasswordCheckBox);
+
+            _passwordLabel = new Label
+            {
+                Text = "Erişim Şifresi:",
+                Location = new Point(290, 28),
+                Size = new Size(85, 20),
+                ForeColor = Color.White,
+                Font = new Font("Segoe UI", 9F, FontStyle.Regular)
+            };
+            _securityGroup.Controls.Add(_passwordLabel);
+
+            _passwordTextBox = new TextBox
+            {
+                Location = new Point(380, 25),
+                Size = new Size(125, 25),
+                PasswordChar = '*',
+                Enabled = Program.UsePassword,
+                Text = Program.AccessPassword,
+                BackColor = Color.FromArgb(15, 16, 22),
+                ForeColor = Color.White,
+                BorderStyle = BorderStyle.FixedSingle,
+                Font = new Font("Segoe UI", 9.5F)
+            };
+            _passwordTextBox.TextChanged += (s, ev) => {
+                Program.AccessPassword = _passwordTextBox.Text;
+                Program.SaveSecuritySettings();
+            };
+            _securityGroup.Controls.Add(_passwordTextBox);
+
+            var runOnStartupCheckBox = new CheckBox
+            {
+                Text = "Windows başlangıcında otomatik çalıştır",
+                Location = new Point(15, 60),
+                Size = new Size(350, 25),
+                ForeColor = Color.White,
+                Font = new Font("Segoe UI", 9F, FontStyle.Regular),
+                Cursor = Cursors.Hand,
+                Checked = IsStartupEnabled()
+            };
+            runOnStartupCheckBox.CheckedChanged += (s, ev) => {
+                SetStartup(runOnStartupCheckBox.Checked);
+            };
+            _securityGroup.Controls.Add(runOnStartupCheckBox);
+
+            var installServiceButton = new Button
+            {
+                Text = "Servisi Yükle (Logon Kontrol)",
+                Location = new Point(15, 95),
+                Size = new Size(240, 30),
+                BackColor = Color.FromArgb(46, 204, 113),
+                ForeColor = Color.Black,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                Cursor = Cursors.Hand
+            };
+            installServiceButton.FlatAppearance.BorderSize = 0;
+            installServiceButton.Click += InstallServiceButton_Click;
+            _securityGroup.Controls.Add(installServiceButton);
+
+            var uninstallServiceButton = new Button
+            {
+                Text = "Servisi Kaldır",
+                Location = new Point(265, 95),
+                Size = new Size(240, 30),
+                BackColor = Color.FromArgb(231, 76, 60),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                Cursor = Cursors.Hand
+            };
+            uninstallServiceButton.FlatAppearance.BorderSize = 0;
+            uninstallServiceButton.Click += UninstallServiceButton_Click;
+            _securityGroup.Controls.Add(uninstallServiceButton);
+
+            // 4. Log text
+            _logLabel = new Label
+            {
+                Text = "Bağlantı Günlüğü (Log):",
+                Location = new Point(20, 465),
+                Size = new Size(440, 20),
+                Font = new Font("Segoe UI", 9.5F, FontStyle.Bold)
+            };
+            this.Controls.Add(_logLabel);
+
+            _logTextBox = new TextBox
+            {
+                Location = new Point(20, 490),
+                Size = new Size(520, 130),
+                Multiline = true,
+                ReadOnly = true,
+                ScrollBars = ScrollBars.Vertical,
+                BackColor = Color.FromArgb(15, 16, 22),
+                ForeColor = Color.FromArgb(46, 204, 113),
+                BorderStyle = BorderStyle.FixedSingle,
+                Font = new Font("Consolas", 9.5F)
+            };
+            this.Controls.Add(_logTextBox);
+
+            // 4.5 Address Book Group
+            _addressBookGroup = new GroupBox
+            {
+                Text = " Kayıtlı Bilgisayarlar (Rehber) ",
+                Location = new Point(560, 100),
+                Size = new Size(290, 520),
+                ForeColor = Color.FromArgb(241, 196, 15),
+                Font = new Font("Segoe UI", 9.5F, FontStyle.Bold)
+            };
+            this.Controls.Add(_addressBookGroup);
+
+            _addressBookListView = new ListView
+            {
+                Location = new Point(15, 25),
+                Size = new Size(260, 395),
+                View = View.Details,
+                FullRowSelect = true,
+                BackColor = Color.FromArgb(15, 16, 22),
+                ForeColor = Color.White,
+                BorderStyle = BorderStyle.FixedSingle,
+                HeaderStyle = ColumnHeaderStyle.Nonclickable,
+                Font = new Font("Segoe UI", 9.5F, FontStyle.Regular)
+            };
+            _addressBookListView.Columns.Add("İsim", 140);
+            _addressBookListView.Columns.Add("ID", 110);
+            _addressBookListView.DoubleClick += AddressBookListView_DoubleClick;
+            _addressBookGroup.Controls.Add(_addressBookListView);
+
+            _addAddressButton = new Button
+            {
+                Text = "Rehbere Ekle",
+                Location = new Point(15, 435),
+                Size = new Size(120, 33),
+                BackColor = Color.FromArgb(46, 204, 113),
+                ForeColor = Color.Black,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                Cursor = Cursors.Hand
+            };
+            _addAddressButton.FlatAppearance.BorderSize = 0;
+            _addAddressButton.Click += AddAddressButton_Click;
+            _addressBookGroup.Controls.Add(_addAddressButton);
+
+            _deleteAddressButton = new Button
+            {
+                Text = "Seçileni Sil",
+                Location = new Point(155, 435),
+                Size = new Size(120, 33),
+                BackColor = Color.FromArgb(231, 76, 60),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                Cursor = Cursors.Hand
+            };
+            _deleteAddressButton.FlatAppearance.BorderSize = 0;
+            _deleteAddressButton.Click += DeleteAddressButton_Click;
+            _addressBookGroup.Controls.Add(_deleteAddressButton);
+
+            // NotifyIcon for Tray
+            _notifyIcon = new NotifyIcon
+            {
+                Text = "BigLineconnect",
+                Visible = true
+            };
+            _notifyIcon.DoubleClick += NotifyIcon_DoubleClick;
+
+            // Clipboard Monitoring Timer
+            _clipboardTimer = new System.Windows.Forms.Timer { Interval = 1000 };
+            _clipboardTimer.Tick += ClipboardTimer_Tick;
+            _clipboardTimer.Start();
+
+            // Form Events
+            this.Resize += MainWindow_Resize;
+            this.FormClosing += MainWindow_FormClosing;
+        }
+
+        private void LoadLogoAndIcon()
+        {
+            try
+            {
+                this.Icon = SystemIcons.Shield;
+                if (_notifyIcon != null)
+                {
+                    _notifyIcon.Icon = SystemIcons.Shield;
+                }
+
+                var assembly = Assembly.GetExecutingAssembly();
+                using (Stream? stream = assembly.GetManifestResourceStream("BigLineconnect.wwwroot.logo.png"))
+                {
+                    if (stream != null)
+                    {
+                        if (_logoBox != null)
+                        {
+                            _logoBox.Image = Image.FromStream(stream);
+                        }
+                    }
+                }
+            }
+            catch { }
+        }
+
+        private async void ReconnectButton_Click(object? sender, EventArgs e)
+        {
+            if (_relayUrlTextBox == null) return;
+            string url = _relayUrlTextBox.Text.Trim();
+            if (string.IsNullOrEmpty(url)) return;
+
+            // Save to config.txt
+            try
+            {
+                string configPath = ConfigHelper.GetConfigPath("config.txt");
+                File.WriteAllText(configPath, url);
+            }
+            catch { }
+
+            SetOwnId("--- --- ---");
+            await Program.ConnectToRelayAsync(url);
+        }
+
+        private void ConnectButton_Click(object? sender, EventArgs e)
+        {
+            if (_remoteIdTextBox == null || _relayUrlTextBox == null) return;
+            string targetId = _remoteIdTextBox.Text.Replace(" ", "").Trim();
+
+            if (targetId.Length != 9)
+            {
+                MessageBox.Show("Lütfen 9 haneli geçerli bir ID girin.", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            // Get relay server base domain/IP for WebSocket connection
+            Uri uri = new Uri(_relayUrlTextBox.Text);
+            string hostAndPort = uri.Authority; // Gets host and port e.g. localhost:5080
+            string protocol = uri.Scheme == "wss" ? "wss" : "ws";
+            string clientWsUrl = $"{protocol}://{hostAndPort}/connect-client?id={targetId}";
+
+            AppendLog($"Uzak bilgisayara bağlanılıyor (ID: {targetId})...");
+            
+            // Check if there is a saved password in the address book for this ID
+            var savedConn = _savedConnections.FirstOrDefault(c => c.Id == targetId);
+            string password = savedConn != null ? savedConn.Password : "";
+
+            // Open remote viewer form
+            var viewer = new ViewerForm(clientWsUrl, targetId, password);
+            viewer.Show();
+        }
+
+        private void RemoteIdTextBox_KeyPress(object? sender, KeyPressEventArgs e)
+        {
+            // Auto format entry with space separator as they type
+            if (!char.IsControl(e.KeyChar) && !char.IsDigit(e.KeyChar))
+            {
+                e.Handled = true;
+                return;
+            }
+
+            if (_remoteIdTextBox == null) return;
+            
+            // Perform auto-formatting after characters are entered
+            this.BeginInvoke(new Action(() =>
+            {
+                string text = _remoteIdTextBox.Text.Replace(" ", "");
+                if (text.Length > 9) text = text.Substring(0, 9);
+
+                string formatted = "";
+                if (text.Length > 6)
+                    formatted = $"{text.Substring(0, 3)} {text.Substring(3, 3)} {text.Substring(6)}";
+                else if (text.Length > 3)
+                    formatted = $"{text.Substring(0, 3)} {text.Substring(3)}";
+                else
+                    formatted = text;
+
+                _remoteIdTextBox.Text = formatted;
+                _remoteIdTextBox.SelectionStart = formatted.Length;
+            }));
+        }
+
+        public void SetOwnId(string id)
+        {
+            if (_idLabel == null) return;
+            if (this.InvokeRequired)
+            {
+                this.BeginInvoke(new Action(() => SetOwnId(id)));
+                return;
+            }
+            _idLabel.Text = id;
+        }
+
+        public void AppendLog(string message)
+        {
+            if (_logTextBox == null) return;
+            if (this.InvokeRequired)
+            {
+                this.BeginInvoke(new Action(() => AppendLog(message)));
+                return;
+            }
+            _logTextBox.AppendText($"[{DateTime.Now:HH:mm:ss}] {message}{Environment.NewLine}");
+        }
+
+        private void ClipboardTimer_Tick(object? sender, EventArgs e)
+        {
+            if (Program.WebSocketClient != null && Program.WebSocketClient.State == WebSocketState.Open && Program._isStreaming)
+            {
+                try
+                {
+                    if (Clipboard.ContainsText())
+                    {
+                        string text = Clipboard.GetText();
+                        if (text != _lastClipboardText && !string.IsNullOrEmpty(text))
+                        {
+                            _lastClipboardText = text;
+                            _ = Program.SendClipboardTextAsync(text);
+                        }
+                    }
+                }
+                catch { }
+            }
+        }
+
+        public void SetClipboardText(string text)
+        {
+            if (this.InvokeRequired)
+            {
+                this.BeginInvoke(new Action(() => SetClipboardText(text)));
+                return;
+            }
+            try
+            {
+                _lastClipboardText = text;
+                Clipboard.SetText(text);
+            }
+            catch { }
+        }
+
+        private void MainWindow_Resize(object? sender, EventArgs e)
+        {
+            if (this.WindowState == FormWindowState.Minimized)
+            {
+                this.Hide();
+                if (_notifyIcon != null)
+                {
+                    _notifyIcon.ShowBalloonTip(2000, "BigLineconnect", "Uygulama arka planda çalışmaya devam ediyor.", ToolTipIcon.Info);
+                }
+            }
+        }
+
+        private void NotifyIcon_DoubleClick(object? sender, EventArgs e)
+        {
+            this.Show();
+            this.WindowState = FormWindowState.Normal;
+        }
+
+        private void MainWindow_FormClosing(object? sender, FormClosingEventArgs e)
+        {
+            if (_clipboardTimer != null)
+            {
+                _clipboardTimer.Stop();
+                _clipboardTimer.Dispose();
+            }
+
+            Program.Shutdown();
+            if (_notifyIcon != null)
+            {
+                _notifyIcon.Visible = false;
+                _notifyIcon.Dispose();
+            }
+        }
+        private void LoadAddressBook()
+        {
+            string path = ConfigHelper.GetConfigPath("connections.json");
+            if (File.Exists(path))
+            {
+                try
+                {
+                    string json = File.ReadAllText(path);
+                    var items = JsonSerializer.Deserialize<List<SavedConnection>>(json);
+                    if (items != null)
+                    {
+                        _savedConnections = items;
+                    }
+                }
+                catch { }
+            }
+            UpdateAddressBookUI();
+        }
+
+        private void SaveAddressBook()
+        {
+            try
+            {
+                string path = ConfigHelper.GetConfigPath("connections.json");
+                string json = JsonSerializer.Serialize(_savedConnections);
+                File.WriteAllText(path, json);
+            }
+            catch { }
+        }
+
+        private void UpdateAddressBookUI()
+        {
+            if (_addressBookListView == null) return;
+            _addressBookListView.Items.Clear();
+            foreach (var conn in _savedConnections)
+            {
+                var item = new ListViewItem(conn.Name);
+                item.SubItems.Add(conn.Id);
+                _addressBookListView.Items.Add(item);
+            }
+        }
+
+        private void AddressBookListView_DoubleClick(object? sender, EventArgs e)
+        {
+            if (_addressBookListView != null && _addressBookListView.SelectedItems.Count > 0)
+            {
+                var item = _addressBookListView.SelectedItems[0];
+                string id = item.SubItems[1].Text;
+
+                if (_remoteIdTextBox != null)
+                {
+                    _remoteIdTextBox.Text = id;
+                }
+
+                // Trigger connection
+                ConnectButton_Click(this, EventArgs.Empty);
+            }
+        }
+
+        private void AddAddressButton_Click(object? sender, EventArgs e)
+        {
+            if (_remoteIdTextBox == null) return;
+            string currentId = _remoteIdTextBox.Text.Trim().Replace(" ", "");
+            if (string.IsNullOrEmpty(currentId) || currentId.Length != 9)
+            {
+                MessageBox.Show("Lütfen önce sol taraftaki kutuya 9 haneli geçerli bir ID yazın.", "Uyarı", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            var dialogResult = AddConnectionDialog.ShowDialog(currentId);
+            if (!dialogResult.Success || string.IsNullOrEmpty(dialogResult.Name)) return;
+
+            // Check if already exists
+            var existing = _savedConnections.FirstOrDefault(c => c.Id == currentId);
+            if (existing != null)
+            {
+                existing.Name = dialogResult.Name;
+                existing.Password = dialogResult.Password;
+            }
+            else
+            {
+                _savedConnections.Add(new SavedConnection { Name = dialogResult.Name, Id = currentId, Password = dialogResult.Password });
+            }
+
+            SaveAddressBook();
+            UpdateAddressBookUI();
+        }
+
+        private void DeleteAddressButton_Click(object? sender, EventArgs e)
+        {
+            if (_addressBookListView != null && _addressBookListView.SelectedItems.Count > 0)
+            {
+                var item = _addressBookListView.SelectedItems[0];
+                string id = item.SubItems[1].Text;
+                var target = _savedConnections.FirstOrDefault(c => c.Id == id);
+                if (target != null)
+                {
+                    _savedConnections.Remove(target);
+                    SaveAddressBook();
+                    UpdateAddressBookUI();
+                }
+            }
+        }
+
+        public static class AddConnectionDialog
+        {
+            public static (bool Success, string Name, string Password) ShowDialog(string id)
+            {
+                Form prompt = new Form()
+                {
+                    Width = 350,
+                    Height = 220,
+                    FormBorderStyle = FormBorderStyle.FixedDialog,
+                    Text = $"Rehbere Ekle - ID: {id}",
+                    StartPosition = FormStartPosition.CenterScreen,
+                    MaximizeBox = false,
+                    MinimizeBox = false,
+                    BackColor = Color.FromArgb(26, 28, 35),
+                    ForeColor = Color.White
+                };
+
+                Label nameLabel = new Label() { Left = 20, Top = 15, Text = "Bağlantı Adı / Firma:", Width = 300, ForeColor = Color.White };
+                TextBox nameTextBox = new TextBox() { Left = 20, Top = 35, Width = 300, BackColor = Color.FromArgb(15, 16, 22), ForeColor = Color.White, BorderStyle = BorderStyle.FixedSingle };
+
+                Label passLabel = new Label() { Left = 20, Top = 70, Text = "Erişim Şifresi (Onaysız Doğrudan Giriş İçin - İsteğe Bağlı):", Width = 300, ForeColor = Color.White };
+                TextBox passTextBox = new TextBox() { Left = 20, Top = 90, Width = 300, PasswordChar = '*', BackColor = Color.FromArgb(15, 16, 22), ForeColor = Color.White, BorderStyle = BorderStyle.FixedSingle };
+
+                Button okBtn = new Button() { Text = "Kaydet", Left = 100, Width = 100, Top = 135, DialogResult = DialogResult.OK, BackColor = Color.FromArgb(46, 204, 113), ForeColor = Color.Black, FlatStyle = FlatStyle.Flat };
+                Button cancelBtn = new Button() { Text = "İptal", Left = 210, Width = 100, Top = 135, DialogResult = DialogResult.Cancel, BackColor = Color.FromArgb(231, 76, 60), ForeColor = Color.White, FlatStyle = FlatStyle.Flat };
+
+                okBtn.FlatAppearance.BorderSize = 0;
+                cancelBtn.FlatAppearance.BorderSize = 0;
+
+                okBtn.Click += (sender, e) => { prompt.Close(); };
+                cancelBtn.Click += (sender, e) => { prompt.Close(); };
+
+                prompt.Controls.Add(nameLabel);
+                prompt.Controls.Add(nameTextBox);
+                prompt.Controls.Add(passLabel);
+                prompt.Controls.Add(passTextBox);
+                prompt.Controls.Add(okBtn);
+                prompt.Controls.Add(cancelBtn);
+                prompt.AcceptButton = okBtn;
+                prompt.CancelButton = cancelBtn;
+
+                if (prompt.ShowDialog() == DialogResult.OK)
+                {
+                    return (true, nameTextBox.Text.Trim(), passTextBox.Text.Trim());
+                }
+                return (false, "", "");
+            }
+        }
+
+        private void InstallServiceButton_Click(object? sender, EventArgs e)
+        {
+            try
+            {
+                if (!IsUserAnAdmin())
+                {
+                    MessageBox.Show("Servis yüklemek için lütfen uygulamayı sağ tıklayıp 'Yönetici Olarak Çalıştır' seçeneği ile başlatın.", "Yönetici Yetkisi Gerekli", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                // Check if assembly name changed to construct the correct binPath
+                string assemblyPath = Application.ExecutablePath;
+                string binPath = $"\\\"{assemblyPath}\\\" --service";
+
+                // First stop and delete the old BigLineconnect service name
+                try { var p1 = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("sc.exe", "stop BigLineconnect") { CreateNoWindow = true, UseShellExecute = false }); p1?.WaitForExit(); } catch { }
+                try { var p2 = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("sc.exe", "delete BigLineconnect") { CreateNoWindow = true, UseShellExecute = false }); p2?.WaitForExit(); } catch { }
+
+                // sc.exe create BigLineconnectSvc binPath= "..." start= auto
+                var psi = new System.Diagnostics.ProcessStartInfo("sc.exe", $"create BigLineconnectSvc binPath= \"{binPath}\" start= auto")
+                {
+                    CreateNoWindow = true,
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true
+                };
+                var p = System.Diagnostics.Process.Start(psi);
+                p?.WaitForExit();
+
+                // sc.exe description BigLineconnectSvc "..."
+                psi = new System.Diagnostics.ProcessStartInfo("sc.exe", "description BigLineconnectSvc \"BigLineconnect Uzaktan Kontrol Servisi\"")
+                {
+                    CreateNoWindow = true,
+                    UseShellExecute = false
+                };
+                p = System.Diagnostics.Process.Start(psi);
+                p?.WaitForExit();
+
+                // sc.exe start BigLineconnectSvc
+                psi = new System.Diagnostics.ProcessStartInfo("sc.exe", "start BigLineconnectSvc")
+                {
+                    CreateNoWindow = true,
+                    UseShellExecute = false
+                };
+                p = System.Diagnostics.Process.Start(psi);
+                p?.WaitForExit();
+
+                AppendLog("Windows Servisi başarıyla yüklendi ve başlatıldı.");
+                MessageBox.Show("Uzak kontrol servisi başarıyla sisteme yüklendi ve arka planda çalıştırıldı.", "Servis Yüklendi", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                AppendLog($"[Servis Yükleme Hatası]: {ex.Message}");
+                MessageBox.Show($"Servis yüklenirken hata oluştu: {ex.Message}", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void UninstallServiceButton_Click(object? sender, EventArgs e)
+        {
+            try
+            {
+                if (!IsUserAnAdmin())
+                {
+                    MessageBox.Show("Servis kaldırmak için lütfen uygulamayı sağ tıklayıp 'Yönetici Olarak Çalıştır' seçeneği ile başlatın.", "Yönetici Yetkisi Gerekli", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                // sc.exe stop BigLineconnectSvc
+                var psi = new System.Diagnostics.ProcessStartInfo("sc.exe", "stop BigLineconnectSvc")
+                {
+                    CreateNoWindow = true,
+                    UseShellExecute = false
+                };
+                var p = System.Diagnostics.Process.Start(psi);
+                p?.WaitForExit();
+
+                // sc.exe delete BigLineconnectSvc
+                psi = new System.Diagnostics.ProcessStartInfo("sc.exe", "delete BigLineconnectSvc")
+                {
+                    CreateNoWindow = true,
+                    UseShellExecute = false
+                };
+                p = System.Diagnostics.Process.Start(psi);
+                p?.WaitForExit();
+
+                // Also delete old BigLineconnect service just in case
+                try { var p1 = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("sc.exe", "stop BigLineconnect") { CreateNoWindow = true, UseShellExecute = false }); p1?.WaitForExit(); } catch { }
+                try { var p2 = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("sc.exe", "delete BigLineconnect") { CreateNoWindow = true, UseShellExecute = false }); p2?.WaitForExit(); } catch { }
+
+                AppendLog("Windows Servisi başarıyla durduruldu ve sistemden kaldırıldı.");
+                MessageBox.Show("Uzak kontrol servisi sistemden kaldırıldı.", "Servis Kaldırıldı", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                AppendLog($"[Servis Kaldırma Hatası]: {ex.Message}");
+                MessageBox.Show($"Servis kaldırılırken hata oluştu: {ex.Message}", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        [System.Runtime.InteropServices.DllImport("shell32.dll", EntryPoint = "IsUserAnAdmin")]
+        private static extern bool IsUserAnAdmin();
+
+        private void SetStartup(bool runOnStartup)
+        {
+            try
+            {
+                using (var rk = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", true))
+                {
+                    if (rk != null)
+                    {
+                        if (runOnStartup)
+                        {
+                            rk.SetValue("BigLineconnect", "\"" + Application.ExecutablePath + "\"");
+                        }
+                        else
+                        {
+                            rk.DeleteValue("BigLineconnect", false);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                AppendLog($"[Başlangıç Ayarı Hatası]: {ex.Message}");
+            }
+        }
+
+        private bool IsStartupEnabled()
+        {
+            try
+            {
+                using (var rk = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", false))
+                {
+                    if (rk != null)
+                    {
+                        return rk.GetValue("BigLineconnect") != null;
+                    }
+                }
+            }
+            catch { }
+            return false;
+        }
+    }
+}

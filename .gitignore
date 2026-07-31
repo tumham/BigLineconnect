@@ -1,0 +1,26 @@
+## Visual Studio / .NET
+.vs/
+bin/
+obj/
+*.user
+*.useros
+*.sln.docstates
+*.suo
+*.userprefs
+*.db
+*.sqlite
+
+## Build outputs
+publish/
+*.exe
+*.dll
+*.pdb
+*.rar
+*.zip
+*.7z
+*.bak
+*.log
+
+## Keep source files
+!/BigLineconnect.Relay/wwwroot/**
+!/BigLineconnect.Installer/Resources/icon.ico

@@ -1,0 +1,138 @@
+using System;
+using System.IO;
+using System.Runtime.InteropServices;
+using Microsoft.Win32;
+
+namespace BigLineconnect
+{
+    public static class DesktopHelper
+    {
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern IntPtr OpenInputDesktop(uint dwFlags, bool fInherit, uint dwDesiredAccess);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern bool SetThreadDesktop(IntPtr hDesktop);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern bool CloseDesktop(IntPtr hDesktop);
+
+        [DllImport("sas.dll", SetLastError = true, CallingConvention = CallingConvention.StdCall)]
+        private static extern void SendSAS(bool asUser);
+
+        private const uint DESKTOP_ALL_ACCESS = 0x1ff;
+        private const uint MAXIMUM_ALLOWED = 0x02000000;
+        private const uint GENERIC_ALL = 0x10000000;
+
+        [ThreadStatic]
+        private static IntPtr _currentThreadDesktop = IntPtr.Zero;
+
+        public static void EnableSoftwareSAS()
+        {
+            try
+            {
+                using (var key = Registry.LocalMachine.CreateSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System"))
+                {
+                    if (key != null)
+                    {
+                        key.SetValue("SoftwareSASGeneration", 3, RegistryValueKind.DWord);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogHelper($"EnableSoftwareSAS failed: {ex.Message}");
+            }
+        }
+
+        public static void SendCtrlAltDel()
+        {
+            try
+            {
+                EnableSoftwareSAS();
+                AttachToInputDesktop();
+
+                // 1. Invoke official Windows SAS API (SendSAS)
+                try
+                {
+                    SendSAS(false);
+                    LogHelper("SendSAS API executed successfully.");
+                }
+                catch (Exception ex)
+                {
+                    LogHelper($"SendSAS API exception: {ex.Message}");
+                }
+
+                // 2. Simulate hardware Ctrl+Alt+Del keystrokes
+                InputSimulator.SimulateKey("ctrl", "down");
+                InputSimulator.SimulateKey("alt", "down");
+                InputSimulator.SimulateKey("delete", "down");
+                System.Threading.Thread.Sleep(50);
+                InputSimulator.SimulateKey("delete", "up");
+                InputSimulator.SimulateKey("alt", "up");
+                InputSimulator.SimulateKey("ctrl", "up");
+            }
+            catch (Exception ex)
+            {
+                LogHelper($"SendCtrlAltDel exception: {ex.Message}");
+            }
+        }
+
+        public static void AttachToInputDesktop()
+        {
+            try
+            {
+                IntPtr hDesk = OpenInputDesktop(0, true, MAXIMUM_ALLOWED);
+                if (hDesk == IntPtr.Zero)
+                {
+                    hDesk = OpenInputDesktop(0, true, DESKTOP_ALL_ACCESS);
+                }
+
+                if (hDesk != IntPtr.Zero)
+                {
+                    if (hDesk == _currentThreadDesktop)
+                    {
+                        CloseDesktop(hDesk);
+                        return;
+                    }
+
+                    bool success = SetThreadDesktop(hDesk);
+                    if (success)
+                    {
+                        if (_currentThreadDesktop != IntPtr.Zero)
+                        {
+                            CloseDesktop(_currentThreadDesktop);
+                        }
+                        _currentThreadDesktop = hDesk;
+                        LogHelper($"Successfully attached thread to input desktop. Handle: {hDesk}");
+                    }
+                    else
+                    {
+                        int err = Marshal.GetLastWin32Error();
+                        LogHelper($"SetThreadDesktop failed. Error: {err}");
+                        CloseDesktop(hDesk);
+                    }
+                }
+                else
+                {
+                    int err = Marshal.GetLastWin32Error();
+                    LogHelper($"OpenInputDesktop failed. Error: {err}");
+                }
+            }
+            catch (Exception ex)
+            {
+                LogHelper($"AttachToInputDesktop exception: {ex.Message}");
+            }
+        }
+
+        private static void LogHelper(string message)
+        {
+            try
+            {
+                string programData = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
+                string path = Path.Combine(programData, "BigLineconnect", "helper_log.txt");
+                File.AppendAllText(path, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [DesktopHelper] {message}\r\n");
+            }
+            catch { }
+        }
+    }
+}

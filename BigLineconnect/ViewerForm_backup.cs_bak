@@ -1,0 +1,1265 @@
+using System;
+using System.Drawing;
+using System.IO;
+using System.Net.WebSockets;
+using System.Text;
+using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+
+namespace BigLineconnect
+{
+    public class ViewerForm : Form
+    {
+        private readonly string _wsUrl;
+        private readonly string _targetId;
+        
+        private ClientWebSocket? _ws;
+        private CancellationTokenSource _cts = new CancellationTokenSource();
+        
+        private PictureBox? _pictureBox;
+        private DateTime _lastMoveSent = DateTime.MinValue;
+        private System.Windows.Forms.Timer? _clipboardTimer;
+        private string _lastClipboardText = "";
+        private bool _hasConnectedOnce = false;
+        private bool _isReconnecting = false;
+        private string _savedPassword = "";
+        
+        // Custom features forms
+        private ClientChatForm? _clientChatForm;
+        private FileManagerForm? _fileManagerForm;
+        private readonly SemaphoreSlim _sendSemaphore = new SemaphoreSlim(1, 1);
+        private ComboBox? _cbDisplays;
+
+        public ViewerForm(string wsUrl, string targetId, string savedPassword = "")
+        {
+            _wsUrl = wsUrl;
+            _targetId = targetId;
+            _savedPassword = savedPassword;
+
+            InitializeComponent();
+            this.Load += ViewerForm_Load;
+            this.FormClosing += ViewerForm_FormClosing;
+        }
+        private void InitializeComponent()
+        {
+            this.Text = LanguageManager.Get("title_viewer", _targetId);
+            this.Size = new Size(1024, 768);
+            this.StartPosition = FormStartPosition.CenterScreen;
+            this.BackColor = Color.Black;
+            this.KeyPreview = true;
+
+            var panelTop = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = 40,
+                BackColor = Color.FromArgb(26, 28, 35),
+                ForeColor = Color.White
+            };
+
+            var btnChat = new Button
+            {
+                Text = LanguageManager.Get("btn_chat"),
+                Location = new Point(10, 7),
+                Size = new Size(120, 26),
+                BackColor = Color.FromArgb(241, 196, 15),
+                ForeColor = Color.Black,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold)
+            };
+            btnChat.Click += (s, e) => OpenChat();
+
+            var btnFM = new Button
+            {
+                Text = LanguageManager.Get("btn_file_manager"),
+                Location = new Point(140, 7),
+                Size = new Size(140, 26),
+                BackColor = Color.FromArgb(241, 196, 15),
+                ForeColor = Color.Black,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold)
+            };
+            btnFM.Click += (s, e) => OpenFileManager();
+
+            var lblDisplay = new Label
+            {
+                Text = "Ekran / Screen:",
+                Location = new Point(300, 10),
+                Size = new Size(100, 20),
+                ForeColor = Color.White,
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold)
+            };
+
+            _cbDisplays = new ComboBox
+            {
+                Location = new Point(400, 7),
+                Size = new Size(180, 26),
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Color.FromArgb(15, 16, 22),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 9f, FontStyle.Regular)
+            };
+            _cbDisplays.SelectedIndexChanged += CbDisplays_SelectedIndexChanged;
+
+            panelTop.Controls.Add(btnChat);
+            panelTop.Controls.Add(btnFM);
+            panelTop.Controls.Add(lblDisplay);
+            panelTop.Controls.Add(_cbDisplays);
+
+            _pictureBox = new PictureBox
+            {
+                Dock = DockStyle.Fill,
+                SizeMode = PictureBoxSizeMode.StretchImage,
+                BackColor = Color.Black
+            };
+
+            // Bind mouse events on picture box
+            _pictureBox.MouseDown += PictureBox_MouseDown;
+            _pictureBox.MouseUp += PictureBox_MouseUp;
+            _pictureBox.MouseMove += PictureBox_MouseMove;
+            _pictureBox.MouseWheel += PictureBox_MouseWheel;
+
+            this.Controls.Add(_pictureBox);
+            this.Controls.Add(panelTop);
+            
+            // Clipboard Monitoring Timer
+            _clipboardTimer = new System.Windows.Forms.Timer { Interval = 1000 };
+            _clipboardTimer.Tick += ClipboardTimer_Tick;
+            _clipboardTimer.Start();
+
+            // Bind keyboard events on form
+            this.KeyDown += ViewerForm_KeyDown;
+            this.KeyUp += ViewerForm_KeyUp;
+            this.KeyPress += ViewerForm_KeyPress;
+
+            // Bind Drag and Drop events
+            this.AllowDrop = true;
+            _pictureBox.AllowDrop = true;
+            this.DragEnter += ViewerForm_DragEnter;
+            _pictureBox.DragEnter += ViewerForm_DragEnter;
+            this.DragDrop += ViewerForm_DragDrop;
+            _pictureBox.DragDrop += ViewerForm_DragDrop;
+        }
+
+        private async void ViewerForm_Load(object? sender, EventArgs e)
+        {
+            _ws = new ClientWebSocket();
+            try
+            {
+                await _ws.ConnectAsync(new Uri(_wsUrl), CancellationToken.None);
+                
+                // Start receiving remote screen stream
+                _ = Task.Run(() => ReceiveScreenLoop(_ws, _cts.Token));
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Bağlantı kurulamadı: {ex.Message}", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                this.Close();
+            }
+        }
+
+        private async Task ReceiveScreenLoop(ClientWebSocket ws, CancellationToken token)
+        {
+            var buffer = new byte[1024 * 1024 * 2]; // 2MB frame buffer
+            try
+            {
+                while (!token.IsCancellationRequested && ws.State == WebSocketState.Open)
+                {
+                    int totalReceived = 0;
+                    WebSocketReceiveResult result;
+                    
+                    do
+                    {
+                        var segment = new ArraySegment<byte>(buffer, totalReceived, buffer.Length - totalReceived);
+                        result = await ws.ReceiveAsync(segment, token);
+                        totalReceived += result.Count;
+                    } 
+                    while (!result.EndOfMessage);
+
+                    if (result.MessageType == WebSocketMessageType.Close) break;
+
+                    if (result.MessageType == WebSocketMessageType.Binary && totalReceived > 0)
+                    {
+                        _hasConnectedOnce = true;
+                        // Load image frame
+                        using (var ms = new MemoryStream(buffer, 0, totalReceived))
+                        {
+                            try
+                            {
+                                Image img = Image.FromStream(ms);
+                                _pictureBox?.BeginInvoke(new Action(() =>
+                                {
+                                    var oldImg = _pictureBox.Image;
+                                    _pictureBox.Image = img;
+                                    oldImg?.Dispose(); // Free memory
+                                }));
+                            }
+                            catch { }
+                        }
+                    }
+                    else if (result.MessageType == WebSocketMessageType.Text)
+                    {
+                        string message = Encoding.UTF8.GetString(buffer, 0, totalReceived);
+                        if (message.Contains("ERROR:BUSY"))
+                        {
+                            if (_hasConnectedOnce)
+                            {
+                                this.BeginInvoke(new Action(() => {
+                                    this.Text = LanguageManager.Get("title_viewer", _targetId) + " (" + LanguageManager.Get("msg_busy_waiting") + ")";
+                                }));
+                                try { await ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "Host busy", CancellationToken.None); } catch { }
+                                break;
+                            }
+                            else
+                            {
+                                MessageBox.Show(LanguageManager.Get("msg_remote_busy"), "Hata", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                                this.BeginInvoke(new Action(this.Close));
+                            }
+                        }
+                        else if (message.Contains("ERROR:ID_NOT_FOUND"))
+                        {
+                            if (_hasConnectedOnce)
+                            {
+                                this.BeginInvoke(new Action(() => {
+                                    string offlineMsg = LanguageManager.CurrentLanguage == "tr" ? "Uzak makine çevrimdışı, bekleniyor..." : "Remote machine offline, waiting...";
+                                    this.Text = LanguageManager.Get("title_viewer", _targetId) + " (" + offlineMsg + ")";
+                                }));
+                                try { await ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "Host offline", CancellationToken.None); } catch { }
+                                break;
+                            }
+                            else
+                            {
+                                MessageBox.Show(LanguageManager.Get("msg_id_not_found"), "Hata", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                                this.BeginInvoke(new Action(this.Close));
+                            }
+                        }
+                        else if (message == "AUTH_REQUIRED")
+                        {
+                            _hasConnectedOnce = true;
+                            this.BeginInvoke(new Action(async () => {
+                                if (string.IsNullOrEmpty(_savedPassword))
+                                {
+                                    _savedPassword = Prompt.ShowDialog(LanguageManager.Get("msg_enter_password"), LanguageManager.Get("title_password_required"));
+                                }
+                                byte[] passBytes = Encoding.UTF8.GetBytes("AUTH_PASS:" + _savedPassword);
+                                if (_ws != null && _ws.State == WebSocketState.Open)
+                                {
+                                    await _ws.SendAsync(new ArraySegment<byte>(passBytes), WebSocketMessageType.Text, true, CancellationToken.None);
+                                }
+                            }));
+                        }
+                        else if (message == "AUTH_WAITING")
+                        {
+                            _hasConnectedOnce = true;
+                            this.BeginInvoke(new Action(() => {
+                                this.Text = $"ID: {_targetId} - " + LanguageManager.Get("msg_waiting_approval");
+                            }));
+                        }
+                        else if (message == "AUTH_SUCCESS")
+                        {
+                            _hasConnectedOnce = true;
+                            this.BeginInvoke(new Action(() => {
+                                this.Text = LanguageManager.Get("title_viewer", _targetId);
+                            }));
+                        }
+                        else if (message == "AUTH_FAILED")
+                        {
+                            _savedPassword = ""; // Clear stored password to prompt user again
+                            MessageBox.Show(LanguageManager.Get("auth_failed"), LanguageManager.Get("msg_connection_failed"), MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            this.BeginInvoke(new Action(this.Close));
+                        }
+                        else if (message == "AUTH_REJECTED")
+                        {
+                            MessageBox.Show(LanguageManager.Get("auth_rejected"), LanguageManager.Get("msg_connection_failed"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            this.BeginInvoke(new Action(this.Close));
+                        }
+                        else if (message.StartsWith("{"))
+                        {
+                            try
+                            {
+                                using var doc = JsonDocument.Parse(message);
+                                var root = doc.RootElement;
+                                if (root.TryGetProperty("type", out var typeProp))
+                                {
+                                    string type = typeProp.GetString() ?? "";
+                                    if (type == "displays")
+                                    {
+                                        var listProp = root.GetProperty("list");
+                                        var displayNames = new System.Collections.Generic.List<string>();
+                                        foreach (var item in listProp.EnumerateArray())
+                                        {
+                                            string name = item.GetProperty("name").GetString() ?? "Ekran";
+                                            displayNames.Add(name);
+                                        }
+                                        this.BeginInvoke(new Action(() =>
+                                        {
+                                            if (_cbDisplays != null)
+                                            {
+                                                _cbDisplays.SelectedIndexChanged -= CbDisplays_SelectedIndexChanged;
+                                                _cbDisplays.Items.Clear();
+                                                foreach (var name in displayNames)
+                                                {
+                                                    _cbDisplays.Items.Add(name);
+                                                }
+                                                if (_cbDisplays.Items.Count > 0)
+                                                {
+                                                    _cbDisplays.SelectedIndex = 0;
+                                                }
+                                                _cbDisplays.SelectedIndexChanged += CbDisplays_SelectedIndexChanged;
+                                            }
+                                        }));
+                                    }
+                                    else if (type == "clipboard")
+                                    {
+                                        string text = root.GetProperty("text").GetString() ?? "";
+                                        this.BeginInvoke(new Action(() => {
+                                            _lastClipboardText = text;
+                                            if (this.ContainsFocus)
+                                            {
+                                                Clipboard.SetText(text);
+                                            }
+                                        }));
+                                    }
+                                    else if (type == "chat")
+                                    {
+                                        string msgText = root.GetProperty("message").GetString() ?? "";
+                                        string senderName = root.GetProperty("sender").GetString() ?? "";
+                                        ShowClientChatForm(senderName, msgText);
+                                    }
+                                    else if (type == "fs_list_res")
+                                    {
+                                        string msgPayload = message;
+                                        this.BeginInvoke(new Action(() =>
+                                        {
+                                            if (_fileManagerForm != null && !_fileManagerForm.IsDisposed)
+                                            {
+                                                try
+                                                {
+                                                    using var docUI = JsonDocument.Parse(msgPayload);
+                                                    _fileManagerForm.Populate(docUI.RootElement);
+                                                }
+                                                catch { }
+                                            }
+                                        }));
+                                    }
+                                    else if (type == "file_start")
+                                    {
+                                        string name = root.GetProperty("name").GetString() ?? "download";
+                                        this.BeginInvoke(new Action(() =>
+                                        {
+                                            if (_fileManagerForm != null && !_fileManagerForm.IsDisposed)
+                                            {
+                                                _fileManagerForm.StartIncomingDownload(name);
+                                            }
+                                        }));
+                                    }
+                                    else if (type == "file_chunk")
+                                    {
+                                        string chunk = root.GetProperty("chunk").GetString() ?? "";
+                                        this.BeginInvoke(new Action(() =>
+                                        {
+                                            if (_fileManagerForm != null && !_fileManagerForm.IsDisposed)
+                                            {
+                                                _fileManagerForm.WriteDownloadChunk(chunk);
+                                            }
+                                        }));
+                                    }
+                                    else if (type == "file_end")
+                                    {
+                                        this.BeginInvoke(new Action(() =>
+                                        {
+                                            if (_fileManagerForm != null && !_fileManagerForm.IsDisposed)
+                                            {
+                                                _fileManagerForm.EndIncomingDownload();
+                                            }
+                                        }));
+                                    }
+                                }
+                            }
+                            catch { }
+                        }
+                    }
+                }
+            }
+            catch (Exception) { }
+            finally
+            {
+                if (_hasConnectedOnce && !token.IsCancellationRequested)
+                {
+                    StartReconnectionLoop();
+                }
+                else
+                {
+                    this.BeginInvoke(new Action(this.Close));
+                }
+            }
+        }
+
+        private async void StartReconnectionLoop()
+        {
+            if (_isReconnecting) return;
+            _isReconnecting = true;
+
+            this.BeginInvoke(new Action(() => {
+                this.Text = $"Masaüstü Bağlantısı - ID: {_targetId} (Bağlantı koptu, yeniden bağlanılıyor...)";
+            }));
+
+            while (!_cts.Token.IsCancellationRequested)
+            {
+                try
+                {
+                    if (_ws != null)
+                    {
+                        try { _ws.Dispose(); } catch { }
+                    }
+                    _ws = new ClientWebSocket();
+                    _ws.Options.Proxy = null;
+
+                    await _ws.ConnectAsync(new Uri(_wsUrl), _cts.Token);
+                    
+                    this.BeginInvoke(new Action(() => {
+                        this.Text = $"Masaüstü Bağlantısı - ID: {_targetId}";
+                    }));
+
+                    _isReconnecting = false;
+                    _ = Task.Run(() => ReceiveScreenLoop(_ws, _cts.Token));
+                    return;
+                }
+                catch
+                {
+                    // Wait 3 seconds before retrying
+                    try { await Task.Delay(3000, _cts.Token); } catch { break; }
+                }
+            }
+            _isReconnecting = false;
+        }
+
+        private void LogClient(string message)
+        {
+            try
+            {
+                string programData = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
+                string path = Path.Combine(programData, "BigLineconnect", "client_log.txt");
+                File.AppendAllText(path, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [Client] {message}\r\n");
+            }
+            catch { }
+        }
+
+        public async Task SendJsonAsync(object data)
+        {
+            if (_ws == null || _ws.State != WebSocketState.Open) return;
+
+            await _sendSemaphore.WaitAsync();
+            try
+            {
+                if (_ws.State == WebSocketState.Open)
+                {
+                    string json = JsonSerializer.Serialize(data);
+                    
+                    if (!json.Contains("\"type\":\"move\""))
+                    {
+                        LogClient($"Sending: {json}");
+                    }
+                    
+                    byte[] bytes = Encoding.UTF8.GetBytes(json);
+                    await _ws.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, CancellationToken.None);
+                }
+            }
+            catch (Exception ex)
+            {
+                LogClient($"Send error: {ex.Message}");
+            }
+            finally
+            {
+                _sendSemaphore.Release();
+            }
+        }
+
+        public void SendJson(object data)
+        {
+            _ = Task.Run(() => SendJsonAsync(data));
+        }
+
+        private void CbDisplays_SelectedIndexChanged(object? sender, EventArgs e)
+        {
+            if (_cbDisplays == null || _cbDisplays.SelectedIndex < 0) return;
+            SendJson(new { type = "select_display", index = _cbDisplays.SelectedIndex });
+        }
+
+        private void PictureBox_MouseMove(object? sender, MouseEventArgs e)
+        {
+            if (_pictureBox == null) return;
+            if (DateTime.Now - _lastMoveSent < TimeSpan.FromMilliseconds(30)) return;
+            _lastMoveSent = DateTime.Now;
+
+            double x = (double)e.X / _pictureBox.Width;
+            double y = (double)e.Y / _pictureBox.Height;
+
+            SendJson(new { type = "move", x, y });
+        }
+
+        private void PictureBox_MouseDown(object? sender, MouseEventArgs e)
+        {
+            if (_pictureBox == null) return;
+            
+            // Focus form to ensure key capture works
+            this.Focus();
+
+            double x = (double)e.X / _pictureBox.Width;
+            double y = (double)e.Y / _pictureBox.Height;
+            SendJson(new { type = "move", x, y });
+
+            string button = "left";
+            if (e.Button == MouseButtons.Right) button = "right";
+            else if (e.Button == MouseButtons.Middle) button = "middle";
+
+            SendJson(new { type = "click", button, action = "down" });
+        }
+
+        private void PictureBox_MouseUp(object? sender, MouseEventArgs e)
+        {
+            string button = "left";
+            if (e.Button == MouseButtons.Right) button = "right";
+            else if (e.Button == MouseButtons.Middle) button = "middle";
+
+            SendJson(new { type = "click", button, action = "up" });
+        }
+
+        private void PictureBox_MouseWheel(object? sender, MouseEventArgs e)
+        {
+            // e.Delta is usually +120 or -120
+            SendJson(new { type = "scroll", deltaY = e.Delta });
+        }
+
+        private void ViewerForm_KeyDown(object? sender, KeyEventArgs e)
+        {
+            bool isSpecial = IsSpecialKey(e.KeyCode);
+            bool isShortcut = e.Control || e.Alt;
+
+            if (isSpecial || isShortcut)
+            {
+                string keyName = MapKey(e.KeyCode);
+                if (!string.IsNullOrEmpty(keyName))
+                {
+                    SendJson(new { type = "key", key = keyName, action = "down" });
+                    e.Handled = true;
+                }
+            }
+        }
+
+        private void ViewerForm_KeyUp(object? sender, KeyEventArgs e)
+        {
+            bool isSpecial = IsSpecialKey(e.KeyCode);
+            bool isShortcut = e.Control || e.Alt;
+
+            if (isSpecial || isShortcut)
+            {
+                string keyName = MapKey(e.KeyCode);
+                if (!string.IsNullOrEmpty(keyName))
+                {
+                    SendJson(new { type = "key", key = keyName, action = "up" });
+                    e.Handled = true;
+                }
+            }
+        }
+
+        private void ViewerForm_KeyPress(object? sender, KeyPressEventArgs e)
+        {
+            // Ignore control chars (like Backspace, Enter, Esc, Tab which are handled in KeyDown)
+            if (e.KeyChar >= 32)
+            {
+                SendJson(new { type = "char", value = e.KeyChar.ToString() });
+                e.Handled = true;
+            }
+        }
+
+        private bool IsSpecialKey(Keys key)
+        {
+            switch (key)
+            {
+                case Keys.Enter:
+                case Keys.Back:
+                case Keys.Tab:
+                case Keys.Escape:
+                case Keys.Space:
+                case Keys.ControlKey:
+                case Keys.ShiftKey:
+                case Keys.Menu:
+                case Keys.Left:
+                case Keys.Up:
+                case Keys.Right:
+                case Keys.Down:
+                case Keys.Delete:
+                case Keys.Home:
+                case Keys.End:
+                case Keys.PageUp:
+                case Keys.PageDown:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        private string MapKey(Keys key)
+        {
+            switch (key)
+            {
+                case Keys.Enter: return "enter";
+                case Keys.Back: return "backspace";
+                case Keys.Tab: return "tab";
+                case Keys.Escape: return "escape";
+                case Keys.Space: return "space";
+                case Keys.ControlKey: return "control";
+                case Keys.ShiftKey: return "shift";
+                case Keys.Menu: return "alt";
+                case Keys.Left: return "arrowleft";
+                case Keys.Up: return "arrowup";
+                case Keys.Right: return "arrowright";
+                case Keys.Down: return "arrowdown";
+                case Keys.Delete: return "delete";
+                case Keys.Home: return "home";
+                case Keys.End: return "end";
+                case Keys.PageUp: return "pageup";
+                case Keys.PageDown: return "pagedown";
+                default:
+                    if (key >= Keys.A && key <= Keys.Z)
+                    {
+                        return ((char)key).ToString().ToLower();
+                    }
+                    if (key >= Keys.D0 && key <= Keys.D9)
+                    {
+                        return ((char)('0' + (key - Keys.D0))).ToString();
+                    }
+                    return "";
+            }
+        }
+
+        private void ClipboardTimer_Tick(object? sender, EventArgs e)
+        {
+            // Only synchronize clipboard if this specific ViewerForm currently has focus
+            if (this.ContainsFocus && _ws != null && _ws.State == WebSocketState.Open)
+            {
+                try
+                {
+                    if (Clipboard.ContainsText())
+                    {
+                        string text = Clipboard.GetText();
+                        if (text != _lastClipboardText && !string.IsNullOrEmpty(text))
+                        {
+                            _lastClipboardText = text;
+                            SendJson(new { type = "clipboard", text = text });
+                        }
+                    }
+                }
+                catch { }
+            }
+        }
+
+        private void ViewerForm_FormClosing(object? sender, FormClosingEventArgs e)
+        {
+            if (_clipboardTimer != null)
+            {
+                _clipboardTimer.Stop();
+                _clipboardTimer.Dispose();
+            }
+
+            _cts.Cancel();
+            if (_ws != null)
+            {
+                try
+                {
+                    _ws.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "Form Closed", CancellationToken.None);
+                }
+                catch { }
+                _ws.Dispose();
+            }
+        }
+
+        private void ViewerForm_DragEnter(object? sender, DragEventArgs e)
+        {
+            if (e.Data != null && e.Data.GetDataPresent(DataFormats.FileDrop))
+            {
+                e.Effect = DragDropEffects.Copy;
+            }
+            else
+            {
+                e.Effect = DragDropEffects.None;
+            }
+        }
+
+        private void ViewerForm_DragDrop(object? sender, DragEventArgs e)
+        {
+            if (e.Data != null && e.Data.GetDataPresent(DataFormats.FileDrop))
+            {
+                string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
+                if (files.Length > 0)
+                {
+                    string filePath = files[0];
+                    _ = Task.Run(() => SendFile(filePath));
+                }
+            }
+        }
+
+        private void SendFile(string filePath)
+        {
+            try
+            {
+                string filename = Path.GetFileName(filePath);
+                long fileSize = new FileInfo(filePath).Length;
+
+                SendJson(new { type = "file_start", name = filename, size = fileSize });
+
+                using (var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read))
+                {
+                    byte[] buffer = new byte[65536]; // 64KB packages
+                    int bytesRead;
+                    long totalSent = 0;
+
+                    while ((bytesRead = fs.Read(buffer, 0, buffer.Length)) > 0)
+                    {
+                        byte[] actualBytes = new byte[bytesRead];
+                        Array.Copy(buffer, actualBytes, bytesRead);
+                        string base64 = Convert.ToBase64String(actualBytes);
+                        
+                        SendJson(new { type = "file_chunk", chunk = base64 });
+                        totalSent += bytesRead;
+                    }
+                }
+
+                SendJson(new { type = "file_end" });
+                
+                this.BeginInvoke(new Action(() =>
+                {
+                    MessageBox.Show($"'{filename}' dosyası başarıyla karşı tarafa gönderildi.", "Dosya Gönderildi", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }));
+            }
+            catch (Exception ex)
+            {
+                this.BeginInvoke(new Action(() =>
+                {
+                    MessageBox.Show($"Dosya gönderilirken hata oluştu: {ex.Message}", "Dosya Gönderme Hatası", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }));
+            }
+        }
+
+        private void OpenChat()
+        {
+            if (_clientChatForm == null || _clientChatForm.IsDisposed)
+            {
+                _clientChatForm = new ClientChatForm(this);
+            }
+            _clientChatForm.Show();
+            _clientChatForm.BringToFront();
+        }
+
+        private void OpenFileManager()
+        {
+            if (_fileManagerForm == null || _fileManagerForm.IsDisposed)
+            {
+                _fileManagerForm = new FileManagerForm(this);
+            }
+            _fileManagerForm.Show();
+            _fileManagerForm.BringToFront();
+        }
+
+        public void SendChatMessage(string text)
+        {
+            SendJson(new { type = "chat", message = text, sender = "Client" });
+        }
+
+        private void ShowClientChatForm(string sender, string msg)
+        {
+            this.BeginInvoke(new Action(() =>
+            {
+                if (_clientChatForm == null || _clientChatForm.IsDisposed)
+                {
+                    _clientChatForm = new ClientChatForm(this);
+                    _clientChatForm.Show();
+                }
+                _clientChatForm.AppendMessage(sender, msg);
+                _clientChatForm.BringToFront();
+            }));
+        }
+
+        public static class Prompt
+        {
+            public static string ShowDialog(string text, string caption)
+            {
+                Form prompt = new Form()
+                {
+                    Width = 320,
+                    Height = 150,
+                    FormBorderStyle = FormBorderStyle.FixedDialog,
+                    Text = caption,
+                    StartPosition = FormStartPosition.CenterScreen,
+                    MaximizeBox = false,
+                    MinimizeBox = false,
+                    BackColor = Color.FromArgb(26, 28, 35),
+                    ForeColor = Color.White
+                };
+                Label textLabel = new Label() { Left = 20, Top = 15, Text = text, Width = 280, ForeColor = Color.White };
+                TextBox textBox = new TextBox() { Left = 20, Top = 45, Width = 260, PasswordChar = '*' };
+                Button confirmation = new Button() { Text = "Tamam", Left = 180, Width = 100, Top = 75, DialogResult = DialogResult.OK };
+                confirmation.Click += (sender, e) => { prompt.Close(); };
+                prompt.Controls.Add(textBox);
+                prompt.Controls.Add(confirmation);
+                prompt.Controls.Add(textLabel);
+                prompt.AcceptButton = confirmation;
+
+                return prompt.ShowDialog() == DialogResult.OK ? textBox.Text : "";
+            }
+        }
+    }
+
+    public class ClientChatForm : Form
+    {
+        private ViewerForm _parent;
+        private TextBox txtHistory;
+        private TextBox txtInput;
+        private Button btnSend;
+
+        public ClientChatForm(ViewerForm parent)
+        {
+            _parent = parent;
+            InitializeComponent();
+        }
+
+        private void InitializeComponent()
+        {
+            this.Text = LanguageManager.Get("title_chat");
+            this.Width = 350;
+            this.Height = 400;
+            this.FormBorderStyle = FormBorderStyle.FixedSingle;
+            this.MaximizeBox = false;
+            this.MinimizeBox = false;
+            this.BackColor = Color.FromArgb(26, 28, 35);
+            this.ForeColor = Color.White;
+            this.StartPosition = FormStartPosition.CenterParent;
+
+            txtHistory = new TextBox
+            {
+                Multiline = true,
+                ReadOnly = true,
+                ScrollBars = ScrollBars.Vertical,
+                Location = new Point(15, 15),
+                Size = new Size(305, 270),
+                BackColor = Color.FromArgb(17, 19, 24),
+                ForeColor = Color.White,
+                BorderStyle = BorderStyle.FixedSingle,
+                Font = new Font("Segoe UI", 9.5f)
+            };
+
+            txtInput = new TextBox
+            {
+                Location = new Point(15, 300),
+                Size = new Size(220, 26),
+                BackColor = Color.FromArgb(17, 19, 24),
+                ForeColor = Color.White,
+                BorderStyle = BorderStyle.FixedSingle,
+                Font = new Font("Segoe UI", 9.5f)
+            };
+            txtInput.KeyDown += (s, e) =>
+            {
+                if (e.KeyCode == Keys.Enter)
+                {
+                    e.SuppressKeyPress = true;
+                    SendMessage();
+                }
+            };
+
+            btnSend = new Button
+            {
+                Text = LanguageManager.Get("btn_send"),
+                Location = new Point(245, 300),
+                Size = new Size(75, 26),
+                BackColor = Color.FromArgb(241, 196, 15),
+                ForeColor = Color.Black,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold)
+            };
+            btnSend.Click += (s, e) => SendMessage();
+
+            this.Controls.Add(txtHistory);
+            this.Controls.Add(txtInput);
+            this.Controls.Add(btnSend);
+        }
+
+        public void AppendMessage(string sender, string msg)
+        {
+            if (this.InvokeRequired)
+            {
+                this.Invoke(new Action<string, string>(AppendMessage), sender, msg);
+                return;
+            }
+            txtHistory.AppendText($"[{DateTime.Now:HH:mm:ss}] {sender}: {msg}\r\n\r\n");
+            txtHistory.SelectionStart = txtHistory.TextLength;
+            txtHistory.ScrollToCaret();
+        }
+
+        private void SendMessage()
+        {
+            string text = txtInput.Text.Trim();
+            if (string.IsNullOrEmpty(text)) return;
+
+            txtInput.Text = "";
+            AppendMessage(LanguageManager.Get("chat_me"), text);
+            _parent.SendChatMessage(text);
+        }
+    }
+
+    public class FileManagerForm : Form
+    {
+        private ViewerForm _parent;
+        private TextBox txtPath;
+        private Button btnUp;
+        private Button btnRefresh;
+        private Button btnUpload;
+        private Button btnDownload;
+        private ListView lvFiles;
+        
+        private string _currentPath = "";
+        private FileStream? _downloadStream;
+        private string? _downloadFileName;
+
+        public FileManagerForm(ViewerForm parent)
+        {
+            _parent = parent;
+            InitializeComponent();
+            RequestPath("");
+        }
+
+        private void InitializeComponent()
+        {
+            this.Text = LanguageManager.Get("title_file_manager");
+            this.Width = 600;
+            this.Height = 500;
+            this.FormBorderStyle = FormBorderStyle.FixedSingle;
+            this.MaximizeBox = false;
+            this.MinimizeBox = false;
+            this.BackColor = Color.FromArgb(26, 28, 35);
+            this.ForeColor = Color.White;
+            this.StartPosition = FormStartPosition.CenterParent;
+
+            var lblPath = new Label
+            {
+                Text = LanguageManager.Get("lbl_path"),
+                Location = new Point(15, 18),
+                Size = new Size(30, 20),
+                ForeColor = Color.White
+            };
+
+            txtPath = new TextBox
+            {
+                Location = new Point(50, 15),
+                Size = new Size(320, 26),
+                ReadOnly = true,
+                BackColor = Color.FromArgb(17, 19, 24),
+                ForeColor = Color.White,
+                BorderStyle = BorderStyle.FixedSingle
+            };
+
+            btnUp = new Button
+            {
+                Text = LanguageManager.Get("btn_up"),
+                Location = new Point(380, 14),
+                Size = new Size(60, 24),
+                BackColor = Color.FromArgb(40, 42, 54),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat
+            };
+            btnUp.Click += (s, e) => GoUp();
+
+            btnRefresh = new Button
+            {
+                Text = LanguageManager.Get("btn_refresh"),
+                Location = new Point(445, 14),
+                Size = new Size(60, 24),
+                BackColor = Color.FromArgb(40, 42, 54),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat
+            };
+            btnRefresh.Click += (s, e) => RefreshList();
+
+            lvFiles = new ListView
+            {
+                Location = new Point(15, 55),
+                Size = new Size(550, 340),
+                View = View.Details,
+                FullRowSelect = true,
+                MultiSelect = false,
+                BackColor = Color.FromArgb(17, 19, 24),
+                ForeColor = Color.White,
+                BorderStyle = BorderStyle.FixedSingle
+            };
+            lvFiles.Columns.Add(LanguageManager.Get("col_name"), 250);
+            lvFiles.Columns.Add(LanguageManager.Get("col_size"), 100);
+            lvFiles.Columns.Add(LanguageManager.Get("col_modified"), 180);
+            lvFiles.DoubleClick += LvFiles_DoubleClick;
+
+            btnUpload = new Button
+            {
+                Text = LanguageManager.Get("btn_upload"),
+                Location = new Point(15, 415),
+                Size = new Size(180, 30),
+                BackColor = Color.FromArgb(241, 196, 15),
+                ForeColor = Color.Black,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold)
+            };
+            btnUpload.Click += (s, e) => UploadFile();
+
+            btnDownload = new Button
+            {
+                Text = LanguageManager.Get("btn_download"),
+                Location = new Point(385, 415),
+                Size = new Size(180, 30),
+                BackColor = Color.FromArgb(241, 196, 15),
+                ForeColor = Color.Black,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold)
+            };
+            btnDownload.Click += (s, e) => DownloadFile();
+
+            this.Controls.Add(lblPath);
+            this.Controls.Add(txtPath);
+            this.Controls.Add(btnUp);
+            this.Controls.Add(btnRefresh);
+            this.Controls.Add(lvFiles);
+            this.Controls.Add(btnUpload);
+            this.Controls.Add(btnDownload);
+        }
+
+        private void RequestPath(string path)
+        {
+            _currentPath = path;
+            txtPath.Text = path;
+            _parent.SendJson(new { type = "fs_list", path = path });
+        }
+
+        private void RefreshList()
+        {
+            RequestPath(_currentPath);
+        }
+
+        private void GoUp()
+        {
+            if (string.IsNullOrEmpty(_currentPath)) return;
+            try
+            {
+                var parent = Directory.GetParent(_currentPath);
+                if (parent == null)
+                {
+                    RequestPath("");
+                }
+                else
+                {
+                    RequestPath(parent.FullName);
+                }
+            }
+            catch
+            {
+                RequestPath("");
+            }
+        }
+
+        private void LvFiles_DoubleClick(object? sender, EventArgs e)
+        {
+            if (lvFiles.SelectedItems.Count == 0) return;
+            var item = lvFiles.SelectedItems[0];
+            string name = item.Text;
+            string type = item.SubItems[1].Text;
+
+            if (type.Contains("Sürücü") || type.Contains("Drive"))
+            {
+                RequestPath(name);
+            }
+            else if (type.Contains("Klasör") || type.Contains("Folder"))
+            {
+                string newPath = Path.Combine(_currentPath, name);
+                RequestPath(newPath);
+            }
+        }
+
+        public void Populate(JsonElement root)
+        {
+            lvFiles.Items.Clear();
+
+            string driveLabel = "[" + (LanguageManager.CurrentLanguage == "tr" ? "Sürücü" : "Drive") + "]";
+            string folderLabel = "[" + (LanguageManager.CurrentLanguage == "tr" ? "Klasör" : "Folder") + "]";
+
+            if (root.TryGetProperty("drives", out var drivesProp) && drivesProp.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var d in drivesProp.EnumerateArray())
+                {
+                    var item = new ListViewItem(d.GetString());
+                    item.SubItems.Add(driveLabel);
+                    item.SubItems.Add("");
+                    lvFiles.Items.Add(item);
+                }
+            }
+
+            if (root.TryGetProperty("folders", out var foldersProp) && foldersProp.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var f in foldersProp.EnumerateArray())
+                {
+                    var item = new ListViewItem(f.GetString());
+                    item.SubItems.Add(folderLabel);
+                    item.SubItems.Add("");
+                    lvFiles.Items.Add(item);
+                }
+            }
+
+            if (root.TryGetProperty("files", out var filesProp) && filesProp.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var f in filesProp.EnumerateArray())
+                {
+                    string name = f.GetProperty("name").GetString() ?? "";
+                    long size = f.GetProperty("size").GetInt64();
+                    string modified = f.GetProperty("modified").GetString() ?? "";
+
+                    var item = new ListViewItem(name);
+                    item.SubItems.Add(FormatSize(size));
+                    item.SubItems.Add(modified);
+                    lvFiles.Items.Add(item);
+                }
+            }
+        }
+
+        private string FormatSize(long bytes)
+        {
+            string[] suffixes = { "B", "KB", "MB", "GB" };
+            double val = bytes;
+            int i = 0;
+            while (val >= 1024 && i < suffixes.Length - 1)
+            {
+                val /= 1024;
+                i++;
+            }
+            return $"{val:0.##} {suffixes[i]}";
+        }
+
+        private void DownloadFile()
+        {
+            if (lvFiles.SelectedItems.Count == 0) return;
+            var item = lvFiles.SelectedItems[0];
+            string name = item.Text;
+            string type = item.SubItems[1].Text;
+
+            if (type.Contains("Sürücü") || type.Contains("Drive") || type.Contains("Klasör") || type.Contains("Folder")) return;
+
+            string remoteFilePath = Path.Combine(_currentPath, name);
+            _parent.SendJson(new { type = "file_download_req", path = remoteFilePath });
+        }
+
+        private void UploadFile()
+        {
+            if (string.IsNullOrEmpty(_currentPath))
+            {
+                MessageBox.Show(LanguageManager.Get("msg_enter_folder_first"), "Uyarı", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            using (var ofd = new OpenFileDialog())
+            {
+                if (ofd.ShowDialog() == DialogResult.OK)
+                {
+                    string localFilePath = ofd.FileName;
+                    string filename = Path.GetFileName(localFilePath);
+                    string remoteFilePath = Path.Combine(_currentPath, filename);
+                    
+                    _ = Task.Run(() => StreamUploadFile(localFilePath, remoteFilePath));
+                }
+            }
+        }
+
+        private async Task StreamUploadFile(string localPath, string remotePath)
+        {
+            try
+            {
+                long size = new FileInfo(localPath).Length;
+                _parent.SendJson(new { type = "file_upload_start", remotePath = remotePath, size = size });
+
+                using (var fs = new FileStream(localPath, FileMode.Open, FileAccess.Read))
+                {
+                    byte[] buffer = new byte[65536];
+                    int bytesRead;
+                    while ((bytesRead = fs.Read(buffer, 0, buffer.Length)) > 0)
+                    {
+                        byte[] actualBytes = new byte[bytesRead];
+                        Array.Copy(buffer, actualBytes, bytesRead);
+                        string base64 = Convert.ToBase64String(actualBytes);
+                        _parent.SendJson(new { type = "file_upload_chunk", chunk = base64 });
+                    }
+                }
+
+                _parent.SendJson(new { type = "file_upload_end" });
+
+                this.BeginInvoke(new Action(() =>
+                {
+                    MessageBox.Show(LanguageManager.Get("msg_file_uploaded") + ": " + Path.GetFileName(localPath), LanguageManager.Get("title_upload_success"), MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    RefreshList();
+                }));
+            }
+            catch (Exception ex)
+            {
+                this.BeginInvoke(new Action(() =>
+                {
+                    MessageBox.Show(LanguageManager.Get("msg_upload_error", ex.Message), "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }));
+            }
+        }
+
+        public void StartIncomingDownload(string name)
+        {
+            try
+            {
+                this.Invoke((MethodInvoker)delegate
+                {
+                    using (var sfd = new SaveFileDialog())
+                    {
+                        sfd.FileName = name;
+                        if (sfd.ShowDialog() == DialogResult.OK)
+                        {
+                            _downloadFileName = sfd.FileName;
+                            _downloadStream = new FileStream(_downloadFileName, FileMode.Create, FileAccess.Write);
+                        }
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(LanguageManager.Get("msg_download_failed") + ": " + ex.Message, "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        public void WriteDownloadChunk(string base64)
+        {
+            try
+            {
+                if (_downloadStream != null && !string.IsNullOrEmpty(base64))
+                {
+                    byte[] bytes = Convert.FromBase64String(base64);
+                    _downloadStream.Write(bytes, 0, bytes.Length);
+                }
+            }
+            catch { }
+        }
+
+        public void EndIncomingDownload()
+        {
+            try
+            {
+                if (_downloadStream != null)
+                {
+                    _downloadStream.Close();
+                    _downloadStream.Dispose();
+                    _downloadStream = null;
+                    MessageBox.Show(LanguageManager.Get("msg_download_completed") + ":\r\n" + Path.GetFileName(_downloadFileName), LanguageManager.Get("title_download_completed"), MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+            }
+            catch { }
+        }
+    }
+}
