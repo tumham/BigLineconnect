@@ -17,7 +17,7 @@ FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
 
-ENV PORT=5080
+ENV ASPNETCORE_URLS=http://+:5080
 EXPOSE 5080
 
 ENTRYPOINT ["dotnet", "BigLineconnect.Relay.dll"]
