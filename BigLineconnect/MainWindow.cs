@@ -42,7 +42,7 @@ namespace BigLineconnect
         // Relay Server settings group
         private Panel? _serverGroup;
         private TextBox? _relayUrlTextBox;
-        private string _actualRelayUrl = "ws://213.142.159.18:5080/register-host";
+        private string _actualRelayUrl = "wss://biglineconnect-production.up.railway.app/register-host";
         private Button? _reconnectButton;
 
         // AnyDesk columns
@@ -251,7 +251,7 @@ namespace BigLineconnect
             // Load saved relay URL from config.txt
             string configPath1 = ConfigHelper.GetConfigPath("config.txt");
             string configPath2 = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "config.txt");
-            _actualRelayUrl = "ws://213.142.159.18:5080/register-host";
+            _actualRelayUrl = "wss://biglineconnect-production.up.railway.app/register-host";
 
             foreach (var cfg in new[] { configPath1, configPath2 })
             {
@@ -1096,11 +1096,15 @@ namespace BigLineconnect
                 string scheme = uri.Scheme.Equals("wss", StringComparison.OrdinalIgnoreCase) ? "https" : "http";
                 string host = uri.Host;
                 int port = uri.Port;
+                if ((scheme == "https" && port == 443) || (scheme == "http" && port == 80))
+                {
+                    return $"{scheme}://{host}{path}";
+                }
                 return $"{scheme}://{host}:{port}{path}";
             }
             catch
             {
-                return $"http://213.142.159.18:5080{path}";
+                return $"https://biglineconnect-production.up.railway.app{path}";
             }
         }
 

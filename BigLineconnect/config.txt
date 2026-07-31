@@ -1,1 +1,1 @@
-ws://213.142.159.18:5080/register-host
+wss://biglineconnect-production.up.railway.app/register-host
