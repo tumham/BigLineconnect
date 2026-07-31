@@ -650,13 +650,25 @@ namespace BigLineconnect.Relay
                     string body = await reader.ReadToEndAsync();
                     using var doc = System.Text.Json.JsonDocument.Parse(body);
                     var root = doc.RootElement;
-                    string id = root.GetProperty("id").GetString() ?? "";
-                    string name = root.GetProperty("name").GetString() ?? "";
-                    string issue = root.GetProperty("issue").GetString() ?? "";
-                    string token = root.GetProperty("token").GetString() ?? "";
+                    string id = root.TryGetProperty("id", out var idElem) ? (idElem.GetString() ?? "") : "";
+                    string name = root.TryGetProperty("name", out var nameElem) ? (nameElem.GetString() ?? "") : "";
+                    string issue = root.TryGetProperty("issue", out var issueElem) ? (issueElem.GetString() ?? "") : "";
+                    string token = root.TryGetProperty("token", out var tokenElem) ? (tokenElem.GetString() ?? "") : "";
                     string tenantId = root.TryGetProperty("tenantId", out var tElem) ? (tElem.GetString() ?? "BIGLINE") : "BIGLINE";
                     if (string.IsNullOrEmpty(tenantId)) tenantId = "BIGLINE";
-                    bool requiresConfirmation = root.TryGetProperty("requiresConfirmation", out var rcElem) && (rcElem.ValueKind == System.Text.Json.JsonValueKind.True || (rcElem.ValueKind == System.Text.Json.JsonValueKind.String && rcElem.GetString() == "true"));
+
+                    bool requiresConfirmation = false;
+                    if (root.TryGetProperty("requiresConfirmation", out var rcElem))
+                    {
+                        if (rcElem.ValueKind == System.Text.Json.JsonValueKind.True)
+                        {
+                            requiresConfirmation = true;
+                        }
+                        else if (rcElem.ValueKind == System.Text.Json.JsonValueKind.String && (rcElem.GetString() ?? "").Equals("true", StringComparison.OrdinalIgnoreCase))
+                        {
+                            requiresConfirmation = true;
+                        }
+                    }
                     
                     if (!string.IsNullOrEmpty(id))
                     {
