@@ -682,9 +682,10 @@ namespace BigLineconnect.Relay
                         context.Response.StatusCode = StatusCodes.Status400BadRequest;
                     }
                 }
-                catch
+                catch (Exception ex)
                 {
                     context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+                    await context.Response.WriteAsync($"Error: {ex.Message}");
                 }
             });
 
