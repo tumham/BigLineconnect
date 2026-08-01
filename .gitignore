@@ -12,6 +12,8 @@ obj/
 
 ## Build outputs
 publish/
+publish_output/
+publish_temp/
 *.exe
 *.dll
 *.pdb
