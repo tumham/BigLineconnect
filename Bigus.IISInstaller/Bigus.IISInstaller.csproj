@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>true</SelfContained>
+    <PublishReadyToRun>false</PublishReadyToRun>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+  </PropertyGroup>
+
+  <Target Name="ZipApiPublish" BeforeTargets="PrepareForBuild">
+    <Delete Files="ApiPublish.zip" />
+    <ZipDirectory SourceDirectory="C:\BigMobil\ApiPublish" DestinationFile="ApiPublish.zip" Overwrite="true" />
+  </Target>
+
+  <ItemGroup>
+    <EmbeddedResource Include="ApiPublish.zip" LogicalName="ApiPublish.zip" />
+    <EmbeddedResource Include="..\V17\dotnet-hosting-2.2.0-win.exe" LogicalName="dotnet-hosting-2.2.0-win.exe" />
+    <EmbeddedResource Include="..\V17\dotnet-hosting-3.0.3-win.exe" LogicalName="dotnet-hosting-3.0.3-win.exe" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Web.Administration" Version="11.1.0" />
+    <PackageReference Include="System.Data.SqlClient" Version="4.8.5" />
+  </ItemGroup>
+
+</Project>

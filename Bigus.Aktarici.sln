@@ -1,0 +1,55 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.7.34031.279
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bigus.Aktarici.WinApp", "Bigus.Aktarici.WinApp\Bigus.Aktarici.WinApp.csproj", "{A24BDE6F-2812-4CCC-BD25-0B71C43D3E21}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bigus.Aktarici.Linq", "Bigus.Aktarici.Linq\Bigus.Aktarici.Linq.csproj", "{19E5E710-8960-419E-95FB-E359CF8A7684}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tugi.DepotManagement.UnHandledExceptionManagement", "Tugi.DepotManagement.UnHandledExceptionManagement\Tugi.DepotManagement.UnHandledExceptionManagement.csproj", "{3CE289A4-7F17-4D84-9D50-FEE3E7BB752C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tugi.Object", "Tugi.Object\Tugi.Object.csproj", "{F8A9F37E-BFD9-4016-9B13-3BCFC55F2593}"
+EndProject
+Project("{F184B08F-C81C-45F6-A57F-5ABD9991F28F}") = "Tugi.Dot", "Tugi.Dot\Tugi.Dot.vbproj", "{0D775BDE-0586-44E6-9202-C23E4F084524}"
+EndProject
+Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "Bigus.Aktarici.Setup", "Bigus.Aktarici.Setup\Bigus.Aktarici.Setup.vdproj", "{4F6C58FF-EF51-9E24-787D-454CF3D26EC5}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A24BDE6F-2812-4CCC-BD25-0B71C43D3E21}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A24BDE6F-2812-4CCC-BD25-0B71C43D3E21}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A24BDE6F-2812-4CCC-BD25-0B71C43D3E21}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A24BDE6F-2812-4CCC-BD25-0B71C43D3E21}.Release|Any CPU.Build.0 = Release|Any CPU
+		{19E5E710-8960-419E-95FB-E359CF8A7684}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{19E5E710-8960-419E-95FB-E359CF8A7684}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{19E5E710-8960-419E-95FB-E359CF8A7684}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{19E5E710-8960-419E-95FB-E359CF8A7684}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3CE289A4-7F17-4D84-9D50-FEE3E7BB752C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3CE289A4-7F17-4D84-9D50-FEE3E7BB752C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3CE289A4-7F17-4D84-9D50-FEE3E7BB752C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3CE289A4-7F17-4D84-9D50-FEE3E7BB752C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F8A9F37E-BFD9-4016-9B13-3BCFC55F2593}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F8A9F37E-BFD9-4016-9B13-3BCFC55F2593}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F8A9F37E-BFD9-4016-9B13-3BCFC55F2593}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F8A9F37E-BFD9-4016-9B13-3BCFC55F2593}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0D775BDE-0586-44E6-9202-C23E4F084524}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0D775BDE-0586-44E6-9202-C23E4F084524}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0D775BDE-0586-44E6-9202-C23E4F084524}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0D775BDE-0586-44E6-9202-C23E4F084524}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4F6C58FF-EF51-9E24-787D-454CF3D26EC5}.Debug|Any CPU.ActiveCfg = Debug
+		{4F6C58FF-EF51-9E24-787D-454CF3D26EC5}.Debug|Any CPU.Build.0 = Debug
+		{4F6C58FF-EF51-9E24-787D-454CF3D26EC5}.Release|Any CPU.ActiveCfg = Release
+		{4F6C58FF-EF51-9E24-787D-454CF3D26EC5}.Release|Any CPU.Build.0 = Release
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {6964A146-A6E8-45A2-B07F-7D267BE991F3}
+	EndGlobalSection
+EndGlobal

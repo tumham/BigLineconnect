@@ -1,0 +1,2392 @@
+<html>
+<head>
+<meta name="GENERATOR" content="Microsoft FrontPage 5.0">
+<meta name="ProgId" content="FrontPage.Editor.Document">
+<meta http-equiv="Content-Type" content="text/html; charset=windows-1254">
+<title>Tablo Alanları</title>
+<LINK rel="stylesheet" type="text/css" href="../../../library.css">
+</head>
+<body><p class="Caption"><i><a href="../index.htm">Database Yapısı</a></i></p>
+<center><u><a href="../tablolar/header.htm">Başlık (Header) Kısmı Açıklaması ve Genel Notlar İçin Tıklayın</a></u></center>
+<p><b>Tablo No : 71</b></p>
+<table class="SKey" border="2" bordercolor="white"  cellspacing="0" width="100%">
+  <tr>
+    <td width="50%"><b>Tablo Adı : PERSONELLER</b></td>
+    <td width="50%"><b>Tablo : Personel Kartları</b></td>
+    </tr>
+</table>
+<br>
+<table class="SKey" border="2" bordercolor="white"  cellspacing="0" width="100%">
+  <tr>
+    <td width="64">
+    <b>No</b></td>
+    <td width="186">
+    <b>Alan Adı</b></td>
+    <td width="148">
+    <b>Tip</b></td>
+    <td width="328">
+    <b>Açıklama</b></td>
+    <td>
+    <b>Detay</b></td>
+  </tr>
+ <tr>
+  <td>0</td>
+  <td>per_Guid</td>
+  <td>Uniqueidentifier</td>
+  <td>&nbsp;</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>1</td>
+  <td>per_DBCno</td>
+  <td>Smallint</td>
+  <td>&nbsp;</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>2</td>
+  <td>per_SpecRECno</td>
+  <td>Integer</td>
+  <td>&nbsp;</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>3</td>
+  <td>per_iptal</td>
+  <td>Bit</td>
+  <td>&nbsp;</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>4</td>
+  <td>per_fileid</td>
+  <td>Smallint</td>
+  <td>&nbsp;</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>5</td>
+  <td>per_hidden</td>
+  <td>Bit</td>
+  <td>&nbsp;</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>6</td>
+  <td>per_kilitli</td>
+  <td>Bit</td>
+  <td>&nbsp;</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>7</td>
+  <td>per_degisti</td>
+  <td>Bit</td>
+  <td>&nbsp;</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>8</td>
+  <td>per_checksum</td>
+  <td>Integer</td>
+  <td>&nbsp;</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>9</td>
+  <td>per_create_user</td>
+  <td>Smallint</td>
+  <td>&nbsp;</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>10</td>
+  <td>per_create_date</td>
+  <td>DateTime</td>
+  <td>&nbsp;</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>11</td>
+  <td>per_lastup_user</td>
+  <td>Smallint</td>
+  <td>&nbsp;</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>12</td>
+  <td>per_lastup_date</td>
+  <td>DateTime</td>
+  <td>&nbsp;</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>13</td>
+  <td>per_special1</td>
+  <td>Nvarchar(127)</td>
+  <td>&nbsp;</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>14</td>
+  <td>per_special2</td>
+  <td>Nvarchar(127)</td>
+  <td>&nbsp;</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>15</td>
+  <td>per_special3</td>
+  <td>Nvarchar(127)</td>
+  <td>&nbsp;</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>16</td>
+  <td>per_MainProgramNo</td>
+  <td>Smallint</td>
+  <td>Ana Program Numarası</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>17</td>
+  <td>per_VersionNo</td>
+  <td>Nvarchar(10)</td>
+  <td>Versiyon Numarası</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>18</td>
+  <td>per_MenuNo</td>
+  <td>Nvarchar(10)</td>
+  <td>Menü Numarası</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>19</td>
+  <td>per_MikroSpecial1</td>
+  <td>Nvarchar(40)</td>
+  <td>Özel Alan</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>20</td>
+  <td>per_MikroSpecial2</td>
+  <td>Nvarchar(40)</td>
+  <td>Özel Alan</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>21</td>
+  <td>per_MikroSpecial3</td>
+  <td>Nvarchar(40)</td>
+  <td>Özel Alan</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>22</td>
+  <td>per_ExternalProgramType</td>
+  <td>Tinyint</td>
+  <td>Dış Yazılım Aktarım Tipi</td>
+  <td>0:Genel 1:Paraşüt 2:Irgat</td>
+ </tr>
+ <tr>
+  <td>23</td>
+  <td>per_ExternalProgramId</td>
+  <td>Nvarchar(127)</td>
+  <td>Dış Yazılım Id'si</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>24</td>
+  <td>per_kod</td>
+  <td>Nvarchar(25)</td>
+  <td>Personel Kodu</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>25</td>
+  <td>per_adi</td>
+  <td>Nvarchar(50)</td>
+  <td>Adı</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>26</td>
+  <td>per_soyadi</td>
+  <td>Nvarchar(50)</td>
+  <td>Soyadı</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>27</td>
+  <td>per_orjdildeadisoyadi</td>
+  <td>Nvarchar(80)</td>
+  <td>Orjinal Dilde Adı-Soyadı</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>28</td>
+  <td>per_sicil_no</td>
+  <td>Nvarchar(25)</td>
+  <td>SSK Sicil No</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>29</td>
+  <td>per_firma_no</td>
+  <td>Integer</td>
+  <td>Firma No</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>30</td>
+  <td>per_sube_no</td>
+  <td>Integer</td>
+  <td>Şube No</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>31</td>
+  <td>per_caripers_kodu</td>
+  <td>Nvarchar(25)</td>
+  <td>Cari Personel Kodu</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>32</td>
+  <td>per_tip</td>
+  <td>Tinyint</td>
+  <td>Personel Tipi</td>
+  <td>0:Satıcı Eleman 1:Satın Almacı <br>
+  2:Diğer Eleman</td>
+ </tr>
+ <tr>
+  <td>33</td>
+  <td>per_dept_kod</td>
+  <td>Nvarchar(25)</td>
+  <td>Departman Kodu</td>
+  <td>Bkz. <a href="../tablolar/departmanlar.htm">DEPARTMANLAR</a></td>
+ </tr>
+ <tr>
+  <td>34</td>
+  <td>per_is_grup</td>
+  <td>Tinyint</td>
+  <td>İş Grubu</td>
+  <td>0:Memur 1:İşci 2:16 Yaşından Küçük <br>
+  3:Yönetim Kurulu 4:Sanatçı 5:ARGE 6:TUGS (Türk Uluslararası Gemi Sicili) 7:Kapıcı 8:Uçuş Personeli 9:Dalış Personeli 10:Amatör Sporcu 11:Profesyonel Sporcu</td>
+ </tr>
+ <tr>
+  <td>35</td>
+  <td>per_giris_tar</td>
+  <td>DateTime</td>
+  <td>İşe Giriş Tarihi</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>36</td>
+  <td>per_cikis_tar</td>
+  <td>DateTime</td>
+  <td>İşten Ayrılma Tarihi</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>37</td>
+  <td>per_cikis_neden</td>
+  <td>Nvarchar(40)</td>
+  <td>Çıkış Nedeni</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>38</td>
+  <td>per_muh_kod</td>
+  <td>Nvarchar(40)</td>
+  <td>Personel Muhasebe Kodu</td>
+  <td>Bkz. <a href="../tablolar/muhasebe_hesap_plani.htm">MUHASEBE_HESAP_PLANI</a></td>
+ </tr>
+ <tr>
+  <td>39</td>
+  <td>per_kim_tahsil</td>
+  <td>Tinyint</td>
+  <td>Tahsil</td>
+  <td>0:Yok 1:İlk 2:Orta 3:Lise 4:Yüksek 5:Fakülte 6:Yüksek Lisans 7:Doktora 8:Fakülte Temel Bilgi 9:Yüksek Lisans Temel Bilgi 10:Okul Öncesi</td>
+ </tr>
+ <tr>
+  <td>40</td>
+  <td>per_kim_meslek</td>
+  <td>Nvarchar(20)</td>
+  <td>Mesleği</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>41</td>
+  <td>per_kim_gorev</td>
+  <td>Nvarchar(25)</td>
+  <td>Görevi</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>42</td>
+  <td>per_kim_sakat_derece</td>
+  <td>Tinyint</td>
+  <td>Sakatlık Derecesi</td>
+  <td>0:Sağlam 1:Birinci Derece 2:İkinci Derece 3:Üçüncü Derece 4:Vergi İndirimi Dışı</td>
+ </tr>
+ <tr>
+  <td>43</td>
+  <td>per_kim_gocmen</td>
+  <td>Tinyint</td>
+  <td>Göçmen Kodu</td>
+  <td>0:Değil 1:Göçmen</td>
+ </tr>
+ <tr>
+  <td>44</td>
+  <td>per_kim_gorev_kod</td>
+  <td>Tinyint</td>
+  <td>Görev Kodu</td>
+  <td>0:İşveren Vekili 1:Diğer İdari Görevliler 2:Güvenlik Görevlileri 
+  3:Diğerleri</td>
+ </tr>
+ <tr>
+  <td>45</td>
+  <td>per_kim_SGK_kod</td>
+  <td>Tinyint</td>
+  <td>Sosyal Güvenlik Kodu</td>
+  <td>0:SSK 1:Emekli Sandığı <br>
+  2:Banka ve Diğer 3:Bağ kur</td>
+ </tr>
+ <tr>
+  <td>46</td>
+  <td>per_kim_cocuk</td>
+  <td>Tinyint</td>
+  <td>Çocuk Sayısı</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>47</td>
+  <td>per_kim_okuloncesi</td>
+  <td>Tinyint</td>
+  <td>Okul Öncesi</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>48</td>
+  <td>per_kim_ilkokul</td>
+  <td>Tinyint</td>
+  <td>İlk Okul</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>49</td>
+  <td>per_kim_ortaokul</td>
+  <td>Tinyint</td>
+  <td>Orta Okul</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>50</td>
+  <td>per_kim_lise</td>
+  <td>Tinyint</td>
+  <td>Lise</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>51</td>
+  <td>per_kim_yuksek</td>
+  <td>Tinyint</td>
+  <td>Yüksek Okul</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>52</td>
+  <td>per_nuf_uyruk</td>
+  <td>Nvarchar(15)</td>
+  <td>Uyruğu</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>53</td>
+  <td>per_nuf_cinsiyet</td>
+  <td>Tinyint</td>
+  <td>Cinsiyet</td>
+  <td>0:Erkek 1:Kadın</td>
+ </tr>
+ <tr>
+  <td>54</td>
+  <td>per_nuf_medeni_hal</td>
+  <td>Tinyint</td>
+  <td>Medeni Hali</td>
+  <td>0:Evli 1:Bekar 2:Dul</td>
+ </tr>
+ <tr>
+  <td>55</td>
+  <td>per_nuf_din</td>
+  <td>Nvarchar(15)</td>
+  <td>Dini</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>56</td>
+  <td>per_nuf_dogum_tarih</td>
+  <td>DateTime</td>
+  <td>Doğum Tarihi</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>57</td>
+  <td>per_nuf_dogum_yer</td>
+  <td>Nvarchar(40)</td>
+  <td>Doğum Yeri</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>58</td>
+  <td>per_nuf_kangrup</td>
+  <td>Tinyint</td>
+  <td>Kan Grubu</td>
+  <td>0:ARh+ 1:ARh- 2:BRh+ 3:BRh- 4:ABRh+ 5:ABRh- 6:0Rh+ 7:0Rh- 8:Tanımsız</td>
+ </tr>
+ <tr>
+  <td>59</td>
+  <td>per_nuf_seri_no</td>
+  <td>Nvarchar(15)</td>
+  <td>Nüfüs Cüzdanı Seri No</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>60</td>
+  <td>per_nuf_il</td>
+  <td>Nvarchar(20)</td>
+  <td>İl</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>61</td>
+  <td>per_nuf_ilce</td>
+  <td>Nvarchar(20)</td>
+  <td>İlçe</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>62</td>
+  <td>per_nuf_mahalle</td>
+  <td>Nvarchar(20)</td>
+  <td>Mahalle</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>63</td>
+  <td>per_nuf_koy</td>
+  <td>Nvarchar(20)</td>
+  <td>Köy</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>64</td>
+  <td>per_nuf_ciltno</td>
+  <td>Nvarchar(10)</td>
+  <td>Cilt No</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>65</td>
+  <td>per_nuf_sayfano</td>
+  <td>Nvarchar(10)</td>
+  <td>Sayfa No</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>66</td>
+  <td>per_nuf_kutukno</td>
+  <td>Nvarchar(10)</td>
+  <td>Kütük No</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>67</td>
+  <td>per_nuf_ver_neden</td>
+  <td>Nvarchar(20)</td>
+  <td>Veriliş Nedeni</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>68</td>
+  <td>per_nuf_ver_yer</td>
+  <td>Nvarchar(20)</td>
+  <td>Verildiği Yer</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>69</td>
+  <td>per_nuf_ver_tarih</td>
+  <td>DateTime</td>
+  <td>Veriliş Tarihi</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>70</td>
+  <td>per_nuf_cuz_kayitno</td>
+  <td>Nvarchar(15)</td>
+  <td>Cüzdan Kayıt No</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>71</td>
+  <td>per_ucr_tip</td>
+  <td>Tinyint</td>
+  <td>Ücret Tipi</td>
+  <td>0:Aylık 1:Günlük 2:Saatlik</td>
+ </tr>
+ <tr>
+  <td>72</td>
+  <td>per_ucret</td>
+  <td>Float</td>
+  <td>Ücret Tutarı</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>73</td>
+  <td>per_Brut_net</td>
+  <td>Tinyint</td>
+  <td>Brüt? Net?</td>
+  <td>0:Brüt 1:Net</td>
+ </tr>
+ <tr>
+  <td>74</td>
+  <td>per_ucr_send_durum</td>
+  <td>Tinyint</td>
+  <td>Ücret Sendika Durumu</td>
+  <td>0:Sendikasız 1:Sendikalı 2:Dayanışmalı</td>
+ </tr>
+ <tr>
+  <td>75</td>
+  <td>per_ucr_send</td>
+  <td>Tinyint</td>
+  <td>Ücret Sendikası No</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>76</td>
+  <td>per_ucr_PSSK_sube</td>
+  <td>Tinyint</td>
+  <td>SSK Şubesi No</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>77</td>
+  <td>per_ucr_hesapno</td>
+  <td>Nvarchar(30)</td>
+  <td>Banka Hesap No</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>78</td>
+  <td>per_ucr_sig_yuzde_gr</td>
+  <td>Tinyint</td>
+  <td>Sigorta Yüzde Grubu</td>
+  <td>0:Normal 1:Emekli 2:Çırak <br>
+  3:Yabancı 4:Öğrenci</td>
+ </tr>
+ <tr>
+  <td>79</td>
+  <td>per_ucr_bode_yapilma</td>
+  <td>Tinyint</td>
+  <td>Bankadan Ödeme Yapılsın Mı?</td>
+  <td>0:Yapılmasın 1:Yapılsın</td>
+ </tr>
+ <tr>
+  <td>80</td>
+  <td>per_ucr_vdaire</td>
+  <td>Nvarchar(14)</td>
+  <td>Vergi Dairesi</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>81</td>
+  <td>per_ucr_vkarneno</td>
+  <td>Nvarchar(12)</td>
+  <td>Vergi Karne No</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>82</td>
+  <td>per_ucr_vkarne_tarih</td>
+  <td>DateTime</td>
+  <td>Vergi Karne Tarihi</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>83</td>
+  <td>per_ucr_konutfon</td>
+  <td>Tinyint</td>
+  <td>Konut Fonu</td>
+  <td>0:Yok 1:Var</td>
+ </tr>
+ <tr>
+  <td>84</td>
+  <td>per_ucr_onceod</td>
+  <td>Smallint</td>
+  <td>Önce Ödm. KF. Ayı</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>85</td>
+  <td>per_ozelavansorani</td>
+  <td>Float</td>
+  <td>Özel Avans Oranı</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>86</td>
+  <td>per_sgk_deger_kodu</td>
+  <td>Nvarchar(25)</td>
+  <td>SGK Değer Kodu</td>
+  <td>&nbsp;</td>
+ </tr> 
+ <tr>
+  <td>87</td>
+  <td>per_yard_yol</td>
+  <td>Tinyint</td>
+  <td>Yol Yardımı</td>
+  <td>0:Yok 1:Var</td>
+ </tr>
+ <tr>
+  <td>88</td>
+  <td>per_yard_yemek</td>
+  <td>Tinyint</td>
+  <td>Yemek Yardımı</td>
+  <td>0:Yok 1:Var</td>
+ </tr>
+ <tr>
+  <td>89</td>
+  <td>per_yard_yakacak</td>
+  <td>Tinyint</td>
+  <td>Yakacak Yardımı</td>
+  <td>0:Yok 1:Var</td>
+ </tr>
+ <tr>
+  <td>90</td>
+  <td>per_yard_bayram</td>
+  <td>Tinyint</td>
+  <td>Bayram Yardımı</td>
+  <td>0:Yok 1:Var</td>
+ </tr>
+ <tr>
+  <td>91</td>
+  <td>per_yard_cocuk</td>
+  <td>Tinyint</td>
+  <td>Cocuk Yardımı</td>
+  <td>0:Yok 1:Var</td>
+ </tr>
+ <tr>
+  <td>92</td>
+  <td>per_yard_aile</td>
+  <td>Tinyint</td>
+  <td>Aile Yardımı</td>
+  <td>0:Yok 1:Var</td>
+ </tr>
+ <tr>
+  <td>93</td>
+  <td>per_yard_ozelindirim</td>
+  <td>Tinyint</td>
+  <td>Özel İndirim Yardımı</td>
+  <td>0:Yok 1:Var</td>
+ </tr>
+ <tr>
+  <td>94</td>
+  <td>per_adr_cadde</td>
+  <td>Nvarchar(50)</td>
+  <td>Adres (Cadde)</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>95</td>
+  <td>per_adr_mahalle</td>
+  <td>Nvarchar(50)</td>
+  <td>Mahalle</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>96</td>
+  <td>per_adr_sokak</td>
+  <td>Nvarchar(50)</td>
+  <td>Adres (Sokak)</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>97</td>
+  <td>per_adr_semt</td>
+  <td>Nvarchar(25)</td>
+  <td>Semt</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>98</td>
+  <td>per_adr_apartman_no</td>
+  <td>Nvarchar(10)</td>
+  <td>Apartman No</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>99</td>
+  <td>per_adr_daire_no</td>
+  <td>Nvarchar(10)</td>
+  <td>Daire No</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>100</td>
+  <td>per_adr_posta_kod</td>
+  <td>Nvarchar(8)</td>
+  <td>Posta Kodu</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>101</td>
+  <td>per_adr_ilce</td>
+  <td>Nvarchar(50)</td>
+  <td>İlçe</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>102</td>
+  <td>per_adr_il</td>
+  <td>Nvarchar(50)</td>
+  <td>İl</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>103</td>
+  <td>per_adr_ulke</td>
+  <td>Nvarchar(50)</td>
+  <td>Ülke</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>104</td>
+  <td>per_adr_adres_kodu</td>
+  <td>Nvarchar(10)</td>
+  <td>Adres Kodu</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>105</td>
+  <td>per_tel_ulke_kod</td>
+  <td>Nvarchar(5)</td>
+  <td>Ülke Telefon Kodu</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>106</td>
+  <td>per_tel_bolge_kod</td>
+  <td>Nvarchar(5)</td>
+  <td>Bölge Telefon Kodu</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>107</td>
+  <td>per_tel_no1</td>
+  <td>Nvarchar(10)</td>
+  <td>Telefon No 1</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>108</td>
+  <td>per_tel_no2</td>
+  <td>Nvarchar(10)</td>
+  <td>Telefon No 2</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>109</td>
+  <td>per_tel_faxno</td>
+  <td>Nvarchar(10)</td>
+  <td>Fax No</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>110</td>
+  <td>per_tel_cepno</td>
+  <td>Nvarchar(10)</td>
+  <td>Cep Telefon No</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>111</td>
+  <td>per_doviz_cinsi</td>
+  <td>Tinyint</td>
+  <td>Döviz Cinsi</td>
+  <td>Bkz. <a href="../tablolar/doviz_kurlari.htm">DOVIZ_KURLARI</a></td>
+ </tr>
+ <tr>
+  <td>112</td>
+  <td>per_muh_grpkod</td>
+  <td>Nvarchar(25)</td>
+  <td>Muhasebe Grup Kodu</td>
+  <td>Bkz. <a href="../tablolar/personel_muhasebe_gruplari.htm">PERSONEL_MUHASEBE_GRUPLARI</a></td>
+ </tr>
+ <tr>
+  <td>113</td>
+  <td>per_muh_ozelc1</td>
+  <td>Nvarchar(25)</td>
+  <td>Sendika Aidatı Muh. Kodu</td>
+  <td>Bkz. <a href="../tablolar/muhasebe_hesap_plani.htm">MUHASEBE_HESAP_PLANI</a></td>
+ </tr>
+ <tr>
+  <td>114</td>
+  <td>per_muh_ozelc2</td>
+  <td>Nvarchar(25)</td>
+  <td>Borç Taksidi Muh. Kodu</td>
+  <td>Bkz. <a href="../tablolar/muhasebe_hesap_plani.htm">MUHASEBE_HESAP_PLANI</a></td>
+ </tr>
+ <tr>
+  <td>115</td>
+  <td>per_muh_ozelc3</td>
+  <td>Nvarchar(25)</td>
+  <td>İcra Taksidi Muh. Kodu</td>
+  <td>Bkz. <a href="../tablolar/muhasebe_hesap_plani.htm">MUHASEBE_HESAP_PLANI</a></td>
+ </tr>
+ <tr>
+  <td>116</td>
+  <td>per_muh_ozelc4</td>
+  <td>Nvarchar(25)</td>
+  <td>Kredi Taksidi Muh. Kodu</td>
+  <td>Bkz. <a href="../tablolar/muhasebe_hesap_plani.htm">MUHASEBE_HESAP_PLANI</a></td>
+ </tr>
+ <tr>
+  <td>117</td>
+  <td>per_muh_ozelc5</td>
+  <td>Nvarchar(25)</td>
+  <td>Avans Muh. Kodu</td>
+  <td>Bkz. <a href="../tablolar/muhasebe_hesap_plani.htm">MUHASEBE_HESAP_PLANI</a></td>
+ </tr>
+ <tr>
+  <td>118</td>
+  <td>per_muh_ozelc6</td>
+  <td>Nvarchar(25)</td>
+  <td>İzin Avansı Muh. Kodu</td>
+  <td>Bkz. <a href="../tablolar/muhasebe_hesap_plani.htm">MUHASEBE_HESAP_PLANI</a></td>
+ </tr>
+ <tr>
+  <td>119</td>
+  <td>per_muh_ozelc7</td>
+  <td>Nvarchar(25)</td>
+  <td>İkramiye Avansı Muh. Kodu</td>
+  <td>Bkz. <a href="../tablolar/muhasebe_hesap_plani.htm">MUHASEBE_HESAP_PLANI</a></td>
+ </tr>
+ <tr>
+  <td>120</td>
+  <td>per_muh_ozelc8</td>
+  <td>Nvarchar(25)</td>
+  <td>Yakacak Avansı Muh. Kodu</td>
+  <td>Bkz. <a href="../tablolar/muhasebe_hesap_plani.htm">MUHASEBE_HESAP_PLANI</a></td>
+ </tr>
+ <tr>
+  <td>121</td>
+  <td>per_muh_ozelc9</td>
+  <td>Nvarchar(25)</td>
+  <td>Bayram Avansı Muh. Kodu</td>
+  <td>Bkz. <a href="../tablolar/muhasebe_hesap_plani.htm">MUHASEBE_HESAP_PLANI</a></td>
+ </tr>
+ <tr>
+  <td>122</td>
+  <td>per_muh_ozelc10</td>
+  <td>Nvarchar(25)</td>
+  <td>Yardım Sandığı Muh. Kodu</td>
+  <td>Bkz. <a href="../tablolar/muhasebe_hesap_plani.htm">MUHASEBE_HESAP_PLANI</a></td>
+ </tr>
+ <tr>
+  <td>123</td>
+  <td>per_muh_ozelc11</td>
+  <td>Nvarchar(25)</td>
+  <td>Fon Kesintisi Muh. Kodu</td>
+  <td>Bkz. <a href="../tablolar/muhasebe_hesap_plani.htm">MUHASEBE_HESAP_PLANI</a></td>
+ </tr>
+ <tr>
+  <td>124</td>
+  <td>per_muh_ozelc12</td>
+  <td>Nvarchar(25)</td>
+  <td>Ceza Muh. Kodu</td>
+  <td>Bkz. <a href="../tablolar/muhasebe_hesap_plani.htm">MUHASEBE_HESAP_PLANI</a></td>
+ </tr>
+ <tr>
+  <td>125</td>
+  <td>per_muh_ozelc13</td>
+  <td>Nvarchar(25)</td>
+  <td>Geçen Yuvarlama Muh. Kodu</td>
+  <td>Bkz. <a href="../tablolar/muhasebe_hesap_plani.htm">MUHASEBE_HESAP_PLANI</a></td>
+ </tr>
+ <tr>
+  <td>126</td>
+  <td>per_muh_ozelc14</td>
+  <td>Nvarchar(25)</td>
+  <td>Ters Bakiye Muh. Kodu</td>
+  <td>Bkz. <a href="../tablolar/muhasebe_hesap_plani.htm">MUHASEBE_HESAP_PLANI</a></td>
+ </tr>
+ <tr>
+  <td>127</td>
+  <td>per_muh_ozelc15</td>
+  <td>Nvarchar(25)</td>
+  <td>Diğer 1 Muh. Kodu</td>
+  <td>Bkz. <a href="../tablolar/muhasebe_hesap_plani.htm">MUHASEBE_HESAP_PLANI</a></td>
+ </tr>
+ <tr>
+  <td>128</td>
+  <td>per_muh_ozelc16</td>
+  <td>Nvarchar(25)</td>
+  <td>Diğer 2 Muh. Kodu</td>
+  <td>Bkz. <a href="../tablolar/muhasebe_hesap_plani.htm">MUHASEBE_HESAP_PLANI</a></td>
+ </tr>
+ <tr>
+  <td>129</td>
+  <td>per_muh_ozelc17</td>
+  <td>Nvarchar(25)</td>
+  <td>Diğer 3 Muh. Kodu</td>
+  <td>Bkz. <a href="../tablolar/muhasebe_hesap_plani.htm">MUHASEBE_HESAP_PLANI</a></td>
+ </tr>
+ <tr>
+  <td>130</td>
+  <td>per_muh_ozelc18</td>
+  <td>Nvarchar(25)</td>
+  <td>Askerlik Borçlanması Muh. Kodu</td>
+  <td>Bkz. <a href="../tablolar/muhasebe_hesap_plani.htm">MUHASEBE_HESAP_PLANI</a></td>
+ </tr>
+  <tr>
+  <td>131</td>
+  <td>per_muh_ozelc19</td>
+  <td>Nvarchar(25)</td>
+  <td>Özel Kesintiler</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>132</td>
+  <td>per_muh_ozelc20</td>
+  <td>Nvarchar(25)</td>
+  <td>Özel Kesintiler</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>133</td>
+  <td>per_muh_ozelc21</td>
+  <td>Nvarchar(25)</td>
+  <td>Özel Kesintiler</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>134</td>
+  <td>per_muh_ozelc22</td>
+  <td>Nvarchar(25)</td>
+  <td>Özel Kesintiler</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>135</td>
+  <td>per_muh_ozelc23</td>
+  <td>Nvarchar(25)</td>
+  <td>Özel Kesintiler</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>136</td>
+  <td>per_muh_ozelc24</td>
+  <td>Nvarchar(25)</td>
+  <td>Özel Kesintiler</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>137</td>
+  <td>per_old_ucret</td>
+  <td>Float</td>
+  <td>Eski Ücret</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>138</td>
+  <td>per_old_tarih</td>
+  <td>DateTime</td>
+  <td>Eski Ücret Tarihi</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>139</td>
+  <td>per_maas_ikramiye</td>
+  <td>Tinyint</td>
+  <td>İkramiye?</td>
+  <td>0:Yok 1:Var</td>
+ </tr>
+ <tr>
+  <td>140</td>
+  <td>per_ozel_not</td>
+  <td>Nvarchar(12)</td>
+  <td>Özel Not</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>141</td>
+  <td>per_VkfKesOd_fl</td>
+  <td>Bit</td>
+  <td>Vakıf Kesintisi Uygula?</td>
+  <td>0:Hayır 1:Evet</td>
+ </tr>
+ <tr>
+  <td>142</td>
+  <td>per_Kiper_Tarih</td>
+  <td>DateTime</td>
+  <td>Kıdem Tarihi</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>143</td>
+  <td>per_iszlksig</td>
+  <td>Tinyint</td>
+  <td>İşsizlik Sigortası?</td>
+  <td>0:Yok 1:Var</td>
+ </tr>
+ <tr>
+  <td>144</td>
+  <td>per_Calismatipi</td>
+  <td>Tinyint</td>
+  <td>Çalışma Tipi</td>
+  <td>0:Genel 1:İmalat 2:Pazarlama</td>
+ </tr>
+ <tr>
+  <td>145</td>
+  <td>per_dil1</td>
+  <td>Bit</td>
+  <td>Dil1</td>
+  <td>Türkçe</td>
+ </tr>
+ <tr>
+  <td>146</td>
+  <td>per_dil2</td>
+  <td>Bit</td>
+  <td>Dil2</td>
+  <td>İngilizce</td>
+ </tr>
+ <tr>
+  <td>147</td>
+  <td>per_dil3</td>
+  <td>Bit</td>
+  <td>Dil3</td>
+  <td>Almanca</td>
+ </tr>
+ <tr>
+  <td>148</td>
+  <td>per_dil4</td>
+  <td>Bit</td>
+  <td>Dil4</td>
+  <td>Fransızca</td>
+ </tr>
+ <tr>
+  <td>149</td>
+  <td>per_dil5</td>
+  <td>Bit</td>
+  <td>Dil5</td>
+  <td>Italyanca</td>
+ </tr>
+ <tr>
+  <td>150</td>
+  <td>per_dil6</td>
+  <td>Bit</td>
+  <td>Dil6</td>
+  <td>İspanyolca</td>
+ </tr>
+ <tr>
+  <td>151</td>
+  <td>per_dil7</td>
+  <td>Bit</td>
+  <td>Dil7</td>
+  <td>Rusça</td>
+ </tr>
+ <tr>
+  <td>152</td>
+  <td>per_dil8</td>
+  <td>Bit</td>
+  <td>Dil8</td>
+  <td>Arapça</td>
+ </tr>
+ <tr>
+  <td>153</td>
+  <td>per_dil9</td>
+  <td>Bit</td>
+  <td>Dil9</td>
+  <td>Diğer 1</td>
+ </tr>
+ <tr>
+  <td>154</td>
+  <td>per_dil10</td>
+  <td>Bit</td>
+  <td>Dil10</td>
+  <td>Diğer 2</td>
+ </tr>
+ <tr>
+  <td>155</td>
+  <td>per_dil11</td>
+  <td>Bit</td>
+  <td>Dil11</td>
+  <td>Diğer 3</td>
+ </tr>
+ <tr>
+  <td>156</td>
+  <td>per_dil12</td>
+  <td>Bit</td>
+  <td>Dil12</td>
+  <td>Diğer 4</td>
+ </tr>
+ <tr>
+  <td>157</td>
+  <td>per_mevsim</td>
+  <td>Tinyint</td>
+  <td>Personel Çalışma Mevsimi</td>
+  <td>0:Sürekli 1:Süreksiz 2:Part Time</td>
+ </tr>
+ <tr>
+  <td>158</td>
+  <td>per_kapsam</td>
+  <td>Tinyint</td>
+  <td>Personel Çalışma Kapsamı</td>
+  <td>0:Normal 1:Eski Hükümlü 2:Terörle Mücadele</td>
+ </tr>
+ <tr>
+  <td>159</td>
+  <td>per_asgari_ucretli</td>
+  <td>Bit</td>
+  <td>Personel Asgari Ücretli mi?</td>
+  <td>0:Hayır 1:Evet</td>
+ </tr>
+ <tr>
+  <td>160</td>
+  <td>Per_PerCariCins1</td>
+  <td>Tinyint</td>
+  <td>Personel Cari Cinsi</td>
+  <td>0:Gider Cins 1:Personel Cins 2:Diğer Cari Cins 3:Cari Personel Cins 4:Muhasebe Hesabı Cinsi</td>
+ </tr>
+ <tr>
+ <td>161</td>
+  <td>Per_PerCariCins2</td>
+  <td>Tinyint</td>
+  <td>Personel Cari Cinsi</td>
+  <td>Yukardakiyle aynı</td>
+ </tr>
+ <tr>
+ <td>162</td>
+  <td>Per_PerCariCins3</td>
+  <td>Tinyint</td>
+  <td>Personel Cari Cinsi</td>
+  <td>Yukardakiyle aynı</td>
+ </tr>
+ <tr>
+  <td>163</td>
+  <td>Per_PerCariCins4</td>
+  <td>Tinyint</td>
+  <td>Personel Cari Cinsi</td>
+  <td>Yukardakiyle aynı</td>
+ </tr>
+ <tr>
+  <td>164</td>
+  <td>Per_PerCariCins5</td>
+  <td>Tinyint</td>
+  <td>Personel Cari Cinsi</td>
+  <td>Yukardakiyle aynı</td>
+ </tr>
+ <tr>
+  <td>165</td>
+  <td>Per_PerCariCins6</td>
+  <td>Tinyint</td>
+  <td>Personel Cari Cinsi</td>
+  <td>Yukardakiyle aynı</td>
+ </tr>
+ <tr>
+  <td>166</td>
+  <td>Per_PerCariCins7</td>
+  <td>Tinyint</td>
+  <td>Personel Cari Cinsi</td>
+  <td>Yukardakiyle aynı</td>
+ </tr>
+ <tr>
+  <td>167</td>
+  <td>Per_PerCariCins8</td>
+  <td>Tinyint</td>
+  <td>Personel Cari Cinsi</td>
+  <td>Yukardakiyle aynı</td>
+ </tr>
+ <tr>
+  <td>168</td>
+  <td>Per_PerCariCins9</td>
+  <td>Tinyint</td>
+  <td>Personel Cari Cinsi</td>
+  <td>Yukardakiyle aynı</td>
+ </tr>
+ <tr>
+  <td>169</td>
+  <td>Per_PerCariCins10</td>
+  <td>Tinyint</td>
+  <td>Personel Cari Cinsi</td>
+  <td>Yukardakiyle aynı</td>
+ </tr>
+ <tr>
+  <td>170</td>
+  <td>Per_PerCariCins11</td>
+  <td>Tinyint</td>
+  <td>Personel Cari Cinsi</td>
+  <td>Yukardakiyle aynı</td>
+ </tr>
+ <tr>
+  <td>171</td>
+  <td>Per_PerCariCins12</td>
+  <td>Tinyint</td>
+  <td>Personel Cari Cinsi</td>
+  <td>Yukardakiyle aynı</td>
+ </tr>
+ <tr>
+  <td>172</td>
+  <td>Per_PerCariCins13</td>
+  <td>Tinyint</td>
+  <td>Personel Cari Cinsi</td>
+  <td>Yukardakiyle aynı</td>
+ </tr>
+ <tr>
+  <td>173</td>
+  <td>Per_PerCariCins14</td>
+  <td>Tinyint</td>
+  <td>Personel Cari Cinsi</td>
+  <td>Yukardakiyle aynı</td>
+ </tr>
+ <tr>
+  <td>174</td>
+  <td>Per_PerCariCins15</td>
+  <td>Tinyint</td>
+  <td>Personel Cari Cinsi</td>
+  <td>Yukardakiyle aynı</td>
+ </tr>
+ <tr>
+  <td>175</td>
+  <td>Per_PerCariCins16</td>
+  <td>Tinyint</td>
+  <td>Personel Cari Cinsi</td>
+  <td>Yukardakiyle aynı</td>
+ </tr>
+ <tr>
+  <td>176</td>
+  <td>Per_PerCariCins17</td>
+  <td>Tinyint</td>
+  <td>Personel Cari Cinsi</td>
+  <td>Yukardakiyle aynı</td>
+ </tr>
+ <tr>
+  <td>177</td>
+  <td>Per_PerCariCins18</td>
+  <td>Tinyint</td>
+  <td>Personel Cari Cinsi</td>
+  <td>Yukardakiyle aynı</td>
+ </tr>
+ <tr>
+  <td>178</td>
+  <td>Per_PerCariCins19</td>
+  <td>Tinyint</td>
+  <td>Personel Cari Cinsi</td>
+  <td>Yukardakiyle aynı</td>
+ </tr>
+ <tr>
+  <td>179</td>
+  <td>Per_PerCariCins20</td>
+  <td>Tinyint</td>
+  <td>Personel Cari Cinsi</td>
+  <td>Yukardakiyle aynı</td>
+ </tr>
+ <tr>
+  <td>180</td>
+  <td>Per_PerCariCins21</td>
+  <td>Tinyint</td>
+  <td>Personel Cari Cinsi</td>
+  <td>Yukardakiyle aynı</td>
+ </tr>
+ <tr>
+  <td>181</td>
+  <td>Per_PerCariCins22</td>
+  <td>Tinyint</td>
+  <td>Personel Cari Cinsi</td>
+  <td>Yukardakiyle aynı</td>
+ </tr>
+ <tr>
+  <td>182</td>
+  <td>Per_PerCariCins23</td>
+  <td>Tinyint</td>
+  <td>Personel Cari Cinsi</td>
+  <td>Yukardakiyle aynı</td>
+ </tr>
+ <tr>
+  <td>183</td>
+  <td>Per_PerCariCins24</td>
+  <td>Tinyint</td>
+  <td>Personel Cari Cinsi</td>
+  <td>Yukardakiyle aynı</td>
+ </tr>
+ <tr>
+  <td>184</td>
+  <td>Per_PerCariCins_grupno1</td>
+  <td>Tinyint</td>
+  <td>Personel Cari Cinsi Grup No</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>185</td>
+  <td>Per_PerCariCins_grupno2</td>
+  <td>Tinyint</td>
+  <td>Personel Cari Cinsi Grup No</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>186</td>
+  <td>Per_PerCariCins_grupno3</td>
+  <td>Tinyint</td>
+  <td>Personel Cari Cinsi Grup No</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>187</td>
+  <td>Per_PerCariCins_grupno4</td>
+  <td>Tinyint</td>
+  <td>Personel Cari Cinsi Grup No</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>188</td>
+  <td>Per_PerCariCins_grupno5</td>
+  <td>Tinyint</td>
+  <td>Personel Cari Cinsi Grup No</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>189</td>
+  <td>Per_PerCariCins_grupno6</td>
+  <td>Tinyint</td>
+  <td>Personel Cari Cinsi Grup No</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>190</td>
+  <td>Per_PerCariCins_grupno7</td>
+  <td>Tinyint</td>
+  <td>Personel Cari Cinsi Grup No</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>191</td>
+  <td>Per_PerCariCins_grupno8</td>
+  <td>Tinyint</td>
+  <td>Personel Cari Cinsi Grup No</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>192</td>
+  <td>Per_PerCariCins_grupno9</td>
+  <td>Tinyint</td>
+  <td>Personel Cari Cinsi Grup No</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>193</td>
+  <td>Per_PerCariCins_grupno10</td>
+  <td>Tinyint</td>
+  <td>Personel Cari Cinsi Grup No</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>194</td>
+  <td>Per_PerCariCins_grupno11</td>
+  <td>Tinyint</td>
+  <td>Personel Cari Cinsi Grup No</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>195</td>
+  <td>Per_PerCariCins_grupno12</td>
+  <td>Tinyint</td>
+  <td>Personel Cari Cinsi Grup No</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>196</td>
+  <td>Per_PerCariCins_grupno13</td>
+  <td>Tinyint</td>
+  <td>Personel Cari Cinsi Grup No</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>197</td>
+  <td>Per_PerCariCins_grupno14</td>
+  <td>Tinyint</td>
+  <td>Personel Cari Cinsi Grup No</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>198</td>
+  <td>Per_PerCariCins_grupno15</td>
+  <td>Tinyint</td>
+  <td>Personel Cari Cinsi Grup No</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>199</td>
+  <td>Per_PerCariCins_grupno16</td>
+  <td>Tinyint</td>
+  <td>Personel Cari Cinsi Grup No</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>200</td>
+  <td>Per_PerCariCins_grupno17</td>
+  <td>Tinyint</td>
+  <td>Personel Cari Cinsi Grup No</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>201</td>
+  <td>Per_PerCariCins_grupno18</td>
+  <td>Tinyint</td>
+  <td>Personel Cari Cinsi Grup No</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>202</td>
+  <td>Per_PerCariCins_grupno19</td>
+  <td>Tinyint</td>
+  <td>Personel Cari Cinsi Grup No</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>203</td>
+  <td>Per_PerCariCins_grupno20</td>
+  <td>Tinyint</td>
+  <td>Personel Cari Cinsi Grup No</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>204</td>
+  <td>Per_PerCariCins_grupno21</td>
+  <td>Tinyint</td>
+  <td>Personel Cari Cinsi Grup No</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>205</td>
+  <td>Per_PerCariCins_grupno22</td>
+  <td>Tinyint</td>
+  <td>Personel Cari Cinsi Grup No</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>206</td>
+  <td>Per_PerCariCins_grupno23</td>
+  <td>Tinyint</td>
+  <td>Personel Cari Cinsi Grup No</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>207</td>
+  <td>Per_PerCariCins_grupno24</td>
+  <td>Tinyint</td>
+  <td>Personel Cari Cinsi Grup No</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>208</td>
+  <td>Per_TCKimlikNo</td>
+  <td>Nvarchar(11)</td>
+  <td>TC Kimlik No</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>209</td>
+  <td>Per_PersMailAddress</td>
+  <td>Nvarchar(50)</td>
+  <td>e-Posta Adresi</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>210</td>
+  <td>Per_Aylik_calisma_saati</td>
+  <td>Float</td>
+  <td>Aylık Çalışma Saati</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+ <td>211</td>
+  <td>Per_Muh_Grup_Kodu</td>
+  <td>Nvarchar(25)</td>
+  <td>Muhasebe Grup Kodu</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>212</td>
+  <td>per_bolge_kodu</td>
+  <td>Nvarchar(25)</td>
+  <td>Bölge Kodu</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>213</td>
+  <td>per_okul_ad</td>
+  <td>Nvarchar(40)</td>
+  <td>Okul Adı</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>214</td>
+  <td>per_IdariAmirKodu</td>
+  <td>Nvarchar(25)</td>
+  <td>İdari Amir Kodu</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>215</td>
+  <td>per_TeknikAmirKodu</td>
+  <td>Nvarchar(25)</td>
+  <td>Teknik Amir Kodu</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>216</td>
+  <td>per_CikisSebebiSecimli</td>
+  <td>Tinyint</td>
+  <td>İşten Çıkış Sebebi</td>
+  <td>0:Sebep yok 1:Deneme süreli işverence feshi 2:Deneme süreli sigortalı feshi 3:Belirsiz süreli sigortalı feshi 4:Belirsiz süreli işverence feshi 5:Belirli süreli sözleşme sonu 6:Haklı sigortalı feshi 7:Haklı işverence feshi 8:Emeklilik 9:Malulen emeklilik 10:Ölüm 11:İş kazası ölüm 12:Askerlik 13:Kadın evlilik 14:Yaş dışında emekliliği hakediş 15:Toplu işci çıkarma 16:Nakil 17:İş yerinin kapanması 18:İşin sona ermesi 19:Mevsim bitimi 20:Kampanya bitimi 21:Statü değişimi 22:Diğer çıkış 23:İşci tarafından zorunlu nedenle fesih 24:İşci tarafından sağlık nedeniyle fesih 25:İşci tarafından işverenin ahlak nedeni ile fesih 26:Disiplin kurulu kararı ile fesih 27:İş veren tarafından zorunlu nedenlerle fesih 28:İş veren tarafından sağlık nedeni ile fesih 29:İş veren tarafından işcinin ahlak nedeni ile fesih 30:Vize süresinin bitimi 31:Borçlar kanunu 32:Kanun 4046 nedeni ile feshi 33:Gazeteci tarafından sözleşmenin feshi 34:İş yerinin devri 35:6495 sayılı kanun nedeniyle devlet memurluğuna geçenler 36:KHK (Kanun Hükmünde Kararname) ile iş yerinin kapatılması 37:KHK ile kamudan çıkarma 38:Doğum nedeniyle işten ayrılma 39:KHK 696 ile kamuya geçiş 40:KHK 696 ile kamuya geçilememe 41:Resen işten ayrılış bildirgesi 42:Gerçeğe uygun olmayan bilgilerle yanıltma 43:Şeref ve namusa dönük davranışlar 44:Cinsel taciz 45:Sataşma, sarhoşluk, uyuşturucu 46:Güven sorunu, hırsızlık 47:Hapisle sonuçlanan suç işleme 48:Habersiz işe gelmeme 49:Görevini yapmamakta ısrar 50:Güvenlik tehlikesi, hasar kayıp oluşturma</td>
+ </tr>
+ <tr>
+  <td>217</td>
+  <td>per_ilksoyad</td>
+  <td>Nvarchar(25)</td>
+  <td>İlk Soyadı</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>218</td>
+  <td>per_tabiioldugukanun</td>
+  <td>Tinyint</td>
+  <td>Kanun Tipi</td>
+  <td>0:5510 Sayılı SGK Kanuna Tabi 1:Hazine Kanununa (5084) Tabi (%80) 2:Hazine Kanununa (5084) Tabi (%100) 3:Olağan Üstü Hal Kanununa Tabi 4:Sendika İndirimi Kanununa Tabi 5:Sakatlık İndirimi Kanununa Tabi 6:Borç Erteleme Kanununa Tabi 7:Sendikalı Borç Erteleme Kanununa Tabi 8:Sakatlık -Eski Hükümlü- Terör Kanununa Tabi 9:Hazine Kanununa (5350) Tabi (%80) 10:Hazine Kanununa (5350) Tabi (%100) 11:Hazine Kanununa (5615) Tabi (%80) 12:Hazine Kanununa (5615) Tabi (%100) 13:5746 Sayılı ARGE Faaliyetlerinin Desteklenmesi Kanununa Tabi 14:5763 Sayılı İş Kanununa Tabi (Sağlam) (%100) 15:5763 Sayılı İş Kanununa Tabi (Kontenjan Dahili Özürlü) 16:5763 Sayılı İş Kanununa Tabi (Kontenjan Harici Özürlü) 17:Hiçbir Kanuna Tabi Değil 18:5763 Sayılı İş Kanununa Tabi (Sağlam) (%80) 19:5763 Sayılı İş Kanununa Tabi (Sağlam) (%60) 20:5763 Sayılı İş Kanununa Tabi (Sağlam) (%40) 21:5763 Sayılı İş Kanununa Tabi (Sağlam) (%20) 22:5921 Sayılı SGK Kanununa Tabi 23:6111 Sayılı SGK Kanununa Tabi 24:25510 Sayılı SGK Kanununa Tabi 25:6322 Sayılı SGK Kanununa Tabi (1..5 inci bölge) 26:6322 Sayılı SGK Kanununa Tabi (6. bölge) 27:5225 Sayılı SGK Kültür Yatırımı ve Girişimi Kanununa Tabi (Yatırım aşaması) 28:5225 Sayılı SGK Kültür Yatırımı ve Girişimi Kanununa Tabi (İşletme aşaması) 29:06486 Sayılı SGK Kanuna Tabi 30:46486 Sayılı SGK Kanuna Tabi 31:56486 Sayılı SGK Kanuna Tabi 32:66486 Sayılı SGK Kanuna Tabi 33:6645 Sayılı SGK Kanuna Tabi 34:687 Sayılı İstihdam Teşvik Kanuna Tabi 35:1687 Sayılı İstihdam Teşvik Kanuna Tabi 36:Yeni Nesil 7103 Sayılı Kanundaki İmalat veya Bilişim 37:Yeni Nesil 7103 Sayılı Kanundaki Diğer 38:Yeni Nesil 7103 Sayılı Kanundaki Bir Senden Bir Benden 39:7166 Sayılı SGK Teşvikleri İmalat ve Bilişim 40:7166 Sayılı SGK Teşvikleri Diğer 41:2828 Sayılı SGK Kanununa Tabi 42:17256 Sayılı Teşvik Kanununa Tabi 43:27256 Sayılı Teşvik Kanununa Tabi 44:3294 Sayılı Sosyal Yardımlaşma ve Dayanışmayı Teşvik Kanununa Tabi 45:7316 Sayılı Kanuna Tabi 46:7319 Sayılı SGK Kanununa Tabi 47:36322 Sayılı Teşvik Kanununa Tabi</td>
+ </tr>
+ <tr>
+  <td>219</td>
+  <td>per_tabiioldugukanun_diger</td>
+  <td>Tinyint</td>
+  <td>Kanun Tipi</td>
+  <td>0:5510 Sayılı SGK Kanuna Tabi 1:Hazine Kanununa (5084) Tabi (%80) 2:Hazine Kanununa (5084) Tabi (%100) 3:Olağan Üstü Hal Kanununa Tabi 4:Sendika İndirimi Kanununa Tabi 5:Sakatlık İndirimi Kanununa Tabi 6:Borç Erteleme Kanununa Tabi 7:Sendikalı Borç Erteleme Kanununa Tabi 8:Sakatlık -Eski Hükümlü- Terör Kanununa Tabi 9:Hazine Kanununa (5350) Tabi (%80) 10:Hazine Kanununa (5350) Tabi (%100) 11:Hazine Kanununa (5615) Tabi (%80) 12:Hazine Kanununa (5615) Tabi (%100) 13:5746 Sayılı ARGE Faaliyetlerinin Desteklenmesi Kanununa Tabi 14:5763 Sayılı İş Kanununa Tabi (Sağlam) (%100) 15:5763 Sayılı İş Kanununa Tabi (Kontenjan Dahili Özürlü) 16:5763 Sayılı İş Kanununa Tabi (Kontenjan Harici Özürlü) 17:Hiçbir Kanuna Tabi Değil 18:5763 Sayılı İş Kanununa Tabi (Sağlam) (%80) 19:5763 Sayılı İş Kanununa Tabi (Sağlam) (%60) 20:5763 Sayılı İş Kanununa Tabi (Sağlam) (%40) 21:5763 Sayılı İş Kanununa Tabi (Sağlam) (%20) 22:5921 Sayılı SGK Kanununa Tabi 23:6111 Sayılı SGK Kanununa Tabi 24:25510 Sayılı SGK Kanununa Tabi 25:6322 Sayılı SGK Kanununa Tabi (1..5 inci bölge) 26:6322 Sayılı SGK Kanununa Tabi (6. bölge) 27:5225 Sayılı SGK Kültür Yatırımı ve Girişimi Kanununa Tabi (Yatırım aşaması) 28:5225 Sayılı SGK Kültür Yatırımı ve Girişimi Kanununa Tabi (İşletme aşaması) 29:06486 Sayılı SGK Kanuna Tabi 30:46486 Sayılı SGK Kanuna Tabi 31:56486 Sayılı SGK Kanuna Tabi 32:66486 Sayılı SGK Kanuna Tabi 33:6645 Sayılı SGK Kanuna Tabi 34:687 Sayılı İstihdam Teşvik Kanuna Tabi 35:1687 Sayılı İstihdam Teşvik Kanuna Tabi 36:Yeni Nesil 7103 Sayılı Kanundaki İmalat veya Bilişim 37:Yeni Nesil 7103 Sayılı Kanundaki Diğer 38:Yeni Nesil 7103 Sayılı Kanundaki Bir Senden Bir Benden 39:7166 Sayılı SGK Teşvikleri İmalat ve Bilişim 40:7166 Sayılı SGK Teşvikleri Diğer 41:2828 Sayılı SGK Kanununa Tabi 42:17256 Sayılı Teşvik Kanununa Tabi 43:27256 Sayılı Teşvik Kanununa Tabi 44:3294 Sayılı Sosyal Yardımlaşma ve Dayanışmayı Teşvik Kanununa Tabi 45:7316 Sayılı Kanuna Tabi 46:7319 Sayılı SGK Kanununa Tabi 47:36322 Sayılı Teşvik Kanununa Tabi</td>
+ </tr>
+ <tr>
+  <td>220</td>
+  <td>per_semada_gosterme_fl</td>
+  <td>Bit</td>
+  <td>Şemada gösterilsin mi ?</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>221</td>
+  <td>per_Ehl_Bel_No</td>
+  <td>Nvarchar(20)</td>
+  <td>Ehliyet Belge No</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>222</td>
+  <td>per_Ehl_Bel_Tar</td>
+  <td>DateTime</td>
+  <td>Ehliyet Belge Tarihi</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>223</td>
+  <td>per_Ehl_Sinif</td>
+  <td>Nvarchar(10)</td>
+  <td>Ehliyet Sınıfı</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>224</td>
+  <td>per_Ehl_Ver_Tar</td>
+  <td>DateTime</td>
+  <td>Ehliyet Veriliş Tarihi</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>225</td>
+  <td>per_Ehl_Ver_Il</td>
+  <td>Nvarchar(25)</td>
+  <td>Ehliyet Verilen İl</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>226</td>
+  <td>per_Ehl_Ver_Ilce</td>
+  <td>Nvarchar(25)</td>
+  <td>Ehliyet Verilen İlçe</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>227</td>
+  <td>per_Ehl_Kart_No</td>
+  <td>Nvarchar(20)</td>
+  <td>Ehliyet Kart No</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>228</td>
+  <td>per_Pasaprot_No</td>
+  <td>Nvarchar(20)</td>
+  <td>Pasaport No</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>229</td>
+  <td>per_Pas_Alindigi_Tar</td>
+  <td>DateTime</td>
+  <td>Pasaport Alındığı Tarih</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>230</td>
+  <td>per_Pas_Gec_Tar</td>
+  <td>DateTime</td>
+  <td>Pasaport Geçerlilik Tarihi</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>231</td>
+  <td>per_nuf_asker_cuzdan</td>
+  <td>Nvarchar(20)</td>
+  <td>Askerlik Cüzdanı No</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>232</td>
+  <td>per_nuf_asker_bastarih</td>
+  <td>DateTime</td>
+  <td>Askerlik Başlangıç Tarihi</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>233</td>
+  <td>per_nuf_asker_bittarih</td>
+  <td>DateTime</td>
+  <td>Askerlik Bitiş Tarihi</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>234</td>
+  <td>per_nuf_asker_durum</td>
+  <td>Tinyint</td>
+  <td>Askerlik Durumu</td>
+  <td>0:Muaf 1:Tecilli 2:Er 3:Yedek Subay 4:Bedelli 5:Kısa</td>
+ </tr>
+ <tr>
+  <td>235</td>
+  <td>per_Isy_KimlikNo</td>
+  <td>Nvarchar(20)</td>
+  <td>Kimlik No</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>236</td>
+  <td>per_calismaizni_no</td>
+  <td>Nvarchar(20)</td>
+  <td>Çalışma İzni Belge Numarası</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>237</td>
+  <td>per_calismaizni_alindigi_tar</td>
+  <td>DateTime</td>
+  <td>Çalışma İzni Başlangıç (Alındığı) Tarihi</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>238</td>
+  <td>per_calismaizni_gec_tar</td>
+  <td>DateTime</td>
+  <td>Çalışma İzni Bitiş (Geçerlilik) Tarihi</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>239</td>
+  <td>per_boyu</td>
+  <td>Float</td>
+  <td>Boyu</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>240</td>
+  <td>per_kilo</td>
+  <td>Float</td>
+  <td>Kilosu</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>241</td>
+  <td>per_gomlek_bed</td>
+  <td>Nvarchar(10)</td>
+  <td>Gömlek Bedeni</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>242</td>
+  <td>per_pant_bed</td>
+  <td>Nvarchar(10)</td>
+  <td>Pantolon Bedeni</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>243</td>
+  <td>per_etek_bed</td>
+  <td>Nvarchar(10)</td>
+  <td>Etek Bedeni</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>244</td>
+  <td>per_ayak_no</td>
+  <td>Nvarchar(10)</td>
+  <td>Ayak Numarası</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>245</td>
+  <td>per_sapka_bed</td>
+  <td>Nvarchar(10)</td>
+  <td>Şapka Bedeni</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>246</td>
+  <td>per_onluk_bed</td>
+  <td>Nvarchar(10)</td>
+  <td>Önlük Bedeni</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>247</td>
+  <td>per_diger_bed1</td>
+  <td>Nvarchar(10)</td>
+  <td>Diğer Beden1</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>248</td>
+  <td>per_diger_bed2</td>
+  <td>Nvarchar(10)</td>
+  <td>Diğer Beden2</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>249</td>
+  <td>per_diger_bed3</td>
+  <td>Nvarchar(10)</td>
+  <td>Diğer Beden3</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>250</td>
+  <td>per_UserNo</td>
+  <td>Integer</td>
+  <td>Kullanıcı No</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>251</td>
+  <td>per_uye_dernek</td>
+  <td>Nvarchar(50)</td>
+  <td>Dernek</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>252</td>
+  <td>per_uye_dernek_sicil_no</td>
+  <td>Nvarchar(25)</td>
+  <td>Üye Dernek Sicil No</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>253</td>
+  <td>per_sinyority_uygulamasi_fl</td>
+  <td>Bit</td>
+  <td>Sinyority Uygulaması Var Mı ?</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>254</td>
+  <td>per_izinparasi_uygulamasi_fl</td>
+  <td>Bit</td>
+  <td>İzin Parası Uygulaması Var Mı ?</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>255</td>
+  <td>per_YemekKarti_ID</td>
+  <td>Nvarchar(30)</td>
+  <td>Yemek Kartı ID</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>256</td>
+  <td>per_srmmrkbaglanti_tip</td>
+  <td>Tinyint</td>
+  <td>Sorumluluk Merkezi Bağlantı Tipi</td>
+  <td>0:Departmandan 1:Girilen Sorumluluk Merkezinden 2:Dağıtım Anahtarından 3:İş Merkezlerinden</td>
+ </tr>
+ <tr>
+  <td>257</td>
+  <td>per_srmmrkdaganah_kodu</td>
+  <td>Nvarchar(25)</td>
+  <td>Sorumluluk Merkezi Dağıtım Anahtar Kodu</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>258</td>
+  <td>per_maas_banka</td>
+  <td>Tinyint</td>
+  <td>Personel kartına, maaşının hangi bankaya yattığı bilgisi</td>
+  <td>0:Tanımsız Banka 1:Yapı Kredi Bankası 2:İş Bankası 3:Halk Bankası 4:Garanti 5:Vakıfbank 6:Akbank 7:Finans Bank 8:Koç Bank 9:TEB 10:Deniz Bank 11:Dubai WPS 12:Kuveyt Türk 13:Odea Bank</td>
+ </tr>
+ <tr>
+ <td>259</td>
+  <td>per_calisma_kodu</td>
+  <td>Nvarchar(25)</td>
+  <td>Çalışma Kodu</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>260</td>
+  <td>per_meslek_kodu</td>
+  <td>Nvarchar(25)</td>
+  <td>Meslek Kodu</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>261</td>
+  <td>per_servis_guzergahi</td>
+  <td>Nvarchar(60)</td>
+  <td>Servis Güzergahı</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>262</td>
+  <td>per_vize_no</td>
+  <td>Nvarchar(25)</td>
+  <td>Vize No</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>263</td>
+  <td>per_vize_alindigi_tarih</td>
+  <td>DateTime</td>
+  <td>Vize Alındığı Tarih</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>264</td>
+  <td>per_vize_tarihi</td>
+  <td>DateTime</td>
+  <td>Vize Tarihi</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>265</td>
+  <td>per_sskbelge_turu</td>
+  <td>Tinyint</td>
+  <td>SSK Belge Türü</td>
+  <td>0:Tanımsız Bildirge 1:Aylık sigorta prim bildirgesi 2:Sosyal güvenlik destek prim bildirgesi 3:Deniz Basım Azot Şeker İtibari hizmet bildirgesi 4:Yeraltı sürekli bildirgesi 5:Yeraltı gruplu bildirgesi 6:Yerüstü gruplu bildirge 7:Çırak Stajyer Öğrenci bildirgesi 8:Anlaşmaya tabi olmayan yabancı bildirge 9:YOK kısmi istihdam öğr. bildirgesi 10:Aylık sigorta prim işsizlik hariç bildirgesi 11:Libya bildirgesi 12:Anlaşmalı ülke yabancı uyruk bildirgesi 13:İşsizlik hariç kanun 2098 bildirgesi 14:Malul aylığı kanun 2098 bildirgesi 15:Görev malulluk aylığı alış bildirgesi 16:İş kazası mes. hastalık analık bildirgesi 17:Topluluk bildirgesi 18:Almanyaya götürülen Türk İşciler 19:Sözleşmesi imzalanmamış ülkelerde çalıştırılan Türk İşciler 20:Meslek liselerinde staja tabi tutulan öğrenciler 21:Kısa vadeli harp malulleri 22:Kısa ve uzun vadeli harp malulleri 23:4447 nolu kanuna göre ödenek almayan kursiyer 24:4447 nolu kanuna göre ödenek alan kursiyer 25:4447 nolu kanuna göre ödenek alan katılmayan kursiyer 26:4046 nolu kanuna göre iş kaybı tazminatı alanlar 27:Tüm sigorta kollarına tabi 60 gün 28:İşsizlik sigortası hariç 60 gün 29:Harp malulleri 3713 60 gün 30:Tüm sigorta kollarına tabi 90 gün 31:İşsizlik sigortası hariç 90 gün 32:Harp malulleri 3713 90 gün 33:Tüm sigorta kollarına tabi 180 gün 34:İşsizlik sigortası hariç 180 gün 35:Harp malulleri 3713 180 gün 36:Birleşik krallıkta ikameti talep edenler 37:Birleşik krallıkta ikameti talep etmeyenler 38:Kısa çalışma ödeneği alanlar 39:Geçici 20.maddeye tabi olanlar 40:Kamu idarelerinde iş akdi askıda olanlar 41:İtibari hizmet süresine tabi olarak çalışanlar 42:Altmış gün fiili hizmet süresi zammına tabi olanlardan itibari hizmet süresine tabi 43:Doksan gün fiili hizmet süresi zammına tabi olanlardan itibari hizmet süresine tabi 44:Bakmakla yükümlü olunmayan çıraklar, mesleki öğrenciler 45:Bakmakla yükümlü olunmayan stajyer öğrenciler 46:Bakmakla yükümlü olunmayan İŞKUR kursiyerleri 47:İŞKUR kursiyerleri 48:Yarım çalışma ödeneği 49:Emekli yer altında çalışan 50:Tamamlayıcı bakmakla yükümlü 51:Tamamlayıcı bakmakla yükümlü olmayan 52:Güvenlik korucuları Ek 15 53:Ml. ayl. bağlanmamış 670KHK</td>
+ </tr>
+ <tr>
+  <td>266</td>
+  <td>per_sskbelge_turu_diger</td>
+  <td>Tinyint</td>
+  <td>SSK Belge Türü</td>
+  <td>0:Tanımsız Bildirge 1:Aylık sigorta prim bildirgesi 2:Sosyal güvenlik destek prim bildirgesi 3:Deniz Basım Azot Şeker İtibari hizmet bildirgesi 4:Yeraltı sürekli bildirgesi 5:Yeraltı gruplu bildirgesi 6:Yerüstü gruplu bildirge 7:Çırak Stajyer Öğrenci bildirgesi 8:Anlaşmaya tabi olmayan yabancı bildirge 9:YOK kısmi istihdam öğr. bildirgesi 10:Aylık sigorta prim işsizlik hariç bildirgesi 11:Libya bildirgesi 12:Anlaşmalı ülke yabancı uyruk bildirgesi 13:İşsizlik hariç kanun 2098 bildirgesi 14:Malul aylığı kanun 2098 bildirgesi 15:Görev malulluk aylığı alış bildirgesi 16:İş kazası mes. hastalık analık bildirgesi 17:Topluluk bildirgesi 18:Almanyaya götürülen Türk İşciler 19:Sözleşmesi imzalanmamış ülkelerde çalıştırılan Türk İşciler 20:Meslek liselerinde staja tabi tutulan öğrenciler 21:Kısa vadeli harp malulleri 22:Kısa ve uzun vadeli harp malulleri 23:4447 nolu kanuna göre ödenek almayan kursiyer 24:4447 nolu kanuna göre ödenek alan kursiyer 25:4447 nolu kanuna göre ödenek alan katılmayan kursiyer 26:4046 nolu kanuna göre iş kaybı tazminatı alanlar 27:Tüm sigorta kollarına tabi 60 gün 28:İşsizlik sigortası hariç 60 gün 29:Harp malulleri 3713 60 gün 30:Tüm sigorta kollarına tabi 90 gün 31:İşsizlik sigortası hariç 90 gün 32:Harp malulleri 3713 90 gün 33:Tüm sigorta kollarına tabi 180 gün 34:İşsizlik sigortası hariç 180 gün 35:Harp malulleri 3713 180 gün 36:Birleşik krallıkta ikameti talep edenler 37:Birleşik krallıkta ikameti talep etmeyenler 38:Kısa çalışma ödeneği alanlar 39:Geçici 20.maddeye tabi olanlar 40:Kamu idarelerinde iş akdi askıda olanlar 41:İtibari hizmet süresine tabi olarak çalışanlar 42:Altmış gün fiili hizmet süresi zammına tabi olanlardan itibari hizmet süresine tabi 43:Doksan gün fiili hizmet süresi zammına tabi olanlardan itibari hizmet süresine tabi 44:Bakmakla yükümlü olunmayan çıraklar, mesleki öğrenciler 45:Bakmakla yükümlü olunmayan stajyer öğrenciler 46:Bakmakla yükümlü olunmayan İŞKUR kursiyerleri 47:İŞKUR kursiyerleri 48:Yarım çalışma ödeneği 49:Emekli yer altında çalışan 50:Tamamlayıcı bakmakla yükümlü 51:Tamamlayıcı bakmakla yükümlü olmayan 52:Güvenlik korucuları Ek 15 53:Ml. ayl. bağlanmamış 670KHK</td>
+ </tr>
+ <tr>
+  <td>267</td>
+  <td>per_agine_tabii</td>
+  <td>Tinyint</td>
+  <td>Personel AGI'ne tabi ?</td>
+  <td>0:Evet 1:Hayır</td>
+ </tr>
+ <tr>
+  <td>268</td>
+  <td>per_ozur_5763_kont_dahili_fl</td>
+  <td>Bit</td>
+  <td>5763 Sayılı  Kanun Özürlü Kontenjana Dahil Mi ?</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>269</td>
+  <td>per_yabanci_ulke</td>
+  <td>Nvarchar(30)</td>
+  <td>Yabancı Ülke</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>270</td>
+  <td>per_sigortalilik_turu</td>
+  <td>Tinyint</td>
+  <td>Sigortalılık Türü</td>
+  <td>0:Mecburi Sigortalı 1:Muhtar 2:Sosyal Güvenlik Sözleşmesi Bulunmayan Ülkelerde Çalışan 3:Vergiden Muaf 4:Şirket Ortakları 5:Göçmenler 6:Tarım 7:Yurt Dışı Borçlanması Yapanlar 8:İsteğe Bağlı 9:Çıraklar ve Stajyer Öğrenciler 10:Jokey ve Antrenörler 11:Sosyal Güvenlik Destek Primine Tabi Çalışanlar 12:Avukat ve Noterler 13:Tahsis Talepli İsteğe Bağlı 14:Cezaevi Çalışanı 15:Sanatçılar, Düşünürler ve Yazarlar 16:Sözleşmesiz Ülkeler, Yabancı Uyruklu Sigortalılar 17:4081 Sayılı Kanuna Göre Çalışanlar 18:Umumi Kadınlar 19:Usta ve Sözleşmeli Öğretici 20:Sendika Konfederasyon Başkanlıkları, Yönetim Kurulu Üyeleri 21:657 Sayılı Kanunun 4/B'sine Tabi Olanlar 22:657 Sayılı Kanunun 4/C'sine Tabi Olanlar 23:İşkur Kursiyerleri 24:İş Kaybı Tazminatı Alanlar 25:YÖK ve ÖSYM Kısmi İstihdam 26:Stajyer 27:İntörn Öğrenci 28:Harp Malulleri, Vazife Malulleri 2330 ve 3713 Sayılı Kanuna Göre Aylık Alan 29:Bursiyer 30:Güvenlik Korucusu 31:Tamamlayıcı Ya Da Alan Eğitimi Gören Öğrenciler</td>
+ </tr>
+ <tr>
+  <td>271</td>
+  <td>per_eski_sicil_no</td>
+  <td>Nvarchar(25)</td>
+  <td>Eski Sicil No</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>272</td>
+  <td>per_tabiioldugukanun2</td>
+  <td>Tinyint</td>
+  <td>Tabi Olduğu Kanun</td>
+  <td>0:Hiçbir Kanuna Tabi Değil 1:5225 Sayılı GV Kültür Yatırımı ve Girişimi Kanununa Tabi (Yatırım Aşaması) 2:5225 Sayılı GV Kültür Yatırımı ve Girişimi Kanununa Tabi (İşletme Aşaması) 3:4691 Sayılı Teknoloji Geliştirme Kanunu 4:5746 Sayılı ARGE Faaliyetlerinin Desteklenmesi Kanununa Tabi 5:6550 Sayılı Araştırma Alt Yapılarının Desteklenmesi Kanununa (ARGE) Tabi</td>
+ </tr>
+ <tr>
+  <td>273</td>
+  <td>per_tabiioldugukanun2_diger</td>
+  <td>Tinyint</td>
+  <td>Tabi Olduğu Kanun</td>
+  <td>0:Hiçbir Kanuna Tabi Değil 1:5225 Sayılı GV Kültür Yatırımı ve Girişimi Kanununa Tabi (Yatırım Aşaması) 2:5225 Sayılı GV Kültür Yatırımı ve Girişimi Kanununa Tabi (İşletme Aşaması) 3:4691 Sayılı Teknoloji Geliştirme Kanunu 4:5746 Sayılı ARGE Faaliyetlerinin Desteklenmesi Kanununa Tabi 5:6550 Sayılı Araştırma Alt Yapılarının Desteklenmesi Kanununa (ARGE) Tabi</td>
+ </tr>
+ <tr>
+  <td>274</td>
+  <td>per_maaskiminhesabina</td>
+  <td>Tinyint</td>
+  <td>Maaş Kimin Hesabına ?</td>
+  <td>0:Kendi Hesabına 1:Eşinin Hesabına 2:Annesinin Hesabına 3:Babasının Hesabına 4:1.Çocuk Hesabına 5:2.Çocuk Hesabına 6:3.Çocuk Hesabına</td>
+ </tr>
+ <tr>
+  <td>275</td>
+  <td>per_maassistemikodu</td>
+  <td>Nvarchar(25)</td>
+  <td>Maaş Sistemi Kodu</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>276</td>
+  <td>per_is_grup_kodu</td>
+  <td>Nvarchar(25)</td>
+  <td>İş Grup Kodu</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>277</td>
+  <td>per_unvan_kodu</td>
+  <td>Nvarchar(25)</td>
+  <td>Ünvan Kodu</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>278</td>
+  <td>per_raporlama_yapacagi_per_kod</td>
+  <td>Nvarchar(25)</td>
+  <td>Raporlama Yapacağı Personel Kodu</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>279</td>
+  <td>per_okul_kodu</td>
+  <td>Nvarchar(25)</td>
+  <td>Okul Kodu</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>280</td>
+  <td>per_okul_bolum_kodu</td>
+  <td>Nvarchar(25)</td>
+  <td>Okul Bölüm Kodu</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>281</td>
+  <td>per_bolum_kodu</td>
+  <td>Nvarchar(25)</td>
+  <td>Bölüm Kodu</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>282</td>
+  <td>per_alt_dept_kod</td>
+  <td>Nvarchar(25)</td>
+  <td>Alt Departman Kodu</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>283</td>
+  <td>per_kanun_gecerlilik_tarihi</td>
+  <td>DateTime</td>
+  <td>Kanun Geçerlilik Tarihi</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>284</td>
+  <td>per_kanun_gecerlilik_tarihi_diger</td>
+  <td>DateTime</td>
+  <td>Kanun Geçerlilik Tarihi</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>285</td>
+  <td>per_tabiioldugukanun3</td>
+  <td>Tinyint</td>
+  <td>Tabi Olduğu Kanun</td>
+  <td>0:Tanımsız 1:102_1'e tabi 2:102_2'ye tabi 3:102_3'e tabi 4:102_4'e tabi 5:102_5'e tabi</td>
+ </tr>
+ <tr>
+  <td>286</td>
+  <td>per_mezuniyetyili</td>
+  <td>Smallint</td>
+  <td>Mezuniyet Yılı</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>287</td>
+  <td>per_proje_kodu</td>
+  <td>Nvarchar(25)</td>
+  <td>Proje Kodu</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>288</td>
+  <td>per_hazine_destegine_tabi_fl</td>
+  <td>Bit</td>
+  <td>Hazine Desteğine Tabi Mi ?</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>289</td>
+  <td>per_KEP_adresi</td>
+  <td>Nvarchar(80)</td>
+  <td>Kayıtlı Elektronik Posta (KEP) Adresi</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>290</td>
+  <td>per_sigara_fl</td>
+  <td>Bit</td>
+  <td>Sigara Kullanıyor Mu ?</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>291</td>
+  <td>per_otobes_fl</td>
+  <td>Bit</td>
+  <td>Otomatik Katılımlı Bireysel Emeklilik Sistemi (BES) Var Mı ?</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>292</td>
+  <td>per_otobes_sigorta</td>
+  <td>Tinyint</td>
+  <td>Bireysel Emeklilik Sistemi (BES) Sigorta Şirketleri</td>
+  <td>0:Tanımsız 1:Aegon 2:Allianz Hayat 3:Allianz 4:Anadolu 5:Asya 6:Avivasa 7:Axa 8:BNP 9:Cigna 10:Fiba 11:Garanti 12:Groupama 13:Halk 14:NN 15:Katılım 16:Metlife 17:Vakıf 18:Ziraat</td>
+ </tr>
+ <tr>
+  <td>293</td>
+  <td>per_otobes_orani</td>
+  <td>Float</td>
+  <td>Bireysel Emeklilik Sistemi (BES) Oranı</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>294</td>
+  <td>per_otobes_hesap_no</td>
+  <td>Nvarchar(30)</td>
+  <td>Bireysel Emeklilik Sistemi (BES) Hesap Numarası</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>295</td>
+  <td>per_otobes_grup_sozlesme_no</td>
+  <td>Nvarchar(25)</td>
+  <td>Bireysel Emeklilik Sistemi (BES) Grup Sözleşme Numarası</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>296</td>
+  <td>per_otobes_fon_tercihi</td>
+  <td>Tinyint</td>
+  <td>Bireysel Emeklilik Sistemi (BES) Fon Tercihi</td>
+  <td>0:Faizli Fon 1:Faizsiz Fon</td>
+ </tr>
+ <tr>
+  <td>297</td>
+  <td>per_otobes_giris</td>
+  <td>DateTime</td>
+  <td>Bireysel Emeklilik Sistemi (BES) Giriş Tarihi</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>298</td>
+  <td>per_otobes_ayrilis</td>
+  <td>DateTime</td>
+  <td>Bireysel Emeklilik Sistemi (BES) Ayrılış Tarihi</td>
+  <td>&nbsp;</td>
+ </tr>
+  <tr>
+  <td>299</td>
+  <td>per_sosyal_linkedin</td>
+  <td>Nvarchar(50)</td>
+  <td>Linkedin Hesabı</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>300</td>
+  <td>per_sosyal_webadresi</td>
+  <td>Nvarchar(50)</td>
+  <td>Web Adresi</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>301</td>
+  <td>per_sosyal_youtube</td>
+  <td>Nvarchar(50)</td>
+  <td>Youtube Hesabı</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>302</td>
+  <td>per_sosyal_twitter</td>
+  <td>Nvarchar(50)</td>
+  <td>Twitter Hesabı</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>303</td>
+  <td>per_sosyal_facebook</td>
+  <td>Nvarchar(50)</td>
+  <td>Facebook Hesabı</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>304</td>
+  <td>per_sosyal_google</td>
+  <td>Nvarchar(50)</td>
+  <td>Google Hesabı</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>305</td>
+  <td>per_sosyal_pinterest</td>
+  <td>Nvarchar(50)</td>
+  <td>Pinterest Hesabı</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>306</td>
+  <td>per_sosyal_instagram</td>
+  <td>Nvarchar(50)</td>
+  <td>Instagram Hesabı</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>307</td>
+  <td>per_sosyal_snapchat</td>
+  <td>Nvarchar(50)</td>
+  <td>Snapchat Hesabı</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>308</td>
+  <td>per_vergiden_muhaf_odenek1</td>
+  <td>Float</td>
+  <td>Vergiden Muaf Ödenek 1</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>309</td>
+  <td>per_vergiden_muhaf_odenek2</td>
+  <td>Float</td>
+  <td>Vergiden Muaf Ödenek 2</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>310</td>
+  <td>per_sabit_gelirversi_orani</td>
+  <td>Float</td>
+  <td>Sabit Gelir Vergisi Oranı</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>311</td>
+  <td>per_spor_dali</td>
+  <td>Tinyint</td>
+  <td>Spor Dalı</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>312</td>
+  <td>per_kisacalisma_fl</td>
+  <td>Bit</td>
+  <td>Kısa Çalışma Ödeneği Var Mı ?</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>313</td>
+  <td>per_kisacalisma_baslangic</td>
+  <td>DateTime</td>
+  <td>Kısa Çalışma Ödeneği Başlangıç Tarihi</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>314</td>
+  <td>per_kisacalisma_bitis</td>
+  <td>DateTime</td>
+  <td>Kısa Çalışma Ödeneği Bitiş Tarihi</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>315</td>
+  <td>per_kisacalisma_haftaliksaat</td>
+  <td>Float</td>
+  <td>Kısa Çalışma Ödeneği İçin Haftalık Çalışma Saati</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>316</td>
+  <td>per_7252_ortalama_gun</td>
+  <td>Tinyint</td>
+  <td>7252 Sayılı Teşvik Kanununa Ait Ortalama Gün</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>317</td>
+  <td>per_engellilik_orani</td>
+  <td>Tinyint</td>
+  <td>Engellilik Oranı</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>318</td>
+  <td>per_cikis_nakil_ssk_sube</td>
+  <td>Integer</td>
+  <td>Personel Çıkış Bildirgesinde "Nakil" Seçildiğinde, Nakil Gideceği Şube</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>319</td>
+  <td>per_4691_calisma_tipi</td>
+  <td>Tinyint</td>
+  <td>MUHSGK 4691 Sayılı Kanun Çalışma Tipi</td>
+  <td>0:AR-GE 1:Destek</td>
+ </tr>
+ <tr>
+  <td>320</td>
+  <td>per_teknokentproje</td>
+  <td>Nvarchar(25)</td>
+  <td>Teknokent Proje Kodu</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>321</td>
+  <td>per_asgucrverind_yapilmasin_fl</td>
+  <td>Tinyint</td>
+  <td>Asgari Ücret İstisna Tipi (Asgari Ücret İstisna Hesabındaki Kümülatif Hesabı, Hangi Tarihte Başlasın ?)</td>
+  <td>0:Giriş Kıdem Tarihinden 1:Uygulanmasın 2:Girilen Tarihten</td>
+ </tr>
+ <tr>
+  <td>322</td>
+  <td>per_asgucrverind_tarihi</td>
+  <td>DateTime</td>
+  <td>Asgari Ücret Vergi İndirimi Tarihi</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>323</td>
+  <td>per_calisma_gunu</td>
+  <td>Smallint</td>
+  <td>Personel Bazında Çalışma Günü</td>
+  <td>&nbsp;</td>
+ </tr>
+ <tr>
+  <td>324</td>
+  <td>per_digerkanunaktif</td>
+  <td>Tinyint</td>
+  <td>Diğer Kanun Aktif Mi ?</td>
+  <td>0:Hayır 1:Evet</td>
+ </tr>
+ </table>
+
+<hr><table class="SKey" border="2" bordercolor="white"  cellspacing="0" width="100%">
+<tr class="sRow" align="center"><td colspan=4><b>Indeks Tablosu</b></td></tr>
+<tr>
+<td width="65">
+<b>Indeks</b></td>
+<td width="55">
+<b>Özellik</b></td>
+<td width="250">
+<b>Alanlar</b></td>
+</tr>
+<tr class=sRow >
+<td>NDX_PERSONELLER_00</td>
+<td>CONSTRAINT PRIMARY KEY</td>
+<td>per_Guid</td>
+</tr>
+<tr class=sRow >
+<td>NDX_PERSONELLER_02</td>
+<td>UNIQUE</td>
+<td>per_kod</td>
+</tr>
+<tr>
+<td>NDX_PERSONELLER_03</td>
+<td></td>
+<td>per_adi, per_soyadi</td>
+</tr>
+<tr class=sRow >
+<td>NDX_PERSONELLER_04</td>
+<td></td>
+<td>per_soyadi, per_adi</td>
+</tr>
+<tr>
+<td>NDX_PERSONELLER_05</td>
+<td></td>
+<td>per_sicil_no</td>
+</tr>
+<tr class=sRow >
+<td>NDX_PERSONELLER_06</td>
+<td></td>
+<td>per_dept_kod</td>
+</tr>
+<tr>
+<td>NDX_PERSONELLER_07</td>
+<td></td>
+<td>per_kim_gorev</td>
+</tr>
+<tr class=sRow >
+<td>NDX_PERSONELLER_08</td>
+<td></td>
+<td>per_nuf_seri_no</td>
+</tr>
+<tr class=sRow >
+<td>NDX_PERSONELLER_09</td>
+<td></td>
+<td>per_bolge_kodu</td>
+</tr>
+<tr class=sRow >
+<td>NDX_PERSONELLER_10</td>
+<td></td>
+<td>per_firma_no, per_sube_no</td>
+</tr>
+<tr class=sRow >
+<td>NDX_PERSONELLER_11</td>
+<td></td>
+<td>Per_TcKimlikNo</td>
+</tr>
+<tr class=sRow >
+<td>NDX_PERSONELLER_12</td>
+<td></td>
+<td>per_caripers_kodu</td>
+</tr>
+<tr class=sRow >
+<td>NDX_PERSONELLER_13</td>
+<td></td>
+<td>per_ucr_PSSK_sube</td>
+</tr>
+</table>
+<hr>Güncellenme Tarihi : 24.08.2023 - Bu doküman ile ilgili <A href="mailto:info@mye.com.tr?Subject=DB Yapısı">bize yazın</A><br><b>©2023 Mikro Yazılımevi A.Ş. Tüm Hakları Saklıdır.</b></font></body>
+
+</html>

@@ -3061,7 +3061,7 @@ namespace BigLineconnect
 
                 var container = new Panel
                 {
-                    Size = new Size(520, 360),
+                    Size = new Size(520, 400),
                     BackColor = Color.FromArgb(10, 11, 16)
                 };
                 _licensingOverlay.Controls.Add(container);
@@ -3151,13 +3151,58 @@ namespace BigLineconnect
                     UpdateAddressBookUI();
                 };
 
-                // Section 2: Pro Lisans Key
+                // Section 2: Machine ID
+                string machineId = LicenseSystem.GetMachineUniqueId();
+                var lblMachineTitle = new Label
+                {
+                    Text = "💻 Bu Bilgisayarın Kodu (Machine ID):",
+                    Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
+                    ForeColor = Color.FromArgb(46, 204, 113),
+                    Location = new Point(30, 115),
+                    Size = new Size(460, 20)
+                };
+                container.Controls.Add(lblMachineTitle);
+
+                var txtMachineId = new TextBox
+                {
+                    Text = machineId,
+                    ReadOnly = true,
+                    Size = new Size(310, 28),
+                    Location = new Point(30, 138),
+                    BackColor = Color.FromArgb(20, 22, 30),
+                    ForeColor = Color.LightGray,
+                    BorderStyle = BorderStyle.FixedSingle,
+                    Font = new Font("Consolas", 9.5F, FontStyle.Bold)
+                };
+                container.Controls.Add(txtMachineId);
+
+                var btnCopyMachineId = new Button
+                {
+                    Text = "📋 Kopyala",
+                    Size = new Size(120, 28),
+                    Location = new Point(350, 138),
+                    BackColor = Color.FromArgb(40, 45, 60),
+                    ForeColor = Color.White,
+                    FlatStyle = FlatStyle.Flat,
+                    Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                    Cursor = Cursors.Hand
+                };
+                btnCopyMachineId.FlatAppearance.BorderSize = 1;
+                btnCopyMachineId.FlatAppearance.BorderColor = Color.Gray;
+                btnCopyMachineId.Click += (s, e) =>
+                {
+                    Clipboard.SetText(machineId);
+                    MessageBox.Show("Makine Kodu (Machine ID) panoya kopyalandı!\nLisans sağlayıcınıza gönderebilirsiniz.", "Kopyalandı", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                };
+                container.Controls.Add(btnCopyMachineId);
+
+                // Section 3: Pro Lisans Key
                 var descLabel = new Label
                 {
                     Text = "🔑 Pro Lisans Anahtarınız (Opsiyonel / Tam Sürüm):",
                     Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
                     ForeColor = Color.FromArgb(0, 229, 255),
-                    Location = new Point(30, 115),
+                    Location = new Point(30, 178),
                     Size = new Size(460, 20)
                 };
                 container.Controls.Add(descLabel);
@@ -3165,8 +3210,8 @@ namespace BigLineconnect
                 var txtKey = new TextBox
                 {
                     Multiline = true,
-                    Size = new Size(440, 80),
-                    Location = new Point(30, 140),
+                    Size = new Size(440, 75),
+                    Location = new Point(30, 201),
                     BackColor = Color.FromArgb(20, 22, 30),
                     ForeColor = Color.White,
                     BorderStyle = BorderStyle.FixedSingle,
@@ -3179,7 +3224,7 @@ namespace BigLineconnect
                 {
                     Text = "Lisansı Etkinleştir",
                     Size = new Size(180, 40),
-                    Location = new Point(90, 280),
+                    Location = new Point(90, 330),
                     BackColor = Color.FromArgb(0, 229, 255),
                     ForeColor = Color.Black,
                     FlatStyle = FlatStyle.Flat,
@@ -3195,7 +3240,7 @@ namespace BigLineconnect
                 {
                     Text = isRequired ? "Çıkış" : "İptal",
                     Size = new Size(130, 40),
-                    Location = new Point(280, 280),
+                    Location = new Point(280, 330),
                     BackColor = Color.FromArgb(30, 35, 45),
                     ForeColor = Color.White,
                     FlatStyle = FlatStyle.Flat,

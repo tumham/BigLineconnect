@@ -1,0 +1,264 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewModelBase="clr-namespace:Bigus.BigMobil.ViewModels.Base;assembly=Bigus.BigMobil" 
+             xmlns:effects="clr-namespace:Bigus.BigMobil.Effects" 
+             xmlns:behaviors="clr-namespace:Bigus.BigMobil.Behaviors"
+             xmlns:convert="clr-namespace:Bigus.BigMobil.Converters"
+             viewModelBase:ViewModelLocator.AutoWireViewModel="true"
+             NavigationPage.HasBackButton="True"
+             BackgroundColor="#F5F6FA"
+             x:Class="Bigus.BigMobil.Views.SatinalmaVeSatisYonetimi.Foyler.CariSiparisFoyu.CariSiparisFoyuFilterView">
+
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <convert:StringNullOrEmptyBoolConverter x:Key="StringNullOrEmptyBool" />
+            <!-- Card Style -->
+            <Style TargetType="Frame" x:Key="CardFrame">
+                <Setter Property="HasShadow" Value="True"/>
+                <Setter Property="CornerRadius" Value="15"/>
+                <Setter Property="Padding" Value="15"/>
+                <Setter Property="Margin" Value="0, 0, 0, 15"/>
+                <Setter Property="BackgroundColor" Value="White"/>
+                <Setter Property="BorderColor" Value="Transparent"/>
+            </Style>
+
+            <Style TargetType="Label">
+                <Setter Property="FontSize" Value="14"/>
+                <Setter Property="TextColor" Value="#333333"/>
+                <Setter Property="FontAttributes" Value="Bold"/>
+                <Setter Property="VerticalOptions" Value="Center"/>
+                <Setter Property="HorizontalOptions" Value="FillAndExpand"/>
+            </Style>
+            
+            <Style TargetType="Label" x:Key="ValueLabel">
+                <Setter Property="FontSize" Value="14"/>
+                <Setter Property="TextColor" Value="#555555"/>
+                <Setter Property="FontAttributes" Value="None"/>
+            </Style>
+
+            <Style TargetType="DatePicker">
+                <Setter Property="FontSize" Value="14"/>
+                <Setter Property="TextColor" Value="#333333"/>
+                <Setter Property="VerticalOptions" Value="Center"/>
+                <Setter Property="HorizontalOptions" Value="FillAndExpand"/>
+                <Setter Property="BackgroundColor" Value="Transparent"/>
+            </Style>
+
+            <Style TargetType="Entry">
+                <Setter Property="FontSize" Value="14"/>
+                <Setter Property="TextColor" Value="#333333"/>
+                <Setter Property="BackgroundColor" Value="Transparent"/>
+                <Setter Property="VerticalOptions" Value="Center"/>
+                <Setter Property="HorizontalOptions" Value="FillAndExpand"/>
+            </Style>
+
+            <Style TargetType="Picker">
+                <Setter Property="FontSize" Value="14"/>
+                <Setter Property="TextColor" Value="#333333"/>
+                <Setter Property="BackgroundColor" Value="Transparent"/>
+                <Setter Property="VerticalOptions" Value="Center"/>
+                <Setter Property="HorizontalOptions" Value="FillAndExpand"/>
+            </Style>
+
+            <Style TargetType="Button" x:Key="PrimaryButton">
+                <Setter Property="FontSize" Value="14"/>
+                <Setter Property="FontAttributes" Value="Bold"/>
+                <Setter Property="TextColor" Value="Black"/>
+                <Setter Property="BackgroundColor" Value="{StaticResource BigusYellow}"/>
+                <Setter Property="CornerRadius" Value="10"/>
+                <Setter Property="HeightRequest" Value="45"/>
+            </Style>
+        </ResourceDictionary>
+    </ContentPage.Resources>
+
+    <ContentPage.ToolbarItems>
+        <ToolbarItem IconImageSource="ok" Command="{Binding SaveCommand}"/>
+    </ContentPage.ToolbarItems>
+
+    <ContentPage.Content>
+        <ScrollView>
+            <StackLayout Padding="15">
+                
+                <!-- Sunucu Baglantisi -->
+                <Frame Style="{StaticResource CardFrame}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Label Grid.Column="0" Text="{Binding CihazSunucuText}" FontSize="15" />
+                        <Switch Grid.Column="1" 
+                                IsToggled="{Binding CihazSunucuState, Mode=TwoWay}" 
+                                OnColor="{StaticResource BigusYellow}">
+                            <Switch.Behaviors>
+                                <behaviors:EventToCommandBehavior EventName="Toggled" Command="{Binding CihazSunucuStateChangeCommand}"/>
+                            </Switch.Behaviors>
+                        </Switch>
+                    </Grid>
+                </Frame>
+
+                <!-- Tarih Filtreleri -->
+                <Frame Style="{StaticResource CardFrame}">
+                    <Grid RowSpacing="15">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="1"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="120"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="24"/>
+                        </Grid.ColumnDefinitions>
+
+                        <Label Grid.Row="0" Grid.Column="0" Text="İlk Tarih"/>
+                        <DatePicker Grid.Row="0" Grid.Column="1" 
+                                    Date="{Binding Filter.IlkTarih}" 
+                                    MaximumDate="{Binding MaxDate}"
+                                    MinimumDate="{Binding MinDate}"/>
+                        <Image Grid.Row="0" Grid.Column="2" Source="calendar.png" WidthRequest="20" HeightRequest="20" VerticalOptions="Center"/>
+
+                        <BoxView Grid.Row="1" Grid.ColumnSpan="3" Color="#E0E0E0" HeightRequest="1" HorizontalOptions="FillAndExpand"/>
+
+                        <Label Grid.Row="2" Grid.Column="0" Text="Son Tarih"/>
+                        <DatePicker Grid.Row="2" Grid.Column="1" 
+                                    Date="{Binding Filter.SonTarih}" 
+                                    MaximumDate="{Binding MaxDate}"
+                                    MinimumDate="{Binding MinDate}"/>
+                        <Image Grid.Row="2" Grid.Column="2" Source="calendar.png" WidthRequest="20" HeightRequest="20" VerticalOptions="Center"/>
+                    </Grid>
+                </Frame>
+
+                <!-- Cari Secimi -->
+                <Frame Style="{StaticResource CardFrame}">
+                    <Grid RowSpacing="15">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="1"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="120"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <Label Grid.Row="0" Grid.Column="0" Text="Cari Kodu"/>
+                        <Entry Grid.Row="0" Grid.Column="1" Text="{Binding Filter.CariKod}">
+                            <Entry.Effects>
+                                <effects:ClearEntryEffect/>
+                            </Entry.Effects>
+                        </Entry>
+                        <Button Grid.Row="0" Grid.Column="2" 
+                                Text="..." 
+                                Style="{StaticResource PrimaryButton}"
+                                WidthRequest="45"
+                                Command="{Binding CarilerCommand}"/>
+
+                        <BoxView Grid.Row="1" Grid.ColumnSpan="3" Color="#E0E0E0" HeightRequest="1" HorizontalOptions="FillAndExpand"/>
+
+                        <Label Grid.Row="2" Grid.Column="0" Text="Cari Adı"/>
+                        <Entry Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" Text="{Binding Filter.CariAdi}" IsEnabled="False">
+                            <Entry.Triggers>
+                                <DataTrigger
+                                    Binding="{Binding Filter.CariKod, Converter={StaticResource StringNullOrEmptyBool}}"
+                                    TargetType="Entry"
+                                    Value="False">
+                                    <Setter Property="Text" Value="" />
+                                </DataTrigger>
+                            </Entry.Triggers>
+                        </Entry>
+                    </Grid>
+                </Frame>
+
+                <!-- Sorumluluk Merkezi Secimi -->
+                <Frame Style="{StaticResource CardFrame}">
+                    <Grid RowSpacing="15">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="120"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <Label Grid.Row="0" Grid.Column="0" Text="Sorumluluk Merkezi"/>
+                        <Entry Grid.Row="0" Grid.Column="1" Text="{Binding Filter.SorumlulukMerkezi}">
+                            <Entry.Effects>
+                                <effects:ClearEntryEffect/>
+                            </Entry.Effects>
+                        </Entry>
+                        <Button Grid.Row="0" Grid.Column="2" 
+                                Text="..." 
+                                Style="{StaticResource PrimaryButton}"
+                                WidthRequest="45"
+                                Command="{Binding SorumlulukMerkeziCommand}"/>
+                    </Grid>
+                </Frame>
+
+                <!-- Siparis Durumu Secimi -->
+                <Frame Style="{StaticResource CardFrame}">
+                    <Grid RowSpacing="15">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="120"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="24"/>
+                        </Grid.ColumnDefinitions>
+
+                        <Label Grid.Row="0" Grid.Column="0" Text="Sipariş Durumu"/>
+                        <Picker Grid.Row="0" Grid.Column="1" 
+                                ItemDisplayBinding="{Binding Name}"
+                                ItemsSource="{Binding DurumList}"
+                                SelectedItem="{Binding SecilenDurum, Mode=TwoWay}" />
+                        <!-- Note: The arrowdownblack image isn't needed with Picker styling in newer views but keeping to match existing if needed. -->
+                        <Image Grid.Row="0" Grid.Column="2" Source="arrowdownblack.png" WidthRequest="20" HeightRequest="20" VerticalOptions="Center"/>
+                    </Grid>
+                </Frame>
+
+                <!-- Kolon Secimi -->
+                <Frame Style="{StaticResource CardFrame}">
+                    <Grid RowSpacing="15">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="300"/>
+                        </Grid.RowDefinitions>
+
+                        <Button Grid.Row="0" 
+                                Text="Kolon Seç" 
+                                Style="{StaticResource PrimaryButton}"
+                                Command="{Binding KolonlarCommand}"/>
+
+                        <!-- Kolonlar Listesi -->
+                        <Frame Grid.Row="1" BorderColor="#E0E0E0" CornerRadius="10" HasShadow="False" Padding="0">
+                            <ListView ItemsSource="{Binding ReportLineList}" 
+                                      HasUnevenRows="True"
+                                      SelectionMode="None"
+                                      BackgroundColor="Transparent">
+                                <ListView.Header>
+                                    <Grid Padding="10,5" BackgroundColor="#F5F6FA">
+                                        <Label Text="Kolonlar" FontSize="12" TextColor="#777"/>
+                                    </Grid>
+                                </ListView.Header>
+                                <ListView.ItemTemplate>
+                                    <DataTemplate>
+                                        <ViewCell>
+                                            <Grid Padding="10,8">
+                                                <Label Text="{Binding HeaderName}" Style="{StaticResource ValueLabel}" IsVisible="{Binding Enabled}"/>
+                                            </Grid>
+                                        </ViewCell>
+                                    </DataTemplate>
+                                </ListView.ItemTemplate>
+                            </ListView>
+                        </Frame>
+                    </Grid>
+                </Frame>
+                
+            </StackLayout>
+        </ScrollView>
+    </ContentPage.Content>
+</ContentPage>

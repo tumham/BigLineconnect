@@ -1,0 +1,84 @@
+<html>
+<head>
+<meta name="GENERATOR" content="Microsoft FrontPage 5.0">
+<meta name="ProgId" content="FrontPage.Editor.Document">
+<meta http-equiv="Content-Type" content="text/html; charset=windows-1254">
+<title>Tablo Alanları</title>
+<LINK rel="stylesheet" type="text/css" href="../../../library.css">
+</head>
+<body><p class="Caption"><i><a href="../index.htm">Database Yapısı</a></i></p>
+<center><u><a href="../tablolar/header.htm">Başlık (Header) Kısmı Açıklaması ve Genel Notlar İçin Tıklayın</a></u></center>
+<p><b>Tablo No : 1057</b></p>
+<table class="SKey" border="2" bordercolor="white"  cellspacing="0" width="100%">
+  <tr>
+    <td width="50%"><b>Tablo Adı : rb_folder</b></td>
+    <td width="50%"><b>Tablo : Report Builder Dizin</b></td>
+    </tr>
+</table>
+<br>
+<table class="SKey" border="2" bordercolor="white"  cellspacing="0" width="100%">
+  <tr>
+    <td width="64">
+    <b>No</b></td>
+    <td width="186">
+    <b>Alan Adı</b></td>
+    <td width="148">
+    <b>Tip</b></td>
+    <td width="328">
+    <b>Açıklama</b></td>
+    <td width="280">
+    <b>Detay</b></td>
+  </tr>
+  <tr>
+  <td>0</td>
+  <td>folder_id</td>
+  <td>Integer</td>
+  <td>Dizin ID'si</td>
+  <td>&nbsp;</td>
+  </tr>
+  <tr>
+  <td>1</td>
+  <td>folder_name</td>
+  <td>Nvarchar(60)</td>
+  <td>Dizin adı</td>
+  <td>&nbsp;</td>
+  </tr>
+  <tr>
+  <td>2</td>
+  <td>parent_id</td>
+  <td>Integer</td>
+  <td>&nbsp;</td>
+  <td>&nbsp;</td>
+  </tr>
+ 
+  </table>
+
+<hr><table class="SKey" border="2" bordercolor="white"  cellspacing="0" width="100%">
+<tr class="sRow" align="center"><td colspan=4><b>Indeks Tablosu</b></td></tr>
+<tr>
+<td width="65">
+<b>Indeks</b></td>
+<td width="55">
+<b>Özellik</b></td>
+<td width="250">
+<b>Alanlar</b></td>
+</tr>
+<tr class=sRow >
+<td>NDX_rb_folder_00</td>
+<td>CONSTRAINT PRIMARY KEY</td>
+<td>folder_name, parent_id</td>
+</tr>
+<tr>
+<td>folder_idx</td>
+<td></td>
+<td>folder_id</td>
+</tr>
+<tr class=sRow >
+<td>parent_idx</td>
+<td></td>
+<td>parent_id</td>
+</tr>
+</table>
+<hr>Güncellenme Tarihi : 24.09.2010 - Bu döküman ile ilgili <A href="mailto:info@mye.com.tr?Subject=DBYapisi">bize yazın</A><br><b>©2010 Mikro Yazılımevi A.Ş. Tüm Hakları Saklıdır.</b></font></body>
+
+</html>

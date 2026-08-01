@@ -1,0 +1,624 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ordesignerObjectsDiagram dslVersion="1.0.0.0" absoluteBounds="0, 0, 22.5, 82.625" name="BigusAktarim">
+  <DataContextMoniker Name="/BigusAktarimDataContext" />
+  <nestedChildShapes>
+    <classShape Id="071478b1-0c3a-40a4-908a-2ca6331c1cb7" isExpanded="false" absoluteBounds="0.5, 10.875, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/AKTARIM_SERILERI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="53a616c1-9a37-4e98-87be-934f7577e9b5" absoluteBounds="0.51500000000000057, 11.335, 1.9700000000000002, 0.63399251302083326" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="14ac89b1-41c7-4ef8-bfc1-6d921aa4e098" isExpanded="false" absoluteBounds="0.5, 10.375, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/AKTARIM_KULLANICILARI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="8e93d1a6-9915-43bb-9633-3685d062511f" absoluteBounds="0.515, 10.835, 1.9700000000000002, 0.8262939453125" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="90a990d0-86d0-48ac-a723-a0b2360dc0c2" isExpanded="false" absoluteBounds="0.5, 6.875, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/PERSONEL_ALINAN_EGITIMLER" />
+      <nestedChildShapes>
+        <elementListCompartment Id="44fee5ee-3142-4d17-87ef-8e4144ef207d" absoluteBounds="0.51500000000000012, 7.335, 1.9700000000000002, 7.556844075520833" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="8e7cbe51-c033-45ba-ba5f-347c6c702e26" isExpanded="false" absoluteBounds="0.5, 7.375, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/PERSONEL_BOLGELERI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="ebc6f7e7-370c-4d1c-972d-fab8260ea9d0" absoluteBounds="0.515, 7.8350000000000009, 1.9700000000000002, 3.7108154296875" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="311d77c4-f130-48d1-b535-db70cd971e32" isExpanded="false" absoluteBounds="0.5, 7.875, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/PERSONEL_BOLUM_TANIMLARI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="041e0d99-db76-43c7-8646-a651860db3aa" absoluteBounds="0.515, 8.335, 1.9700000000000002, 3.7108154296875" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="161d8c9c-8cca-4e15-bd70-da874c29ef11" isExpanded="false" absoluteBounds="0.5, 8.375, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/KREDI_SOZLESMESI_TANIMLARI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="4178fab7-1e77-4910-8644-0061ca8bbfd3" absoluteBounds="0.51500000000000012, 8.835, 1.9700000000000002, 16.787312825520832" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="c7c758f2-8751-4135-9432-07dd7bd9064a" isExpanded="false" absoluteBounds="0.5, 8.875, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/KREDI_SOZLESMESI_TAKSIT_TANIMLARI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="a8bf350b-0e9c-4860-8079-8015adeffdb7" absoluteBounds="0.515, 9.335, 1.9700000000000002, 6.403035481770833" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="bf240f5b-a1eb-4549-a596-072800d7513e" isExpanded="false" absoluteBounds="2.75, 0.5, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/CARI_HESAP_ADRESLERI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="adb75d4d-2c52-45c2-ae3b-3705f7547b79" absoluteBounds="2.765, 0.96, 1.9700000000000002, 10.6336669921875" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="e9262967-05a5-4726-9524-2d923b90d7fd" isExpanded="false" absoluteBounds="2.75, 1, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/CARI_HESAP_BOLGELERI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="d29e7fc2-9d19-4f13-be43-64b7a0d45b12" absoluteBounds="2.765, 1.46, 1.9700000000000002, 3.7108154296875" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="f88d27b2-aa12-46e9-b680-a2f24207d62e" isExpanded="false" absoluteBounds="2.75, 1.5, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/CARI_HESAP_GRUPLARI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="3f5af8a3-faa9-4811-8df0-6a26b25f71c5" absoluteBounds="2.765, 1.96, 1.9700000000000002, 3.903116861979167" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="6919901a-299d-4946-8a54-2cc7de14bc3b" isExpanded="false" absoluteBounds="2.75, 2, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/CARI_HESAP_SOZLESMELERI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="7d339ca3-d3fe-4347-9b0b-dc3247213c19" absoluteBounds="2.765, 2.46, 1.9700000000000002, 4.4800211588541661" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="065419d3-efed-4483-9b3d-f014219461d3" isExpanded="false" absoluteBounds="2.75, 2.5, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/CARI_HESAP_TASIT_PLAKALARI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="5c58aedc-2f85-4e7b-9e94-989233c065f8" absoluteBounds="2.765, 2.96, 1.9700000000000002, 3.903116861979167" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="a0eb562a-5c9c-478a-8a76-fbb4ec5ded06" isExpanded="false" absoluteBounds="2.75, 3, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/CARI_HESAP_TEMINATLARI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="6155494a-c67a-4379-b411-17139c57ee45" absoluteBounds="2.765, 3.46, 1.9700000000000002, 5.6338297526041661" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="cb2bc319-281a-4c32-83d1-adac4d82f2d5" isExpanded="false" absoluteBounds="2.75, 3.5, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/CARI_HESAP_YETKILILERI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="e1e19705-b3ef-43d9-8946-a205bbebdc51" absoluteBounds="2.765, 3.96, 1.9700000000000002, 11.595174153645832" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="5cd4e730-1439-425b-b023-4b70f1f6473e" isExpanded="false" absoluteBounds="2.75, 4, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/CARI_MUSTAHSIL_TANIMLARI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="b5c0379a-4f9f-4aea-8998-b857707048bd" absoluteBounds="2.765, 4.46, 1.9700000000000002, 8.3260498046875" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="b75c9564-c913-443e-b87c-270ca0969555" isExpanded="false" absoluteBounds="2.75, 5, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/SORUMLULUK_MERKEZLERI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="c46d81ac-1d8e-4a00-b7fc-98bad09f1709" absoluteBounds="2.765, 5.46, 1.9700000000000002, 5.249226888020833" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="69c7c008-7a5b-4ad1-b0bc-83864da49d57" isExpanded="false" absoluteBounds="2.75, 5.5, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/DEPOLAR" />
+      <nestedChildShapes>
+        <elementListCompartment Id="3845ecbc-01d3-4637-b7dd-7ee1e3a431b9" absoluteBounds="2.765, 5.96, 1.9700000000000002, 13.133585611979166" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="615ed620-c3fd-44db-827f-97e503c62171" isExpanded="false" absoluteBounds="2.75, 7, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/FIRMA_MALIYIL_URETIM_PARAMETRELERI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="ebe815e4-467e-4a79-a3c0-f6bcbbc57008" absoluteBounds="2.765, 7.46, 1.9700000000000002, 61.208943684895829" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="60e1d750-f3d3-4f54-8629-569c4415be69" isExpanded="false" absoluteBounds="2.75, 8.5, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/ITHALAT_MUHASEBE_GRUPLARI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="33ed55fd-379e-4c65-8c75-1b15db1c44a9" absoluteBounds="2.765, 8.96, 1.9700000000000002, 5.826131184895833" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="ec589343-35eb-4f6d-bd9b-4415b65bb002" isExpanded="false" absoluteBounds="2.75, 9, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/MUHASEBE_FIS_GRUBU_TANIMLARI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="b220c29d-3351-4c27-ba40-b4e7031d9308" absoluteBounds="2.765, 9.46, 1.9700000000000002, 3.7108154296875" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="6b4f73c9-23ae-4dc7-9d87-c728c4211977" isExpanded="false" absoluteBounds="2.75, 9.5, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/MUHASEBE_HESAP_GRUPLARI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="8c0fc8c2-b092-4e1d-99c0-1c8e338e0aef" absoluteBounds="2.765, 9.96, 1.9700000000000002, 3.7108154296875" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="ffb853f5-ddff-4f57-b120-60e221fb8ce7" isExpanded="false" absoluteBounds="5, 1, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/STOK_ANA_GRUPLARI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="78665c8e-b179-4e90-901c-3af660151f8d" absoluteBounds="5.015, 1.46, 1.9700000000000002, 3.7108154296875" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="8944093d-4991-4194-8298-306daf99d7fb" isExpanded="false" absoluteBounds="5, 1.5, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/STOK_ALT_GRUPLARI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="7e249cf1-d55b-424c-a62e-15f355660967" absoluteBounds="5.015, 1.96, 1.9700000000000002, 3.903116861979167" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="343a6b4d-c791-4c2f-9cbc-9e4099f19614" isExpanded="false" absoluteBounds="5, 2, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/STOK_ALTERNATIFLERI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="611af690-c0b7-4691-83fe-fb2f04bcfc68" absoluteBounds="5.015, 2.46, 1.9700000000000002, 3.7108154296875" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="f1b44be6-2167-4a31-80e8-9975ab6decad" isExpanded="false" absoluteBounds="5, 2.5, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/STOK_AMBALAJLARI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="9814f597-9c9c-41d5-8d28-be51073365fb" absoluteBounds="5.015, 2.96, 1.9700000000000002, 4.095418294270833" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="ec92abcd-fd8d-4ecc-b434-5608a51c4601" isExpanded="false" absoluteBounds="5, 3, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/STOK_ANAHAMMADDELERI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="696c1292-1124-4159-b124-cca013c51f67" absoluteBounds="5.015, 3.46, 1.9700000000000002, 3.7108154296875" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="d53cfba1-ded1-4ef8-ae7f-13cdaa78bd74" isExpanded="false" absoluteBounds="5, 3.5, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/STOK_BEDEN_TANIMLARI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="226af411-cbdc-4e9d-9e51-64b677f5dc68" absoluteBounds="5.015, 3.96, 1.9700000000000002, 11.402872721354166" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="1af82e85-78b1-4d7b-bc09-129316a37623" isExpanded="false" absoluteBounds="5, 4, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/STOK_CARI_ISKONTO_TANIMLARI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="6b6ff22e-6b0d-4aa6-964a-6126a18c4de9" absoluteBounds="5.015, 4.46, 1.9700000000000002, 10.0567626953125" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="4f3ef1dc-fd61-4bfc-a6dd-32166ffec088" isExpanded="false" absoluteBounds="5, 4.5, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/STOK_DEPO_DETAYLARI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="9437bb3f-8e81-448e-a765-86f837c42ccc" absoluteBounds="5.015, 4.96, 1.9700000000000002, 11.595174153645832" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="301198f8-97be-4ad4-9b52-2c4736adadbb" isExpanded="false" absoluteBounds="5, 5, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/STOK_FIYAT_DEGISIKLIKLERI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="40fd8fdc-5082-45e1-ad9b-601422fbe617" absoluteBounds="5.015, 5.46, 1.9700000000000002, 7.941446940104167" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="2377541f-1ad8-49c2-96b2-0884766e4eef" isExpanded="false" absoluteBounds="5, 5.5, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/STOK_KALITE_KONTROL_TANIMLARI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="3c97ad9d-7364-428f-9ed9-18c508ca3ae4" absoluteBounds="5.015, 5.96, 1.9700000000000002, 3.7108154296875" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="0542ff9a-2e2b-4825-863a-81bd4faba433" isExpanded="false" absoluteBounds="5, 6, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/STOK_KALKON" />
+      <nestedChildShapes>
+        <elementListCompartment Id="71742004-b163-4a59-b87b-20bf2743c6bb" absoluteBounds="5.015, 6.46, 1.9700000000000002, 13.325887044270832" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="905d0291-4dc1-4bac-a7a6-c0561c05a2e2" isExpanded="false" absoluteBounds="5, 6.5, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/STOK_KATEGORILERI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="b746b27f-2917-4e8a-92aa-dfae732bb479" absoluteBounds="5.015, 6.96, 1.9700000000000002, 3.903116861979167" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="a999ce89-8714-4c0d-b672-ce0ff0ebf29e" isExpanded="false" absoluteBounds="5, 7, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/STOK_MARKALARI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="ac7da1d6-c09c-46d8-a0e0-a526b7fa9711" absoluteBounds="5.015, 7.46, 1.9700000000000002, 3.7108154296875" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="1b475e5a-e8d3-4812-8b8d-6787a2305d47" isExpanded="false" absoluteBounds="5, 7.5, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/STOK_MODEL_TANIMLARI1" />
+      <nestedChildShapes>
+        <elementListCompartment Id="224aa920-2a4e-4545-87af-b70535fbb00a" absoluteBounds="5.015, 7.9600000000000009, 1.9700000000000002, 3.7108154296875" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="1cb6b467-2494-4660-bc66-9be3e096b716" isExpanded="false" absoluteBounds="5, 8, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/STOK_MUHASEBE_GRUPLARI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="ba3826b7-9594-492e-8b80-fa93124f7cd7" absoluteBounds="5.015, 8.46, 1.9700000000000002, 11.979777018229166" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="b40d6f8b-bc89-4253-8f89-fb71d7e7c0d7" isExpanded="false" absoluteBounds="5, 8.5, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/STOK_PAKET_TANIMLARI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="7f10c638-1069-4994-8904-620c143fcc0d" absoluteBounds="5.015, 8.96, 1.9700000000000002, 5.6338297526041661" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="90cbbd7c-1b36-4401-8236-c684f00d8ed4" isExpanded="false" absoluteBounds="9.5, 7, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/STOK_RENK_TANIMLARI1" />
+      <nestedChildShapes>
+        <elementListCompartment Id="91fab406-30fb-4939-9120-a823f1b0af19" absoluteBounds="9.515, 7.4600000000000009, 1.9700000000000002, 15.2489013671875" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="204ef3bd-7761-49be-94c2-cbaf48b70832" isExpanded="false" absoluteBounds="5, 9, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/STOK_REYONLARI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="5c354e20-cda7-470a-9b2d-cc37d9f73e08" absoluteBounds="5.015, 9.46, 1.9700000000000002, 3.7108154296875" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="927e02f5-acd2-4522-af1b-1645277602df" isExpanded="false" absoluteBounds="5, 9.5, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/STOK_SARF_RECETELERI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="b6c6fbd3-bce9-4a87-b307-1340a3184c35" absoluteBounds="5.015, 9.96, 1.9700000000000002, 6.0184326171875" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="6b8195d3-0403-4d45-a008-7311e708584d" isExpanded="false" absoluteBounds="9.5, 7.5, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/STOK_SATIS_FIYAT_LISTE_TANIMLARI1" />
+      <nestedChildShapes>
+        <elementListCompartment Id="f92d931f-5bbb-4ffd-b112-7bec13c57d1f" absoluteBounds="9.515, 7.9600000000000009, 1.9700000000000002, 7.7491455078125009" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="2a2d2071-1fb8-49cd-add7-1cd391205005" isExpanded="false" absoluteBounds="9.5, 8, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/STOK_SATIS_FIYAT_LISTELERI1" />
+      <nestedChildShapes>
+        <elementListCompartment Id="2b644ac4-c175-4775-ac4a-eed5c1949fc4" absoluteBounds="9.515, 8.46, 1.9700000000000002, 5.249226888020833" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="71c99362-f7df-4f5c-9166-3b378bf2ca5e" isExpanded="false" absoluteBounds="5, 10, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/STOK_SEKTORLERI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="5bac460b-40d4-4d51-9226-643132c0bde4" absoluteBounds="5.015, 10.46, 1.9700000000000002, 3.903116861979167" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="0ce964a8-2dda-4b2d-bee3-f54af22b6d41" isExpanded="false" absoluteBounds="5, 10.5, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/STOK_SERINO_TANIMLARI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="589d98be-6a61-487a-bfcf-f319572997c3" absoluteBounds="5.015, 10.96, 1.9700000000000002, 11.979777018229166" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="13dc63aa-477a-44dc-a6c3-5d09603f9790" isExpanded="false" absoluteBounds="9.5, 8.5, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/STOK_URETICILERI1" />
+      <nestedChildShapes>
+        <elementListCompartment Id="8b841fb1-3e71-443c-9ee4-5944e2d39e3c" absoluteBounds="9.515, 8.96, 1.9700000000000002, 3.7108154296875" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="1c14775d-179d-47c2-874f-2510d3e0976f" isExpanded="false" absoluteBounds="9.5, 9, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/STOK_YILSEZON_TANIMLARI1" />
+      <nestedChildShapes>
+        <elementListCompartment Id="5d381a69-3c55-434e-bee8-3c4066f9520b" absoluteBounds="9.515, 9.46, 1.9700000000000002, 3.7108154296875" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="e00a7937-500b-4e42-a689-f9759e0fef9a" isExpanded="false" absoluteBounds="7.25, 0.5, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/BARKOD_TANIMLARI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="73be7b3f-ae70-41e1-b8ad-735712f53293" absoluteBounds="7.265, 0.96, 1.9700000000000002, 6.0184326171875" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="0d41d0ba-5794-4b9f-8ab7-016ccaa70382" isExpanded="false" absoluteBounds="7.25, 1, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/URUNLER" />
+      <nestedChildShapes>
+        <elementListCompartment Id="451c0720-72f2-4db1-8650-8f858148132e" absoluteBounds="7.265, 1.46, 1.9700000000000002, 10.249064127604166" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="c249bbad-22fa-4040-9ad0-7b7da4bfe1ef" isExpanded="false" absoluteBounds="7.25, 1.5, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/RAKIP_STOKLAR" />
+      <nestedChildShapes>
+        <elementListCompartment Id="78d4341d-7458-4846-a759-ba0c60cd6ee2" absoluteBounds="7.265, 1.96, 1.9700000000000002, 11.402872721354166" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="c2946c52-9e45-4dc6-9c7b-5f22fb5e9a26" isExpanded="false" absoluteBounds="7.25, 2, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/RAKIP_STOK_DEPO_DETAYLARI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="31590ebf-6c92-4661-a42b-dee18d238171" absoluteBounds="7.265, 2.46, 1.9700000000000002, 4.8646240234375" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="15800cfe-a181-41cc-881a-847c371ce14e" isExpanded="false" absoluteBounds="7.25, 2.5, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/STOK_PRIM_TANIMLARI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="126ac1c1-931e-4a2c-b935-11abc7162c1b" absoluteBounds="7.265, 2.96, 1.9700000000000002, 5.249226888020833" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="edd66d79-6f3a-453e-9c93-8163e1635363" isExpanded="false" absoluteBounds="7.25, 3, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/STOK_MODEL_TANIMLARI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="902a5e66-2c47-4a4d-b6b1-8667c6f53276" absoluteBounds="7.265, 3.46, 1.9700000000000002, 3.7108154296875" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="5a955def-bb65-482c-b215-bceb794d6391" isExpanded="false" absoluteBounds="7.25, 3.5, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/ODEME_EMIRLERI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="930811b0-47a2-48af-bb9b-97ce74e06168" absoluteBounds="7.265, 3.96, 1.9700000000000002, 13.902791341145832" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="5e11a0f9-b029-4461-aa98-4797de161f31" isExpanded="false" absoluteBounds="7.25, 4, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/BEDEN_HAREKETLERI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="c061b9f4-d6e0-4534-a96d-21d586533007" absoluteBounds="7.265, 4.46, 1.9700000000000002, 5.0569254557291661" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="cc81ef62-2043-4e85-bd1c-0fa85ad2a919" isExpanded="false" absoluteBounds="7.25, 4.5, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/CIHAZ_HAREKETLERI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="27035a2f-4534-4906-b50b-7654d7d8974a" absoluteBounds="7.265, 4.96, 1.9700000000000002, 4.2877197265625" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="3c311133-4ced-4b4c-8d31-b00bc2cc219e" isExpanded="false" absoluteBounds="7.25, 5, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/CIHAZ_SORUNLARI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="5bb4c75e-c867-4ccb-92d6-04e343467ede" absoluteBounds="7.265, 5.46, 1.9700000000000002, 4.672322591145833" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="e72278d6-71fc-4878-ad33-0bd48417855b" isExpanded="false" absoluteBounds="7.25, 5.5, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/SATIS_SARTLARI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="bce809ca-37c3-4675-9419-0a5f113292c3" absoluteBounds="7.265, 5.96, 1.9700000000000002, 20.056437174479164" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="776c1033-655d-40fe-9300-efdb62f219ba" isExpanded="false" absoluteBounds="7.25, 6, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/SAYIM_SONUCLARI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="c1e48af1-ae5b-4d06-8b7a-69e1d28458a5" absoluteBounds="7.265, 6.46, 1.9700000000000002, 7.1722412109375" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="8f5a81ae-e36e-43e6-b68f-3249a410d1ed" isExpanded="false" absoluteBounds="7.25, 6.5, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/DONEMLERE_YAYILAN_HIZMETLER" />
+      <nestedChildShapes>
+        <elementListCompartment Id="1b6937d6-d7c9-40a7-a068-0855e8ad41ff" absoluteBounds="7.265, 6.96, 1.9700000000000002, 8.5183512369791661" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="a819de94-078e-48b5-bbd6-88c2589d4432" isExpanded="false" absoluteBounds="7.25, 7, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/STOK_SATIS_FIYAT_LISTELERI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="aa3fd574-9223-4b64-aec9-10966d60d7c5" absoluteBounds="7.265, 7.46, 1.9700000000000002, 5.249226888020833" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="9c5dffdb-4902-4279-87e4-d20c561ad157" isExpanded="false" absoluteBounds="7.25, 7.5, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/STOK_RENK_TANIMLARI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="f961aac0-5733-450c-9e5b-327eeb0883ce" absoluteBounds="7.265, 7.9600000000000009, 1.9700000000000002, 15.2489013671875" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="7ae11128-ade7-491a-814a-798df6b90d3b" isExpanded="false" absoluteBounds="7.25, 8, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/STOK_URETICILERI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="8aca57b8-4170-4b2c-9244-dbdd4841e4cd" absoluteBounds="7.265, 8.46, 1.9700000000000002, 3.7108154296875" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="16867fc1-dc2c-498d-b13f-bcd7df2d8647" isExpanded="false" absoluteBounds="7.25, 8.5, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/STOK_YILSEZON_TANIMLARI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="e0728db6-7a57-4625-b206-5ca2d0181b0c" absoluteBounds="7.265, 8.96, 1.9700000000000002, 3.7108154296875" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="fd85ae52-249a-41b1-b930-be934b9446ae" isExpanded="false" absoluteBounds="7.25, 9, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/STOK_SATIS_FIYAT_LISTE_TANIMLARI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="cd454f93-af4d-4366-a157-00d2dd31a028" absoluteBounds="7.265, 9.46, 1.9700000000000002, 7.7491455078125009" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="75c18bb9-dfac-4cc2-bf94-81b1262cdc3a" isExpanded="false" absoluteBounds="7.25, 10, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/PERSONEL_MUHASEBE_GRUPLARI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="69eb343b-bc1b-48d0-82bd-98ae9a1880f3" absoluteBounds="7.265, 10.46, 1.9700000000000002, 61.016642252604164" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="193d916a-f436-4d16-bbdf-9a812d3c6176" isExpanded="false" absoluteBounds="9.5, 1.5, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/PROJELER" />
+      <nestedChildShapes>
+        <elementListCompartment Id="9a96a0eb-78f7-4c57-914e-40bdefcd0790" absoluteBounds="9.515, 1.96, 1.9700000000000002, 8.1337483723958321" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="c280b6d6-8bbe-4ea6-a579-a33a91b987ac" isExpanded="false" absoluteBounds="9.5, 2, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/KREDI_KARTLARI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="1ea8af58-9632-4449-b75c-ee7a5bb5f299" absoluteBounds="9.515, 2.46, 1.9700000000000002, 4.8646240234375" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="d16a881b-6c76-4200-ab11-3e5e6a1e9719" isExpanded="false" absoluteBounds="9.5, 3, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/ASORTI_TANIMLARI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="5ef10c0d-f6b1-4a74-b9ae-9068530f7c6a" absoluteBounds="9.515, 3.46, 1.9700000000000002, 4.095418294270833" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="b04cdbf8-1865-4d9a-813e-07b08bb0b901" isExpanded="false" absoluteBounds="9.5, 4, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/DEMIRBAS_GRUPLARI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="3010210b-d3c8-497a-8c9f-cdbfafc1fefc" absoluteBounds="9.515, 4.46, 1.9700000000000002, 3.7108154296875" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="7e2df62d-a7db-4e05-a25c-8d8437280c36" isExpanded="false" absoluteBounds="9.5, 5, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/TESLIM_TURLERI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="f29da10b-375f-4914-89cf-443ee1c00d24" absoluteBounds="9.515, 5.46, 1.9700000000000002, 3.7108154296875" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="14d425e0-0ab2-41ec-a7a1-d0c1511ea0dd" isExpanded="false" absoluteBounds="9.5, 5.5, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/SON_KULLANICILAR" />
+      <nestedChildShapes>
+        <elementListCompartment Id="ad0b92f0-cbda-4318-87b5-5155be1ae301" absoluteBounds="9.515, 5.96, 1.9700000000000002, 12.556681315104166" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="45fd74d7-13d9-4c43-9be2-e16cc07d5601" isExpanded="false" absoluteBounds="9.5, 6, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/KULLANICILAR" />
+      <nestedChildShapes>
+        <elementListCompartment Id="2203b492-8cdf-4106-9a20-64f1215c698e" absoluteBounds="9.515, 6.46, 1.9700000000000002, 10.825968424479166" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="b5e3f5b5-716a-4350-99cf-11f3838cc099" absoluteBounds="11.5, 0.5, 2, 10.809064127604165">
+      <DataClassMoniker Name="/BigusAktarimDataContext/MUHASEBE_FISLERI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="4e8b70d1-f964-4d3f-a3bf-40a58d068cb9" absoluteBounds="11.515, 0.96, 1.9700000000000002, 10.249064127604166" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="419315cf-49a0-4334-b297-dccc33ee2c53" isExpanded="false" absoluteBounds="9.5, 2.5, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/PARTILOT" />
+      <nestedChildShapes>
+        <elementListCompartment Id="beec8da1-424f-48c1-ae93-fbc2cfa77453" absoluteBounds="9.515, 2.96, 1.9700000000000002, 11.402872721354166" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="ccf491a5-af18-4719-adec-b1086fa6380d" isExpanded="false" absoluteBounds="9.5, 6.5, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/URUN_RECETELERI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="b6472e1d-c438-4042-9fd3-71af32022e6d" absoluteBounds="9.515, 6.9600000000000009, 1.9700000000000002, 11.018269856770832" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="c63a6e7a-d2be-42a1-b18c-96f975d74f9f" isExpanded="false" absoluteBounds="9.5, 4.5, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/DEMIRBAS_MALIYIL_TANIMLARI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="0d96182b-356a-4267-93f4-10ace6d3d4be" absoluteBounds="9.515, 4.96, 1.9700000000000002, 19.479532877604164" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="07156111-b720-4200-87cd-ada93ba20c8d" isExpanded="false" absoluteBounds="0.5, 4.25, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/ITHALAT_DOSYALARI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="40fc0405-f4d9-4670-8f0a-6018693bb784" absoluteBounds="0.515, 4.71, 1.9700000000000002, 16.018107096354164" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="7b705888-09f3-4140-9042-7aa9594b8285" isExpanded="false" absoluteBounds="0.5, 3.75, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/IHRACAT_DOSYALARI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="f4804dde-58ba-4b2c-a08d-bea437bd07f9" absoluteBounds="0.515, 4.21, 1.9700000000000002, 8.5183512369791661" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="9ed6905e-df2e-4267-8d30-4501c96d8a45" isExpanded="false" absoluteBounds="0.5, 4.75, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/HIZMET_HESAPLARI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="f6ad4b3b-22d7-4516-9a3d-cd4590179eb0" absoluteBounds="0.515, 5.21, 1.9700000000000002, 11.2105712890625" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="fd9460d0-5b00-495b-8d7c-5df94beebc70" isExpanded="false" absoluteBounds="0.5, 5.25, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/MASRAF_HESAPLARI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="13e998f7-d73d-4d75-9546-ce535cc9d305" absoluteBounds="0.515, 5.71, 1.9700000000000002, 9.2875569661458321" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="47dd9707-b271-45ac-9cfd-90f962976dc0" isExpanded="false" absoluteBounds="0.5, 5.75, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/SIPARISLER" />
+      <nestedChildShapes>
+        <elementListCompartment Id="daf0fca9-1918-4cff-8878-f5a116f0b992" absoluteBounds="0.515, 6.21, 1.9700000000000002, 24.094767252604164" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="c1f18786-01f9-48f6-8196-6935039a6782" isExpanded="false" absoluteBounds="0.5, 6.375, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/PERSONELLER" />
+      <nestedChildShapes>
+        <elementListCompartment Id="c0ed7fbd-8eab-40a2-9d9b-baebb1b0ab22" absoluteBounds="0.515, 6.835, 1.9700000000000002, 59.285929361979164" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="5073bc37-4ed7-470e-aad8-0e11046a498e" isExpanded="false" absoluteBounds="2.75, 4.5, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/CARI_PERSONEL_TANIMLARI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="d1a85f42-c587-4035-a4aa-f9be0a9a705a" absoluteBounds="2.765, 4.96, 1.9700000000000002, 10.825968424479166" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="f6ce6e94-84b0-47c0-bf13-772cc49f8cd7" isExpanded="false" absoluteBounds="2.75, 6, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/FIRMALAR" />
+      <nestedChildShapes>
+        <elementListCompartment Id="bc1901fc-29be-40ea-9d15-d51015769f78" absoluteBounds="2.765, 6.46, 1.9700000000000002, 35.055948893229164" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="439c7f6d-b890-41b5-8f71-d54705771d89" isExpanded="false" absoluteBounds="2.75, 6.5, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/FIRMA_TEMSILCILERI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="33681a0f-7461-4134-8968-47ba3f3c2651" absoluteBounds="2.765, 6.96, 1.9700000000000002, 15.633504231770832" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="ec6dd674-e3bf-4846-b8fd-a0b07d6f6e66" isExpanded="false" absoluteBounds="2.75, 7.5, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/FIRMA_MALIYIL_BILGILERI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="3b1b006f-090c-462f-bcbf-7f65ef903f2d" absoluteBounds="2.765, 7.9600000000000009, 1.9700000000000002, 29.479207356770832" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="2e1485df-50e5-480a-8f13-17942aada429" isExpanded="false" absoluteBounds="2.75, 8, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/FIRMA_MALIYIL_BEYANNAME_PARAMETRELERI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="20ffca0f-d642-4d75-8dd7-e5e057afeb20" absoluteBounds="2.765, 8.46, 1.9700000000000002, 46.209431966145829" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="292c0c35-f4a9-4a18-bdb6-a485e7ff5f4a" isExpanded="false" absoluteBounds="2.75, 10, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/MUHASEBE_HESAP_PLANI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="832e2fdc-f350-4f16-9882-bc0ac16fd1ea" absoluteBounds="2.765, 10.46, 1.9700000000000002, 6.979939778645833" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="882854d7-d0a4-4b88-b8b5-6fd05dde00b2" isExpanded="false" absoluteBounds="7.25, 9.5, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/SUBELER" />
+      <nestedChildShapes>
+        <elementListCompartment Id="bddf5469-33ad-49a1-8ee0-b1a252e4356a" absoluteBounds="7.265, 9.96, 1.9700000000000002, 10.825968424479166" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="bc2c3586-15a4-4e20-bfce-19d51e290528" isExpanded="false" absoluteBounds="9.5, 0.5, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/BANKALAR" />
+      <nestedChildShapes>
+        <elementListCompartment Id="52c52c57-60db-4711-96ed-ef57dedf988e" absoluteBounds="9.515, 0.96, 1.9700000000000002, 17.5565185546875" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="3e5dbae3-ecdb-484b-b5c7-991ffa2ed207" isExpanded="false" absoluteBounds="9.5, 1, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/KASALAR" />
+      <nestedChildShapes>
+        <elementListCompartment Id="1e164655-ab0f-4c1a-b324-fb1231bd7cdf" absoluteBounds="9.515, 1.46, 1.9700000000000002, 5.0569254557291661" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="f95e88cd-edc3-4650-b678-09465f2e0f93" isExpanded="false" absoluteBounds="9.5, 3.5, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/DEMIRBASLAR" />
+      <nestedChildShapes>
+        <elementListCompartment Id="5a701da0-4cfd-42ef-9ab8-dc7d26cee411" absoluteBounds="9.515, 3.96, 1.9700000000000002, 20.248738606770832" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="5c82f05b-c18b-4a35-b950-7d49dd49ed0f" isExpanded="false" absoluteBounds="9.5, 9.5, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/ISEMIRLERI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="5fc428a1-116e-4983-8ffd-37462e127226" absoluteBounds="9.515, 9.96, 1.9700000000000002, 12.3643798828125" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="f7c3d237-f8cc-41e8-86bc-c8bf228b9d19" isExpanded="false" absoluteBounds="9.5, 10, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/URETIM_MALZEME_PLANLAMA" />
+      <nestedChildShapes>
+        <elementListCompartment Id="4c48a910-5c6f-472f-9ea2-70b2a6d1a36a" absoluteBounds="9.515, 10.46, 1.9700000000000002, 7.941446940104167" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="41f93be1-b7b4-4452-9006-eb8835e82d44" isExpanded="false" absoluteBounds="9.5, 10.5, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/FINANSAL_SOZLESMELER" />
+      <nestedChildShapes>
+        <elementListCompartment Id="16c82d2f-6883-42c5-997d-b9d487ffa05d" absoluteBounds="9.515, 10.96, 1.9700000000000002, 5.6338297526041661" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="0812e9bf-d82d-4bd3-8536-a3591cb1c686" isExpanded="false" absoluteBounds="9.5, 11, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/FINANSAL_SOZLESME_TAKSITLERI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="058b32a7-0367-4a73-94a0-ac57e56dd0b4" absoluteBounds="9.515, 11.46, 1.9700000000000002, 4.8646240234375" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="eeb8161e-c95f-4dc3-8bad-9bfb50d6de63" isExpanded="false" absoluteBounds="0.5, 9.875, 2, 0.45">
+      <DataClassMoniker Name="/BigusAktarimDataContext/AKTARIM_PARAMETRELERI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="02149c8a-390c-4ce1-b9e7-5d4586502030" absoluteBounds="0.51500000000000012, 10.335, 1.9700000000000002, 21.5948486328125" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="dab27d0e-63e4-486c-9a63-066f502503fb" absoluteBounds="20.25, 5, 2, 38.3081689453125">
+      <DataClassMoniker Name="/BigusAktarimDataContext/CARI_HESAPLAR" />
+      <nestedChildShapes>
+        <elementListCompartment Id="161d868b-5bce-4895-b2d7-bd784078daad" absoluteBounds="20.265, 5.46, 1.9700000000000002, 37.7481689453125" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="a933f4d6-78ca-4b1b-af9b-30ba006ce853" absoluteBounds="3.375, 11.75, 2, 36.5774560546875">
+      <DataClassMoniker Name="/BigusAktarimDataContext/CARI_HESAP_HAREKETLERI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="bcde8f7f-17ca-4876-99fe-fdf74bf93874" absoluteBounds="3.39, 12.21, 1.9700000000000002, 36.0174560546875" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="b277f5d8-edaf-474f-8a15-6f0fa214577a" absoluteBounds="6.375, 12.75, 2, 69.653302408854145">
+      <DataClassMoniker Name="/BigusAktarimDataContext/CARI_HESAP_HAREKETLERI_EK" />
+      <nestedChildShapes>
+        <elementListCompartment Id="26b4ee01-3e59-4a8d-bbbe-e15336cc1820" absoluteBounds="6.39, 13.21, 1.9700000000000002, 69.093302408854157" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="f2a6fb32-153a-407e-95ac-face1bcb87c9" absoluteBounds="9.375, 12.75, 2, 45.615623372395831">
+      <DataClassMoniker Name="/BigusAktarimDataContext/STOKLAR" />
+      <nestedChildShapes>
+        <elementListCompartment Id="bf324027-d701-48aa-bd6c-2bcfb1cf8686" absoluteBounds="9.39, 13.21, 1.9700000000000002, 45.055623372395829" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="dee8f585-5d98-4fbc-9c69-c74435652dcb" absoluteBounds="12.375, 12.75, 2, 16.770408528645831">
+      <DataClassMoniker Name="/BigusAktarimDataContext/STOK_HAREKETLERI_EK" />
+      <nestedChildShapes>
+        <elementListCompartment Id="e489befa-3b78-43fb-ae81-bb4bfec2a794" absoluteBounds="12.39, 13.21, 1.9700000000000002, 16.210408528645832" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="c4731357-71de-4a8d-90b3-4035a4c8da51" absoluteBounds="15.375, 0.75, 2, 29.270001627604167">
+      <DataClassMoniker Name="/BigusAktarimDataContext/STOK_HAREKETLERI" />
+      <nestedChildShapes>
+        <elementListCompartment Id="6c73a321-e962-4b89-8eed-8e078069514f" absoluteBounds="15.39, 1.21, 1.9700000000000002, 28.710001627604164" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+  </nestedChildShapes>
+</ordesignerObjectsDiagram>
