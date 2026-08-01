@@ -16,6 +16,7 @@ RUN dotnet publish "BigLineconnect.Relay.csproj" -c Release -o /app/publish /p:U
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
+COPY BigLineconnect.Relay/wwwroot ./wwwroot
 
 ENV ASPNETCORE_URLS=http://+:5080
 EXPOSE 5080

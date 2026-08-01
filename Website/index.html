@@ -2,390 +2,318 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BigLineconnect - Sınır Tanımayan Uzaktan Kontrol & Işık Hızında Bağlantı</title>
-    <meta name="description" content="BigLineconnect, doğrudan makine diline derlenmiş Native AOT altyapısı, dahili dosya transferi ve pano senkronizasyonu ile donatılmış yeni nesil, ultra hızlı ve güvenli uzaktan masaüstü kontrol uygulamasıdır.">
-    <link rel="stylesheet" href="style.css">
-    <style>
-        /* Interactive simulator desktop visual states */
-        .mockup-desktop {
-            display: none;
-            width: 100%;
-            height: 250px;
-            background: radial-gradient(circle, #1a1c38 0%, #090a15 100%);
-            border-radius: 12px;
-            border: 1px solid var(--border-color);
-            position: relative;
-            overflow: hidden;
-            animation: fadeIn 0.5s ease;
-        }
-
-        .desktop-header {
-            background: rgba(255,255,255,0.03);
-            border-bottom: 1.5px solid var(--border-color);
-            padding: 8px 15px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 11px;
-            color: var(--text-muted);
-        }
-
-        .desktop-grid {
-            padding: 15px;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .mock-window {
-            background: rgba(18, 19, 36, 0.85);
-            border: 1px solid rgba(0, 229, 255, 0.2);
-            border-radius: 8px;
-            padding: 10px;
-            width: 180px;
-            box-shadow: var(--glow-cyan);
-        }
-
-        .mock-window-title {
-            font-size: 10px;
-            font-weight: 700;
-            color: var(--cyan);
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-            padding-bottom: 4px;
-            margin-bottom: 6px;
-            display: flex;
-            justify-content: space-between;
-        }
-
-        .mock-window-body {
-            font-size: 9px;
-            color: #d1d4e0;
-            font-family: monospace;
-        }
-
-        .desktop-bottom-bar {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            background: rgba(22, 23, 42, 0.9);
-            border-top: 1px solid var(--border-color);
-            padding: 8px 15px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .btn-disconnect {
-            background: #ff5f56;
-            color: white;
-            border: none;
-            padding: 5px 12px;
-            font-size: 10px;
-            font-weight: 700;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: opacity 0.2s;
-        }
-
-        .btn-disconnect:hover {
-            opacity: 0.9;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: scale(0.95); }
-            to { opacity: 1; transform: scale(1); }
-        }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>BigLineconnect | Güçlü ve Kesintisiz Uzaktan Erişim Sistemi</title>
+    <meta name="description" content="BigLineconnect, yüksek hızlı ekran paylaşımı, kurumsal kota yönetimi ve güvenli bağlantı altyapısına sahip uzaktan masaüstü ve teknik destek yazılımıdır.">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Premium Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css?v=1001">
 </head>
 <body>
-
-    <div class="bg-glow-1"></div>
-    <div class="bg-glow-2"></div>
-
-    <!-- Navigation Header -->
-    <nav>
-        <div class="logo-container">
-            <img src="assets/logo.png" alt="BigLineconnect Logo" class="logo-img">
-            <span class="logo-text">BigLine<span>connect</span></span>
-        </div>
-        <ul class="nav-links">
-            <li><a href="#features">Özellikler</a></li>
-            <li><a href="#about">Nasıl Çalışır</a></li>
-            <li><a href="#developer">Geliştirici</a></li>
-            <li><a href="#domain">Bağlantılar</a></li>
-        </ul>
-        <!-- Point direct to setup.zip in release output -->
-        <a href="https://www.bigus.com.tr/biglineconnect/BigLineconnect_setup.exe" class="btn-nav-download" id="downloadNavBtn">İndir (v17)</a>
-    </nav>
-
-    <!-- Hero Section -->
-    <section class="hero">
-        <div class="hero-content">
-            <div class="hero-tag">Yeni Nesil Uzaktan Kontrol</div>
-            <h1 class="hero-title">Sınır Tanımayan Güç, <br><span>Işık Hızında Bağlantı.</span></h1>
-            <p class="hero-desc">
-                BigLineconnect; doğrudan makine diline derlenmiş Native AOT altyapısı, dahili çift yönlü dosya transferi, anlık pano kopyalama-yapıştırma ve kesintisiz 7/24 servis entegrasyonu ile donatılmış, lisans korumalı yeni nesil siber uzaktan masaüstü kontrol yazılımıdır.
-            </p>
-            <div class="hero-ctas">
-                <a href="https://www.bigus.com.tr/biglineconnect/BigLineconnect_setup.exe" class="btn-primary" id="downloadHeroBtn">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                    Hemen İndir (Windows)
-                </a>
-                <a href="tanitim_videosu.html" class="btn-secondary" style="border-color: #00e5ff; color: #00e5ff; font-weight: 700;">🎬 Tanıtım Videosunu İzle</a>
-                <a href="#features" class="btn-secondary">Özellikleri Keşfet</a>
+    <div id="landing-page" class="landing-container">
+        <!-- Navigation Header -->
+        <header class="navbar">
+            <div class="nav-brand">
+                <img src="logo.png" alt="BigLineconnect Logo" class="nav-logo">
+                <span class="nav-title">BigLine<span class="accent-text">connect</span></span>
             </div>
-        </div>
+            <nav class="nav-links">
+                <a href="#ozellikler"><i class="fa-solid fa-bolt"></i> Özellikler</a>
+                <a href="#fiyatlandirma"><i class="fa-solid fa-tags"></i> Paketler</a>
+                <a href="#indirme"><i class="fa-solid fa-download"></i> İndir</a>
+                <a href="#baglan" class="nav-btn-connect"><i class="fa-solid fa-desktop"></i> Hızlı Bağlan</a>
+                <a href="/admin" class="nav-btn-admin"><i class="fa-solid fa-user-shield"></i> Yönetici Girişi</a>
+            </nav>
+        </header>
 
-        <!-- Interactive Dashboard Simulation -->
-        <div class="hero-visual">
-            <div class="app-mockup">
-                <div class="mockup-header">
-                    <div class="mockup-title">⚡ BigLineconnect - Masaüstü Bağlantısı</div>
-                    <div class="dots">
-                        <span class="dot red"></span>
-                        <span class="dot yellow"></span>
-                        <span class="dot green"></span>
-                    </div>
+        <!-- Hero Section -->
+        <section class="hero-section">
+            <div class="hero-content">
+                <div class="badge-tag">
+                    <i class="fa-solid fa-shield-halved"></i> Güvenli & Yerli Uzaktan Destek Altyapısı
                 </div>
-
-                <div class="mockup-body" id="mockupNormalBody">
-                    <div class="mockup-grid">
-                        <div class="mockup-panel">
-                            <div class="panel-title">Senin Kimliğin</div>
-                            <div class="my-id-box" id="myIdDisplay">138 530 333</div>
-                            <div>
-                                <span class="pulse-dot"></span>
-                                <span class="panel-desc" style="color: #27c93f; font-weight: 600;">Bağlantı Aktif</span>
-                            </div>
-                        </div>
-
-                        <div class="input-group">
-                            <label class="input-label">Bağlanılacak ID</label>
-                            <input type="text" class="mockup-input" id="partnerIdInput" placeholder="862 266 157" maxlength="11">
-                            
-                            <label class="input-label">Parola</label>
-                            <input type="password" class="mockup-input" id="partnerPassInput" placeholder="••••••••">
-                            
-                            <button class="mockup-btn" id="btnConnectMock">TÜNELİ BAŞLAT</button>
-                        </div>
-                    </div>
-
-                    <div class="mockup-status">
-                        <span class="status-label">İstemci Durumu:</span>
-                        <span class="status-value" id="statusText">Sunucuya Bağlı (Hazır)</span>
-                    </div>
+                <h1 class="hero-title">Güçlü, Hızlı ve Kesintisiz <br><span class="gradient-text">Uzaktan Erişim Sistemi</span></h1>
+                <p class="hero-desc">
+                    BigLineconnect ile müşterilerinize ve uzak cihazlarınıza saniyeler içinde bağlanın. Port açma gerektirmeyen tak-çalıştır mimarisi, 60 FPS akıcı görüntü transferi ve kurumsal kota yönetimi ile kesintisiz teknik destek sağlayın.
+                </p>
+                <div class="hero-actions">
+                    <a href="/BigLineconnect_Setup.exe" class="hero-btn primary">
+                        <i class="fa-solid fa-download"></i> Windows İçin İndir (.exe)
+                    </a>
+                    <a href="#baglan" class="hero-btn secondary">
+                        <i class="fa-solid fa-globe"></i> Tarayıcıdan Hızlı Bağlan
+                    </a>
                 </div>
-
-                <!-- Simulation Active Connection View -->
-                <div class="mockup-desktop" id="mockupDesktopBody">
-                    <div class="desktop-header">
-                        <span>🖥️ Uzak Bilgisayar: MirzaThinkPad [ID: 862 266 157]</span>
-                        <span>Aktif Tünel (Gecikme: 4ms)</span>
+                <div class="hero-stats">
+                    <div class="stat-item">
+                        <i class="fa-solid fa-gauge-high"></i>
+                        <span>60 FPS Akıcı Görüntü</span>
                     </div>
-                    <div class="desktop-grid">
-                        <div class="mock-window">
-                            <div class="mock-window-title">
-                                <span>Terminal (AOT Core)</span>
-                                <span style="color:#ff5f56">●</span>
-                            </div>
-                            <div class="mock-window-body">
-                                Microsoft Windows [v10.0.22631]<br>
-                                C:\Users\Mirza> bigline --status<br>
-                                Connected via SECURE_WEBSOCKET<br>
-                                Clipboard synchronized successfully.
-                            </div>
-                        </div>
+                    <div class="stat-item">
+                        <i class="fa-solid fa-lock"></i>
+                        <span>TLS 1.3 Şifreleme</span>
                     </div>
-                    <div class="desktop-bottom-bar">
-                        <span style="font-size: 10px; color:#27c93f;">● Tünel Aktif (60 FPS)</span>
-                        <button class="btn-disconnect" id="btnDisconnectMock">Tüneli Kapat</button>
+                    <div class="stat-item">
+                        <i class="fa-solid fa-server"></i>
+                        <span>Yüksek Bulut Kapasitesi</span>
                     </div>
                 </div>
             </div>
-        </div>
-    </section>
 
-    <!-- Domain & Redirection Details -->
-    <section class="domain-info" id="domain">
-        <h2 class="section-title" style="margin-bottom: 25px;">Kurumsal <span>Tünel Yönlendirmesi</span></h2>
-        <p class="section-desc" style="margin-bottom: 40px;">
-            BigLineconnect, siber erişim kolaylığı için optimize edilmiştir. Doğrudan kurumsal web siteniz üzerinden tek tıkla çalıştırılabilir.
-        </p>
-        <div class="domain-box">
-            <div class="domain-flow">
-                <span class="accent">biglineconnect.com</span>
-                <span class="arrow">➔</span>
-                <span class="magenta">www.bigus.com.tr/biglineconnect</span>
-            </div>
-            <div class="panel-desc" style="max-width: 400px; text-align: left; font-size: 13px;">
-                Cihazlarınızdan veya web tarayıcılarınızdan <strong>biglineconnect.com</strong> adresine istek gönderildiğinde, kurumsal sunucu güvenli yönlendirmesiyle sitemiz üzerinden en güncel kurulum paketlerine anında erişebilirsiniz.
-            </div>
-        </div>
-    </section>
-
-    <!-- Key Features Section -->
-    <section class="features" id="features">
-        <h2 class="section-title">Neden <span>BigLineconnect?</span></h2>
-        <p class="section-desc">Geleneksel uzak masaüstü uygulamalarından daha hızlı, decompile edilemeyen kod yapısıyla çok daha güvenli.</p>
-        
-        <div class="features-grid">
-            <div class="feature-card">
-                <div class="feature-icon">🛡️</div>
-                <div class="feature-name">Native AOT Koruması</div>
-                <div class="feature-desc">
-                    Program doğrudan makine koduna (Binary) derlenmiştir. Klasik .NET uygulamalarının aksine, dnSpy veya ILSpy ile kodu decompile etmek imkansızdır.
-                </div>
-            </div>
-
-            <div class="feature-card">
-                <div class="feature-icon">🚀</div>
-                <div class="feature-name">Işık Hızında Yanıt</div>
-                <div class="feature-desc">
-                    Çekirdeğinde JIT derleme süresi veya çalışma zamanı ek yükü barındırmaz. Milisaniyeler içinde sunucuyla el sıkışır ve bağlantıyı kurar.
-                </div>
-            </div>
-
-            <div class="feature-card">
-                <div class="feature-icon">📂</div>
-                <div class="feature-name">Dahili Dosya Yöneticisi</div>
-                <div class="feature-desc">
-                    Klasör veya dosyalarınızı yerel cihazınızdan karşı cihaza tünel üzerinden tek tıkla aktarın. Hem masaüstü hem de downloads desteğiyle.
-                </div>
-            </div>
-
-            <div class="feature-card">
-                <div class="feature-icon">📋</div>
-                <div class="feature-name">Pano (Clipboard) Eşleme</div>
-                <div class="feature-desc">
-                    Ctrl+C ve Ctrl+V komutlarıyla yazıları, kimlikleri ve linkleri karşı bilgisayarla anında ve şifreli bir biçimde senkronize edin.
-                </div>
-            </div>
-
-            <div class="feature-card">
-                <div class="feature-icon">🔄</div>
-                <div class="feature-name">Sessiz Yeniden Başlatma</div>
-                <div class="feature-desc">
-                    Herhangi bir problem anında uzak bilgisayara yeniden başlatma komutu iletebilir, cihaz açıldığında tünelle otomatik olarak bağlanabilirsiniz.
-                </div>
-            </div>
-
-            <div class="feature-card">
-                <div class="feature-icon">⚙️</div>
-                <div class="feature-name">7/24 Kesintisiz Servis</div>
-                <div class="feature-desc">
-                    Uygulamayı sistem yetkileriyle Windows Servisi olarak kurun. Kullanıcı oturum açmasa bile cihaz her açıldığında otomatik olarak arka planda erişilebilir olsun.
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Developer Section -->
-    <section class="features" id="developer" style="background: rgba(18, 19, 36, 0.2); border-top: 1px solid var(--border-color);">
-        <h2 class="section-title">Geliştiriciler & <span>Kurumlar İçin</span></h2>
-        <p class="section-desc">BigLineconnect'i kendi altyapınıza entegre edin.</p>
-        
-        <div class="features-grid" style="grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); max-width: 1000px; margin: 0 auto;">
-            <div class="feature-card" style="border-left: 3px solid var(--cyan);">
-                <div class="feature-name">🎯 Lisanslama & Güvenlik</div>
-                <div class="feature-desc" style="font-size: 13px;">
-                    Uygulama yerel bilgisayarın Anakart, CPU ve Disk bilgilerini harmanlayarak eşsiz bir <strong>HWID (Hardware ID)</strong> çıkartır. 
-                    RSA-2048 dijital imzalı lisans sistemi sayesinde sadece doğrulanmış cihazlar üzerinden yetkili kanallara bağlanabilirsiniz.
-                </div>
-            </div>
-            
-            <div class="feature-card" style="border-left: 3px solid var(--magenta);">
-                <div class="feature-name">🛠️ Kolay Kurulum Komutları</div>
-                <div class="feature-desc" style="font-size: 13px; font-family: monospace; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px;">
-                    sc.exe create BigLineconnectSvc binPath= "...\BigLineconnect.exe --service" start= auto<br>
-                    sc.exe start BigLineconnectSvc
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Footer -->
-    <footer>
-        <div class="footer-logo">BigLine<span>connect</span></div>
-        <p>Bigus Teknoloji Hizmetleri ve Güvenlik Altyapısı bünyesinde geliştirilmiştir.</p>
-        <div class="footer-copyright">
-            &copy; 2026 Bigus Co. Tüm hakları saklıdır. www.biglineconnect.com kurumsal yönlendirmesi altındadır.
-        </div>
-    </footer>
-
-    <!-- Interactive Simulator Logic -->
-    <script>
-        const btnConnect = document.getElementById('btnConnectMock');
-        const btnDisconnect = document.getElementById('btnDisconnectMock');
-        const statusText = document.getElementById('statusText');
-        const partnerId = document.getElementById('partnerIdInput');
-        const partnerPass = document.getElementById('partnerPassInput');
-        const normalBody = document.getElementById('mockupNormalBody');
-        const desktopBody = document.getElementById('mockupDesktopBody');
-
-        // Automatically format partner ID as xxx xxx xxx
-        partnerId.addEventListener('input', (e) => {
-            let value = e.target.value.replace(/\D/g, '');
-            if (value.length > 3 && value.length <= 6) {
-                value = value.substring(0, 3) + ' ' + value.substring(3);
-            } else if (value.length > 6) {
-                value = value.substring(0, 3) + ' ' + value.substring(3, 6) + ' ' + value.substring(6, 9);
-            }
-            e.target.value = value;
-        });
-
-        btnConnect.addEventListener('click', () => {
-            let idVal = partnerId.value.trim();
-            if (idVal.length < 11) {
-                // If empty or short, default to standard test id
-                idVal = "862 266 157";
-                partnerId.value = idVal;
-            }
-            if (partnerPass.value.trim() === "") {
-                partnerPass.value = "Mirza_2004";
-            }
-
-            btnConnect.disabled = true;
-            btnConnect.textContent = "BAĞLANILIYOR...";
-            statusText.textContent = "Relay sunucusuna bağlanılıyor...";
-            statusText.style.color = "var(--cyan)";
-
-            setTimeout(() => {
-                statusText.textContent = "Kimlik sorgulanıyor [ID: " + idVal + "]...";
-                
-                setTimeout(() => {
-                    statusText.textContent = "Aktif tünel kuruluyor, el sıkışılıyor...";
+            <!-- Instant Connect Card (Web Client Widget) -->
+            <div id="baglan" class="hero-widget">
+                <div class="glass-card connection-card">
+                    <div class="logo-wrapper">
+                        <img src="logo.png" alt="Bigus Logo" class="brand-logo">
+                    </div>
+                    <h2 class="brand-title">BigLineconnect</h2>
+                    <p class="brand-subtitle">Tarayıcıdan Anında Bağlanın</p>
                     
-                    setTimeout(() => {
-                        // Switch to simulated desktop
-                        normalBody.style.display = 'none';
-                        desktopBody.style.display = 'block';
-                        btnConnect.disabled = false;
-                        btnConnect.textContent = "TÜNELİ BAŞLAT";
-                    }, 800);
-                }, 1000);
-            }, 800);
-        });
+                    <div class="input-group">
+                        <label for="target-id"><i class="fa-solid fa-desktop"></i> UZAKTAKİ MASA ID'Sİ (REMOTE ID)</label>
+                        <input type="text" id="target-id" placeholder="Örn: 393 215 720" style="text-align: center; letter-spacing: 2px; font-weight: 800; font-size: 1.3rem;">
+                    </div>
+                    
+                    <button id="connect-btn" class="primary-btn">
+                        <span>Bağlan</span> <i class="fa-solid fa-arrow-right-to-bracket"></i>
+                    </button>
+                    
+                    <div class="card-footer">
+                        <p><i class="fa-solid fa-shield-halved"></i> Güvenli yerel ağ bağlantısı</p>
+                    </div>
+                </div>
+            </div>
+        </section>
 
-        btnDisconnect.addEventListener('click', () => {
-            desktopBody.style.display = 'none';
-            normalBody.style.display = 'block';
-            statusText.textContent = "Sunucuya Bağlı (Hazır)";
-            statusText.style.color = "#27c93f";
-            partnerId.value = "";
-            partnerPass.value = "";
-        });
+        <!-- Features Section -->
+        <section id="ozellikler" class="features-section">
+            <div class="section-header">
+                <h2>Neden BigLineconnect?</h2>
+                <p>Rakipsiz hız, uçtan uca güvenlik ve esnek lisanslama seçenekleri ile işinizi büyütün.</p>
+            </div>
 
-        // Dynamic generation of fake ID
-        const myIdBox = document.getElementById('myIdDisplay');
-        const generateRandomId = () => {
-            const part1 = Math.floor(100 + Math.random() * 900);
-            const part2 = Math.floor(100 + Math.random() * 900);
-            const part3 = Math.floor(100 + Math.random() * 900);
-            myIdBox.textContent = `${part1} ${part2} ${part3}`;
-        };
-        setInterval(generateRandomId, 15000);
-    </script>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fa-solid fa-bolt"></i></div>
+                    <h3>60 FPS Akıcı Ekran Transferi</h3>
+                    <p>Düşük gecikme süreli grafik motoru sayesinde uzak bilgisayarları sanki başındaymış gibi yönetin.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fa-solid fa-shield-cat"></i></div>
+                    <h3>Uçtan Uca 256-bit Şifreleme</h3>
+                    <p>TLS 1.3 ve SHA-256 kriptografik koruma ile tüm veri akışınız güvence altındadır.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fa-solid fa-plug-circle-check"></i></div>
+                    <h3>Port Açma Gerektirmez</h3>
+                    <p>Modem veya güvenlik duvarı ayarı gerekmez. Kurulumsuz çalıştırın, doğrudan bağlanın.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fa-solid fa-users-gear"></i></div>
+                    <h3>Çoklu Operatör & Kanal Yönetimi</h3>
+                    <p>Ekibinizdeki teknik destek personelini gruplayın, eşzamanlı kanal ve kota kullanımını izleyin.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fa-solid fa-laptop-code"></i></div>
+                    <h3>Unattended (Arka Plan) Cihaz Kaydı</h3>
+                    <p>Müşteri bilgisayarlarına şifreli servis kurarak 7/24 kesintisiz erişim ve yönetim imkanı.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fa-solid fa-mobile-screen-button"></i></div>
+                    <h3>Mobil & Web Tam Uyumlu</h3>
+                    <p>Masaüstü uygulamasına ek olarak web tarayıcılarından ve mobil cihazlardan sorunsuz bağlanın.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Pricing Section -->
+        <section id="fiyatlandirma" class="pricing-section">
+            <div class="section-header">
+                <h2>Abonelik ve Paketler</h2>
+                <p>İhtiyacınıza en uygun paketi seçin, anında kullanmaya başlayın.</p>
+            </div>
+
+            <div class="pricing-grid">
+                <div class="pricing-card">
+                    <div class="package-header">
+                        <h3>Başlangıç</h3>
+                        <div class="price">₺1.490 <span>/ yıl</span></div>
+                    </div>
+                    <ul class="package-features">
+                        <li><i class="fa-solid fa-check"></i> <strong>1 Operatör</strong> Lisansı</li>
+                        <li><i class="fa-solid fa-check"></i> <strong>5 Eşzamanlı Kanal</strong></li>
+                        <li><i class="fa-solid fa-check"></i> <strong>50 Unattended Cihaz</strong> Kaydı</li>
+                        <li><i class="fa-solid fa-check"></i> Tam Web & Masaüstü Desteği</li>
+                        <li><i class="fa-solid fa-check"></i> 7/24 Kesintisiz Sunucu Erişimi</li>
+                    </ul>
+                    <a href="/admin" class="price-btn">Lisans Tanımla</a>
+                </div>
+
+                <div class="pricing-card featured">
+                    <div class="popular-badge">En Çok Tercih Edilen</div>
+                    <div class="package-header">
+                        <h3>Pro</h3>
+                        <div class="price">₺3.990 <span>/ yıl</span></div>
+                    </div>
+                    <ul class="package-features">
+                        <li><i class="fa-solid fa-check"></i> <strong>2 Operatör</strong> Lisansı</li>
+                        <li><i class="fa-solid fa-check"></i> <strong>10 Eşzamanlı Kanal</strong></li>
+                        <li><i class="fa-solid fa-check"></i> <strong>100 Unattended Cihaz</strong> Kaydı</li>
+                        <li><i class="fa-solid fa-check"></i> Tam Web & Masaüstü Desteği</li>
+                        <li><i class="fa-solid fa-check"></i> Öncelikli Teknik Destek</li>
+                    </ul>
+                    <a href="/admin" class="price-btn primary">Lisans Tanımla</a>
+                </div>
+
+                <div class="pricing-card">
+                    <div class="package-header">
+                        <h3>Pro+</h3>
+                        <div class="price">₺4.990 <span>/ yıl</span></div>
+                    </div>
+                    <ul class="package-features">
+                        <li><i class="fa-solid fa-check"></i> <strong>3 Operatör</strong> Lisansı</li>
+                        <li><i class="fa-solid fa-check"></i> <strong>15 Eşzamanlı Kanal</strong></li>
+                        <li><i class="fa-solid fa-check"></i> <strong>150 Unattended Cihaz</strong> Kaydı</li>
+                        <li><i class="fa-solid fa-check"></i> Tam Web & Masaüstü Desteği</li>
+                        <li><i class="fa-solid fa-check"></i> Özel Müşteri Temsilcisi</li>
+                    </ul>
+                    <a href="/admin" class="price-btn">Lisans Tanımla</a>
+                </div>
+
+                <div class="pricing-card">
+                    <div class="package-header">
+                        <h3>Kurumsal</h3>
+                        <div class="price">Özel Teklif</div>
+                    </div>
+                    <ul class="package-features">
+                        <li><i class="fa-solid fa-check"></i> <strong>Sınırsız Operatör</strong></li>
+                        <li><i class="fa-solid fa-check"></i> <strong>Sınırsız / Esnek Kanal</strong></li>
+                        <li><i class="fa-solid fa-check"></i> <strong>Sınırsız Cihaz Kaydı</strong></li>
+                        <li><i class="fa-solid fa-check"></i> Özel Sunucu Konfigürasyonu</li>
+                        <li><i class="fa-solid fa-check"></i> Özel Logo & Markalama</li>
+                    </ul>
+                    <a href="mailto:info@bigus.com.tr" class="price-btn">İletişime Geçin</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Download Section -->
+        <section id="indirme" class="download-section">
+            <div class="download-card">
+                <div class="download-info">
+                    <h2>Masaüstü Uygulamasını İndirin</h2>
+                    <p>Windows 10, 11 ve Sunucu işletim sistemleri için optimize edilmiş Native AOT exe sürümünü tek tıkla yükleyin.</p>
+                </div>
+                <div class="download-action">
+                    <a href="/BigLineconnect_Setup.exe" class="download-large-btn">
+                        <i class="fa-solid fa-download"></i> Windows İstemcisi İndir
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <img src="logo.png" alt="Bigus Logo" class="footer-logo">
+                    <span>BigLineconnect</span>
+                    <p>© 2026 Bigus Mobile ERP & Yazılım Teknolojileri. Tüm hakları saklıdır.</p>
+                </div>
+                <div class="footer-links">
+                    <a href="/admin">Yönetim Paneli</a>
+                    <a href="#ozellikler">Özellikler</a>
+                    <a href="#fiyatlandirma">Paketler</a>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Viewer Screen Overlay (When Web Client Connects) -->
+    <div id="viewer-screen" class="viewer-screen hidden">
+        <!-- Header bar -->
+        <header class="viewer-header">
+            <div class="header-left">
+                <img src="logo.png" alt="Bigus Logo" class="header-logo">
+                <span class="header-title">BigLineconnect</span>
+            </div>
+            <div class="header-center">
+                <div class="status-indicator connected">
+                    <span class="pulse-dot"></span>
+                    <span id="connection-status">Bağlı</span>
+                </div>
+            </div>
+            <div class="header-right">
+                <button id="fullscreen-btn" class="icon-btn" title="Tam Ekran"><i class="fa-solid fa-expand"></i></button>
+                <button id="disconnect-btn" class="icon-btn danger" title="Bağlantıyı Kes"><i class="fa-solid fa-power-off"></i></button>
+            </div>
+        </header>
+
+        <!-- Remote screen rendering image -->
+        <div class="canvas-container" id="canvas-container">
+            <img id="screen-img" style="width: 100%; height: 100%; object-fit: contain; cursor: crosshair; display: block;">
+        </div>
+
+        <!-- Floating Controls for Mobile & Actions -->
+        <div class="floating-controls">
+            <button id="toggle-keyboard-btn" class="control-btn" title="Klavyeyi Aç">
+                <i class="fa-solid fa-keyboard"></i> <span>Klavye</span>
+            </button>
+            <button id="btn-esc" class="control-btn special-key" data-key="escape">Esc</button>
+            <button id="btn-tab" class="control-btn special-key" data-key="tab">Tab</button>
+            <button id="btn-ctrl-alt-del" class="control-btn action-key" title="Ctrl+Alt+Del Gönder">
+                <i class="fa-solid fa-unlock-keyhole"></i> <span>CAD</span>
+            </button>
+            <div class="control-group">
+                <button id="mouse-mode-btn" class="control-btn toggle-active" title="Fare Modu">
+                    <i class="fa-solid fa-computer-mouse"></i> <span id="mouse-mode-text">Sol Tık</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Hidden input to capture keyboard events on mobile -->
+        <input type="text" id="hidden-keyboard-input" autocomplete="off" autocapitalize="off" spellcheck="false">
+    </div>
+
+    <!-- Password Prompt Dialog -->
+    <div id="password-modal" class="hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 10000; display: flex; justify-content: center; align-items: center; padding: 15px;">
+        <div class="glass-card connection-card" style="max-width: 360px; width: 100%; padding: 25px; text-align: center;">
+            <h3 style="margin-bottom: 10px; color: var(--accent-color); font-size: 1.4rem;">Erişim Şifresi Gerekli</h3>
+            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 15px;">Lütfen hedef bilgisayarın kişisel erişim şifresini girin:</p>
+            <div class="input-group" style="margin-bottom: 15px;">
+                <input type="text" id="access-password-input" placeholder="Şifre" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="text-align: center; width: 100%; padding: 14px; font-size: 22px; letter-spacing: 4px; font-weight: bold; -webkit-text-security: disc; text-security: disc; background: rgba(0,0,0,0.6); border: 2px solid var(--accent-color); border-radius: 10px; color: white;">
+            </div>
+
+            <!-- Touch Numpad Grid -->
+            <div class="numpad-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 15px;">
+                <button type="button" class="numpad-btn" data-val="1">1</button>
+                <button type="button" class="numpad-btn" data-val="2">2</button>
+                <button type="button" class="numpad-btn" data-val="3">3</button>
+                <button type="button" class="numpad-btn" data-val="4">4</button>
+                <button type="button" class="numpad-btn" data-val="5">5</button>
+                <button type="button" class="numpad-btn" data-val="6">6</button>
+                <button type="button" class="numpad-btn" data-val="7">7</button>
+                <button type="button" class="numpad-btn" data-val="8">8</button>
+                <button type="button" class="numpad-btn" data-val="9">9</button>
+                <button type="button" class="numpad-btn action" data-val="clear">Sil</button>
+                <button type="button" class="numpad-btn" data-val="0">0</button>
+                <button type="button" class="numpad-btn action" data-val="backspace"><i class="fa-solid fa-delete-left"></i></button>
+            </div>
+
+            <button id="submit-password-btn" class="primary-btn" style="padding: 14px; font-size: 1.1rem;">Doğrula & Bağlan <i class="fa-solid fa-arrow-right-to-bracket"></i></button>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="toast hidden"></div>
+
+    <script src="app.js?v=1001"></script>
 </body>
 </html>
