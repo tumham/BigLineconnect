@@ -475,6 +475,22 @@ cadBtn.addEventListener('click', () => {
     }, 100);
 });
 
+// On-Screen Touch Numpad Actions for Mobile
+document.querySelectorAll('.numpad-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const val = btn.getAttribute('data-val');
+        if (val === 'clear') {
+            accessPasswordInput.value = '';
+        } else if (val === 'backspace') {
+            accessPasswordInput.value = accessPasswordInput.value.slice(0, -1);
+        } else if (val) {
+            accessPasswordInput.value += val;
+        }
+    });
+});
+
 // Password submit actions
 function sendPassword() {
     const pass = accessPasswordInput.value;

@@ -457,3 +457,29 @@ body, html {
         justify-content: center;
     }
 }
+
+/* On-Screen Touch Numpad */
+.numpad-btn {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
+    color: #ffffff;
+    font-size: 1.4rem;
+    font-weight: 600;
+    padding: 12px 0;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+}
+.numpad-btn:active {
+    background: var(--accent-color);
+    color: #000;
+    transform: scale(0.95);
+}
+.numpad-btn.action {
+    background: rgba(255, 255, 255, 0.04);
+    color: #bbb;
+    font-size: 0.95rem;
+}
