@@ -543,9 +543,14 @@ namespace BigLineconnect.Relay
                     }
 
                     bool isViewOnly = false;
-                    if (session.ClientSocket != null)
+                    if (session.ClientSocket != null && session.ClientSocket.State == WebSocketState.Open)
                     {
                         isViewOnly = true;
+                    }
+                    else
+                    {
+                        session.ClientSocket = null;
+                        try { session.Cts?.Cancel(); } catch { }
                     }
 
                     if (!isViewOnly)
