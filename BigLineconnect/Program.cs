@@ -3963,6 +3963,8 @@ namespace BigLineconnect
 
         public static string LicenseFilePath => ConfigHelper.GetConfigPath("license.key");
 
+        public static DateTime LicenseExpiryDate { get; private set; } = DateTime.MaxValue;
+
         public static void Initialize()
         {
             try
@@ -4059,7 +4061,6 @@ namespace BigLineconnect
             if (IsLicenseActive)
             {
                 IsTrialExpired = false;
-                RemainingDays = 9999;
                 return;
             }
 
@@ -4132,6 +4133,10 @@ namespace BigLineconnect
                         {
                             return false;
                         }
+
+                        LicenseExpiryDate = expiryDate;
+                        int daysLeft = (int)(expiryDate.Date - DateTime.Today).TotalDays;
+                        RemainingDays = daysLeft > 9999 ? 9999 : (daysLeft < 0 ? 0 : daysLeft);
                     }
                     else
                     {
