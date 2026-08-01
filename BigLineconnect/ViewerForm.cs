@@ -115,7 +115,30 @@ namespace BigLineconnect
         private long _currentFileTotalBytes = 0;
         private string? _activeBatchTargetFolder;
         private string _recordDir = "";
-        private int _frameIndex = 0;
+        private ulong _lastFrameHash = 0;
+        private int _savedFrameIndex = 0;
+        private int _totalFramesReceivedCount = 0;
+        private int _skippedFramesCount = 0;
+        private int _fpsCounter = 0;
+        private int _currentFps = 0;
+        private DateTime _lastFpsCalcTime = DateTime.Now;
+        private DateTime _lastFrameReceivedTime = DateTime.Now;
+        private Label? _lblFpsStats;
+
+        private static ulong FastBufferHash(byte[] buffer, int count)
+        {
+            unchecked
+            {
+                ulong h = 14695981039346656037UL;
+                int step = Math.Max(1, count / 128);
+                for (int i = 0; i < count; i += step)
+                {
+                    h = (h ^ buffer[i]) * 1099511628211UL;
+                }
+                h = (h ^ (ulong)count) * 1099511628211UL;
+                return h;
+            }
+        }
 
         public ViewerForm(string wsUrl, string targetId, string savedPassword = "")
         {
@@ -294,6 +317,18 @@ namespace BigLineconnect
             panelTop.Controls.Add(btnQuality);
             panelTop.Controls.Add(btnWallpaper);
 
+            _lblFpsStats = new Label
+            {
+                Text = "⚡ -- FPS | -- ms",
+                Location = new Point(975, 10),
+                Size = new Size(130, 22),
+                ForeColor = Color.FromArgb(0, 229, 255),
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                TextAlign = ContentAlignment.MiddleRight,
+                Anchor = AnchorStyles.Top | AnchorStyles.Right
+            };
+            panelTop.Controls.Add(_lblFpsStats);
+
             _pictureBox = new PictureBox
             {
                 Dock = DockStyle.Fill,
@@ -415,6 +450,29 @@ namespace BigLineconnect
                     if (result.MessageType == WebSocketMessageType.Binary && totalReceived > 0)
                     {
                         _hasConnectedOnce = true;
+                        DateTime now = DateTime.Now;
+                        double frameLatency = (now - _lastFrameReceivedTime).TotalMilliseconds;
+                        _lastFrameReceivedTime = now;
+
+                        _fpsCounter++;
+                        _totalFramesReceivedCount++;
+                        if ((now - _lastFpsCalcTime).TotalMilliseconds >= 1000)
+                        {
+                            _currentFps = _fpsCounter;
+                            _fpsCounter = 0;
+                            _lastFpsCalcTime = now;
+
+                            int displayFps = _currentFps;
+                            int displayLatency = (int)Math.Max(5, Math.Min(frameLatency, 999));
+                            this.BeginInvoke(new Action(() =>
+                            {
+                                if (_lblFpsStats != null && !_lblFpsStats.IsDisposed)
+                                {
+                                    _lblFpsStats.Text = $"⚡ {displayFps} FPS | {displayLatency} ms";
+                                }
+                            }));
+                        }
+
                         this.BeginInvoke(new Action(() =>
                         {
                             string cleanTitle = LanguageManager.Get("title_viewer", _targetId);
@@ -424,16 +482,30 @@ namespace BigLineconnect
                             }
                         }));
 
+                        // Deduplication for frame recording: skip identical static frames
+                        ulong currentFrameHash = FastBufferHash(buffer, totalReceived);
+                        bool isDuplicateFrame = (currentFrameHash == _lastFrameHash);
+                        _lastFrameHash = currentFrameHash;
+
                         if (Program.RecordConnections && !string.IsNullOrEmpty(_recordDir))
                         {
-                            _frameIndex++;
-                            string framePath = Path.Combine(_recordDir, $"frame_{_frameIndex:D6}.jpg");
-                            byte[] frameBytes = new byte[totalReceived];
-                            Array.Copy(buffer, 0, frameBytes, 0, totalReceived);
-                            _ = Task.Run(() =>
+                            _totalFramesReceivedCount++;
+                            if (isDuplicateFrame)
                             {
-                                try { File.WriteAllBytes(framePath, frameBytes); } catch { }
-                            });
+                                _skippedFramesCount++;
+                            }
+                            else
+                            {
+                                _savedFrameIndex++;
+                                int currentSavedIndex = _savedFrameIndex;
+                                string framePath = Path.Combine(_recordDir, $"frame_{currentSavedIndex:D6}.jpg");
+                                byte[] frameBytes = new byte[totalReceived];
+                                Array.Copy(buffer, 0, frameBytes, 0, totalReceived);
+                                _ = Task.Run(() =>
+                                {
+                                    try { File.WriteAllBytes(framePath, frameBytes); } catch { }
+                                });
+                            }
                         }
 
                         // Load image frame
