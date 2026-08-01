@@ -160,6 +160,7 @@ function connectToHost(id) {
                     passwordModal.classList.remove('hidden');
                     accessPasswordInput.value = '';
                     accessPasswordInput.focus();
+                    showToast('Karşı bilgisayara bağlanmak için Erişim Şifresi gereklidir.', 'info');
                 } else if (event.data === 'AUTH_WAITING') {
                     if (connectionStatus) {
                         connectionStatus.innerHTML = `<span class="status-dot online"></span>Onay Bekleniyor...`;

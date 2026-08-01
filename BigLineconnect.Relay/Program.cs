@@ -557,6 +557,11 @@ namespace BigLineconnect.Relay
                         TelemetryManager.LogEvent(session.Hwid, session.IpAddress, session.ComputerName, session.Username, session.OsVersion, session.AppVersion, "connect", $"İstemci bağlandı. İstemci IP: {clientIp}, Hedef ID: {targetId}");
 
                         string ticketToken = context.Request.Query["ticketToken"].ToString().Trim();
+                        if (string.IsNullOrEmpty(ticketToken) && ActiveSupportRequests.TryGetValue(targetId, out var activeReq))
+                        {
+                            ticketToken = activeReq.Token;
+                        }
+
                         string startCmdText = "START_STREAM";
                         if (!string.IsNullOrEmpty(ticketToken) && 
                             ActiveSupportRequests.TryGetValue(targetId, out var ticket) && 
