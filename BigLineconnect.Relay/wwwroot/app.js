@@ -109,6 +109,7 @@ function connectToHost(id) {
             viewerScreen.classList.add('hidden');
             connectionScreen.classList.remove('hidden');
             passwordModal.classList.add('hidden');
+            if (hiddenKeyboardInput) hiddenKeyboardInput.disabled = false;
             socket = null;
             
             // Reset zoom state
@@ -158,8 +159,12 @@ function connectToHost(id) {
                     socket.close();
                 } else if (event.data === 'AUTH_REQUIRED') {
                     passwordModal.classList.remove('hidden');
+                    if (hiddenKeyboardInput) hiddenKeyboardInput.disabled = true;
+                    accessPasswordInput.disabled = false;
                     accessPasswordInput.value = '';
-                    accessPasswordInput.focus();
+                    setTimeout(() => {
+                        accessPasswordInput.focus();
+                    }, 150);
                     showToast('Karşı bilgisayara bağlanmak için Erişim Şifresi gereklidir.', 'info');
                 } else if (event.data === 'AUTH_WAITING') {
                     if (connectionStatus) {
@@ -168,13 +173,17 @@ function connectToHost(id) {
                     showToast('Bağlantı için karşı bilgisayarın onayı bekleniyor...', 'info');
                 } else if (event.data === 'AUTH_SUCCESS') {
                     passwordModal.classList.add('hidden');
+                    if (hiddenKeyboardInput) hiddenKeyboardInput.disabled = false;
                     showToast('Doğrulama başarılı!', 'success');
                 } else if (event.data === 'AUTH_FAILED') {
                     customCloseReason = 'Hatalı erişim şifresi girildi!';
                     passwordModal.classList.add('hidden');
+                    if (hiddenKeyboardInput) hiddenKeyboardInput.disabled = false;
                     socket.close();
                 } else if (event.data === 'AUTH_REJECTED') {
                     customCloseReason = 'Bağlantı isteği kullanıcı tarafından reddedildi!';
+                    passwordModal.classList.add('hidden');
+                    if (hiddenKeyboardInput) hiddenKeyboardInput.disabled = false;
                     socket.close();
                 } else if (event.data.startsWith('{')) {
                     try {
@@ -235,12 +244,14 @@ mouseModeBtn.addEventListener('click', () => {
 
 // Keyboard Button for Mobile
 toggleKeyboardBtn.addEventListener('click', () => {
+    if (passwordModal && !passwordModal.classList.contains('hidden')) return;
     hiddenKeyboardInput.focus();
     showToast('Klavye aktif hale getirildi.', 'success');
 });
 
 // hidden keyboard input handling
 hiddenKeyboardInput.addEventListener('keydown', (e) => {
+    if (passwordModal && !passwordModal.classList.contains('hidden')) return;
     if (!connected || !socket) return;
     
     // Send key down and quick release key up
@@ -249,6 +260,7 @@ hiddenKeyboardInput.addEventListener('keydown', (e) => {
 });
 
 hiddenKeyboardInput.addEventListener('input', () => {
+    if (passwordModal && !passwordModal.classList.contains('hidden')) return;
     hiddenKeyboardInput.value = ''; // Always keep clear
 });
 
