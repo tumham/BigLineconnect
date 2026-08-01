@@ -406,19 +406,24 @@ screenImg.addEventListener('touchcancel', (e) => {
 
 // Global Key Listeners for Desktop client keyboard input
 window.addEventListener('keydown', (e) => {
-    if (!connected) return;
-    // Do not capture keys if password modal is open or user is typing in input fields
-    if (document.activeElement === targetIdInput || document.activeElement === accessPasswordInput) return;
+    // 1. NEVER capture keys if user is typing into ANY input/textarea
+    if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable)) return;
+    // 2. NEVER capture keys if password modal is visible
     if (passwordModal && !passwordModal.classList.contains('hidden')) return;
+    
+    if (!connected) return;
     
     sendKey(e.key, 'down');
     e.preventDefault();
 });
 
 window.addEventListener('keyup', (e) => {
-    if (!connected) return;
-    if (document.activeElement === targetIdInput || document.activeElement === accessPasswordInput) return;
+    // 1. NEVER capture keys if user is typing into ANY input/textarea
+    if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable)) return;
+    // 2. NEVER capture keys if password modal is visible
     if (passwordModal && !passwordModal.classList.contains('hidden')) return;
+    
+    if (!connected) return;
     
     sendKey(e.key, 'up');
     e.preventDefault();
