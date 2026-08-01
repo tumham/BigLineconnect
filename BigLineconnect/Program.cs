@@ -1558,7 +1558,7 @@ namespace BigLineconnect
                     await SafeSendAsync(ws, new ArraySegment<byte>(waitingMsg), WebSocketMessageType.Text, true, token).ConfigureAwait(false);
 
                     bool accepted = false;
-                    if (KvkkMode == 2 || (KvkkMode == 1 && KvkkAcceptedOnce))
+                    if (!EnableKvkkDisclaimer || KvkkMode == 2 || (KvkkMode == 1 && KvkkAcceptedOnce))
                     {
                         Log("KVKK / Onay modu otomatik kabule ayarlı, doğrudan onaylandı.");
                         accepted = true;

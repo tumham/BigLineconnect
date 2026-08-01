@@ -508,6 +508,46 @@ namespace BigLineconnect
             };
             advancedGroup.Controls.Add(chkLinked);
 
+            var chkKvkk = new CheckBox
+            {
+                Text = "KVKK & Bağlantı Onayı Sor",
+                Location = new Point(290, 60),
+                Size = new Size(155, 25),
+                ForeColor = Color.White,
+                Font = new Font("Segoe UI", 9F, FontStyle.Regular),
+                Cursor = Cursors.Hand,
+                Checked = Program.EnableKvkkDisclaimer
+            };
+            chkKvkk.CheckedChanged += (s, ev) => {
+                Program.EnableKvkkDisclaimer = chkKvkk.Checked;
+                Program.SaveAdvancedSettings();
+            };
+            advancedGroup.Controls.Add(chkKvkk);
+
+            var btnKvkkOpt = new Button
+            {
+                Text = "⚙️ Ayarlar",
+                Location = new Point(448, 58),
+                Size = new Size(67, 25),
+                BackColor = Color.FromArgb(40, 45, 55),
+                ForeColor = Color.FromArgb(0, 229, 255),
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 8F, FontStyle.Bold),
+                Cursor = Cursors.Hand
+            };
+            btnKvkkOpt.FlatAppearance.BorderSize = 1;
+            btnKvkkOpt.FlatAppearance.BorderColor = Color.FromArgb(0, 229, 255);
+            btnKvkkOpt.Click += (s, ev) => {
+                using (var dlg = new KvkkSettingsForm())
+                {
+                    if (dlg.ShowDialog(this) == DialogResult.OK)
+                    {
+                        chkKvkk.Checked = Program.EnableKvkkDisclaimer;
+                    }
+                }
+            };
+            advancedGroup.Controls.Add(btnKvkkOpt);
+
             // 4. Log text
             _logLabel = new Label
             {
