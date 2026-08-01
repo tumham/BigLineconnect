@@ -3952,7 +3952,7 @@ namespace BigLineconnect
 
     public static class LicenseSystem
     {
-        private const string PublicKeyXml = "<RSAKeyValue><Modulus>uSHCnsWG/JNo9Hqp3KdUiruhzPNZiHzewKZ8oemQf0XSxOt2yJx/eaeXcyWigiVUNOZEev+t/acsAUjSMnF/u/8MMo43q+IL6Ex497r6GOzdpW1GYWivYgMITqY9O4zbJ1X16Mj4O6StALSwaXEgjkBtZ5J0874bOi9nme1hfptF6mA6/uw/WqQe1wq1YSJBHkQnIW0aBDMF/pas4PhNlIwJiZKRm2e04yqY+ONn/mqDigsyenx5qe88B8dcNic7h2qbhJnysdkyZaFP4eCqwNWylB6wmxCMKKktkBFuLQxKG3p78bEfkpVrYtIBHJ3zIoWziO87vTCOjH6XuW2fsQ==</Modulus><Exponent>AQAB</Exponent></RSAKeyValue>";
+        private const string PublicKeyXml = "<RSAKeyValue><Modulus>2J5cjvVKSc7AvPzaP7PvEroP73TjctXsno3fQGdelOVp/lLm51BtDeN+MwPbM1UZJmAeLiyCXxQR/gtoK9RrI/3RoP7Sb1ElF6vklJLxao4N+P9IoeqSNKHKcgBoeA5GivbgwMK0Ev1kz7QRg+00lUlgKQp7u3oWoX/Ca0TzlTajZVUKSC7YaNiu1slBymViXIQkHPYzhzaKkn/gPZmwRk7PQopy0ZkXTjiBybFpEc71SHdz8N4kyi8EUfr+OmEseLwfC7uVDLmxX1UIlYPilq51ivvqx3j+buxwTrarfhPV37r2mGPfZx7kf3QPx5mCHbn3Oj0o3zwzF4ciZHDTQQ==</Modulus><Exponent>AQAB</Exponent></RSAKeyValue>";
 
         public static bool IsTrialExpired { get; private set; } = false;
         public static bool IsLicenseActive { get; private set; } = false;
