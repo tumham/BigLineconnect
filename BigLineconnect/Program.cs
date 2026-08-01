@@ -1558,14 +1558,22 @@ namespace BigLineconnect
                     await SafeSendAsync(ws, new ArraySegment<byte>(waitingMsg), WebSocketMessageType.Text, true, token).ConfigureAwait(false);
 
                     bool accepted = false;
-                    MainWindow.Instance.Invoke((MethodInvoker)delegate
+                    if (KvkkMode == 2 || (KvkkMode == 1 && KvkkAcceptedOnce))
                     {
-                        using (var reqForm = new RequestForm())
+                        Log("KVKK / Onay modu otomatik kabule ayarlı, doğrudan onaylandı.");
+                        accepted = true;
+                    }
+                    else
+                    {
+                        MainWindow.Instance.Invoke((MethodInvoker)delegate
                         {
-                            var result = reqForm.ShowDialog(MainWindow.Instance);
-                            accepted = (result == DialogResult.OK);
-                        }
-                    });
+                            using (var reqForm = new RequestForm())
+                            {
+                                var result = reqForm.ShowDialog(MainWindow.Instance);
+                                accepted = (result == DialogResult.OK);
+                            }
+                        });
+                    }
 
                     if (accepted)
                     {
@@ -1790,6 +1798,11 @@ namespace BigLineconnect
             catch { }
         }
 
+        public static bool EnableKvkkDisclaimer { get; set; } = true;
+        public static int KvkkMode { get; set; } = 0; // 0 = Every Connection, 1 = Ask Once (Remember), 2 = Disabled
+        public static string KvkkDisclaimerText { get; set; } = "Uzak bağlantı sırasında ekranınız izlenebilir, fare/klavye kontrol edilebilir ve oturum güvenlik amacıyla kayıt altına alınabilir. KVKK uyarınca bu şartları kabul ediyor musunuz?";
+        public static bool KvkkAcceptedOnce { get; set; } = false;
+
         public static void LoadAdvancedSettings()
         {
             try
@@ -1800,6 +1813,10 @@ namespace BigLineconnect
                     string[] lines = File.ReadAllLines(path);
                     if (lines.Length >= 1) KeepAwake = bool.Parse(lines[0].Trim());
                     if (lines.Length >= 2) RecordConnections = bool.Parse(lines[1].Trim());
+                    if (lines.Length >= 3) EnableKvkkDisclaimer = bool.Parse(lines[2].Trim());
+                    if (lines.Length >= 4) KvkkMode = int.Parse(lines[3].Trim());
+                    if (lines.Length >= 5 && !string.IsNullOrWhiteSpace(lines[4])) KvkkDisclaimerText = lines[4].Trim();
+                    if (lines.Length >= 6) KvkkAcceptedOnce = bool.Parse(lines[5].Trim());
                 }
             }
             catch { }
@@ -1810,7 +1827,14 @@ namespace BigLineconnect
             try
             {
                 string path = ConfigHelper.GetConfigPath("advanced_settings.txt");
-                File.WriteAllLines(path, new string[] { KeepAwake.ToString(), RecordConnections.ToString() });
+                File.WriteAllLines(path, new string[] { 
+                    KeepAwake.ToString(), 
+                    RecordConnections.ToString(),
+                    EnableKvkkDisclaimer.ToString(),
+                    KvkkMode.ToString(),
+                    KvkkDisclaimerText.Replace("\r", "").Replace("\n", " "),
+                    KvkkAcceptedOnce.ToString()
+                });
             }
             catch { }
         }
