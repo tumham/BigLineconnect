@@ -404,12 +404,6 @@ screenImg.addEventListener('touchcancel', (e) => {
     sendClick(currentMouseMode, 'up');
 });
 
-// Prevent touch/click inside password modal from triggering remote mouse events
-passwordModal.addEventListener('touchstart', (e) => { e.stopPropagation(); }, { passive: true });
-passwordModal.addEventListener('touchmove', (e) => { e.stopPropagation(); }, { passive: true });
-passwordModal.addEventListener('touchend', (e) => { e.stopPropagation(); }, { passive: true });
-passwordModal.addEventListener('mousedown', (e) => { e.stopPropagation(); });
-
 // Global Key Listeners for Desktop client keyboard input
 window.addEventListener('keydown', (e) => {
     if (!connected) return;
