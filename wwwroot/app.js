@@ -14,7 +14,7 @@ let startPanX = 0;
 let startPanY = 0;
 
 // DOM Elements
-const connectionScreen = document.getElementById('connection-screen');
+const landingPage = document.getElementById('landing-page');
 const viewerScreen = document.getElementById('viewer-screen');
 const targetIdInput = document.getElementById('target-id');
 const connectBtn = document.getElementById('connect-btn');
@@ -33,22 +33,24 @@ const accessPasswordInput = document.getElementById('access-password-input');
 const submitPasswordBtn = document.getElementById('submit-password-btn');
 
 // Auto-format ID input (e.g. 123 456 789)
-targetIdInput.addEventListener('input', (e) => {
-    let value = e.target.value.replace(/\D/g, ''); // Numbers only
-    if (value.length > 9) value = value.substring(0, 9);
-    
-    // Format as XXX XXX XXX
-    let formatted = '';
-    if (value.length > 6) {
-        formatted = `${value.substring(0, 3)} ${value.substring(3, 6)} ${value.substring(6)}`;
-    } else if (value.length > 3) {
-        formatted = `${value.substring(0, 3)} ${value.substring(3)}`;
-    } else {
-        formatted = value;
-    }
-    
-    e.target.value = formatted;
-});
+if (targetIdInput) {
+    targetIdInput.addEventListener('input', (e) => {
+        let value = e.target.value.replace(/\D/g, ''); // Numbers only
+        if (value.length > 9) value = value.substring(0, 9);
+        
+        // Format as XXX XXX XXX
+        let formatted = '';
+        if (value.length > 6) {
+            formatted = `${value.substring(0, 3)} ${value.substring(3, 6)} ${value.substring(6)}`;
+        } else if (value.length > 3) {
+            formatted = `${value.substring(0, 3)} ${value.substring(3)}`;
+        } else {
+            formatted = value;
+        }
+        
+        e.target.value = formatted;
+    });
+}
 
 // Toast system
 function showToast(message, type = 'info') {
@@ -62,22 +64,26 @@ function showToast(message, type = 'info') {
 }
 
 // Connect Button Event
-connectBtn.addEventListener('click', () => {
-    const rawId = targetIdInput.value.replace(/\s/g, '');
-    if (!rawId || rawId.length !== 9) {
-        showToast('Lütfen 9 haneli geçerli bir bağlantı ID\'si girin.', 'error');
-        return;
-    }
-    
-    connectToHost(rawId);
-});
+if (connectBtn) {
+    connectBtn.addEventListener('click', () => {
+        const rawId = targetIdInput.value.replace(/\s/g, '');
+        if (!rawId || rawId.length !== 9) {
+            showToast('Lütfen 9 haneli geçerli bir bağlantı ID\'si girin.', 'error');
+            return;
+        }
+        
+        connectToHost(rawId);
+    });
+}
 
 // Disconnect Button Event
-disconnectBtn.addEventListener('click', () => {
-    if (socket) {
-        socket.close();
-    }
-});
+if (disconnectBtn) {
+    disconnectBtn.addEventListener('click', () => {
+        if (socket) {
+            socket.close();
+        }
+    });
+}
 
 // Connect to C# Relay WebSockets
 function connectToHost(id) {
@@ -95,8 +101,8 @@ function connectToHost(id) {
             connected = true;
             customCloseReason = null;
             showToast('Bağlantı kuruldu!', 'success');
-            connectionScreen.classList.add('hidden');
-            viewerScreen.classList.remove('hidden');
+            if (landingPage) landingPage.classList.add('hidden');
+            if (viewerScreen) viewerScreen.classList.remove('hidden');
         };
         
         socket.onclose = () => {
@@ -106,9 +112,9 @@ function connectToHost(id) {
             } else {
                 showToast('Bağlantı sonlandırıldı.', 'info');
             }
-            viewerScreen.classList.add('hidden');
-            connectionScreen.classList.remove('hidden');
-            passwordModal.classList.add('hidden');
+            if (viewerScreen) viewerScreen.classList.add('hidden');
+            if (landingPage) landingPage.classList.remove('hidden');
+            if (passwordModal) passwordModal.classList.add('hidden');
             if (hiddenKeyboardInput) hiddenKeyboardInput.disabled = false;
             socket = null;
             
@@ -158,13 +164,15 @@ function connectToHost(id) {
                     customCloseReason = 'Bu bilgisayar şu an meşgul.';
                     socket.close();
                 } else if (event.data === 'AUTH_REQUIRED') {
-                    passwordModal.classList.remove('hidden');
+                    if (passwordModal) passwordModal.classList.remove('hidden');
                     if (hiddenKeyboardInput) hiddenKeyboardInput.disabled = true;
-                    accessPasswordInput.disabled = false;
-                    accessPasswordInput.value = '';
-                    setTimeout(() => {
-                        accessPasswordInput.focus();
-                    }, 150);
+                    if (accessPasswordInput) {
+                        accessPasswordInput.disabled = false;
+                        accessPasswordInput.value = '';
+                        setTimeout(() => {
+                            accessPasswordInput.focus();
+                        }, 150);
+                    }
                     showToast('Karşı bilgisayara bağlanmak için Erişim Şifresi gereklidir.', 'info');
                 } else if (event.data === 'AUTH_WAITING') {
                     if (connectionStatus) {
@@ -172,17 +180,17 @@ function connectToHost(id) {
                     }
                     showToast('Bağlantı için karşı bilgisayarın onayı bekleniyor...', 'info');
                 } else if (event.data === 'AUTH_SUCCESS') {
-                    passwordModal.classList.add('hidden');
+                    if (passwordModal) passwordModal.classList.add('hidden');
                     if (hiddenKeyboardInput) hiddenKeyboardInput.disabled = false;
                     showToast('Doğrulama başarılı!', 'success');
                 } else if (event.data === 'AUTH_FAILED') {
                     customCloseReason = 'Hatalı erişim şifresi girildi!';
-                    passwordModal.classList.add('hidden');
+                    if (passwordModal) passwordModal.classList.add('hidden');
                     if (hiddenKeyboardInput) hiddenKeyboardInput.disabled = false;
                     socket.close();
                 } else if (event.data === 'AUTH_REJECTED') {
                     customCloseReason = 'Bağlantı isteği kullanıcı tarafından reddedildi!';
-                    passwordModal.classList.add('hidden');
+                    if (passwordModal) passwordModal.classList.add('hidden');
                     if (hiddenKeyboardInput) hiddenKeyboardInput.disabled = false;
                     socket.close();
                 } else if (event.data.startsWith('{')) {
@@ -204,65 +212,72 @@ function connectToHost(id) {
 }
 
 // Fullscreen Button
-fullscreenBtn.addEventListener('click', () => {
-    if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen()
-            .then(() => {
-                fullscreenBtn.innerHTML = '<i class="fa-solid fa-compress"></i>';
-            })
-            .catch(err => {
-                showToast('Tam ekrana geçilemedi!', 'error');
-            });
-    } else {
-        document.exitFullscreen()
-            .then(() => {
-                fullscreenBtn.innerHTML = '<i class="fa-solid fa-expand"></i>';
-            });
-    }
-});
+if (fullscreenBtn) {
+    fullscreenBtn.addEventListener('click', () => {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen()
+                .then(() => {
+                    fullscreenBtn.innerHTML = '<i class="fa-solid fa-compress"></i>';
+                })
+                .catch(err => {
+                    showToast('Tam ekrana geçilemedi!', 'error');
+                });
+        } else {
+            document.exitFullscreen()
+                .then(() => {
+                    fullscreenBtn.innerHTML = '<i class="fa-solid fa-expand"></i>';
+                });
+        }
+    });
+}
 
 // Mouse Mode Toggler (Left Click / Right Click for Mobile)
-mouseModeBtn.addEventListener('click', () => {
-    if (currentMouseMode === 'left') {
-        currentMouseMode = 'right';
-        mouseModeBtn.classList.remove('toggle-active');
-        mouseModeBtn.style.background = 'rgba(231, 76, 60, 0.2)';
-        mouseModeBtn.style.color = '#e74c3c';
-        mouseModeBtn.style.borderColor = 'rgba(231, 76, 60, 0.4)';
-        mouseModeText.textContent = 'Sağ Tık';
-        showToast('Dokunma Modu: Sağ Tıklama', 'info');
-    } else {
-        currentMouseMode = 'left';
-        mouseModeBtn.style.background = '';
-        mouseModeBtn.style.color = '';
-        mouseModeBtn.style.borderColor = '';
-        mouseModeBtn.classList.add('toggle-active');
-        mouseModeText.textContent = 'Sol Tık';
-        showToast('Dokunma Modu: Sol Tıklama', 'info');
-    }
-});
+if (mouseModeBtn) {
+    mouseModeBtn.addEventListener('click', () => {
+        if (currentMouseMode === 'left') {
+            currentMouseMode = 'right';
+            mouseModeBtn.classList.remove('toggle-active');
+            mouseModeBtn.style.background = 'rgba(231, 76, 60, 0.2)';
+            mouseModeBtn.style.color = '#e74c3c';
+            mouseModeBtn.style.borderColor = 'rgba(231, 76, 60, 0.4)';
+            if (mouseModeText) mouseModeText.textContent = 'Sağ Tık';
+            showToast('Dokunma Modu: Sağ Tıklama', 'info');
+        } else {
+            currentMouseMode = 'left';
+            mouseModeBtn.style.background = '';
+            mouseModeBtn.style.color = '';
+            mouseModeBtn.style.borderColor = '';
+            mouseModeBtn.classList.add('toggle-active');
+            if (mouseModeText) mouseModeText.textContent = 'Sol Tık';
+            showToast('Dokunma Modu: Sol Tıklama', 'info');
+        }
+    });
+}
 
 // Keyboard Button for Mobile
-toggleKeyboardBtn.addEventListener('click', () => {
-    if (passwordModal && !passwordModal.classList.contains('hidden')) return;
-    hiddenKeyboardInput.focus();
-    showToast('Klavye aktif hale getirildi.', 'success');
-});
+if (toggleKeyboardBtn) {
+    toggleKeyboardBtn.addEventListener('click', () => {
+        if (passwordModal && !passwordModal.classList.contains('hidden')) return;
+        if (hiddenKeyboardInput) hiddenKeyboardInput.focus();
+        showToast('Klavye aktif hale getirildi.', 'success');
+    });
+}
 
 // hidden keyboard input handling
-hiddenKeyboardInput.addEventListener('keydown', (e) => {
-    if (passwordModal && !passwordModal.classList.contains('hidden')) return;
-    if (!connected || !socket) return;
-    
-    // Send key down and quick release key up
-    sendKey(e.key, 'down');
-    setTimeout(() => sendKey(e.key, 'up'), 40);
-});
+if (hiddenKeyboardInput) {
+    hiddenKeyboardInput.addEventListener('keydown', (e) => {
+        if (passwordModal && !passwordModal.classList.contains('hidden')) return;
+        if (!connected || !socket) return;
+        
+        sendKey(e.key, 'down');
+        setTimeout(() => sendKey(e.key, 'up'), 40);
+    });
 
-hiddenKeyboardInput.addEventListener('input', () => {
-    if (passwordModal && !passwordModal.classList.contains('hidden')) return;
-    hiddenKeyboardInput.value = ''; // Always keep clear
-});
+    hiddenKeyboardInput.addEventListener('input', () => {
+        if (passwordModal && !passwordModal.classList.contains('hidden')) return;
+        hiddenKeyboardInput.value = '';
+    });
+}
 
 // Helper functions to send inputs via WS
 function sendMove(x, y) {
@@ -300,129 +315,125 @@ function getMousePos(canvas, clientX, clientY) {
     };
 }
 
-screenImg.addEventListener('mousedown', (e) => {
-    if (!connected) return;
-    const pos = getMousePos(screenImg, e.clientX, e.clientY);
-    sendMove(pos.x, pos.y);
-    
-    let button = 'left';
-    if (e.button === 2) button = 'right';
-    else if (e.button === 1) button = 'middle';
-    
-    sendClick(button, 'down');
-    e.preventDefault();
-});
-
-screenImg.addEventListener('mouseup', (e) => {
-    if (!connected) return;
-    let button = 'left';
-    if (e.button === 2) button = 'right';
-    else if (e.button === 1) button = 'middle';
-    
-    sendClick(button, 'up');
-    e.preventDefault();
-});
-
-screenImg.addEventListener('mousemove', (e) => {
-    if (!connected) return;
-    const pos = getMousePos(screenImg, e.clientX, e.clientY);
-    sendMove(pos.x, pos.y);
-    e.preventDefault();
-});
-
-screenImg.addEventListener('contextmenu', (e) => {
-    e.preventDefault();
-});
-
-screenImg.addEventListener('wheel', (e) => {
-    if (!connected) return;
-    // Map web scroll to OS scroll unit (usually 120 or -120)
-    const delta = e.deltaY < 0 ? 120 : -120;
-    sendScroll(delta);
-    e.preventDefault();
-}, { passive: false });
-
-// Mobile Touch Events with Pinch-to-Zoom and Panning
-screenImg.addEventListener('touchstart', (e) => {
-    if (!connected) return;
-    
-    if (e.touches.length === 1) {
-        const touch = e.touches[0];
-        const pos = getMousePos(screenImg, touch.clientX, touch.clientY);
+if (screenImg) {
+    screenImg.addEventListener('mousedown', (e) => {
+        if (!connected) return;
+        const pos = getMousePos(screenImg, e.clientX, e.clientY);
         sendMove(pos.x, pos.y);
-        sendClick(currentMouseMode, 'down');
-    } else if (e.touches.length === 2) {
-        // Cancel single touch click down
+        
+        let button = 'left';
+        if (e.button === 2) button = 'right';
+        else if (e.button === 1) button = 'middle';
+        
+        sendClick(button, 'down');
+        e.preventDefault();
+    });
+
+    screenImg.addEventListener('mouseup', (e) => {
+        if (!connected) return;
+        let button = 'left';
+        if (e.button === 2) button = 'right';
+        else if (e.button === 1) button = 'middle';
+        
+        sendClick(button, 'up');
+        e.preventDefault();
+    });
+
+    screenImg.addEventListener('mousemove', (e) => {
+        if (!connected) return;
+        const pos = getMousePos(screenImg, e.clientX, e.clientY);
+        sendMove(pos.x, pos.y);
+        e.preventDefault();
+    });
+
+    screenImg.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+    });
+
+    screenImg.addEventListener('wheel', (e) => {
+        if (!connected) return;
+        const delta = e.deltaY < 0 ? 120 : -120;
+        sendScroll(delta);
+        e.preventDefault();
+    }, { passive: false });
+
+    // Mobile Touch Events
+    screenImg.addEventListener('touchstart', (e) => {
+        if (!connected) return;
+        
+        if (e.touches.length === 1) {
+            const touch = e.touches[0];
+            const pos = getMousePos(screenImg, touch.clientX, touch.clientY);
+            sendMove(pos.x, pos.y);
+            sendClick(currentMouseMode, 'down');
+        } else if (e.touches.length === 2) {
+            sendClick(currentMouseMode, 'up');
+            
+            const dx = e.touches[0].clientX - e.touches[1].clientX;
+            const dy = e.touches[0].clientY - e.touches[1].clientY;
+            startTouchDistance = Math.sqrt(dx * dx + dy * dy);
+            startScale = scale;
+            
+            startMidX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+            startMidY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+            startPanX = panX;
+            startPanY = panY;
+        }
+        e.preventDefault();
+    }, { passive: false });
+
+    screenImg.addEventListener('touchmove', (e) => {
+        if (!connected) return;
+        
+        if (e.touches.length === 1) {
+            const touch = e.touches[0];
+            const pos = getMousePos(screenImg, touch.clientX, touch.clientY);
+            sendMove(pos.x, pos.y);
+        } else if (e.touches.length === 2) {
+            const dx = e.touches[0].clientX - e.touches[1].clientX;
+            const dy = e.touches[0].clientY - e.touches[1].clientY;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+            const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+            
+            const pX = midX - startMidX;
+            const pY = midY - startMidY;
+            
+            scale = startScale * (distance / startTouchDistance);
+            panX = startPanX + pX;
+            panY = startPanY + pY;
+            
+            updateTransform();
+        }
+        e.preventDefault();
+    }, { passive: false });
+
+    screenImg.addEventListener('touchend', (e) => {
+        if (!connected) return;
         sendClick(currentMouseMode, 'up');
         
-        const dx = e.touches[0].clientX - e.touches[1].clientX;
-        const dy = e.touches[0].clientY - e.touches[1].clientY;
-        startTouchDistance = Math.sqrt(dx * dx + dy * dy);
-        startScale = scale;
-        
-        startMidX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
-        startMidY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-        startPanX = panX;
-        startPanY = panY;
-    }
-    e.preventDefault();
-}, { passive: false });
+        if (e.touches.length === 1) {
+            const touch = e.touches[0];
+            const pos = getMousePos(screenImg, touch.clientX, touch.clientY);
+            sendMove(pos.x, pos.y);
+        }
+        e.preventDefault();
+    }, { passive: false });
 
-screenImg.addEventListener('touchmove', (e) => {
-    if (!connected) return;
-    
-    if (e.touches.length === 1) {
-        const touch = e.touches[0];
-        const pos = getMousePos(screenImg, touch.clientX, touch.clientY);
-        sendMove(pos.x, pos.y);
-    } else if (e.touches.length === 2) {
-        const dx = e.touches[0].clientX - e.touches[1].clientX;
-        const dy = e.touches[0].clientY - e.touches[1].clientY;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-        
-        const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
-        const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-        
-        const pX = midX - startMidX;
-        const pY = midY - startMidY;
-        
-        scale = startScale * (distance / startTouchDistance);
-        panX = startPanX + pX;
-        panY = startPanY + pY;
-        
-        updateTransform();
-    }
-    e.preventDefault();
-}, { passive: false });
+    screenImg.addEventListener('touchcancel', (e) => {
+        if (!connected) return;
+        sendClick(currentMouseMode, 'up');
+    });
 
-screenImg.addEventListener('touchend', (e) => {
-    if (!connected) return;
-    
-    // Always send click release on touchend for safety
-    sendClick(currentMouseMode, 'up');
-    
-    if (e.touches.length === 1) {
-        // Reset single touch state
-        const touch = e.touches[0];
-        // Move mouse to where the remaining finger is (so they can continue dragging if they want)
-        const pos = getMousePos(screenImg, touch.clientX, touch.clientY);
-        sendMove(pos.x, pos.y);
-    }
-    e.preventDefault();
-}, { passive: false });
+    screenImg.style.transformOrigin = '0 0';
+    screenImg.style.transition = 'none';
+}
 
-screenImg.addEventListener('touchcancel', (e) => {
-    if (!connected) return;
-    sendClick(currentMouseMode, 'up');
-});
-
-// Global Key Listeners for Desktop client keyboard input
+// Global Key Listeners
 window.addEventListener('keydown', (e) => {
-    // 1. NEVER capture keys if user is typing into ANY input/textarea
     if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable)) return;
-    // 2. NEVER capture keys if password modal is visible
     if (passwordModal && !passwordModal.classList.contains('hidden')) return;
-    
     if (!connected) return;
     
     sendKey(e.key, 'down');
@@ -430,11 +441,8 @@ window.addEventListener('keydown', (e) => {
 });
 
 window.addEventListener('keyup', (e) => {
-    // 1. NEVER capture keys if user is typing into ANY input/textarea
     if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable)) return;
-    // 2. NEVER capture keys if password modal is visible
     if (passwordModal && !passwordModal.classList.contains('hidden')) return;
-    
     if (!connected) return;
     
     sendKey(e.key, 'up');
@@ -456,55 +464,56 @@ document.querySelectorAll('.special-key').forEach(button => {
     });
 });
 
-// CAD (Ctrl+Alt+Del) Special Action
+// CAD Action
 const cadBtn = document.getElementById('btn-ctrl-alt-del');
-cadBtn.addEventListener('click', () => {
-    if (!connected) return;
-    
-    showToast('Ctrl + Alt + Del gönderildi.', 'info');
-    
-    // Simulate complex key combinations sequentially
-    sendKey('control', 'down');
-    sendKey('alt', 'down');
-    sendKey('delete', 'down');
-    
-    setTimeout(() => {
-        sendKey('delete', 'up');
-        sendKey('alt', 'up');
-        sendKey('control', 'up');
-    }, 100);
-});
+if (cadBtn) {
+    cadBtn.addEventListener('click', () => {
+        if (!connected) return;
+        showToast('Ctrl + Alt + Del gönderildi.', 'info');
+        sendKey('control', 'down');
+        sendKey('alt', 'down');
+        sendKey('delete', 'down');
+        setTimeout(() => {
+            sendKey('delete', 'up');
+            sendKey('alt', 'up');
+            sendKey('control', 'up');
+        }, 100);
+    });
+}
 
-// On-Screen Touch Numpad Actions for Mobile
+// On-Screen Touch Numpad Actions
 document.querySelectorAll('.numpad-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
         const val = btn.getAttribute('data-val');
         if (val === 'clear') {
-            accessPasswordInput.value = '';
+            if (accessPasswordInput) accessPasswordInput.value = '';
         } else if (val === 'backspace') {
-            accessPasswordInput.value = accessPasswordInput.value.slice(0, -1);
+            if (accessPasswordInput) accessPasswordInput.value = accessPasswordInput.value.slice(0, -1);
         } else if (val) {
-            accessPasswordInput.value += val;
+            if (accessPasswordInput) accessPasswordInput.value += val;
         }
     });
 });
 
 // Password submit actions
 function sendPassword() {
+    if (!accessPasswordInput) return;
     const pass = accessPasswordInput.value;
     if (socket && socket.readyState === WebSocket.OPEN) {
         socket.send("AUTH_PASS:" + pass);
         showToast('Şifre gönderildi, doğrulanıyor...', 'info');
     }
 }
-submitPasswordBtn.addEventListener('click', sendPassword);
-accessPasswordInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') sendPassword();
-});
+if (submitPasswordBtn) submitPasswordBtn.addEventListener('click', sendPassword);
+if (accessPasswordInput) {
+    accessPasswordInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') sendPassword();
+    });
+}
 
-// Clipboard sync (Send client clipboard to Host)
+// Clipboard sync
 document.addEventListener('copy', () => {
     setTimeout(() => {
         navigator.clipboard.readText().then(text => {
@@ -524,11 +533,8 @@ window.addEventListener('focus', () => {
     }).catch(err => {});
 });
 
-// Initialize image styles for zoom & pan
-screenImg.style.transformOrigin = '0 0';
-screenImg.style.transition = 'none';
-
 function updateTransform() {
+    if (!screenImg || !canvasContainer) return;
     if (scale <= 1.0) {
         scale = 1.0;
         panX = 0;
