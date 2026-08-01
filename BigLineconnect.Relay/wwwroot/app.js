@@ -404,11 +404,18 @@ screenImg.addEventListener('touchcancel', (e) => {
     sendClick(currentMouseMode, 'up');
 });
 
+// Prevent touch/click inside password modal from triggering remote mouse events
+passwordModal.addEventListener('touchstart', (e) => { e.stopPropagation(); }, { passive: true });
+passwordModal.addEventListener('touchmove', (e) => { e.stopPropagation(); }, { passive: true });
+passwordModal.addEventListener('touchend', (e) => { e.stopPropagation(); }, { passive: true });
+passwordModal.addEventListener('mousedown', (e) => { e.stopPropagation(); });
+
 // Global Key Listeners for Desktop client keyboard input
 window.addEventListener('keydown', (e) => {
     if (!connected) return;
-    // Do not capture keys if user is typing IP address
-    if (document.activeElement === targetIdInput) return;
+    // Do not capture keys if password modal is open or user is typing in input fields
+    if (document.activeElement === targetIdInput || document.activeElement === accessPasswordInput) return;
+    if (passwordModal && !passwordModal.classList.contains('hidden')) return;
     
     sendKey(e.key, 'down');
     e.preventDefault();
@@ -416,7 +423,8 @@ window.addEventListener('keydown', (e) => {
 
 window.addEventListener('keyup', (e) => {
     if (!connected) return;
-    if (document.activeElement === targetIdInput) return;
+    if (document.activeElement === targetIdInput || document.activeElement === accessPasswordInput) return;
+    if (passwordModal && !passwordModal.classList.contains('hidden')) return;
     
     sendKey(e.key, 'up');
     e.preventDefault();
