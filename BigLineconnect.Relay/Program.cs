@@ -162,8 +162,95 @@ namespace BigLineconnect.Relay
             public string Notes { get; set; } = "";
         }
 
+        public class LicenseEntry
+        {
+            public string LicenseKey { get; set; } = "";
+            public string CustomerName { get; set; } = "";
+            public string TierName { get; set; } = "Başlangıç (1.490 TL)";
+            public int MaxOperators { get; set; } = 1;
+            public int MaxChannels { get; set; } = 5;
+            public int MaxUnattendedHosts { get; set; } = 50;
+            public string CreatedAt { get; set; } = "";
+            public string ExpiresAt { get; set; } = "";
+            public bool IsActive { get; set; } = true;
+        }
+
         private static readonly object HistoryLock = new();
         private static readonly string HistoryFilePath = System.IO.Path.Combine(AppContext.BaseDirectory, "support_history.json");
+
+        private static readonly object LicenseLock = new();
+        private static readonly string LicenseFilePath = System.IO.Path.Combine(AppContext.BaseDirectory, "licenses.json");
+
+        private static List<LicenseEntry> LoadLicenses()
+        {
+            lock (LicenseLock)
+            {
+                var list = new List<LicenseEntry>();
+                try
+                {
+                    if (System.IO.File.Exists(LicenseFilePath))
+                    {
+                        string json = System.IO.File.ReadAllText(LicenseFilePath);
+                        if (!string.IsNullOrWhiteSpace(json) && json.Trim() != "[]")
+                        {
+                            using (var doc = System.Text.Json.JsonDocument.Parse(json))
+                            {
+                                foreach (var el in doc.RootElement.EnumerateArray())
+                                {
+                                    var entry = new LicenseEntry
+                                    {
+                                        LicenseKey = el.TryGetProperty("LicenseKey", out var p1) ? p1.GetString() ?? "" : "",
+                                        CustomerName = el.TryGetProperty("CustomerName", out var p2) ? p2.GetString() ?? "" : "",
+                                        TierName = el.TryGetProperty("TierName", out var p3) ? p3.GetString() ?? "Başlangıç (1.490 TL)" : "Başlangıç (1.490 TL)",
+                                        MaxOperators = el.TryGetProperty("MaxOperators", out var p4) ? p4.GetInt32() : 1,
+                                        MaxChannels = el.TryGetProperty("MaxChannels", out var p5) ? p5.GetInt32() : 5,
+                                        MaxUnattendedHosts = el.TryGetProperty("MaxUnattendedHosts", out var p6) ? p6.GetInt32() : 50,
+                                        CreatedAt = el.TryGetProperty("CreatedAt", out var p7) ? p7.GetString() ?? "" : "",
+                                        ExpiresAt = el.TryGetProperty("ExpiresAt", out var p8) ? p8.GetString() ?? "" : "",
+                                        IsActive = el.TryGetProperty("IsActive", out var p9) ? p9.GetBoolean() : true
+                                    };
+                                    list.Add(entry);
+                                }
+                            }
+                        }
+                    }
+                }
+                catch { }
+                return list;
+            }
+        }
+
+        private static void SaveLicenses(List<LicenseEntry> list)
+        {
+            lock (LicenseLock)
+            {
+                try
+                {
+                    var sb = new System.Text.StringBuilder();
+                    sb.Append("[\n");
+                    for (int i = 0; i < list.Count; i++)
+                    {
+                        var e = list[i];
+                        sb.Append("  {");
+                        sb.Append($"\"LicenseKey\":\"{EscapeJsonString(e.LicenseKey)}\",");
+                        sb.Append($"\"CustomerName\":\"{EscapeJsonString(e.CustomerName)}\",");
+                        sb.Append($"\"TierName\":\"{EscapeJsonString(e.TierName)}\",");
+                        sb.Append($"\"MaxOperators\":{e.MaxOperators},");
+                        sb.Append($"\"MaxChannels\":{e.MaxChannels},");
+                        sb.Append($"\"MaxUnattendedHosts\":{e.MaxUnattendedHosts},");
+                        sb.Append($"\"CreatedAt\":\"{EscapeJsonString(e.CreatedAt)}\",");
+                        sb.Append($"\"ExpiresAt\":\"{EscapeJsonString(e.ExpiresAt)}\",");
+                        sb.Append($"\"IsActive\":{(e.IsActive ? "true" : "false")}");
+                        sb.Append("}");
+                        if (i < list.Count - 1) sb.Append(",");
+                        sb.Append("\n");
+                    }
+                    sb.Append("]");
+                    System.IO.File.WriteAllText(LicenseFilePath, sb.ToString(), System.Text.Encoding.UTF8);
+                }
+                catch { }
+            }
+        }
 
         private static bool _sqliteMigrated = false;
 
@@ -966,6 +1053,110 @@ namespace BigLineconnect.Relay
                 }
             });
 
+            app.MapGet("/api/licenses/list", async context =>
+            {
+                try
+                {
+                    var list = LoadLicenses();
+                    context.Response.ContentType = "application/json; charset=utf-8";
+                    await context.Response.WriteAsJsonAsync(list);
+                }
+                catch
+                {
+                    context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+                }
+            });
+
+            app.MapPost("/api/licenses/create", async context =>
+            {
+                try
+                {
+                    using var reader = new StreamReader(context.Request.Body);
+                    string body = await reader.ReadToEndAsync();
+                    using var doc = System.Text.Json.JsonDocument.Parse(body);
+                    var root = doc.RootElement;
+
+                    string customerName = root.TryGetProperty("customerName", out var p1) ? p1.GetString() ?? "" : "";
+                    string tierName = root.TryGetProperty("tierName", out var p2) ? p2.GetString() ?? "Başlangıç (1.490 TL)" : "Başlangıç (1.490 TL)";
+                    int durationMonths = root.TryGetProperty("durationMonths", out var p3) ? p3.GetInt32() : 12;
+
+                    int maxOperators = 1;
+                    int maxChannels = 5;
+                    int maxUnattended = 50;
+
+                    if (tierName.Contains("Pro (3.990 TL)") || tierName.Contains("2 Operatör"))
+                    {
+                        maxOperators = 2;
+                        maxChannels = 10;
+                        maxUnattended = 100;
+                    }
+                    else if (tierName.Contains("Pro+ (4.990 TL)") || tierName.Contains("3 Operatör"))
+                    {
+                        maxOperators = 3;
+                        maxChannels = 15;
+                        maxUnattended = 150;
+                    }
+                    else if (tierName.Contains("Kurumsal"))
+                    {
+                        maxOperators = 10;
+                        maxChannels = 50;
+                        maxUnattended = 500;
+                    }
+
+                    string licenseKey = $"BGL-{Guid.NewGuid().ToString("N")[..8].ToUpper()}-{Guid.NewGuid().ToString("N")[..4].ToUpper()}";
+
+                    var entry = new LicenseEntry
+                    {
+                        LicenseKey = licenseKey,
+                        CustomerName = string.IsNullOrWhiteSpace(customerName) ? "Müşteri" : customerName,
+                        TierName = tierName,
+                        MaxOperators = maxOperators,
+                        MaxChannels = maxChannels,
+                        MaxUnattendedHosts = maxUnattended,
+                        CreatedAt = DateTime.Now.ToString("dd.MM.yyyy HH:mm"),
+                        ExpiresAt = DateTime.Now.AddMonths(durationMonths).ToString("dd.MM.yyyy HH:mm"),
+                        IsActive = true
+                    };
+
+                    var licenses = LoadLicenses();
+                    licenses.Insert(0, entry);
+                    SaveLicenses(licenses);
+
+                    context.Response.ContentType = "application/json; charset=utf-8";
+                    await context.Response.WriteAsJsonAsync(new { success = true, licenseKey = entry.LicenseKey });
+                }
+                catch (Exception ex)
+                {
+                    context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+                    await context.Response.WriteAsync($"Error: {ex.Message}");
+                }
+            });
+
+            app.MapPost("/api/licenses/delete", async context =>
+            {
+                try
+                {
+                    using var reader = new StreamReader(context.Request.Body);
+                    string body = await reader.ReadToEndAsync();
+                    using var doc = System.Text.Json.JsonDocument.Parse(body);
+                    string key = doc.RootElement.TryGetProperty("licenseKey", out var p) ? p.GetString() ?? "" : "";
+
+                    if (!string.IsNullOrEmpty(key))
+                    {
+                        var licenses = LoadLicenses();
+                        licenses.RemoveAll(l => l.LicenseKey == key);
+                        SaveLicenses(licenses);
+                    }
+
+                    context.Response.StatusCode = StatusCodes.Status200OK;
+                    await context.Response.WriteAsync("Success");
+                }
+                catch
+                {
+                    context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+                }
+            });
+
             app.MapPost("/api/telemetry/report", async context =>
             {
                 try
@@ -1585,6 +1776,54 @@ namespace BigLineconnect.Relay
     </div>
 
     <div class='card'>
+        <div style='display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px;'>
+            <div class='section-title' style='margin-bottom:0;'>Lisans & Operatör Kotası Yönetimi (Alpemix Rakip Paketleri)</div>
+            <button onclick='toggleLicenseForm()' style='background: linear-gradient(135deg, var(--cyan), #00b0ff); color: #000; font-weight: bold; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;'>+ Yeni Lisans Anahtarı Üret</button>
+        </div>
+
+        <div id='license-form-card' style='display:none; background: rgba(0,0,0,0.3); border: 1px solid var(--cyan); border-radius: 8px; padding: 15px; margin-bottom: 15px;'>
+            <h4 style='color:var(--cyan); margin-bottom: 10px;'>Yeni Abonelik & Lisans Tanımla</h4>
+            <div style='display: flex; gap: 10px; flex-wrap: wrap;'>
+                <input type='text' id='lic-customer' placeholder='Müşteri / Firma Adı' style='flex:1; min-width: 180px; padding: 8px; border-radius: 6px; border: 1px solid #444; background:#111; color:#fff;'>
+                <select id='lic-tier' style='flex:1; min-width: 220px; padding: 8px; border-radius: 6px; border: 1px solid #444; background:#111; color:#fff;'>
+                    <option value='Başlangıç (1.490 TL)'>Başlangıç (1.490 TL - 1 Operatör / 5 Kanal / 50 Cihaz)</option>
+                    <option value='Pro (3.990 TL)'>Pro (3.990 TL - 2 Operatör / 10 Kanal / 100 Cihaz)</option>
+                    <option value='Pro+ (4.990 TL)'>Pro+ (4.990 TL - 3 Operatör / 15 Kanal / 150 Cihaz)</option>
+                    <option value='Kurumsal (Özel Paket)'>Kurumsal (Teklif Usulü - Sınırsız / Esnek)</option>
+                </select>
+                <select id='lic-duration' style='width: 120px; padding: 8px; border-radius: 6px; border: 1px solid #444; background:#111; color:#fff;'>
+                    <option value='12'>12 Ay (Yıllık)</option>
+                    <option value='24'>24 Ay</option>
+                    <option value='1'>1 Ay (Deneme)</option>
+                </select>
+                <button onclick='createLicenseKey()' style='background: #4caf50; color: #fff; font-weight: bold; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;'>Kaydet & Üret</button>
+            </div>
+        </div>
+
+        <div style='overflow-x: auto; max-height: 400px; overflow-y: auto;'>
+            <table id='licenses-table'>
+                <thead>
+                    <tr>
+                        <th>Lisans Anahtarı</th>
+                        <th>Müşteri / Firma</th>
+                        <th>Abonelik Paketi</th>
+                        <th>Max Operatör</th>
+                        <th>Max Kanal</th>
+                        <th>Max Unattended Cihaz</th>
+                        <th>Son Kullanma</th>
+                        <th>İşlem</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan='8' class='empty-state'>Lisans kayıtları yükleniyor...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class='card'>
         <div class='section-title'>Telemetri & İşlem Kayıtları (Tüm Cihaz Geçmişi)</div>
         <div class='controls'>
             <input type='text' id='search-input' class='search-box' placeholder='Bilgisayar adı, kullanıcı, detay veya IP ara...'>
@@ -1748,14 +1987,87 @@ namespace BigLineconnect.Relay
             }
         }
 
+        async function fetchLicenses() {
+            try {
+                const response = await fetch('/api/licenses/list');
+                if (!response.ok) return;
+                const data = await response.json();
+                const tbody = document.querySelector('#licenses-table tbody');
+                if (!data || data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan=\'8\' class=\'empty-state\'>Kayıtlı lisans bulunmuyor...</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = data.map(l => {
+                    return '<tr>' +
+                        '<td style=\'color: var(--cyan); font-family: monospace; font-weight: bold;\'>' + l.LicenseKey + '</td>' +
+                        '<td style=\'font-weight: 500;\'>' + l.CustomerName + '</td>' +
+                        '<td><span class=\'badge badge-startup\'>' + l.TierName + '</span></td>' +
+                        '<td style=\'text-align: center;\'>' + l.MaxOperators + '</td>' +
+                        '<td style=\'text-align: center;\'>' + l.MaxChannels + '</td>' +
+                        '<td style=\'text-align: center;\'>' + l.MaxUnattendedHosts + '</td>' +
+                        '<td>' + l.ExpiresAt + '</td>' +
+                        '<td><button onclick=\'deleteLicenseKey(\\\'' + l.LicenseKey + '\\\')\' style=\'background:#f44336; color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;\'>Sil</button></td>' +
+                        '</tr>';
+                }).join('');
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        function toggleLicenseForm() {
+            const card = document.getElementById('license-form-card');
+            card.style.display = card.style.display === 'none' ? 'block' : 'none';
+        }
+
+        async function createLicenseKey() {
+            const customerName = document.getElementById('lic-customer').value;
+            const tierName = document.getElementById('lic-tier').value;
+            const durationMonths = parseInt(document.getElementById('lic-duration').value, 10);
+
+            try {
+                const res = await fetch('/api/licenses/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ customerName, tierName, durationMonths })
+                });
+                if (res.ok) {
+                    document.getElementById('lic-customer').value = '';
+                    toggleLicenseForm();
+                    fetchLicenses();
+                } else {
+                    alert('Lisans üretilemedi.');
+                }
+            } catch (err) {
+                alert('Hata: ' + err.message);
+            }
+        }
+
+        async function deleteLicenseKey(licenseKey) {
+            if (!confirm('Bu lisans anahtarını silmek istediğinize emin misiniz?')) return;
+            try {
+                const res = await fetch('/api/licenses/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ licenseKey })
+                });
+                if (res.ok) {
+                    fetchLicenses();
+                }
+            } catch (err) {
+                alert('Hata: ' + err.message);
+            }
+        }
+
         document.getElementById('search-input').addEventListener('input', renderLogs);
         document.getElementById('filter-type').addEventListener('change', renderLogs);
 
         fetchStats();
         fetchSupportHistory();
+        fetchLicenses();
         setInterval(() => {
             fetchStats();
             fetchSupportHistory();
+            fetchLicenses();
         }, 3000);
     </script>
 </body>
