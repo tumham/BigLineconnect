@@ -704,7 +704,7 @@ namespace BigLineconnect
                                             {
                                                 try { _incomingFileStream.Close(); _incomingFileStream.Dispose(); } catch { }
                                             }
-                                            _incomingFileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None);
+                                            _incomingFileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite);
                                         }
                                         catch (Exception ex)
                                         {
@@ -1893,7 +1893,7 @@ namespace BigLineconnect
 
                 try
                 {
-                    using (var fs = new FileStream(item.LocalPath, FileMode.Open, FileAccess.Read))
+                    using (var fs = new FileStream(item.LocalPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
                     {
                         byte[] buffer = new byte[65536];
                         int bytesRead;
@@ -1981,7 +1981,7 @@ namespace BigLineconnect
 
                 await SendJsonAsync(new { type = "file_start", name = filename, size = fileSize });
 
-                using (var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read))
+                using (var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
                 {
                     byte[] buffer = new byte[65536]; // 64KB packages
                     int bytesRead;

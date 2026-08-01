@@ -119,7 +119,7 @@ namespace BigLineconnect
                     using var client = new System.Net.Http.HttpClient();
                     client.Timeout = TimeSpan.FromSeconds(5);
                     var content = new System.Net.Http.StringContent(json, Encoding.UTF8, "application/json");
-                    await client.PostAsync("http://213.142.159.18:5080/api/telemetry/report", content).ConfigureAwait(false);
+                    await client.PostAsync("https://biglineconnect-production.up.railway.app/api/telemetry/report", content).ConfigureAwait(false);
                 }
                 catch { }
             });
@@ -132,7 +132,7 @@ namespace BigLineconnect
         public static readonly System.Collections.Generic.List<string> InitialLogs = new();
         private static CancellationTokenSource _cts = new CancellationTokenSource();
         public static bool _isStreaming = false;
-        private static string _currentRelayUrl = "ws://213.142.159.18:5080/register-host";
+        private static string _currentRelayUrl = "wss://biglineconnect-production.up.railway.app/register-host";
         private static readonly object ReconnectLock = new();
         private static bool _isReconnecting = false;
         private static TaskCompletionSource<string>? _authPasswordTcs;
@@ -443,13 +443,13 @@ namespace BigLineconnect
                     try
                     {
                         string savedUrl = System.IO.File.ReadAllText(configPath).Trim();
-                        if (!string.IsNullOrEmpty(savedUrl) && !savedUrl.Contains("***"))
+                        if (!string.IsNullOrEmpty(savedUrl) && !savedUrl.Contains("213.142.159") && !savedUrl.Contains("biglineconnect.com") && !savedUrl.Contains("***"))
                         {
                             _currentRelayUrl = savedUrl;
                         }
                         else
                         {
-                            _currentRelayUrl = "ws://213.142.159.18:5080/register-host";
+                            _currentRelayUrl = "wss://biglineconnect-production.up.railway.app/register-host";
                             try { System.IO.File.WriteAllText(configPath, _currentRelayUrl); } catch { }
                         }
                     }
@@ -1012,6 +1012,12 @@ namespace BigLineconnect
                 {
                     try
                     {
+                        if (_incomingFileStream != null)
+                        {
+                            try { _incomingFileStream.Close(); _incomingFileStream.Dispose(); } catch { }
+                            _incomingFileStream = null;
+                        }
+
                         string name = root.GetProperty("name").GetString() ?? "file";
                         _currentFileTotalBytes = root.GetProperty("size").GetInt64();
                         _incomingIsFolder = root.TryGetProperty("isFolder", out var folderProp) && folderProp.GetBoolean();
@@ -1049,7 +1055,7 @@ namespace BigLineconnect
                             }
 
                             _incomingFileName = name;
-                            _incomingFileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write);
+                            _incomingFileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite);
                             MainWindow.Instance?.AppendLog($"Dosya alimi basladi: {name}...");
 
                             if (_hostProgressForm != null && MainWindow.Instance != null)
@@ -1117,6 +1123,11 @@ namespace BigLineconnect
                     catch (Exception ex)
                     {
                         MainWindow.Instance?.AppendLog($"Dosya paketi yazilamadi: {ex.Message}");
+                        if (_incomingFileStream != null)
+                        {
+                            try { _incomingFileStream.Close(); _incomingFileStream.Dispose(); } catch { }
+                            _incomingFileStream = null;
+                        }
                     }
                 }
                 else if (type == "file_end")
@@ -2203,7 +2214,7 @@ namespace BigLineconnect
                     {
                         await SendJsonMessageAsync($"{{\"type\":\"file_start\",\"name\":\"{EscapeJson(item.Name)}\",\"size\":{item.Size},\"isFolder\":{(item.IsFolder ? "true" : "false")}}}");
 
-                        using (var fs = new FileStream(item.Path, FileMode.Open, FileAccess.Read))
+                        using (var fs = new FileStream(item.Path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
                         {
                             byte[] buffer = new byte[65536];
                             int bytesRead;
@@ -2269,7 +2280,7 @@ namespace BigLineconnect
 
                     await SendJsonMessageAsync($"{{\"type\":\"file_start\",\"name\":\"{EscapeJson(filename)}\",\"size\":{fileSize}}}");
 
-                    using (var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read))
+                    using (var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
                     {
                         byte[] buffer = new byte[524288];
                         int bytesRead;
@@ -2347,7 +2358,7 @@ namespace BigLineconnect
 
                     await SendJsonMessageAsync($"{{\"type\":\"file_start\",\"name\":\"{EscapeJson(filename)}\",\"size\":{fileSize},\"isFolder\":true}}");
 
-                    using (var fs = new FileStream(tempZipPath, FileMode.Open, FileAccess.Read))
+                    using (var fs = new FileStream(tempZipPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
                     {
                         byte[] buffer = new byte[524288];
                         int bytesRead;
