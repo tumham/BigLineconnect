@@ -260,7 +260,7 @@ namespace BigLineconnect
                     try
                     {
                         string savedUrl = File.ReadAllText(cfg).Trim();
-                        if (savedUrl.Contains("biglineconnect.com") || savedUrl.Contains("***") || string.IsNullOrWhiteSpace(savedUrl))
+                        if (savedUrl.Contains("213.142.159") || savedUrl.Contains("biglineconnect.com") || savedUrl.Contains("***") || string.IsNullOrWhiteSpace(savedUrl))
                         {
                             File.WriteAllText(cfg, _actualRelayUrl);
                         }
@@ -3733,6 +3733,7 @@ namespace BigLineconnect
                                 var json = $"{{\"id\":\"{Program.EscapeJson(hostId)}\",\"name\":\"{Program.EscapeJson(name)}\",\"issue\":\"{Program.EscapeJson(issue)}\",\"token\":\"{Program.EscapeJson(token)}\",\"tenantId\":\"{Program.EscapeJson(LicenseSystem.CompanyCode)}\",\"requiresConfirmation\":{(reqConfirm ? "true" : "false")}}}";
                                 var content = new System.Net.Http.StringContent(json, Encoding.UTF8, "application/json");
                                 var response = await client.PostAsync(httpUrl, content);
+                                string responseBody = await response.Content.ReadAsStringAsync();
                                 
                                 this.Invoke((System.Windows.Forms.MethodInvoker)delegate
                                 {
@@ -3750,7 +3751,7 @@ namespace BigLineconnect
                                     }
                                     else
                                     {
-                                        MessageBox.Show("Destek talebi iletilemedi. Sunucu hatası.", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                        MessageBox.Show($"Destek talebi iletilemedi. (Sunucu yanıtı {response.StatusCode}: {responseBody})", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
                                     }
                                 });
                             }
@@ -3849,7 +3850,7 @@ namespace BigLineconnect
                 txtIssue = new TextBox
                 {
                     Location = new Point(25, 144),
-                    Size = new Size(355, 80),
+                    Size = new Size(355, 65),
                     Multiline = true,
                     BackColor = Color.FromArgb(20, 22, 30),
                     ForeColor = Color.White,
@@ -3860,8 +3861,8 @@ namespace BigLineconnect
 
                 chkRequiresConfirmation = new CheckBox
                 {
-                    Text = "🛡️ Onaylı Bağlantı istiyorum.",
-                    Location = new Point(25, 188),
+                    Text = "🛡️ Onaylı Bağlantı (Uzman bağlandığında onay iste)",
+                    Location = new Point(25, 218),
                     Size = new Size(355, 26),
                     Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
                     ForeColor = Color.FromArgb(0, 229, 255),
@@ -3873,8 +3874,8 @@ namespace BigLineconnect
                 btnSubmit = new Button
                 {
                     Text = "Talebi Gönder",
-                    Location = new Point(55, 232),
-                    Size = new Size(140, 36),
+                    Location = new Point(55, 256),
+                    Size = new Size(140, 38),
                     BackColor = Color.FromArgb(0, 229, 255),
                     ForeColor = Color.Black,
                     FlatStyle = FlatStyle.Flat,
@@ -3901,8 +3902,8 @@ namespace BigLineconnect
                 btnCancel = new Button
                 {
                     Text = "İptal",
-                    Location = new Point(210, 232),
-                    Size = new Size(140, 36),
+                    Location = new Point(210, 256),
+                    Size = new Size(140, 38),
                     BackColor = Color.FromArgb(40, 45, 55),
                     ForeColor = Color.White,
                     FlatStyle = FlatStyle.Flat,
