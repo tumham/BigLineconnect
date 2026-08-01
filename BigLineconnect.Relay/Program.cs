@@ -373,7 +373,8 @@ namespace BigLineconnect.Relay
                     WebRootPath = System.IO.Path.Combine(AppContext.BaseDirectory, "wwwroot")
                 });
                 builder.Host.UseWindowsService();
-                builder.WebHost.UseUrls("http://0.0.0.0:5080");
+                var port = Environment.GetEnvironmentVariable("PORT") ?? "5080";
+                builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
             
             builder.Services.AddCors(options =>
             {
