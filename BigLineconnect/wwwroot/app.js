@@ -2,6 +2,17 @@ let socket = null;
 let connected = false;
 let currentMouseMode = 'left'; // 'left' or 'right'
 
+// Zoom & Pan State
+let scale = 1.0;
+let panX = 0;
+let panY = 0;
+let startTouchDistance = 0;
+let startScale = 1.0;
+let startMidX = 0;
+let startMidY = 0;
+let startPanX = 0;
+let startPanY = 0;
+
 // DOM Elements
 const connectionScreen = document.getElementById('connection-screen');
 const viewerScreen = document.getElementById('viewer-screen');
@@ -78,8 +89,11 @@ function connectToHost(id) {
         socket = new WebSocket(wsUrl);
         socket.binaryType = 'arraybuffer';
         
+        let customCloseReason = null;
+
         socket.onopen = () => {
             connected = true;
+            customCloseReason = null;
             showToast('Bağlantı kuruldu!', 'success');
             connectionScreen.classList.add('hidden');
             viewerScreen.classList.remove('hidden');
@@ -87,11 +101,21 @@ function connectToHost(id) {
         
         socket.onclose = () => {
             connected = false;
-            showToast('Bağlantı sonlandırıldı.', 'error');
+            if (customCloseReason) {
+                showToast(customCloseReason, 'error');
+            } else {
+                showToast('Bağlantı sonlandırıldı.', 'info');
+            }
             viewerScreen.classList.add('hidden');
             connectionScreen.classList.remove('hidden');
             passwordModal.classList.add('hidden');
             socket = null;
+            
+            // Reset zoom state
+            scale = 1.0;
+            panX = 0;
+            panY = 0;
+            updateTransform();
         };
         
         socket.onerror = (error) => {
@@ -99,10 +123,10 @@ function connectToHost(id) {
             showToast('Bağlantı hatası!', 'error');
         };
         
-        // Handle incoming screen frame (Binary JPEG) or error codes (Text)
         socket.onmessage = async (event) => {
             let debugInfo = "";
             let sizeKb = 0;
+            let blob = null;
             if (event.data instanceof ArrayBuffer) {
                 const header = new Uint8Array(event.data.slice(0, 4));
                 const hex = Array.from(header).map(b => b.toString(16).toUpperCase().padStart(2, '0')).join(' ');
@@ -127,10 +151,10 @@ function connectToHost(id) {
                 }
             } else if (typeof event.data === 'string') {
                 if (event.data === 'ERROR:ID_NOT_FOUND') {
-                    showToast('Bağlantı ID\'si bulunamadı. Lütfen kontrol edin.', 'error');
+                    customCloseReason = 'Bağlantı ID\'si bulunamadı veya bilgisayar kapalı.';
                     socket.close();
                 } else if (event.data === 'ERROR:BUSY') {
-                    showToast('Bu bilgisayar şu an meşgul.', 'error');
+                    customCloseReason = 'Bu bilgisayar şu an meşgul.';
                     socket.close();
                 } else if (event.data === 'AUTH_REQUIRED') {
                     passwordModal.classList.remove('hidden');
@@ -145,11 +169,11 @@ function connectToHost(id) {
                     passwordModal.classList.add('hidden');
                     showToast('Doğrulama başarılı!', 'success');
                 } else if (event.data === 'AUTH_FAILED') {
-                    showToast('Hatalı erişim şifresi girildi!', 'error');
+                    customCloseReason = 'Hatalı erişim şifresi girildi!';
                     passwordModal.classList.add('hidden');
                     socket.close();
                 } else if (event.data === 'AUTH_REJECTED') {
-                    showToast('Bağlantı isteği kullanıcı tarafından reddedildi!', 'error');
+                    customCloseReason = 'Bağlantı isteği kullanıcı tarafından reddedildi!';
                     socket.close();
                 } else if (event.data.startsWith('{')) {
                     try {
@@ -253,10 +277,10 @@ function sendKey(key, action) {
 }
 
 // Mouse Event listeners on canvas
-function getMousePos(canvas, evt) {
+function getMousePos(canvas, clientX, clientY) {
     const rect = canvas.getBoundingClientRect();
-    const x = (evt.clientX - rect.left) / rect.width;
-    const y = (evt.clientY - rect.top) / rect.height;
+    const x = (clientX - rect.left - panX) / (rect.width * scale);
+    const y = (clientY - rect.top - panY) / (rect.height * scale);
     return {
         x: Math.max(0, Math.min(1, x)),
         y: Math.max(0, Math.min(1, y))
@@ -265,7 +289,7 @@ function getMousePos(canvas, evt) {
 
 screenImg.addEventListener('mousedown', (e) => {
     if (!connected) return;
-    const pos = getMousePos(screenImg, e);
+    const pos = getMousePos(screenImg, e.clientX, e.clientY);
     sendMove(pos.x, pos.y);
     
     let button = 'left';
@@ -288,7 +312,7 @@ screenImg.addEventListener('mouseup', (e) => {
 
 screenImg.addEventListener('mousemove', (e) => {
     if (!connected) return;
-    const pos = getMousePos(screenImg, e);
+    const pos = getMousePos(screenImg, e.clientX, e.clientY);
     sendMove(pos.x, pos.y);
     e.preventDefault();
 });
@@ -305,28 +329,78 @@ screenImg.addEventListener('wheel', (e) => {
     e.preventDefault();
 }, { passive: false });
 
-// Mobile Touch Events (Direct Pointer Mode)
+// Mobile Touch Events with Pinch-to-Zoom and Panning
 screenImg.addEventListener('touchstart', (e) => {
     if (!connected) return;
-    const touch = e.touches[0];
-    const pos = getMousePos(screenImg, touch);
-    sendMove(pos.x, pos.y);
-    sendClick(currentMouseMode, 'down');
+    
+    if (e.touches.length === 1) {
+        const touch = e.touches[0];
+        const pos = getMousePos(screenImg, touch.clientX, touch.clientY);
+        sendMove(pos.x, pos.y);
+        sendClick(currentMouseMode, 'down');
+    } else if (e.touches.length === 2) {
+        // Cancel single touch click down
+        sendClick(currentMouseMode, 'up');
+        
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        startTouchDistance = Math.sqrt(dx * dx + dy * dy);
+        startScale = scale;
+        
+        startMidX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+        startMidY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+        startPanX = panX;
+        startPanY = panY;
+    }
     e.preventDefault();
-});
+}, { passive: false });
 
 screenImg.addEventListener('touchmove', (e) => {
     if (!connected) return;
-    const touch = e.touches[0];
-    const pos = getMousePos(screenImg, touch);
-    sendMove(pos.x, pos.y);
+    
+    if (e.touches.length === 1) {
+        const touch = e.touches[0];
+        const pos = getMousePos(screenImg, touch.clientX, touch.clientY);
+        sendMove(pos.x, pos.y);
+    } else if (e.touches.length === 2) {
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+        const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+        
+        const pX = midX - startMidX;
+        const pY = midY - startMidY;
+        
+        scale = startScale * (distance / startTouchDistance);
+        panX = startPanX + pX;
+        panY = startPanY + pY;
+        
+        updateTransform();
+    }
     e.preventDefault();
-});
+}, { passive: false });
 
 screenImg.addEventListener('touchend', (e) => {
     if (!connected) return;
+    
+    // Always send click release on touchend for safety
     sendClick(currentMouseMode, 'up');
+    
+    if (e.touches.length === 1) {
+        // Reset single touch state
+        const touch = e.touches[0];
+        // Move mouse to where the remaining finger is (so they can continue dragging if they want)
+        const pos = getMousePos(screenImg, touch.clientX, touch.clientY);
+        sendMove(pos.x, pos.y);
+    }
     e.preventDefault();
+}, { passive: false });
+
+screenImg.addEventListener('touchcancel', (e) => {
+    if (!connected) return;
+    sendClick(currentMouseMode, 'up');
 });
 
 // Global Key Listeners for Desktop client keyboard input
@@ -413,3 +487,25 @@ window.addEventListener('focus', () => {
         }
     }).catch(err => {});
 });
+
+// Initialize image styles for zoom & pan
+screenImg.style.transformOrigin = '0 0';
+screenImg.style.transition = 'none';
+
+function updateTransform() {
+    if (scale <= 1.0) {
+        scale = 1.0;
+        panX = 0;
+        panY = 0;
+    } else {
+        const rect = canvasContainer.getBoundingClientRect();
+        const maxPanX = 0;
+        const minPanX = rect.width - (rect.width * scale);
+        const maxPanY = 0;
+        const minPanY = rect.height - (rect.height * scale);
+        
+        panX = Math.max(minPanX, Math.min(maxPanX, panX));
+        panY = Math.max(minPanY, Math.min(maxPanY, panY));
+    }
+    screenImg.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
+}

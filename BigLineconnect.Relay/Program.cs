@@ -299,6 +299,11 @@ namespace BigLineconnect.Relay
             var app = builder.Build();
             SqliteManager.Initialize();
 
+            app.UseForwardedHeaders(new ForwardedHeadersOptions
+            {
+                ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor | Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto
+            });
+
             app.UseCors();
             app.UseStaticFiles();
             
@@ -1029,7 +1034,8 @@ namespace BigLineconnect.Relay
                         context.Response.Cookies.Append("bigline_admin_session", AdminSessionToken, new CookieOptions
                         {
                             HttpOnly = true,
-                            SameSite = SameSiteMode.Strict,
+                            SameSite = SameSiteMode.Lax,
+                            Path = "/",
                             Expires = DateTimeOffset.UtcNow.AddDays(7)
                         });
                         context.Response.Redirect("/admin");

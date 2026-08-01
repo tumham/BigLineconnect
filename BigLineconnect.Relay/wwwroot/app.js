@@ -89,8 +89,11 @@ function connectToHost(id) {
         socket = new WebSocket(wsUrl);
         socket.binaryType = 'arraybuffer';
         
+        let customCloseReason = null;
+
         socket.onopen = () => {
             connected = true;
+            customCloseReason = null;
             showToast('Bağlantı kuruldu!', 'success');
             connectionScreen.classList.add('hidden');
             viewerScreen.classList.remove('hidden');
@@ -98,7 +101,11 @@ function connectToHost(id) {
         
         socket.onclose = () => {
             connected = false;
-            showToast('Bağlantı sonlandırıldı.', 'error');
+            if (customCloseReason) {
+                showToast(customCloseReason, 'error');
+            } else {
+                showToast('Bağlantı sonlandırıldı.', 'info');
+            }
             viewerScreen.classList.add('hidden');
             connectionScreen.classList.remove('hidden');
             passwordModal.classList.add('hidden');
@@ -144,10 +151,10 @@ function connectToHost(id) {
                 }
             } else if (typeof event.data === 'string') {
                 if (event.data === 'ERROR:ID_NOT_FOUND') {
-                    showToast('Bağlantı ID\'si bulunamadı. Lütfen kontrol edin.', 'error');
+                    customCloseReason = 'Bağlantı ID\'si bulunamadı veya bilgisayar kapalı.';
                     socket.close();
                 } else if (event.data === 'ERROR:BUSY') {
-                    showToast('Bu bilgisayar şu an meşgul.', 'error');
+                    customCloseReason = 'Bu bilgisayar şu an meşgul.';
                     socket.close();
                 } else if (event.data === 'AUTH_REQUIRED') {
                     passwordModal.classList.remove('hidden');
@@ -162,11 +169,11 @@ function connectToHost(id) {
                     passwordModal.classList.add('hidden');
                     showToast('Doğrulama başarılı!', 'success');
                 } else if (event.data === 'AUTH_FAILED') {
-                    showToast('Hatalı erişim şifresi girildi!', 'error');
+                    customCloseReason = 'Hatalı erişim şifresi girildi!';
                     passwordModal.classList.add('hidden');
                     socket.close();
                 } else if (event.data === 'AUTH_REJECTED') {
-                    showToast('Bağlantı isteği kullanıcı tarafından reddedildi!', 'error');
+                    customCloseReason = 'Bağlantı isteği kullanıcı tarafından reddedildi!';
                     socket.close();
                 } else if (event.data.startsWith('{')) {
                     try {
