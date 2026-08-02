@@ -487,18 +487,18 @@ if (screenImg) {
         const now = Date.now();
         const duration = now - touchStartTime;
         
-        if (duration < 450 && e.changedTouches.length === 1) {
+        if (duration < 600 && e.changedTouches.length === 1) {
             const touch = e.changedTouches[0];
             const moveDist = Math.sqrt((touch.clientX - touchStartX) ** 2 + (touch.clientY - touchStartY) ** 2);
             
-            if (moveDist < 25) {
+            if (moveDist < 60) {
                 const pos = getMousePos(screenImg, touch.clientX, touch.clientY);
                 sendMove(pos.x, pos.y);
 
                 const timeDiff = now - lastTapTime;
                 const doubleTapDist = Math.sqrt((touch.clientX - lastTapX) ** 2 + (touch.clientY - lastTapY) ** 2);
 
-                if (timeDiff < 450 && doubleTapDist < 45) {
+                if (timeDiff < 500 && doubleTapDist < 60) {
                     sendDoubleClick('left', pos.x, pos.y);
                     showToast('Çift Tıklama Yollandı ⚡', 'info');
                     lastTapTime = 0;
