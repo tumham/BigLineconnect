@@ -232,36 +232,51 @@ if (fullscreenBtn) {
     });
 }
 
-// Mouse Mode Toggler (Left Click / Right Click for Mobile)
+// Mouse Mode Toggler (Sol Tık / Çift Tık ⚡ / Sağ Tık 🔴)
 if (mouseModeBtn) {
-    mouseModeBtn.addEventListener('click', () => {
+    const handleMouseModeSwitch = (e) => {
+        if (e) e.preventDefault();
         if (currentMouseMode === 'left') {
+            currentMouseMode = 'double';
+            mouseModeBtn.style.background = 'rgba(0, 229, 255, 0.2)';
+            mouseModeBtn.style.color = '#00e5ff';
+            mouseModeBtn.style.borderColor = 'rgba(0, 229, 255, 0.5)';
+            if (mouseModeText) mouseModeText.textContent = 'Çift Tık ⚡';
+            showToast('Dokunma Modu: Çift Tıklama ⚡', 'info');
+        } else if (currentMouseMode === 'double') {
             currentMouseMode = 'right';
-            mouseModeBtn.classList.remove('toggle-active');
             mouseModeBtn.style.background = 'rgba(231, 76, 60, 0.2)';
             mouseModeBtn.style.color = '#e74c3c';
             mouseModeBtn.style.borderColor = 'rgba(231, 76, 60, 0.4)';
-            if (mouseModeText) mouseModeText.textContent = 'Sağ Tık';
-            showToast('Dokunma Modu: Sağ Tıklama', 'info');
+            if (mouseModeText) mouseModeText.textContent = 'Sağ Tık 🔴';
+            showToast('Dokunma Modu: Sağ Tıklama 🔴', 'info');
         } else {
             currentMouseMode = 'left';
             mouseModeBtn.style.background = '';
             mouseModeBtn.style.color = '';
             mouseModeBtn.style.borderColor = '';
-            mouseModeBtn.classList.add('toggle-active');
             if (mouseModeText) mouseModeText.textContent = 'Sol Tık';
             showToast('Dokunma Modu: Sol Tıklama', 'info');
         }
-    });
+    };
+
+    mouseModeBtn.addEventListener('click', handleMouseModeSwitch);
+    mouseModeBtn.addEventListener('touchstart', handleMouseModeSwitch);
 }
 
 // Keyboard Button for Mobile
 if (toggleKeyboardBtn) {
-    toggleKeyboardBtn.addEventListener('click', () => {
+    const triggerKeyboard = (e) => {
+        if (e) e.preventDefault();
         if (passwordModal && !passwordModal.classList.contains('hidden')) return;
-        if (hiddenKeyboardInput) hiddenKeyboardInput.focus();
+        if (hiddenKeyboardInput) {
+            hiddenKeyboardInput.focus();
+            hiddenKeyboardInput.click();
+        }
         showToast('Klavye aktif hale getirildi.', 'success');
-    });
+    };
+    toggleKeyboardBtn.addEventListener('click', triggerKeyboard);
+    toggleKeyboardBtn.addEventListener('touchstart', triggerKeyboard);
 }
 
 // hidden keyboard input handling
@@ -290,6 +305,12 @@ function sendMove(x, y) {
 function sendClick(button, action) {
     if (socket && socket.readyState === WebSocket.OPEN) {
         socket.send(JSON.stringify({ type: 'click', button, action }));
+    }
+}
+
+function sendDoubleClick(button = 'left') {
+    if (socket && socket.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify({ type: 'double_click', button }));
     }
 }
 
@@ -391,12 +412,17 @@ if (screenImg) {
 
     // Mobile Touch Events
     let startTouch1X = null, startTouch1Y = null, startPan1X = 0, startPan1Y = 0;
+    let lastTapTime = 0, lastTapX = 0, lastTapY = 0;
 
     screenImg.addEventListener('touchstart', (e) => {
         if (!connected) return;
         
         if (e.touches.length === 1) {
             const touch = e.touches[0];
+            const now = Date.now();
+            const posX = touch.clientX;
+            const posY = touch.clientY;
+
             startTouch1X = touch.clientX;
             startTouch1Y = touch.clientY;
             startPan1X = panX;
@@ -405,7 +431,26 @@ if (screenImg) {
             if (scale <= 1.0) {
                 const pos = getMousePos(screenImg, touch.clientX, touch.clientY);
                 sendMove(pos.x, pos.y);
-                sendClick(currentMouseMode, 'down');
+
+                const timeDiff = now - lastTapTime;
+                const dist = Math.sqrt((posX - lastTapX) ** 2 + (posY - lastTapY) ** 2);
+
+                if (timeDiff < 350 && dist < 30) {
+                    // Smart Touch Double-Tap detected!
+                    sendDoubleClick(currentMouseMode === 'right' ? 'right' : 'left');
+                    showToast('Çift Tık Yollandı ⚡', 'info');
+                    lastTapTime = 0;
+                } else {
+                    if (currentMouseMode === 'double') {
+                        sendDoubleClick('left');
+                        showToast('Klasör Açıldı ⚡', 'info');
+                    } else {
+                        sendClick(currentMouseMode, 'down');
+                    }
+                    lastTapTime = now;
+                    lastTapX = posX;
+                    lastTapY = posY;
+                }
             }
         } else if (e.touches.length === 2) {
             sendClick(currentMouseMode, 'up');
