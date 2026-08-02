@@ -2357,6 +2357,21 @@ namespace BigLineconnect.Relay
                 }
             });
 
+            app.MapGet("/i18n.js", async context =>
+            {
+                string path = System.IO.Path.Combine(AppContext.BaseDirectory, "wwwroot", "i18n.js");
+                if (System.IO.File.Exists(path))
+                {
+                    context.Response.ContentType = "application/javascript; charset=utf-8";
+                    await context.Response.WriteAsync(await System.IO.File.ReadAllTextAsync(path));
+                }
+                else
+                {
+                    context.Response.StatusCode = 404;
+                    await context.Response.WriteAsync($"i18n.js not found at expected path: {path}");
+                }
+            });
+
             app.MapGet("/style.css", async context =>
             {
                 string path = System.IO.Path.Combine(AppContext.BaseDirectory, "wwwroot", "style.css");

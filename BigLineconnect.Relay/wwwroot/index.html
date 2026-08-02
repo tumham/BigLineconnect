@@ -15,6 +15,7 @@
     <!-- FontAwesome for Premium Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css?v=1001">
+    <script src="i18n.js?v=1001"></script>
 </head>
 <body>
     <div id="landing-page" class="landing-container">
@@ -24,49 +25,50 @@
                 <img src="logo.png" alt="BigLineconnect Logo" class="nav-logo">
                 <div style="display: flex; flex-direction: column;">
                     <span class="nav-title" style="line-height: 1;">BigLine<span class="accent-text" style="color: #fff;">connect</span></span>
-                    <span style="font-size: 0.65rem; color: #00e5ff; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; margin-top: 3px;">REMOTE DESKTOP CLIENT</span>
+                    <span style="font-size: 0.65rem; color: #00e5ff; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; margin-top: 3px;" data-i18n="nav.subtitle">REMOTE DESKTOP CLIENT</span>
                 </div>
             </div>
             <nav class="nav-links">
-                <a href="#ozellikler"><i class="fa-solid fa-bolt"></i> Özellikler</a>
-                <a href="#fiyatlandirma"><i class="fa-solid fa-tags"></i> Paketler</a>
-                <a href="#indirme"><i class="fa-solid fa-download"></i> İndir</a>
-                <a href="#baglan" class="nav-btn-connect"><i class="fa-solid fa-desktop"></i> Hızlı Bağlan</a>
-                <a href="bayi.html" class="nav-btn-bayi"><i class="fa-solid fa-store"></i> Bayi Portalı</a>
-                <a href="admin.html" class="nav-btn-admin"><i class="fa-solid fa-user-shield"></i> Yönetici Girişi</a>
+                <a href="#ozellikler"><i class="fa-solid fa-bolt"></i> <span data-i18n="nav.features">Özellikler</span></a>
+                <a href="#fiyatlandirma"><i class="fa-solid fa-tags"></i> <span data-i18n="nav.pricing">Paketler</span></a>
+                <a href="#indirme"><i class="fa-solid fa-download"></i> <span data-i18n="nav.download">İndir</span></a>
+                <a href="#baglan" class="nav-btn-connect"><i class="fa-solid fa-desktop"></i> <span data-i18n="nav.connect">Hızlı Bağlan</span></a>
+                <a href="bayi.html" class="nav-btn-bayi"><i class="fa-solid fa-store"></i> <span data-i18n="nav.bayi">Bayi Portalı</span></a>
+                <a href="admin.html" class="nav-btn-admin"><i class="fa-solid fa-user-shield"></i> <span data-i18n="nav.admin">Yönetici Girişi</span></a>
+                <button type="button" onclick="toggleLanguage()" class="lang-switch-btn" style="background: rgba(0, 229, 255, 0.12); border: 1px solid rgba(0, 229, 255, 0.3); color: #fff; padding: 6px 12px; border-radius: 8px; font-weight: 700; cursor: pointer; margin-left: 6px;"><span class="lang-btn-text">🇹🇷 TR</span></button>
             </nav>
         </header>
 
         <!-- Hero Section -->
         <section class="hero-section">
             <div class="hero-content">
-                <div class="badge-tag">
+                <div class="badge-tag" data-i18n="hero.badge">
                     <i class="fa-solid fa-shield-halved"></i> Güvenli & Yerli Uzaktan Destek Altyapısı
                 </div>
-                <h1 class="hero-title">Güçlü, Hızlı ve Kesintisiz <br><span class="gradient-text">Uzaktan Erişim Sistemi</span></h1>
-                <p class="hero-desc">
+                <h1 class="hero-title" data-i18n="hero.title">Güçlü, Hızlı ve Kesintisiz <br><span class="gradient-text">Uzaktan Erişim Sistemi</span></h1>
+                <p class="hero-desc" data-i18n="hero.desc">
                     BigLineconnect ile müşterilerinize ve uzak cihazlarınıza saniyeler içinde bağlanın. Port açma gerektirmeyen tak-çalıştır mimarisi, 60 FPS akıcı görüntü transferi ve kurumsal kota yönetimi ile kesintisiz teknik destek sağlayın.
                 </p>
                 <div class="hero-actions">
                     <a href="BigLineconnect_setup.exe" class="hero-btn primary">
-                        <i class="fa-solid fa-download"></i> Windows İçin İndir (.exe)
+                        <i class="fa-solid fa-download"></i> <span data-i18n="hero.btn.download">Windows İçin İndir (.exe)</span>
                     </a>
                     <a href="#baglan" class="hero-btn secondary">
-                        <i class="fa-solid fa-globe"></i> Tarayıcıdan Hızlı Bağlan
+                        <i class="fa-solid fa-globe"></i> <span data-i18n="hero.btn.browser">Tarayıcıdan Hızlı Bağlan</span>
                     </a>
                 </div>
                 <div class="hero-stats">
                     <div class="stat-item">
                         <i class="fa-solid fa-gauge-high"></i>
-                        <span>60 FPS Akıcı Görüntü</span>
+                        <span data-i18n="hero.stat1">60 FPS Akıcı Görüntü</span>
                     </div>
                     <div class="stat-item">
                         <i class="fa-solid fa-lock"></i>
-                        <span>TLS 1.3 Şifreleme</span>
+                        <span data-i18n="hero.stat2">TLS 1.3 Şifreleme</span>
                     </div>
                     <div class="stat-item">
                         <i class="fa-solid fa-server"></i>
-                        <span>Yüksek Bulut Kapasitesi</span>
+                        <span data-i18n="hero.stat3">Yüksek Bulut Kapasitesi</span>
                     </div>
                 </div>
             </div>
@@ -78,19 +80,19 @@
                         <img src="logo.png" alt="Bigus Logo" class="brand-logo">
                     </div>
                     <h2 class="brand-title">BigLineconnect</h2>
-                    <p class="brand-subtitle">Tarayıcıdan Anında Bağlanın</p>
+                    <p class="brand-subtitle" data-i18n="widget.title">Tarayıcıdan Anında Bağlanın</p>
                     
                     <div class="input-group">
-                        <label for="target-id"><i class="fa-solid fa-desktop"></i> UZAKTAKİ MASA ID'Sİ (REMOTE ID)</label>
-                        <input type="text" id="target-id" placeholder="Örn: 393 215 720" style="text-align: center; letter-spacing: 2px; font-weight: 800; font-size: 1.3rem;">
+                        <label for="target-id" data-i18n="widget.label"><i class="fa-solid fa-desktop"></i> UZAKTAKİ MASA ID'Sİ (REMOTE ID)</label>
+                        <input type="text" id="target-id" placeholder="Örn: 393 215 720" data-i18n-ph="widget.placeholder" style="text-align: center; letter-spacing: 2px; font-weight: 800; font-size: 1.3rem;">
                     </div>
                     
                     <button id="connect-btn" class="primary-btn">
-                        <span>Bağlan</span> <i class="fa-solid fa-arrow-right-to-bracket"></i>
+                        <span data-i18n="widget.connect">Bağlan</span> <i class="fa-solid fa-arrow-right-to-bracket"></i>
                     </button>
                     
                     <div class="card-footer">
-                        <p><i class="fa-solid fa-shield-halved"></i> Güvenli yerel ağ bağlantısı</p>
+                        <p><i class="fa-solid fa-shield-halved"></i> <span data-i18n="widget.footer">Güvenli yerel ağ bağlantısı</span></p>
                     </div>
                 </div>
             </div>
@@ -99,40 +101,40 @@
         <!-- Features Section -->
         <section id="ozellikler" class="features-section">
             <div class="section-header">
-                <h2>Neden BigLineconnect?</h2>
-                <p>Rakipsiz hız, uçtan uca güvenlik ve esnek lisanslama seçenekleri ile işinizi büyütün.</p>
+                <h2 data-i18n="features.title">Neden BigLineconnect?</h2>
+                <p data-i18n="features.desc">Rakipsiz hız, uçtan uca güvenlik ve esnek lisanslama seçenekleri ile işinizi büyütün.</p>
             </div>
 
             <div class="features-grid">
                 <div class="feature-card">
                     <div class="feature-icon"><i class="fa-solid fa-bolt"></i></div>
-                    <h3>60 FPS Akıcı Ekran Transferi</h3>
-                    <p>Düşük gecikme süreli grafik motoru sayesinde uzak bilgisayarları sanki başındaymış gibi yönetin.</p>
+                    <h3 data-i18n="feat1.title">60 FPS Akıcı Ekran Transferi</h3>
+                    <p data-i18n="feat1.desc">Düşük gecikme süreli grafik motoru sayesinde uzak bilgisayarları sanki başındaymış gibi yönetin.</p>
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon"><i class="fa-solid fa-shield-cat"></i></div>
-                    <h3>Uçtan Uca 256-bit Şifreleme</h3>
-                    <p>TLS 1.3 ve SHA-256 kriptografik koruma ile tüm veri akışınız güvence altındadır.</p>
+                    <h3 data-i18n="feat2.title">Uçtan Uca 256-bit Şifreleme</h3>
+                    <p data-i18n="feat2.desc">TLS 1.3 ve SHA-256 kriptografik koruma ile tüm veri akışınız güvence altındadır.</p>
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon"><i class="fa-solid fa-plug-circle-check"></i></div>
-                    <h3>Port Açma Gerektirmez</h3>
-                    <p>Modem veya güvenlik duvarı ayarı gerekmez. Kurulumsuz çalıştırın, doğrudan bağlanın.</p>
+                    <h3 data-i18n="feat3.title">Port Açma Gerektirmez</h3>
+                    <p data-i18n="feat3.desc">Modem veya güvenlik duvarı ayarı gerekmez. Kurulumsuz çalıştırın, doğrudan bağlanın.</p>
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon"><i class="fa-solid fa-users-gear"></i></div>
-                    <h3>Çoklu Operatör & Kanal Yönetimi</h3>
-                    <p>Ekibinizdeki teknik destek personelini gruplayın, eşzamanlı kanal ve kota kullanımını izleyin.</p>
+                    <h3 data-i18n="feat4.title">Çoklu Operatör & Kanal Yönetimi</h3>
+                    <p data-i18n="feat4.desc">Ekibinizdeki teknik destek personelini gruplayın, eşzamanlı kanal ve kota kullanımını izleyin.</p>
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon"><i class="fa-solid fa-laptop-code"></i></div>
-                    <h3>Unattended (Arka Plan) Cihaz Kaydı</h3>
-                    <p>Müşteri bilgisayarlarına şifreli servis kurarak 7/24 kesintisiz erişim ve yönetim imkanı.</p>
+                    <h3 data-i18n="feat5.title">Unattended (Arka Plan) Cihaz Kaydı</h3>
+                    <p data-i18n="feat5.desc">Müşteri bilgisayarlarına şifreli servis kurarak 7/24 kesintisiz erişim ve yönetim imkanı.</p>
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon"><i class="fa-solid fa-mobile-screen-button"></i></div>
-                    <h3>Mobil & Web Tam Uyumlu</h3>
-                    <p>Masaüstü uygulamasına ek olarak web tarayıcılarından ve mobil cihazlardan sorunsuz bağlanın.</p>
+                    <h3 data-i18n="feat6.title">Mobil & Web Tam Uyumlu</h3>
+                    <p data-i18n="feat6.desc">Masaüstü uygulamasına ek olarak web tarayıcılarından ve mobil cihazlardan sorunsuz bağlanın.</p>
                 </div>
             </div>
         </section>
@@ -140,70 +142,70 @@
         <!-- Pricing Section -->
         <section id="fiyatlandirma" class="pricing-section">
             <div class="section-header">
-                <h2>Abonelik ve Paketler</h2>
-                <p>İhtiyacınıza en uygun paketi seçin, anında kullanmaya başlayın.</p>
+                <h2 data-i18n="pricing.title">Abonelik ve Paketler</h2>
+                <p data-i18n="pricing.desc">İhtiyacınıza en uygun paketi seçin, anında kullanmaya başlayın.</p>
             </div>
 
             <div class="pricing-grid">
                 <div class="pricing-card">
                     <div class="package-header">
-                        <h3>Başlangıç</h3>
-                        <div class="price">₺1.490 <span>/ yıl</span></div>
+                        <h3 data-i18n="pkg1.name">Başlangıç</h3>
+                        <div class="price"><span data-i18n="pkg1.price">₺1.490</span> <span data-i18n="pkg1.period">/ yıl</span></div>
                     </div>
                     <ul class="package-features">
-                        <li><i class="fa-solid fa-check"></i> <strong>1 Operatör</strong> Lisansı</li>
-                        <li><i class="fa-solid fa-check"></i> <strong>5 Eşzamanlı Kanal</strong></li>
-                        <li><i class="fa-solid fa-check"></i> <strong>50 Unattended Cihaz</strong> Kaydı</li>
-                        <li><i class="fa-solid fa-check"></i> Tam Web & Masaüstü Desteği</li>
-                        <li><i class="fa-solid fa-check"></i> 7/24 Kesintisiz Sunucu Erişimi</li>
+                        <li><i class="fa-solid fa-check"></i> <span data-i18n="pkg1.f1"><strong>1 Operatör</strong> Lisansı</span></li>
+                        <li><i class="fa-solid fa-check"></i> <span data-i18n="pkg1.f2"><strong>5 Eşzamanlı Kanal</strong></span></li>
+                        <li><i class="fa-solid fa-check"></i> <span data-i18n="pkg1.f3"><strong>50 Unattended Cihaz</strong> Kaydı</span></li>
+                        <li><i class="fa-solid fa-check"></i> <span data-i18n="pkg1.f4">Tam Web & Masaüstü Desteği</span></li>
+                        <li><i class="fa-solid fa-check"></i> <span data-i18n="pkg1.f5">7/24 Kesintisiz Sunucu Erişimi</span></li>
                     </ul>
-                    <a href="admin.html" class="price-btn">Lisans Tanımla</a>
+                    <a href="admin.html" class="price-btn" data-i18n="pkg1.btn">Lisans Tanımla</a>
                 </div>
 
                 <div class="pricing-card featured">
-                    <div class="popular-badge">En Çok Tercih Edilen</div>
+                    <div class="popular-badge" data-i18n="pkg2.badge">En Çok Tercih Edilen</div>
                     <div class="package-header">
-                        <h3>Pro</h3>
-                        <div class="price">₺3.990 <span>/ yıl</span></div>
+                        <h3 data-i18n="pkg2.name">Pro</h3>
+                        <div class="price"><span data-i18n="pkg2.price">₺3.990</span> <span data-i18n="pkg2.period">/ yıl</span></div>
                     </div>
                     <ul class="package-features">
-                        <li><i class="fa-solid fa-check"></i> <strong>2 Operatör</strong> Lisansı</li>
-                        <li><i class="fa-solid fa-check"></i> <strong>10 Eşzamanlı Kanal</strong></li>
-                        <li><i class="fa-solid fa-check"></i> <strong>100 Unattended Cihaz</strong> Kaydı</li>
-                        <li><i class="fa-solid fa-check"></i> Tam Web & Masaüstü Desteği</li>
-                        <li><i class="fa-solid fa-check"></i> Öncelikli Teknik Destek</li>
+                        <li><i class="fa-solid fa-check"></i> <span data-i18n="pkg2.f1"><strong>2 Operatör</strong> Lisansı</span></li>
+                        <li><i class="fa-solid fa-check"></i> <span data-i18n="pkg2.f2"><strong>10 Eşzamanlı Kanal</strong></span></li>
+                        <li><i class="fa-solid fa-check"></i> <span data-i18n="pkg2.f3"><strong>100 Unattended Cihaz</strong> Kaydı</span></li>
+                        <li><i class="fa-solid fa-check"></i> <span data-i18n="pkg2.f4">Tam Web & Masaüstü Desteği</span></li>
+                        <li><i class="fa-solid fa-check"></i> <span data-i18n="pkg2.f5">Öncelikli Teknik Destek</span></li>
                     </ul>
-                    <a href="admin.html" class="price-btn primary">Lisans Tanımla</a>
+                    <a href="admin.html" class="price-btn primary" data-i18n="pkg2.btn">Lisans Tanımla</a>
                 </div>
 
                 <div class="pricing-card">
                     <div class="package-header">
-                        <h3>Pro+</h3>
-                        <div class="price">₺4.990 <span>/ yıl</span></div>
+                        <h3 data-i18n="pkg3.name">Pro+</h3>
+                        <div class="price"><span data-i18n="pkg3.price">₺4.990</span> <span data-i18n="pkg3.period">/ yıl</span></div>
                     </div>
                     <ul class="package-features">
-                        <li><i class="fa-solid fa-check"></i> <strong>3 Operatör</strong> Lisansı</li>
-                        <li><i class="fa-solid fa-check"></i> <strong>15 Eşzamanlı Kanal</strong></li>
-                        <li><i class="fa-solid fa-check"></i> <strong>150 Unattended Cihaz</strong> Kaydı</li>
-                        <li><i class="fa-solid fa-check"></i> Tam Web & Masaüstü Desteği</li>
-                        <li><i class="fa-solid fa-check"></i> Özel Müşteri Temsilcisi</li>
+                        <li><i class="fa-solid fa-check"></i> <span data-i18n="pkg3.f1"><strong>3 Operatör</strong> Lisansı</span></li>
+                        <li><i class="fa-solid fa-check"></i> <span data-i18n="pkg3.f2"><strong>15 Eşzamanlı Kanal</strong></span></li>
+                        <li><i class="fa-solid fa-check"></i> <span data-i18n="pkg3.f3"><strong>150 Unattended Cihaz</strong> Kaydı</span></li>
+                        <li><i class="fa-solid fa-check"></i> <span data-i18n="pkg3.f4">Tam Web & Masaüstü Desteği</span></li>
+                        <li><i class="fa-solid fa-check"></i> <span data-i18n="pkg3.f5">Özel Müşteri Temsilcisi</span></li>
                     </ul>
-                    <a href="admin.html" class="price-btn">Lisans Tanımla</a>
+                    <a href="admin.html" class="price-btn" data-i18n="pkg3.btn">Lisans Tanımla</a>
                 </div>
 
                 <div class="pricing-card">
                     <div class="package-header">
-                        <h3>Kurumsal</h3>
-                        <div class="price">Özel Teklif</div>
+                        <h3 data-i18n="pkg4.name">Kurumsal</h3>
+                        <div class="price"><span data-i18n="pkg4.price">Özel Teklif</span></div>
                     </div>
                     <ul class="package-features">
-                        <li><i class="fa-solid fa-check"></i> <strong>Sınırsız Operatör</strong></li>
-                        <li><i class="fa-solid fa-check"></i> <strong>Sınırsız / Esnek Kanal</strong></li>
-                        <li><i class="fa-solid fa-check"></i> <strong>Sınırsız Cihaz Kaydı</strong></li>
-                        <li><i class="fa-solid fa-check"></i> Özel Sunucu Konfigürasyonu</li>
-                        <li><i class="fa-solid fa-check"></i> Özel Logo & Markalama</li>
+                        <li><i class="fa-solid fa-check"></i> <span data-i18n="pkg4.f1"><strong>Sınırsız Operatör</strong></span></li>
+                        <li><i class="fa-solid fa-check"></i> <span data-i18n="pkg4.f2"><strong>Sınırsız / Esnek Kanal</strong></span></li>
+                        <li><i class="fa-solid fa-check"></i> <span data-i18n="pkg4.f3"><strong>Sınırsız Cihaz Kaydı</strong></span></li>
+                        <li><i class="fa-solid fa-check"></i> <span data-i18n="pkg4.f4">Özel Sunucu Konfigürasyonu</span></li>
+                        <li><i class="fa-solid fa-check"></i> <span data-i18n="pkg4.f5">Özel Logo & Markalama</span></li>
                     </ul>
-                    <a href="mailto:info@bigus.com.tr" class="price-btn">İletişime Geçin</a>
+                    <a href="mailto:info@bigus.com.tr" class="price-btn" data-i18n="pkg4.btn">İletişime Geçin</a>
                 </div>
             </div>
         </section>
@@ -212,12 +214,12 @@
         <section id="indirme" class="download-section">
             <div class="download-card">
                 <div class="download-info">
-                    <h2>Masaüstü Uygulamasını İndirin</h2>
-                    <p>Windows 10, 11 ve Sunucu işletim sistemleri için optimize edilmiş Native AOT exe sürümünü tek tıkla yükleyin.</p>
+                    <h2 data-i18n="download.title">Masaüstü Uygulamasını İndirin</h2>
+                    <p data-i18n="download.desc">Windows 10, 11 ve Sunucu işletim sistemleri için optimize edilmiş Native AOT exe sürümünü tek tıkla yükleyin.</p>
                 </div>
                 <div class="download-action">
                     <a href="BigLineconnect_setup.exe" class="download-large-btn">
-                        <i class="fa-solid fa-download"></i> Windows İstemcisi İndir
+                        <i class="fa-solid fa-download"></i> <span data-i18n="download.btn">Windows İstemcisi İndir</span>
                     </a>
                 </div>
             </div>
