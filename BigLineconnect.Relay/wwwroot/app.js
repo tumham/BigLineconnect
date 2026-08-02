@@ -410,50 +410,27 @@ if (screenImg) {
         e.preventDefault();
     }, { passive: false });
 
-    // Mobile Touch Events
+    // Mobile Touch Events & Bulletproof Tap Engine
     let startTouch1X = null, startTouch1Y = null, startPan1X = 0, startPan1Y = 0;
+    let touchStartX = 0, touchStartY = 0, touchStartTime = 0, isMultiTouch = false;
     let lastTapTime = 0, lastTapX = 0, lastTapY = 0;
 
     screenImg.addEventListener('touchstart', (e) => {
         if (!connected) return;
         
         if (e.touches.length === 1) {
+            isMultiTouch = false;
             const touch = e.touches[0];
-            const now = Date.now();
-            const posX = touch.clientX;
-            const posY = touch.clientY;
+            touchStartX = touch.clientX;
+            touchStartY = touch.clientY;
+            touchStartTime = Date.now();
 
             startTouch1X = touch.clientX;
             startTouch1Y = touch.clientY;
             startPan1X = panX;
             startPan1Y = panY;
-
-            if (scale <= 1.0) {
-                const pos = getMousePos(screenImg, touch.clientX, touch.clientY);
-                sendMove(pos.x, pos.y);
-
-                const timeDiff = now - lastTapTime;
-                const dist = Math.sqrt((posX - lastTapX) ** 2 + (posY - lastTapY) ** 2);
-
-                if (timeDiff < 350 && dist < 30) {
-                    // Smart Touch Double-Tap detected!
-                    sendDoubleClick(currentMouseMode === 'right' ? 'right' : 'left');
-                    showToast('Çift Tık Yollandı ⚡', 'info');
-                    lastTapTime = 0;
-                } else {
-                    if (currentMouseMode === 'double') {
-                        sendDoubleClick('left');
-                        showToast('Klasör Açıldı ⚡', 'info');
-                    } else {
-                        sendClick(currentMouseMode, 'down');
-                    }
-                    lastTapTime = now;
-                    lastTapX = posX;
-                    lastTapY = posY;
-                }
-            }
         } else if (e.touches.length === 2) {
-            sendClick(currentMouseMode, 'up');
+            isMultiTouch = true;
             startTouch1X = null;
             
             const dx = e.touches[0].clientX - e.touches[1].clientX;
@@ -475,7 +452,6 @@ if (screenImg) {
         if (e.touches.length === 1) {
             const touch = e.touches[0];
             if (scale > 1.0 && startTouch1X !== null) {
-                // Smooth 1-finger panning when zoomed in!
                 panX = startPan1X + (touch.clientX - startTouch1X);
                 panY = startPan1Y + (touch.clientY - startTouch1Y);
                 updateTransform();
@@ -501,22 +477,51 @@ if (screenImg) {
     }, { passive: false });
 
     screenImg.addEventListener('touchend', (e) => {
-        if (!connected) return;
-        if (scale <= 1.0) {
-            sendClick(currentMouseMode, 'up');
-            if (e.touches.length === 1) {
-                const touch = e.touches[0];
+        if (!connected || isMultiTouch) return;
+        
+        const now = Date.now();
+        const duration = now - touchStartTime;
+        
+        if (duration < 450 && e.changedTouches.length === 1) {
+            const touch = e.changedTouches[0];
+            const moveDist = Math.sqrt((touch.clientX - touchStartX) ** 2 + (touch.clientY - touchStartY) ** 2);
+            
+            if (moveDist < 25) {
                 const pos = getMousePos(screenImg, touch.clientX, touch.clientY);
                 sendMove(pos.x, pos.y);
+
+                const timeDiff = now - lastTapTime;
+                const doubleTapDist = Math.sqrt((touch.clientX - lastTapX) ** 2 + (touch.clientY - lastTapY) ** 2);
+
+                if (timeDiff < 450 && doubleTapDist < 45) {
+                    sendDoubleClick('left');
+                    showToast('Klasör Açıldı (Çift Tık ⚡)', 'success');
+                    lastTapTime = 0;
+                } else if (currentMouseMode === 'double') {
+                    sendDoubleClick('left');
+                    showToast('Klasör Açıldı ⚡', 'success');
+                    lastTapTime = 0;
+                } else if (currentMouseMode === 'right') {
+                    sendClick('right', 'down');
+                    setTimeout(() => sendClick('right', 'up'), 40);
+                    showToast('Sağ Tık Yapıldı 🔴', 'info');
+                    lastTapTime = 0;
+                } else {
+                    sendClick('left', 'down');
+                    setTimeout(() => sendClick('left', 'up'), 40);
+                    lastTapTime = now;
+                    lastTapX = touch.clientX;
+                    lastTapY = touch.clientY;
+                }
             }
         }
+        
         startTouch1X = null;
         e.preventDefault();
     }, { passive: false });
 
     screenImg.addEventListener('touchcancel', (e) => {
         if (!connected) return;
-        sendClick(currentMouseMode, 'up');
         startTouch1X = null;
     });
 
