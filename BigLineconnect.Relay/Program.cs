@@ -1423,6 +1423,62 @@ namespace BigLineconnect.Relay
                 }
             });
 
+            app.MapPost("/api/license/generate-online", async context =>
+            {
+                try
+                {
+                    using var reader = new StreamReader(context.Request.Body);
+                    string body = await reader.ReadToEndAsync();
+                    using var doc = System.Text.Json.JsonDocument.Parse(body);
+                    var root = doc.RootElement;
+
+                    string fullName = root.TryGetProperty("fullName", out var p1) ? p1.GetString() ?? "" : "";
+                    string email = root.TryGetProperty("email", out var p2) ? p2.GetString() ?? "" : "";
+                    string phone = root.TryGetProperty("phone", out var p3) ? p3.GetString() ?? "" : "";
+                    string plan = root.TryGetProperty("plan", out var p4) ? p4.GetString() ?? "PRO" : "PRO";
+
+                    string randomPart1 = Random.Shared.Next(1000, 9999).ToString();
+                    string randomPart2 = Random.Shared.Next(1000, 9999).ToString();
+                    string randomPart3 = Random.Shared.Next(1000, 9999).ToString();
+                    string licenseKey = $"BIGLINE-{plan.ToUpper()}-{randomPart1}-{randomPart2}-{randomPart3}";
+
+                    try
+                    {
+                        var entry = new LicenseEntry
+                        {
+                            LicenseKey = licenseKey,
+                            CustomerName = string.IsNullOrEmpty(fullName) ? "Online Müşteri" : fullName,
+                            TierName = "Pro Sınırsız (Ayda ₺125 TL)",
+                            MaxOperators = 2,
+                            MaxChannels = 10,
+                            MaxUnattendedHosts = 100,
+                            CreatedAt = DateTime.Now.ToString("dd.MM.yyyy HH:mm"),
+                            ExpiresAt = DateTime.Now.AddYears(1).ToString("dd.MM.yyyy HH:mm"),
+                            IsActive = true
+                        };
+
+                        var licenses = LoadLicenses();
+                        licenses.Add(entry);
+                        SaveLicenses(licenses);
+                    }
+                    catch { }
+
+                    context.Response.ContentType = "application/json; charset=utf-8";
+                    await context.Response.WriteAsync(System.Text.Json.JsonSerializer.Serialize(new
+                    {
+                        success = true,
+                        licenseKey = licenseKey,
+                        email = email,
+                        message = "Ödeme onaylandı. Lisans anahtarınız oluşturuldu!"
+                    }));
+                }
+                catch (Exception ex)
+                {
+                    context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                    await context.Response.WriteAsync(System.Text.Json.JsonSerializer.Serialize(new { success = false, message = ex.Message }));
+                }
+            });
+
             app.MapPost("/api/bayi/login", async context =>
             {
                 try

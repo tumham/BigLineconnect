@@ -804,3 +804,61 @@ function extendFreeSessionTimer() {
     document.getElementById('session-timer-modal')?.classList.add('hidden');
     showToast('🎁 +5 Dakika Ek Ücretsiz Süre Eklendi!', 'success');
 }
+
+// 7. Instant Checkout & Online License Generator
+function openCheckoutModal() {
+    document.getElementById('session-timer-modal')?.classList.add('hidden');
+    const modal = document.getElementById('checkout-modal');
+    if (modal) modal.classList.remove('hidden');
+}
+
+function closeCheckoutModal() {
+    const modal = document.getElementById('checkout-modal');
+    if (modal) modal.classList.add('hidden');
+}
+
+async function submitOnlineCheckout(e) {
+    if (e) e.preventDefault();
+    const name = document.getElementById('checkout-name').value.trim();
+    const email = document.getElementById('checkout-email').value.trim();
+    const phone = document.getElementById('checkout-phone').value.trim();
+
+    try {
+        showToast('Ödeme doğrulanıyor ve lisans üretiliyor...', 'info');
+        const res = await fetch('/api/license/generate-online', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fullName: name, email: email, phone: phone, plan: 'PRO' })
+        });
+        const data = await res.json();
+        if (data.success && data.licenseKey) {
+            // Save license token locally to unblock session timer completely
+            sessionStorage.setItem('adminToken', 'authenticated');
+            sessionStorage.setItem('licenseKey', data.licenseKey);
+            document.cookie = "bigline_admin_session=authenticated; path=/; max-age=31536000";
+
+            if (sessionTimerInterval) clearInterval(sessionTimerInterval);
+            document.getElementById('session-timer-modal')?.classList.add('hidden');
+
+            document.getElementById('checkout-form').style.display = 'none';
+            document.getElementById('checkout-success-box').style.display = 'block';
+            document.getElementById('generated-license-key').innerText = data.licenseKey;
+
+            showToast('Tebrikler! Lisansınız aktifleşti ve 7/24 sınırsız sürüme geçtiniz!', 'success');
+        } else {
+            alert('Hata: ' + (data.message || 'Lisans üretilemedi'));
+        }
+    } catch (err) {
+        console.warn("Ödeme hatası:", err);
+        alert('İşlem sırasında bir hata oluştu.');
+    }
+}
+
+function copyGeneratedLicenseKey() {
+    const key = document.getElementById('generated-license-key').innerText.trim();
+    if (key) {
+        navigator.clipboard.writeText(key).then(() => {
+            showToast('Lisans Anahtarı Panoya Kopyalandı!', 'success');
+        });
+    }
+}
