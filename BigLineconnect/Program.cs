@@ -807,7 +807,14 @@ namespace BigLineconnect
                 }
                 else if (type == "double_click")
                 {
-                    string button = root.GetProperty("button").GetString() ?? "left";
+                    string button = root.TryGetProperty("button", out var bProp) ? bProp.GetString() ?? "left" : "left";
+                    if (root.TryGetProperty("x", out var xProp) && root.TryGetProperty("y", out var yProp))
+                    {
+                        double x = xProp.GetDouble();
+                        double y = yProp.GetDouble();
+                        InputSimulator.SimulateMouseMove(x, y, _activeDisplayIndex);
+                        System.Threading.Thread.Sleep(25);
+                    }
                     InputSimulator.SimulateMouseDoubleClick(button);
                 }
                 else if (type == "release_modifiers")

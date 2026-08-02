@@ -204,9 +204,10 @@ namespace BigLineconnect
         {
             try
             {
+                DesktopHelper.AttachToInputDesktop();
                 SimulateMouseButton(button, "down");
                 SimulateMouseButton(button, "up");
-                System.Threading.Thread.Sleep(30);
+                System.Threading.Thread.Sleep(50);
                 SimulateMouseButton(button, "down");
                 SimulateMouseButton(button, "up");
             }
