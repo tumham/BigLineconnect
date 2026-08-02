@@ -10,6 +10,11 @@ const translations = {
         "nav.admin": "Yönetici Girişi",
         "nav.subtitle": "UZAKTAN ERİŞİM SİSTEMİ",
 
+        // Promo & Free Trial
+        "promo.banner": "🎁 30 GÜN ÜCRETSİZ FULL KULLANIM: Kredi kartı gerekmez, hemen indirin ve sınırsız deneyin!",
+        "hero.nocard": "<i class=\"fa-solid fa-circle-check\" style=\"color:#2ecc71\"></i> Kredi Kartı Gerekmez • İlk 1 Ay Ücretsiz Full Kullanım",
+        "pricing.promo": "🔥 TÜM PAKETLERDE İLK 1 AY %100 ÜCRETSİZ FULL KULLANIM HEDİYE!",
+
         // Hero
         "hero.badge": "Güvenli & Yerli Uzaktan Destek Altyapısı",
         "hero.title": "Güçlü, Hızlı ve Kesintisiz <br><span class=\"gradient-text\">Uzaktan Erişim Sistemi</span>",
@@ -128,6 +133,11 @@ const translations = {
         "nav.bayi": "Partner Portal",
         "nav.admin": "Admin Access",
         "nav.subtitle": "REMOTE DESKTOP CLIENT",
+
+        // Promo & Free Trial
+        "promo.banner": "🎁 30-DAY FREE FULL TRIAL: No credit card required, download & connect instantly!",
+        "hero.nocard": "<i class=\"fa-solid fa-circle-check\" style=\"color:#2ecc71\"></i> No Credit Card Required • First 1 Month Free Full Access",
+        "pricing.promo": "🔥 FIRST 1 MONTH 100% FREE FULL TRIAL INCLUDED ON ALL PLANS!",
 
         // Hero
         "badge": "Secure & High-Performance Remote Support Infrastructure",
