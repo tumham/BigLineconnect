@@ -12,11 +12,11 @@ RUN dotnet build "BigLineconnect.Relay.csproj" -c Release -o /app/build
 
 FROM build AS publish
 RUN dotnet publish "BigLineconnect.Relay.csproj" -c Release -o /app/publish /p:UseAppHost=false
+RUN cp -r wwwroot /app/publish/wwwroot
 
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-COPY BigLineconnect.Relay/wwwroot ./wwwroot
 
 ENV ASPNETCORE_URLS=http://+:5080
 EXPOSE 5080
