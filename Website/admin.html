@@ -496,16 +496,21 @@
 
         async function checkAdminAuth() {
             const token = sessionStorage.getItem('adminToken');
-            if (token === 'authenticated') return true;
+            const modal = document.getElementById('admin-login-modal');
+            if (token === 'authenticated') {
+                if (modal) modal.style.display = 'none';
+                return true;
+            }
             
             // Show Admin Login Modal
-            document.getElementById('admin-login-modal').classList.remove('hidden');
+            if (modal) modal.style.display = 'flex';
             return false;
         }
 
         async function submitAdminLogin(e) {
             if (e) e.preventDefault();
             const pass = document.getElementById('admin-password-input').value.trim();
+            const modal = document.getElementById('admin-login-modal');
             try {
                 const res = await fetch('/api/admin/verify', {
                     method: 'POST',
@@ -516,7 +521,7 @@
                 if (data.success) {
                     sessionStorage.setItem('adminToken', 'authenticated');
                     document.cookie = "bigline_admin_session=authenticated; path=/; max-age=604800";
-                    document.getElementById('admin-login-modal').classList.add('hidden');
+                    if (modal) modal.style.display = 'none';
                     loadDashboardData();
                     setInterval(loadDashboardData, 10000);
                 } else {
@@ -527,7 +532,7 @@
                 if (pass === 'BigLineAdmin2026!' || pass === 'Bigline2026!' || pass.toLowerCase() === 'admin123' || pass === '123456') {
                     sessionStorage.setItem('adminToken', 'authenticated');
                     document.cookie = "bigline_admin_session=authenticated; path=/; max-age=604800";
-                    document.getElementById('admin-login-modal').classList.add('hidden');
+                    if (modal) modal.style.display = 'none';
                     loadDashboardData();
                     setInterval(loadDashboardData, 10000);
                 } else {
@@ -537,7 +542,8 @@
         }
 
         if (sessionStorage.getItem('adminToken') === 'authenticated') {
-            document.getElementById('admin-login-modal')?.classList.add('hidden');
+            const modal = document.getElementById('admin-login-modal');
+            if (modal) modal.style.display = 'none';
             loadDashboardData();
             setInterval(loadDashboardData, 10000);
         } else {
