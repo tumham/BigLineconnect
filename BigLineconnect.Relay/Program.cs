@@ -2350,6 +2350,21 @@ namespace BigLineconnect.Relay
                 }
             });
 
+            app.MapGet("/anydesk-alternatifi.html", async context =>
+            {
+                string path = System.IO.Path.Combine(AppContext.BaseDirectory, "wwwroot", "anydesk-alternatifi.html");
+                if (System.IO.File.Exists(path))
+                {
+                    context.Response.ContentType = "text/html; charset=utf-8";
+                    await context.Response.WriteAsync(await System.IO.File.ReadAllTextAsync(path));
+                }
+                else
+                {
+                    context.Response.StatusCode = 404;
+                    await context.Response.WriteAsync($"anydesk-alternatifi.html not found at expected path: {path}");
+                }
+            });
+
             app.MapGet("/app.js", async context =>
             {
                 string path = System.IO.Path.Combine(AppContext.BaseDirectory, "wwwroot", "app.js");
