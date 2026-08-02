@@ -652,13 +652,61 @@ async function startWebScreenShare() {
         myWebHostId = Math.floor(100000000 + Math.random() * 900000000).toString();
         myWebHostPass = Math.floor(1000 + Math.random() * 9000).toString();
 
+        // Connect to Relay server as a Host so the ID is registered in ActiveHosts!
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const hostWsUrl = `${wsProtocol}//${window.location.host}/register-host?requested_id=${myWebHostId}&hwid=WEB_${myWebHostId}&computer_name=WebClient&username=WebUser&os=Browser&version=1.0`;
+
+        webHostSocket = new WebSocket(hostWsUrl);
+        webHostSocket.binaryType = 'arraybuffer';
+
+        webHostSocket.onopen = () => {
+            console.log("[WebHost] Connected to Relay. ID:", myWebHostId);
+            showToast('Ekran paylaşımı sunucuya bağlandı!', 'success');
+        };
+
+        const hiddenCanvas = document.createElement('canvas');
+        const hiddenCtx = hiddenCanvas.getContext('2d');
+        const videoElement = document.createElement('video');
+        videoElement.srcObject = webHostMediaStream;
+        videoElement.play();
+
+        webHostSocket.onmessage = (e) => {
+            if (typeof e.data === 'string') {
+                console.log("[WebHost Msg]:", e.data);
+                if (e.data.startsWith("AUTH_PASS:")) {
+                    const passInput = e.data.substring(10).trim();
+                    if (passInput === myWebHostPass) {
+                        webHostSocket.send("AUTH_OK");
+                    } else {
+                        webHostSocket.send("AUTH_FAIL");
+                    }
+                }
+            }
+        };
+
+        // Frame capture loop (~15 FPS)
+        webHostInterval = setInterval(() => {
+            if (!webHostMediaStream || !webHostSocket || webHostSocket.readyState !== WebSocket.OPEN) return;
+            if (!videoElement.videoWidth || !videoElement.videoHeight) return;
+
+            hiddenCanvas.width = videoElement.videoWidth;
+            hiddenCanvas.height = videoElement.videoHeight;
+            hiddenCtx.drawImage(videoElement, 0, 0, hiddenCanvas.width, hiddenCanvas.height);
+
+            hiddenCanvas.toBlob((blob) => {
+                if (blob && webHostSocket && webHostSocket.readyState === WebSocket.OPEN) {
+                    blob.arrayBuffer().then(buf => {
+                        webHostSocket.send(buf);
+                    });
+                }
+            }, 'image/jpeg', 0.6);
+        }, 66);
+
         document.getElementById('my-web-id-display').innerText = `${myWebHostId.substring(0,3)} ${myWebHostId.substring(3,6)} ${myWebHostId.substring(6)}`;
         document.getElementById('my-web-pass-display').innerText = myWebHostPass;
 
         document.getElementById('web-host-idle-box').style.display = 'none';
         document.getElementById('web-host-active-box').style.display = 'block';
-
-        showToast('Ekran paylaşımı başlatıldı! Web ID oluştu.', 'success');
 
         // Handle user stopping screen share from browser banner
         webHostMediaStream.getVideoTracks()[0].onended = () => {
