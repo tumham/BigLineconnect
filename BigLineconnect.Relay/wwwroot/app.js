@@ -551,3 +551,53 @@ function updateTransform() {
     }
     screenImg.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
 }
+
+// 1. Magic Link Auto-Detect (?id=393215720 or ?remoteid=...)
+function checkMagicLink() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const magicId = urlParams.get('id') || urlParams.get('remoteid');
+    if (magicId && targetIdInput) {
+        const clean = magicId.replace(/\D/g, '');
+        if (clean.length >= 6) {
+            targetIdInput.value = clean;
+            targetIdInput.dispatchEvent(new Event('input'));
+            
+            // Scroll to connect widget
+            setTimeout(() => {
+                document.getElementById('baglan')?.scrollIntoView({ behavior: 'smooth' });
+                showToast('Uzak Masaüstü ID algılandı! Bağlan butonuna basın.', 'info');
+            }, 300);
+        }
+    }
+}
+
+// 2. WhatsApp Share Generator
+function shareViaWhatsApp() {
+    const idVal = targetIdInput ? targetIdInput.value.replace(/\D/g, '') : '';
+    if (!idVal || idVal.length < 6) {
+        alert('Lütfen öncelikle 9 haneli Uzak Masaüstü ID girin!');
+        return;
+    }
+    const magicUrl = `https://biglineconnect.bigus.com.tr/?id=${idVal}`;
+    const text = encodeURIComponent(`Merhaba, BigLineconnect Uzak Masaüstü Bağlantı Bilgilerim:\nID: ${idVal}\nTek tıkla bağlanmak için linke tıklayın:\n${magicUrl}`);
+    window.open(`https://wa.me/?text=${text}`, '_blank');
+}
+
+// 3. One-Click Copy Magic Link
+function copyMagicLink() {
+    const idVal = targetIdInput ? targetIdInput.value.replace(/\D/g, '') : '';
+    if (!idVal || idVal.length < 6) {
+        alert('Lütfen öncelikle 9 haneli Uzak Masaüstü ID girin!');
+        return;
+    }
+    const magicUrl = `https://biglineconnect.bigus.com.tr/?id=${idVal}`;
+    navigator.clipboard.writeText(magicUrl).then(() => {
+        showToast('Sihirli Bağlantı Linki Kopyalandı! (WhatsApp veya Mail ile gönderebilirsiniz)', 'success');
+    }).catch(() => {
+        showToast('Kopyalandı: ' + magicUrl, 'success');
+    });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    checkMagicLink();
+});
