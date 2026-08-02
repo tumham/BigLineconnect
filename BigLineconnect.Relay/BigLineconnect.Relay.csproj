@@ -10,8 +10,4 @@
     <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="9.0.2" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Content Include="wwwroot/**" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
-  </ItemGroup>
-
 </Project>

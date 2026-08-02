@@ -2,10 +2,7 @@
 nixPkgs = ["dotnet-sdk_9"]
 
 [phases.build]
-cmds = [
-  "dotnet publish BigLineconnect.Relay/BigLineconnect.Relay.csproj -c Release -o /app/out",
-  "cp -r BigLineconnect.Relay/wwwroot /app/out/wwwroot"
-]
+cmds = ["dotnet publish BigLineconnect.Relay/BigLineconnect.Relay.csproj -c Release -o /app/out"]
 
 [start]
 cmd = "dotnet /app/out/BigLineconnect.Relay.dll"
