@@ -390,16 +390,26 @@ if (screenImg) {
     }, { passive: false });
 
     // Mobile Touch Events
+    let startTouch1X = null, startTouch1Y = null, startPan1X = 0, startPan1Y = 0;
+
     screenImg.addEventListener('touchstart', (e) => {
         if (!connected) return;
         
         if (e.touches.length === 1) {
             const touch = e.touches[0];
-            const pos = getMousePos(screenImg, touch.clientX, touch.clientY);
-            sendMove(pos.x, pos.y);
-            sendClick(currentMouseMode, 'down');
+            startTouch1X = touch.clientX;
+            startTouch1Y = touch.clientY;
+            startPan1X = panX;
+            startPan1Y = panY;
+
+            if (scale <= 1.0) {
+                const pos = getMousePos(screenImg, touch.clientX, touch.clientY);
+                sendMove(pos.x, pos.y);
+                sendClick(currentMouseMode, 'down');
+            }
         } else if (e.touches.length === 2) {
             sendClick(currentMouseMode, 'up');
+            startTouch1X = null;
             
             const dx = e.touches[0].clientX - e.touches[1].clientX;
             const dy = e.touches[0].clientY - e.touches[1].clientY;
@@ -419,8 +429,15 @@ if (screenImg) {
         
         if (e.touches.length === 1) {
             const touch = e.touches[0];
-            const pos = getMousePos(screenImg, touch.clientX, touch.clientY);
-            sendMove(pos.x, pos.y);
+            if (scale > 1.0 && startTouch1X !== null) {
+                // Smooth 1-finger panning when zoomed in!
+                panX = startPan1X + (touch.clientX - startTouch1X);
+                panY = startPan1Y + (touch.clientY - startTouch1Y);
+                updateTransform();
+            } else {
+                const pos = getMousePos(screenImg, touch.clientX, touch.clientY);
+                sendMove(pos.x, pos.y);
+            }
         } else if (e.touches.length === 2) {
             const dx = e.touches[0].clientX - e.touches[1].clientX;
             const dy = e.touches[0].clientY - e.touches[1].clientY;
@@ -429,12 +446,9 @@ if (screenImg) {
             const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
             const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
             
-            const pX = midX - startMidX;
-            const pY = midY - startMidY;
-            
-            scale = startScale * (distance / startTouchDistance);
-            panX = startPanX + pX;
-            panY = startPanY + pY;
+            scale = Math.max(1.0, Math.min(6.0, startScale * (distance / startTouchDistance)));
+            panX = startPanX + (midX - startMidX);
+            panY = startPanY + (midY - startMidY);
             
             updateTransform();
         }
@@ -443,22 +457,25 @@ if (screenImg) {
 
     screenImg.addEventListener('touchend', (e) => {
         if (!connected) return;
-        sendClick(currentMouseMode, 'up');
-        
-        if (e.touches.length === 1) {
-            const touch = e.touches[0];
-            const pos = getMousePos(screenImg, touch.clientX, touch.clientY);
-            sendMove(pos.x, pos.y);
+        if (scale <= 1.0) {
+            sendClick(currentMouseMode, 'up');
+            if (e.touches.length === 1) {
+                const touch = e.touches[0];
+                const pos = getMousePos(screenImg, touch.clientX, touch.clientY);
+                sendMove(pos.x, pos.y);
+            }
         }
+        startTouch1X = null;
         e.preventDefault();
     }, { passive: false });
 
     screenImg.addEventListener('touchcancel', (e) => {
         if (!connected) return;
         sendClick(currentMouseMode, 'up');
+        startTouch1X = null;
     });
 
-    screenImg.style.transformOrigin = '0 0';
+    screenImg.style.transformOrigin = 'center center';
     screenImg.style.transition = 'none';
 }
 
@@ -481,25 +498,25 @@ window.addEventListener('keyup', (e) => {
     e.preventDefault();
 });
 
-// Floating buttons key injection
+// Floating buttons key injection with iOS Touch Support
 document.querySelectorAll('.special-key').forEach(button => {
-    button.addEventListener('mousedown', () => {
+    const handleKey = (action) => {
         if (!connected) return;
         const key = button.getAttribute('data-key');
-        sendKey(key, 'down');
-    });
-    
-    button.addEventListener('mouseup', () => {
-        if (!connected) return;
-        const key = button.getAttribute('data-key');
-        sendKey(key, 'up');
-    });
+        sendKey(key, action);
+    };
+
+    button.addEventListener('mousedown', (e) => { e.preventDefault(); handleKey('down'); });
+    button.addEventListener('mouseup', (e) => { e.preventDefault(); handleKey('up'); });
+    button.addEventListener('touchstart', (e) => { e.preventDefault(); handleKey('down'); });
+    button.addEventListener('touchend', (e) => { e.preventDefault(); handleKey('up'); });
 });
 
 // CAD Action
 const cadBtn = document.getElementById('btn-ctrl-alt-del');
 if (cadBtn) {
-    cadBtn.addEventListener('click', () => {
+    const triggerCad = (e) => {
+        if (e) e.preventDefault();
         if (!connected) return;
         showToast('Ctrl + Alt + Del gönderildi.', 'info');
         sendKey('control', 'down');
@@ -510,7 +527,9 @@ if (cadBtn) {
             sendKey('alt', 'up');
             sendKey('control', 'up');
         }, 100);
-    });
+    };
+    cadBtn.addEventListener('click', triggerCad);
+    cadBtn.addEventListener('touchstart', triggerCad);
 }
 
 // On-Screen Touch Numpad Actions
@@ -519,12 +538,15 @@ document.querySelectorAll('.numpad-btn').forEach(btn => {
         e.preventDefault();
         e.stopPropagation();
         const val = btn.getAttribute('data-val');
+        if (!accessPasswordInput) return;
         if (val === 'clear') {
-            if (accessPasswordInput) accessPasswordInput.value = '';
+            accessPasswordInput.value = '';
         } else if (val === 'backspace') {
-            if (accessPasswordInput) accessPasswordInput.value = accessPasswordInput.value.slice(0, -1);
-        } else if (val) {
-            if (accessPasswordInput) accessPasswordInput.value += val;
+            accessPasswordInput.value = accessPasswordInput.value.slice(0, -1);
+        } else {
+            if (accessPasswordInput.value.length < 8) {
+                accessPasswordInput.value += val;
+            }
         }
     });
 });
@@ -573,14 +595,15 @@ function updateTransform() {
         panY = 0;
     } else {
         const rect = canvasContainer.getBoundingClientRect();
-        const maxPanX = 0;
-        const minPanX = rect.width - (rect.width * scale);
-        const maxPanY = 0;
-        const minPanY = rect.height - (rect.height * scale);
+        const maxPanX = (rect.width * (scale - 1)) / 2;
+        const minPanX = -maxPanX;
+        const maxPanY = (rect.height * (scale - 1)) / 2;
+        const minPanY = -maxPanY;
         
         panX = Math.max(minPanX, Math.min(maxPanX, panX));
         panY = Math.max(minPanY, Math.min(maxPanY, panY));
     }
+    screenImg.style.transformOrigin = 'center center';
     screenImg.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
 }
 
