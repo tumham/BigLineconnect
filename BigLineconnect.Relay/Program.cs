@@ -387,10 +387,13 @@ namespace BigLineconnect.Relay
             var app = builder.Build();
             SqliteManager.Initialize();
 
-            app.UseForwardedHeaders(new ForwardedHeadersOptions
+            var forwardedOptions = new ForwardedHeadersOptions
             {
                 ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor | Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto
-            });
+            };
+            forwardedOptions.KnownNetworks.Clear();
+            forwardedOptions.KnownProxies.Clear();
+            app.UseForwardedHeaders(forwardedOptions);
 
             app.UseCors();
             app.UseStaticFiles();
@@ -626,6 +629,7 @@ namespace BigLineconnect.Relay
                     {
                         byte[] errMsg = Encoding.UTF8.GetBytes("ERROR:ID_NOT_FOUND");
                         await clientSocket.SendAsync(new ArraySegment<byte>(errMsg), WebSocketMessageType.Text, true, CancellationToken.None);
+                        await Task.Delay(300);
                         await clientSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Host not found", CancellationToken.None);
                         return;
                     }

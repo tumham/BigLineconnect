@@ -25,4 +25,6 @@ publish_temp/
 
 ## Keep source files
 !/BigLineconnect.Relay/wwwroot/**
+/BigLineconnect.Relay/wwwroot/*.exe
+/Website/*.exe
 !/BigLineconnect.Installer/Resources/icon.ico
