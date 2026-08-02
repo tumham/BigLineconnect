@@ -390,41 +390,54 @@
         </div>
     </div>
 
-    <!-- Instant Checkout & Automatic License Generator Modal -->
+    <!-- Instant Checkout & Payment Notification Modal -->
     <div id="checkout-modal" class="hidden" style="position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(11,14,20,0.92); z-index:999999; display:flex; justify-content:center; align-items:center; backdrop-filter:blur(15px); padding:20px;">
-        <div style="background:var(--card-bg); border:1px solid var(--accent-cyan); border-radius:20px; padding:30px; max-width:440px; width:100%; text-align:center; box-shadow:0 25px 50px rgba(0,0,0,0.9); position:relative;">
+        <div style="background:var(--card-bg); border:1px solid var(--accent-cyan); border-radius:20px; padding:25px; max-width:460px; width:100%; text-align:center; box-shadow:0 25px 50px rgba(0,0,0,0.9); position:relative; max-height:90vh; overflow-y:auto;">
             <button type="button" onclick="closeCheckoutModal()" style="position:absolute; top:15px; right:15px; background:none; border:none; color:#a0aec0; font-size:1.2rem; cursor:pointer;"><i class="fa-solid fa-xmark"></i></button>
-            <img src="logo.png" alt="BigLineconnect" style="height:42px; margin-bottom:12px;">
-            <h3 style="font-weight:800; font-size:1.4rem; color:#fff; margin-bottom:6px;">Anında Lisans & Ödeme Formu</h3>
-            <p style="color:#00e5ff; font-size:0.85rem; font-weight:700; margin-bottom:20px;">Ayda Sadece ₺125 TL ($4/Ay) • Yıllık ₺1.490 TL</p>
+            <img src="logo.png" alt="BigLineconnect" style="height:40px; margin-bottom:10px;">
+            <h3 style="font-weight:800; font-size:1.3rem; color:#fff; margin-bottom:4px;">Lisans Al & Ödeme Bildirimi</h3>
+            <p style="color:#00e5ff; font-size:0.85rem; font-weight:700; margin-bottom:16px;">Ayda Sadece ₺125 TL ($4/Ay) • Yıllık ₺1.490 TL</p>
+
+            <!-- Bank / IBAN Info Box -->
+            <div style="background:rgba(0, 229, 255, 0.08); border:1px solid rgba(0, 229, 255, 0.3); border-radius:12px; padding:12px; text-align:left; margin-bottom:16px; font-size:0.82rem;">
+                <div style="color:#00e5ff; font-weight:800; margin-bottom:4px;"><i class="fa-solid fa-building-columns"></i> HAVALE / EFT BANKA HESAP BİLGİLERİ:</div>
+                <div style="color:#fff; font-weight:700;">Alıcı: Bigus Mobil Yazılım Teknolojileri</div>
+                <div style="color:#fff; font-weight:700; margin-top:2px;">Banka: Ziraat Bankası</div>
+                <div style="color:#2ecc71; font-family:monospace; font-weight:800; font-size:0.9rem; margin-top:4px; letter-spacing:1px;">IBAN: TR76 0001 0090 1023 4567 8901</div>
+                <div style="color:#a0aec0; font-size:0.75rem; margin-top:4px;">Açıklama: Ad Soyad / Telefon Yazınız</div>
+            </div>
             
             <form id="checkout-form" onsubmit="submitOnlineCheckout(event)">
-                <div style="margin-bottom:12px; text-align:left;">
+                <div style="margin-bottom:10px; text-align:left;">
                     <label style="font-size:0.75rem; color:#a0aec0; font-weight:700;">AD SOYAD / FİRMA ADI</label>
-                    <input type="text" id="checkout-name" required placeholder="Ahmet Yılmaz / Yılmaz Bilişim" style="width:100%; padding:12px; background:rgba(0,0,0,0.5); border:1px solid var(--border-color); border-radius:8px; color:#fff; margin-top:4px; outline:none;">
+                    <input type="text" id="checkout-name" required placeholder="Ahmet Yılmaz / Yılmaz Bilişim" style="width:100%; padding:10px; background:rgba(0,0,0,0.5); border:1px solid var(--border-color); border-radius:8px; color:#fff; margin-top:3px; outline:none;">
                 </div>
-                <div style="margin-bottom:12px; text-align:left;">
-                    <label style="font-size:0.75rem; color:#a0aec0; font-weight:700;">E-POSTA ADRESİ (Lisans Kodu Gönderilecek)</label>
-                    <input type="email" id="checkout-email" required placeholder="ahmet@firma.com" style="width:100%; padding:12px; background:rgba(0,0,0,0.5); border:1px solid var(--border-color); border-radius:8px; color:#fff; margin-top:4px; outline:none;">
+                <div style="margin-bottom:10px; text-align:left;">
+                    <label style="font-size:0.75rem; color:#a0aec0; font-weight:700;">E-POSTA ADRESİ (Lisans Gönderilecek)</label>
+                    <input type="email" id="checkout-email" required placeholder="ahmet@firma.com" style="width:100%; padding:10px; background:rgba(0,0,0,0.5); border:1px solid var(--border-color); border-radius:8px; color:#fff; margin-top:3px; outline:none;">
                 </div>
-                <div style="margin-bottom:16px; text-align:left;">
+                <div style="margin-bottom:14px; text-align:left;">
                     <label style="font-size:0.75rem; color:#a0aec0; font-weight:700;">TELEFON</label>
-                    <input type="tel" id="checkout-phone" required placeholder="0555 123 45 67" style="width:100%; padding:12px; background:rgba(0,0,0,0.5); border:1px solid var(--border-color); border-radius:8px; color:#fff; margin-top:4px; outline:none;">
+                    <input type="tel" id="checkout-phone" required placeholder="0555 123 45 67" style="width:100%; padding:10px; background:rgba(0,0,0,0.5); border:1px solid var(--border-color); border-radius:8px; color:#fff; margin-top:3px; outline:none;">
                 </div>
 
-                <div style="display:flex; gap:10px; margin-bottom:10px;">
-                    <button type="submit" class="primary-btn" style="flex:1; padding:12px; font-size:0.9rem; background:linear-gradient(135deg, #2ecc71, #00e5ff); color:#000; border:none; border-radius:10px; font-weight:800; cursor:pointer;">
-                        <i class="fa-solid fa-credit-card"></i> Kredi Kartı ile Öde & Lisans Al
+                <div style="display:flex; flex-direction:column; gap:8px;">
+                    <button type="submit" class="primary-btn" style="width:100%; padding:12px; font-size:0.85rem; background:linear-gradient(135deg, #2ecc71, #00e5ff); color:#000; border:none; border-radius:10px; font-weight:800; cursor:pointer;">
+                        <i class="fa-solid fa-paper-plane"></i> Ödeme Bildirimi Yap (Havale / EFT)
+                    </button>
+                    <button type="button" onclick="checkoutViaWhatsApp()" style="width:100%; padding:10px; background:rgba(37, 211, 102, 0.2); border:1px solid #25D366; border-radius:10px; color:#25D366; font-weight:800; font-size:0.85rem; cursor:pointer;">
+                        <i class="fa-brands fa-whatsapp"></i> WhatsApp'tan İletişime Geç & Anında Al
                     </button>
                 </div>
             </form>
 
-            <div id="checkout-success-box" style="display:none; background:rgba(46,204,113,0.15); border:1px solid #2ecc71; border-radius:12px; padding:15px; margin-top:15px;">
-                <i class="fa-solid fa-circle-check" style="color:#2ecc71; font-size:2rem; margin-bottom:8px;"></i>
-                <h4 style="color:#fff; margin:0 0 6px;">Ödemeniz Onaylandı!</h4>
-                <p style="font-size:0.8rem; color:#a0aec0; margin-bottom:10px;">Lisans Anahtarınız e-postanıza gönderildi ve sistemde aktifleşti:</p>
-                <div id="generated-license-key" style="font-size:1.2rem; font-weight:900; color:#00e5ff; letter-spacing:2px; background:rgba(0,0,0,0.6); padding:10px; border-radius:8px; user-select:all; margin-bottom:10px;">BIGLINE-PRO-XXXX</div>
-                <button type="button" onclick="copyGeneratedLicenseKey()" style="padding:8px 16px; background:#2ecc71; border:none; border-radius:6px; color:#000; font-weight:800; cursor:pointer;"><i class="fa-solid fa-copy"></i> Anahtarı Kopyala</button>
+            <div id="checkout-success-box" style="display:none; background:rgba(241,196,15,0.15); border:1px solid #f1c40f; border-radius:12px; padding:15px; margin-top:15px;">
+                <i class="fa-solid fa-clock" style="color:#f1c40f; font-size:2rem; margin-bottom:8px;"></i>
+                <h4 style="color:#fff; margin:0 0 6px;">Ödeme Bildiriminiz Alındı!</h4>
+                <p style="font-size:0.85rem; color:#cbd5e1; margin-bottom:10px; line-height:1.4;">
+                    Havale / EFT ödemeniz kontrol edildikten sonra (ortalama 5-10 dk) Lisans Anahtarınız e-postanıza ve WhatsApp hattınıza gönderilecektir.
+                </p>
+                <button type="button" onclick="checkoutViaWhatsApp()" style="padding:8px 16px; background:#25D366; border:none; border-radius:6px; color:#000; font-weight:800; cursor:pointer;"><i class="fa-brands fa-whatsapp"></i> WhatsApp Destek İletişim</button>
             </div>
         </div>
     </div>

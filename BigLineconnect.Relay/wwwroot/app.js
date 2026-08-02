@@ -855,34 +855,35 @@ async function submitOnlineCheckout(e) {
     const phone = document.getElementById('checkout-phone').value.trim();
 
     try {
-        showToast('Ödeme doğrulanıyor ve lisans üretiliyor...', 'info');
-        const res = await fetch('/api/license/generate-online', {
+        showToast('Ödeme bildirimi iletiliyor...', 'info');
+        await fetch('/api/support/ticket/create', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ fullName: name, email: email, phone: phone, plan: 'PRO' })
+            body: JSON.stringify({
+                name: name,
+                issue: `[HAVALE ÖDEME BİLDİRİMİ] Pro Lisans Talebi - Tel: ${phone} - Email: ${email}`,
+                notes: `Müşteri Havale Bildirimi Yaptı. Ad: ${name}, Email: ${email}, Tel: ${phone}`,
+                tenantId: 'SUPERADMIN'
+            })
         });
-        const data = await res.json();
-        if (data.success && data.licenseKey) {
-            // Save license token locally to unblock session timer completely
-            sessionStorage.setItem('adminToken', 'authenticated');
-            sessionStorage.setItem('licenseKey', data.licenseKey);
-            document.cookie = "bigline_admin_session=authenticated; path=/; max-age=31536000";
 
-            if (sessionTimerInterval) clearInterval(sessionTimerInterval);
-            document.getElementById('session-timer-modal')?.classList.add('hidden');
-
-            document.getElementById('checkout-form').style.display = 'none';
-            document.getElementById('checkout-success-box').style.display = 'block';
-            document.getElementById('generated-license-key').innerText = data.licenseKey;
-
-            showToast('Tebrikler! Lisansınız aktifleşti ve 7/24 sınırsız sürüme geçtiniz!', 'success');
-        } else {
-            alert('Hata: ' + (data.message || 'Lisans üretilemedi'));
-        }
+        document.getElementById('checkout-form').style.display = 'none';
+        document.getElementById('checkout-success-box').style.display = 'block';
+        showToast('Ödeme bildirimi yöneticiye başarıyla ulaştırıldı!', 'success');
     } catch (err) {
-        console.warn("Ödeme hatası:", err);
-        alert('İşlem sırasında bir hata oluştu.');
+        console.warn("Ödeme bildirim hatası:", err);
+        document.getElementById('checkout-form').style.display = 'none';
+        document.getElementById('checkout-success-box').style.display = 'block';
     }
+}
+
+function checkoutViaWhatsApp() {
+    const name = document.getElementById('checkout-name') ? document.getElementById('checkout-name').value.trim() : '';
+    const email = document.getElementById('checkout-email') ? document.getElementById('checkout-email').value.trim() : '';
+    const phone = document.getElementById('checkout-phone') ? document.getElementById('checkout-phone').value.trim() : '';
+
+    const text = encodeURIComponent(`Merhaba, BigLineconnect Lisans Satın Alma ve Ödeme Bildirimi:\nAd Soyad / Firma: ${name || 'Belirtilmedi'}\nE-Posta: ${email || 'Belirtilmedi'}\nTelefon: ${phone || 'Belirtilmedi'}\nYıllık Pro Lisans Paketinizi (Ayda ₺125 TL) almak istiyorum.`);
+    window.open(`https://wa.me/?text=${text}`, '_blank');
 }
 
 function copyGeneratedLicenseKey() {
