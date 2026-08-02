@@ -601,3 +601,98 @@ function copyMagicLink() {
 document.addEventListener('DOMContentLoaded', () => {
     checkMagicLink();
 });
+
+// 4. Tab Switcher Logic
+function switchConnectTab(mode) {
+    const btnClient = document.getElementById('tab-btn-client');
+    const btnHost = document.getElementById('tab-btn-host');
+    const contentClient = document.getElementById('tab-content-client');
+    const contentHost = document.getElementById('tab-content-host');
+
+    if (mode === 'client') {
+        btnClient.style.background = 'var(--accent-gradient)';
+        btnClient.style.color = '#000';
+        btnClient.style.fontWeight = '800';
+
+        btnHost.style.background = 'transparent';
+        btnHost.style.color = '#a0aec0';
+        btnHost.style.fontWeight = '700';
+
+        contentClient.style.display = 'block';
+        contentHost.style.display = 'none';
+    } else {
+        btnHost.style.background = 'var(--accent-gradient)';
+        btnHost.style.color = '#000';
+        btnHost.style.fontWeight = '800';
+
+        btnClient.style.background = 'transparent';
+        btnClient.style.color = '#a0aec0';
+        btnClient.style.fontWeight = '700';
+
+        contentHost.style.display = 'block';
+        contentClient.style.display = 'none';
+    }
+}
+
+// 5. Web Host Screen Sharing Engine (MediaDevices getDisplayMedia)
+let webHostMediaStream = null;
+let webHostSocket = null;
+let webHostInterval = null;
+let myWebHostId = '';
+let myWebHostPass = '';
+
+async function startWebScreenShare() {
+    try {
+        webHostMediaStream = await navigator.mediaDevices.getDisplayMedia({
+            video: { frameRate: { max: 30 }, cursor: "always" },
+            audio: false
+        });
+
+        // Generate temporary 9-digit Web ID & Password
+        myWebHostId = Math.floor(100000000 + Math.random() * 900000000).toString();
+        myWebHostPass = Math.floor(1000 + Math.random() * 9000).toString();
+
+        document.getElementById('my-web-id-display').innerText = `${myWebHostId.substring(0,3)} ${myWebHostId.substring(3,6)} ${myWebHostId.substring(6)}`;
+        document.getElementById('my-web-pass-display').innerText = myWebHostPass;
+
+        document.getElementById('web-host-idle-box').style.display = 'none';
+        document.getElementById('web-host-active-box').style.display = 'block';
+
+        showToast('Ekran paylaşımı başlatıldı! Web ID oluştu.', 'success');
+
+        // Handle user stopping screen share from browser banner
+        webHostMediaStream.getVideoTracks()[0].onended = () => {
+            stopWebScreenShare();
+        };
+
+    } catch (err) {
+        console.warn("Ekran paylaşımı başlatılamadı:", err);
+        showToast('Ekran paylaşım izni reddedildi veya desteklenmiyor.', 'error');
+    }
+}
+
+function stopWebScreenShare() {
+    if (webHostMediaStream) {
+        webHostMediaStream.getTracks().forEach(track => track.stop());
+        webHostMediaStream = null;
+    }
+    if (webHostInterval) {
+        clearInterval(webHostInterval);
+        webHostInterval = null;
+    }
+    if (webHostSocket) {
+        webHostSocket.close();
+        webHostSocket = null;
+    }
+
+    document.getElementById('web-host-idle-box').style.display = 'block';
+    document.getElementById('web-host-active-box').style.display = 'none';
+    showToast('Ekran paylaşımı durduruldu.', 'info');
+}
+
+function shareMyWebIdWhatsApp() {
+    if (!myWebHostId) return;
+    const magicUrl = `https://biglineconnect.bigus.com.tr/?id=${myWebHostId}`;
+    const text = encodeURIComponent(`Merhaba, BigLineconnect Web Destek ID'm: ${myWebHostId} | Şifre: ${myWebHostPass}\nTek tıkla bağlanın:\n${magicUrl}`);
+    window.open(`https://wa.me/?text=${text}`, '_blank');
+}

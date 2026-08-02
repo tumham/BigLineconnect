@@ -88,24 +88,60 @@
                     <h2 class="brand-title">BigLineconnect</h2>
                     <p class="brand-subtitle" data-i18n="widget.title">Tarayıcıdan Anında Bağlanın</p>
                     
-                    <div class="input-group">
-                        <label for="target-id" data-i18n="widget.label"><i class="fa-solid fa-desktop"></i> UZAKTAKİ MASA ID'Sİ (REMOTE ID)</label>
-                        <input type="text" id="target-id" placeholder="Örn: 393 215 720" data-i18n-ph="widget.placeholder" style="text-align: center; letter-spacing: 2px; font-weight: 800; font-size: 1.3rem;">
-                    </div>
-                    
-                    <button id="connect-btn" class="primary-btn">
-                        <span data-i18n="widget.connect">Bağlan</span> <i class="fa-solid fa-arrow-right-to-bracket"></i>
-                    </button>
-                    
-                    <div style="display: flex; gap: 8px; margin-top: 10px;">
-                        <button type="button" onclick="shareViaWhatsApp()" style="flex: 1; padding: 10px; background: rgba(37, 211, 102, 0.15); border: 1px solid #25D366; border-radius: 8px; color: #25D366; font-weight: 700; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
-                            <i class="fa-brands fa-whatsapp" style="font-size: 1.1rem;"></i> <span>WhatsApp'la Gönder</span>
+                    <!-- Widget Mode Tabs -->
+                    <div style="display: flex; background: rgba(0,0,0,0.4); border-radius: 12px; padding: 4px; margin-bottom: 18px; border: 1px solid rgba(255,255,255,0.08);">
+                        <button type="button" id="tab-btn-client" onclick="switchConnectTab('client')" style="flex: 1; padding: 8px 10px; border-radius: 8px; border: none; background: var(--accent-gradient); color: #000; font-weight: 800; font-size: 0.8rem; cursor: pointer; transition: all 0.3s ease;">
+                            <i class="fa-solid fa-arrow-right-to-bracket"></i> <span data-i18n="widget.tab_connect">Bağlan (Destek Ver)</span>
                         </button>
-                        <button type="button" onclick="copyMagicLink()" style="flex: 1; padding: 10px; background: rgba(0, 229, 255, 0.15); border: 1px solid #00e5ff; border-radius: 8px; color: #00e5ff; font-weight: 700; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
-                            <i class="fa-solid fa-link" style="font-size: 0.9rem;"></i> <span>Link Kopyala</span>
+                        <button type="button" id="tab-btn-host" onclick="switchConnectTab('host')" style="flex: 1; padding: 8px 10px; border-radius: 8px; border: none; background: transparent; color: #a0aec0; font-weight: 700; font-size: 0.8rem; cursor: pointer; transition: all 0.3s ease;">
+                            <i class="fa-solid fa-tower-broadcast"></i> <span data-i18n="widget.tab_share">Ekranımı Paylaş</span>
                         </button>
                     </div>
-                    
+
+                    <!-- TAB 1: CONNECT TO REMOTE -->
+                    <div id="tab-content-client">
+                        <div class="input-group">
+                            <label for="target-id" data-i18n="widget.label"><i class="fa-solid fa-desktop"></i> UZAKTAKİ MASA ID'Sİ (REMOTE ID)</label>
+                            <input type="text" id="target-id" placeholder="Örn: 393 215 720" data-i18n-ph="widget.placeholder" style="text-align: center; letter-spacing: 2px; font-weight: 800; font-size: 1.3rem;">
+                        </div>
+                        
+                        <button id="connect-btn" class="primary-btn">
+                            <span data-i18n="widget.connect">Bağlan</span> <i class="fa-solid fa-arrow-right-to-bracket"></i>
+                        </button>
+                        
+                        <div style="display: flex; gap: 8px; margin-top: 10px;">
+                            <button type="button" onclick="shareViaWhatsApp()" style="flex: 1; padding: 10px; background: rgba(37, 211, 102, 0.15); border: 1px solid #25D366; border-radius: 8px; color: #25D366; font-weight: 700; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                                <i class="fa-brands fa-whatsapp" style="font-size: 1.1rem;"></i> <span>WhatsApp'la Gönder</span>
+                            </button>
+                            <button type="button" onclick="copyMagicLink()" style="flex: 1; padding: 10px; background: rgba(0, 229, 255, 0.15); border: 1px solid #00e5ff; border-radius: 8px; color: #00e5ff; font-weight: 700; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                                <i class="fa-solid fa-link" style="font-size: 0.9rem;"></i> <span>Link Kopyala</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- TAB 2: SHARE MY SCREEN (WEB HOST) -->
+                    <div id="tab-content-host" style="display: none;">
+                        <p style="font-size: 0.85rem; color: #a0aec0; margin-bottom: 14px;">Program yüklemeden ekranınızı destek ekibimizle canlı olarak paylaşın:</p>
+                        <div id="web-host-idle-box">
+                            <button type="button" id="start-web-share-btn" onclick="startWebScreenShare()" class="primary-btn" style="background: linear-gradient(135deg, #2ecc71, #00e5ff); color: #000;">
+                                <i class="fa-solid fa-satellite-dish"></i> <span>Ekranımı Paylaş ve ID Üret</span>
+                            </button>
+                        </div>
+                        <div id="web-host-active-box" style="display: none; background: rgba(0, 229, 255, 0.1); border: 1px solid #00e5ff; border-radius: 12px; padding: 15px; margin-top: 10px;">
+                            <span style="font-size: 0.8rem; color: #00e5ff; font-weight: 700; text-transform: uppercase;">WEB DESTEK ID'NİZ:</span>
+                            <div id="my-web-id-display" style="font-size: 1.8rem; font-weight: 900; color: #fff; letter-spacing: 3px; margin: 6px 0;">--- --- ---</div>
+                            <span style="font-size: 0.8rem; color: #a0aec0;">Erişim Şifresi: <strong id="my-web-pass-display" style="color:#00e5ff;">----</strong></span>
+                            <div style="display: flex; gap: 8px; margin-top: 12px;">
+                                <button type="button" onclick="shareMyWebIdWhatsApp()" style="flex: 1; padding: 8px; background: rgba(37, 211, 102, 0.2); border: 1px solid #25D366; border-radius: 8px; color: #25D366; font-weight: 700; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;">
+                                    <i class="fa-brands fa-whatsapp"></i> <span>WhatsApp'la At</span>
+                                </button>
+                                <button type="button" onclick="stopWebScreenShare()" style="flex: 1; padding: 8px; background: rgba(231, 76, 60, 0.2); border: 1px solid #e74c3c; border-radius: 8px; color: #e74c3c; font-weight: 700; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;">
+                                    <i class="fa-solid fa-stop"></i> <span>Durdur</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="card-footer">
                         <p><i class="fa-solid fa-shield-halved"></i> <span data-i18n="widget.footer">Güvenli yerel ağ bağlantısı</span></p>
                     </div>
@@ -282,7 +318,7 @@
 
         <!-- Remote screen rendering image -->
         <div class="canvas-container" id="canvas-container">
-            <img id="screen-img" style="width: 100%; height: 100%; object-fit: contain; cursor: crosshair; display: block;">
+            <img id="screen-img" style="width: 100%; height: 100%; object-fit: contain; cursor: default; display: block;">
         </div>
 
         <!-- Floating Controls for Mobile & Actions -->
