@@ -13,6 +13,9 @@ namespace BigLineconnect
         [DllImport("user32.dll")]
         private static extern bool SetCursorPos(int x, int y);
 
+        [DllImport("user32.dll")]
+        private static extern void mouse_event(uint dwFlags, uint dx, uint dy, uint dwData, UIntPtr dwExtraInfo);
+
         private static uint SendInput(uint nInputs, INPUT[] pInputs, int cbSize)
         {
             return NativeSendInput(nInputs, pInputs, cbSize);
@@ -136,43 +139,28 @@ namespace BigLineconnect
 
         public static void SimulateMouseButton(string button, string action)
         {
-            DesktopHelper.AttachToInputDesktop();
-            uint flags = 0;
+            try
+            {
+                DesktopHelper.AttachToInputDesktop();
+                uint flags = 0;
 
-            if (button.Equals("left", StringComparison.OrdinalIgnoreCase))
-            {
-                flags = action.Equals("down", StringComparison.OrdinalIgnoreCase) ? MOUSEEVENTF_LEFTDOWN : MOUSEEVENTF_LEFTUP;
-            }
-            else if (button.Equals("right", StringComparison.OrdinalIgnoreCase))
-            {
-                flags = action.Equals("down", StringComparison.OrdinalIgnoreCase) ? MOUSEEVENTF_RIGHTDOWN : MOUSEEVENTF_RIGHTUP;
-            }
-            else if (button.Equals("middle", StringComparison.OrdinalIgnoreCase))
-            {
-                flags = action.Equals("down", StringComparison.OrdinalIgnoreCase) ? MOUSEEVENTF_MIDDLEDOWN : MOUSEEVENTF_MIDDLEUP;
-            }
-
-            if (flags == 0) return;
-
-            INPUT[] inputs = new INPUT[1];
-            inputs[0] = new INPUT
-            {
-                type = INPUT_MOUSE,
-                U = new InputUnion
+                if (button.Equals("left", StringComparison.OrdinalIgnoreCase))
                 {
-                    mi = new MOUSEINPUT
-                    {
-                        dx = 0,
-                        dy = 0,
-                        dwFlags = flags,
-                        mouseData = 0,
-                        time = 0,
-                        dwExtraInfo = IntPtr.Zero
-                    }
+                    flags = action.Equals("down", StringComparison.OrdinalIgnoreCase) ? MOUSEEVENTF_LEFTDOWN : MOUSEEVENTF_LEFTUP;
                 }
-            };
+                else if (button.Equals("right", StringComparison.OrdinalIgnoreCase))
+                {
+                    flags = action.Equals("down", StringComparison.OrdinalIgnoreCase) ? MOUSEEVENTF_RIGHTDOWN : MOUSEEVENTF_RIGHTUP;
+                }
+                else if (button.Equals("middle", StringComparison.OrdinalIgnoreCase))
+                {
+                    flags = action.Equals("down", StringComparison.OrdinalIgnoreCase) ? MOUSEEVENTF_MIDDLEDOWN : MOUSEEVENTF_MIDDLEUP;
+                }
 
-            SendInput(1, inputs, Marshal.SizeOf<INPUT>());
+                if (flags == 0) return;
+                mouse_event(flags, 0, 0, 0, UIntPtr.Zero);
+            }
+            catch { }
         }
 
         public static void SimulateMouseScroll(int deltaY)
@@ -205,11 +193,20 @@ namespace BigLineconnect
             try
             {
                 DesktopHelper.AttachToInputDesktop();
-                SimulateMouseButton(button, "down");
-                SimulateMouseButton(button, "up");
-                System.Threading.Thread.Sleep(50);
-                SimulateMouseButton(button, "down");
-                SimulateMouseButton(button, "up");
+                uint downFlag = MOUSEEVENTF_LEFTDOWN;
+                uint upFlag = MOUSEEVENTF_LEFTUP;
+
+                if (button.Equals("right", StringComparison.OrdinalIgnoreCase))
+                {
+                    downFlag = MOUSEEVENTF_RIGHTDOWN;
+                    upFlag = MOUSEEVENTF_RIGHTUP;
+                }
+
+                mouse_event(downFlag, 0, 0, 0, UIntPtr.Zero);
+                mouse_event(upFlag, 0, 0, 0, UIntPtr.Zero);
+                System.Threading.Thread.Sleep(30);
+                mouse_event(downFlag, 0, 0, 0, UIntPtr.Zero);
+                mouse_event(upFlag, 0, 0, 0, UIntPtr.Zero);
             }
             catch { }
         }

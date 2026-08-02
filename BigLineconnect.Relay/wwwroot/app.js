@@ -308,9 +308,14 @@ function sendClick(button, action) {
     }
 }
 
-function sendDoubleClick(button = 'left') {
+function sendDoubleClick(button = 'left', x = null, y = null) {
     if (socket && socket.readyState === WebSocket.OPEN) {
-        socket.send(JSON.stringify({ type: 'double_click', button }));
+        const payload = { type: 'double_click', button };
+        if (x !== null && y !== null) {
+            payload.x = x;
+            payload.y = y;
+        }
+        socket.send(JSON.stringify(payload));
     }
 }
 
@@ -494,17 +499,17 @@ if (screenImg) {
                 const doubleTapDist = Math.sqrt((touch.clientX - lastTapX) ** 2 + (touch.clientY - lastTapY) ** 2);
 
                 if (timeDiff < 450 && doubleTapDist < 45) {
-                    sendDoubleClick('left');
-                    showToast('Klasör Açıldı (Çift Tık ⚡)', 'success');
+                    sendDoubleClick('left', pos.x, pos.y);
+                    showToast('Çift Tıklama Yollandı ⚡', 'info');
                     lastTapTime = 0;
                 } else if (currentMouseMode === 'double') {
-                    sendDoubleClick('left');
-                    showToast('Klasör Açıldı ⚡', 'success');
+                    sendDoubleClick('left', pos.x, pos.y);
+                    showToast('Çift Tıklama Yollandı ⚡', 'info');
                     lastTapTime = 0;
                 } else if (currentMouseMode === 'right') {
                     sendClick('right', 'down');
                     setTimeout(() => sendClick('right', 'up'), 40);
-                    showToast('Sağ Tık Yapıldı 🔴', 'info');
+                    showToast('Sağ Tıklama Yollandı 🔴', 'info');
                     lastTapTime = 0;
                 } else {
                     sendClick('left', 'down');
