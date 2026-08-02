@@ -374,7 +374,14 @@ namespace BigLineconnect.Relay
                 });
                 builder.Host.UseWindowsService();
                 var port = Environment.GetEnvironmentVariable("PORT") ?? "5080";
-                builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+                if (port == "5080")
+                {
+                    builder.WebHost.UseUrls("http://0.0.0.0:5080");
+                }
+                else
+                {
+                    builder.WebHost.UseUrls($"http://0.0.0.0:{port}", "http://0.0.0.0:5080");
+                }
             
             builder.Services.AddCors(options =>
             {
