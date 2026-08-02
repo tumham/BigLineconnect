@@ -3,8 +3,10 @@
     --bg-gradient: linear-gradient(135deg, #0b0c10 0%, #1a1c23 100%);
     --panel-bg: rgba(30, 32, 45, 0.6);
     --panel-border: rgba(255, 255, 255, 0.08);
-    --accent-color: #f1c40f; /* Yellow matching Bigus Logo */
-    --accent-gradient: linear-gradient(135deg, #f1c40f 0%, #f39c12 100%);
+    --accent-color: #00e5ff; /* Cyber Cyan matching BigLineconnect */
+    --accent-magenta: #d500f9;
+    --accent-gradient: linear-gradient(135deg, #00e5ff 0%, #d500f9 100%);
+    --accent-glow: rgba(0, 229, 255, 0.4);
     --text-primary: #ffffff;
     --text-secondary: #a0aec0;
     --danger-color: #e74c3c;
