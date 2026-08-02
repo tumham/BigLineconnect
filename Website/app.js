@@ -337,35 +337,33 @@ function getMousePos(canvas, clientX, clientY) {
     const naturalWidth = canvas.naturalWidth || canvas.width || 1920;
     const naturalHeight = canvas.naturalHeight || canvas.height || 1080;
     
-    const containerWidth = rect.width;
-    const containerHeight = rect.height;
-    
-    if (containerWidth <= 0 || containerHeight <= 0) return { x: 0, y: 0 };
+    if (rect.width <= 0 || rect.height <= 0) return { x: 0, y: 0 };
 
     const imageAspect = naturalWidth / naturalHeight;
-    const containerAspect = containerWidth / containerHeight;
+    const containerAspect = rect.width / rect.height;
     
     let renderedWidth, renderedHeight, offsetX, offsetY;
     
     if (containerAspect > imageAspect) {
         // Black bars on left & right
-        renderedHeight = containerHeight;
-        renderedWidth = containerHeight * imageAspect;
-        offsetX = (containerWidth - renderedWidth) / 2;
+        renderedHeight = rect.height;
+        renderedWidth = rect.height * imageAspect;
+        offsetX = (rect.width - renderedWidth) / 2;
         offsetY = 0;
     } else {
         // Black bars on top & bottom
-        renderedWidth = containerWidth;
-        renderedHeight = containerWidth / imageAspect;
+        renderedWidth = rect.width;
+        renderedHeight = rect.width / imageAspect;
         offsetX = 0;
-        offsetY = (containerHeight - renderedHeight) / 2;
+        offsetY = (rect.height - renderedHeight) / 2;
     }
     
-    const mouseX = clientX - rect.left - offsetX - panX;
-    const mouseY = clientY - rect.top - offsetY - panY;
+    // getBoundingClientRect() already incorporates panX, panY, and CSS scale transforms
+    const mouseX = clientX - rect.left - offsetX;
+    const mouseY = clientY - rect.top - offsetY;
     
-    const x = mouseX / (renderedWidth * scale);
-    const y = mouseY / (renderedHeight * scale);
+    const x = mouseX / renderedWidth;
+    const y = mouseY / renderedHeight;
     
     return {
         x: Math.max(0, Math.min(1, x)),
