@@ -23,7 +23,9 @@ publish_temp/
 *.bak
 *.log
 
-## Keep setup exe binaries for website downloads
+## Keep setup exe & zip binaries for website downloads
 !/Website/BigLineconnect_setup.exe
+!/Website/BigLineconnect_setup.zip
 !/BigLineconnect.Relay/wwwroot/BigLineconnect_setup.exe
+!/BigLineconnect.Relay/wwwroot/BigLineconnect_setup.zip
 !/BigLineconnect.Installer/Resources/icon.ico

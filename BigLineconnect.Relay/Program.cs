@@ -503,49 +503,38 @@ namespace BigLineconnect.Relay
 
             app.MapGet("/download", async context =>
             {
-                string setupPath = System.IO.Path.Combine(AppContext.BaseDirectory, "wwwroot", "BigLineconnect_setup.exe");
+                string setupPath = System.IO.Path.Combine(AppContext.BaseDirectory, "wwwroot", "BigLineconnect_setup.zip");
                 if (!System.IO.File.Exists(setupPath))
                 {
-                    setupPath = System.IO.Path.Combine(AppContext.BaseDirectory, "BigLineconnect_setup.exe");
-                }
-                if (!System.IO.File.Exists(setupPath))
-                {
-                    setupPath = System.IO.Path.Combine(AppContext.BaseDirectory, "..", "Website", "BigLineconnect_setup.exe");
+                    setupPath = System.IO.Path.Combine(AppContext.BaseDirectory, "wwwroot", "BigLineconnect_setup.exe");
                 }
                 if (System.IO.File.Exists(setupPath))
                 {
-                    context.Response.ContentType = "application/octet-stream";
-                    context.Response.Headers["Content-Disposition"] = "attachment; filename=\"BigLineconnect_setup.exe\"";
+                    string filename = System.IO.Path.GetFileName(setupPath);
+                    context.Response.ContentType = filename.EndsWith(".zip") ? "application/zip" : "application/octet-stream";
+                    context.Response.Headers["Content-Disposition"] = $"attachment; filename=\"{filename}\"";
                     await context.Response.SendFileAsync(setupPath);
                 }
                 else
                 {
                     context.Response.StatusCode = 404;
-                    await context.Response.WriteAsync("BigLineconnect_setup.exe bulunamadı.");
+                    await context.Response.WriteAsync("Kurulum dosyası bulunamadı.");
                 }
             });
 
-            app.MapGet("/BigLineconnect_setup.exe", async context =>
+            app.MapGet("/BigLineconnect_setup.zip", async context =>
             {
-                string setupPath = System.IO.Path.Combine(AppContext.BaseDirectory, "wwwroot", "BigLineconnect_setup.exe");
-                if (!System.IO.File.Exists(setupPath))
-                {
-                    setupPath = System.IO.Path.Combine(AppContext.BaseDirectory, "BigLineconnect_setup.exe");
-                }
-                if (!System.IO.File.Exists(setupPath))
-                {
-                    setupPath = System.IO.Path.Combine(AppContext.BaseDirectory, "..", "Website", "BigLineconnect_setup.exe");
-                }
+                string setupPath = System.IO.Path.Combine(AppContext.BaseDirectory, "wwwroot", "BigLineconnect_setup.zip");
                 if (System.IO.File.Exists(setupPath))
                 {
-                    context.Response.ContentType = "application/octet-stream";
-                    context.Response.Headers["Content-Disposition"] = "attachment; filename=\"BigLineconnect_setup.exe\"";
+                    context.Response.ContentType = "application/zip";
+                    context.Response.Headers["Content-Disposition"] = "attachment; filename=\"BigLineconnect_setup.zip\"";
                     await context.Response.SendFileAsync(setupPath);
                 }
                 else
                 {
                     context.Response.StatusCode = 404;
-                    await context.Response.WriteAsync("BigLineconnect_setup.exe bulunamadı.");
+                    await context.Response.WriteAsync("BigLineconnect_setup.zip bulunamadı.");
                 }
             });
 
