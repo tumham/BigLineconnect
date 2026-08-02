@@ -371,6 +371,25 @@
         </div>
     </div>
 
+    <!-- Free Web Trial Timer Warning & Extension Modal -->
+    <div id="session-timer-modal" class="hidden" style="position: fixed; top: 20px; right: 20px; z-index: 99999; max-width: 380px; width: 90%; background: rgba(15, 23, 42, 0.95); border: 2px solid #00e5ff; border-radius: 16px; padding: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.8); backdrop-filter: blur(15px);">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+            <i class="fa-solid fa-clock-rotate-left" style="color: #00e5ff; font-size: 1.4rem;"></i>
+            <h4 style="margin: 0; font-size: 1rem; color: #fff; font-weight: 800;">Ücretsiz Web Süresi Doluyor!</h4>
+        </div>
+        <p style="font-size: 0.85rem; color: #cbd5e1; margin-bottom: 15px; line-height: 1.4;">
+            Ücretsiz web deneme sürenizin bitmesine <strong id="session-timer-seconds" style="color: #00e5ff; font-size: 1.1rem;">60</strong> saniye kaldı.
+        </p>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+            <button type="button" onclick="extendFreeSessionTimer()" style="width: 100%; padding: 10px; background: linear-gradient(135deg, #2ecc71, #00e5ff); border: none; border-radius: 8px; color: #000; font-weight: 800; font-size: 0.9rem; cursor: pointer;">
+                <i class="fa-solid fa-gift"></i> +5 Dakika Ek Süre Uzat (Ücretsiz)
+            </button>
+            <a href="#fiyatlandirma" onclick="document.getElementById('session-timer-modal').classList.add('hidden')" style="width: 100%; padding: 10px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: #fff; text-align: center; font-weight: 700; font-size: 0.85rem; text-decoration: none;">
+                <i class="fa-solid fa-crown" style="color: #ffd700;"></i> Sınırsız Paket Satın Al ($49)
+            </a>
+        </div>
+    </div>
+
     <!-- Notification Toast -->
     <div id="toast" class="toast hidden"></div>
 

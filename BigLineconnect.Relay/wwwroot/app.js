@@ -103,6 +103,7 @@ function connectToHost(id) {
             showToast('Bağlantı kuruldu!', 'success');
             if (landingPage) landingPage.classList.add('hidden');
             if (viewerScreen) viewerScreen.classList.remove('hidden');
+            startFreeSessionTimer();
         };
         
         socket.onclose = () => {
@@ -743,4 +744,63 @@ function shareMyWebIdWhatsApp() {
     const magicUrl = `https://biglineconnect.bigus.com.tr/?id=${myWebHostId}`;
     const text = encodeURIComponent(`Merhaba, BigLineconnect Web Destek ID'm: ${myWebHostId} | Şifre: ${myWebHostPass}\nTek tıkla bağlanın:\n${magicUrl}`);
     window.open(`https://wa.me/?text=${text}`, '_blank');
+}
+
+// 6. Free Web Session Timer Engine (5 Min + Extra Minutes Extension)
+let sessionTimerInterval = null;
+let sessionRemainingSeconds = 300; // 5 minutes
+let sessionExtensionUsed = false;
+
+function isUserLicensed() {
+    if (sessionStorage.getItem('adminToken') === 'authenticated') return true;
+    if (document.cookie.includes('bigline_admin_session')) return true;
+    if (sessionStorage.getItem('bayiToken') === 'authenticated') return true;
+    return false;
+}
+
+function startFreeSessionTimer() {
+    if (isUserLicensed()) {
+        console.log("[SessionTimer] User is LICENSED. Unlimited 7/24 session enabled.");
+        return;
+    }
+
+    sessionRemainingSeconds = 300; // 5 minutes
+    sessionExtensionUsed = false;
+    if (sessionTimerInterval) clearInterval(sessionTimerInterval);
+
+    console.log("[SessionTimer] Free trial timer started (5 minutes).");
+
+    sessionTimerInterval = setInterval(() => {
+        sessionRemainingSeconds--;
+
+        // Show warning modal when 60 seconds remain
+        if (sessionRemainingSeconds <= 60 && sessionRemainingSeconds > 0) {
+            const modal = document.getElementById('session-timer-modal');
+            const secDisplay = document.getElementById('session-timer-seconds');
+            if (modal) modal.classList.remove('hidden');
+            if (secDisplay) secDisplay.innerText = sessionRemainingSeconds;
+        }
+
+        // Expire session when 0 seconds remain
+        if (sessionRemainingSeconds <= 0) {
+            clearInterval(sessionTimerInterval);
+            sessionTimerInterval = null;
+            document.getElementById('session-timer-modal')?.classList.add('hidden');
+            
+            showToast('Ücretsiz web destek süreniz doldu! Masaüstü sürümünü indirin veya lisans satın alın.', 'error');
+            
+            // Close viewer screen gracefully
+            if (connected && disconnectBtn) {
+                disconnectBtn.click();
+            }
+            stopWebScreenShare();
+        }
+    }, 1000);
+}
+
+function extendFreeSessionTimer() {
+    sessionRemainingSeconds += 300; // Add +5 Minutes (+300 sec)
+    sessionExtensionUsed = true;
+    document.getElementById('session-timer-modal')?.classList.add('hidden');
+    showToast('🎁 +5 Dakika Ek Ücretsiz Süre Eklendi!', 'success');
 }
