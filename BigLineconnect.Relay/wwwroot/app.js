@@ -308,8 +308,39 @@ function sendKey(key, action) {
 // Mouse Event listeners on canvas
 function getMousePos(canvas, clientX, clientY) {
     const rect = canvas.getBoundingClientRect();
-    const x = (clientX - rect.left - panX) / (rect.width * scale);
-    const y = (clientY - rect.top - panY) / (rect.height * scale);
+    const naturalWidth = canvas.naturalWidth || canvas.width || 1920;
+    const naturalHeight = canvas.naturalHeight || canvas.height || 1080;
+    
+    const containerWidth = rect.width;
+    const containerHeight = rect.height;
+    
+    if (containerWidth <= 0 || containerHeight <= 0) return { x: 0, y: 0 };
+
+    const imageAspect = naturalWidth / naturalHeight;
+    const containerAspect = containerWidth / containerHeight;
+    
+    let renderedWidth, renderedHeight, offsetX, offsetY;
+    
+    if (containerAspect > imageAspect) {
+        // Black bars on left & right
+        renderedHeight = containerHeight;
+        renderedWidth = containerHeight * imageAspect;
+        offsetX = (containerWidth - renderedWidth) / 2;
+        offsetY = 0;
+    } else {
+        // Black bars on top & bottom
+        renderedWidth = containerWidth;
+        renderedHeight = containerWidth / imageAspect;
+        offsetX = 0;
+        offsetY = (containerHeight - renderedHeight) / 2;
+    }
+    
+    const mouseX = clientX - rect.left - offsetX - panX;
+    const mouseY = clientY - rect.top - offsetY - panY;
+    
+    const x = mouseX / (renderedWidth * scale);
+    const y = mouseY / (renderedHeight * scale);
+    
     return {
         x: Math.max(0, Math.min(1, x)),
         y: Math.max(0, Math.min(1, y))
