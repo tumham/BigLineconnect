@@ -99,6 +99,7 @@ namespace BigLineconnect
         {
             public string Id { get; set; } = "";
             public string HostId { get; set; } = "";
+            public string Token { get; set; } = "";
             public string Name { get; set; } = "";
             public string Issue { get; set; } = "";
             public string TenantId { get; set; } = "";
@@ -2097,14 +2098,15 @@ namespace BigLineconnect
 
         private void ResolveTicketWithStatus(SupportTicket ticket, string status)
         {
-            string timeNow = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+            string timeNow = DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss");
             string itemUniqueId = !string.IsNullOrEmpty(ticket.Token) ? ticket.Token : Guid.NewGuid().ToString();
-            string createdTimeStr = (ticket.CreatedAt != default(DateTime) && ticket.CreatedAt.Year > 2000) ? ticket.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss") : timeNow;
+            string createdTimeStr = (ticket.CreatedAt != default(DateTime) && ticket.CreatedAt.Year > 2000) ? ticket.CreatedAt.ToString("dd.MM.yyyy HH:mm:ss") : timeNow;
 
             var newItem = new SupportHistoryItem
             {
                 Id = itemUniqueId,
                 HostId = ticket.Id,
+                Token = ticket.Token,
                 Name = ticket.Name,
                 Issue = ticket.Issue,
                 TenantId = LicenseSystem.CompanyCode,
@@ -2150,13 +2152,13 @@ namespace BigLineconnect
                 {
                     using (var client = new System.Net.Http.HttpClient())
                     {
-                        // 1. Remove from active support requests
-                        var json1 = $"{{\"id\":\"{Program.EscapeJson(ticket.Id)}\"}}";
+                        // 1. Remove from active support requests and resolve CRM ticket atomically
+                        var json1 = $"{{\"id\":\"{Program.EscapeJson(ticket.Id)}\",\"token\":\"{Program.EscapeJson(ticket.Token)}\",\"status\":\"{Program.EscapeJson(status)}\",\"notes\":\"Destek işlemi tamamlandı: {Program.EscapeJson(status)}\"}}";
                         var content1 = new System.Net.Http.StringContent(json1, Encoding.UTF8, "application/json");
                         await client.PostAsync(resolveUrl, content1);
 
-                        // 2. Update status and full ticket payload in CRM history
-                        var json2 = $"{{\"id\":\"{Program.EscapeJson(newItem.Id)}\",\"hostId\":\"{Program.EscapeJson(ticket.Id)}\",\"name\":\"{Program.EscapeJson(ticket.Name)}\",\"issue\":\"{Program.EscapeJson(ticket.Issue)}\",\"status\":\"{Program.EscapeJson(status)}\",\"notes\":\"Destek işlemi tamamlandı: {Program.EscapeJson(status)}\",\"tenantId\":\"{Program.EscapeJson(LicenseSystem.CompanyCode)}\",\"resolvedAt\":\"{Program.EscapeJson(timeNow)}\"}}";
+                        // 2. Update full payload in CRM history
+                        var json2 = $"{{\"id\":\"{Program.EscapeJson(newItem.Id)}\",\"hostId\":\"{Program.EscapeJson(ticket.Id)}\",\"token\":\"{Program.EscapeJson(ticket.Token)}\",\"name\":\"{Program.EscapeJson(ticket.Name)}\",\"issue\":\"{Program.EscapeJson(ticket.Issue)}\",\"status\":\"{Program.EscapeJson(status)}\",\"notes\":\"Destek işlemi tamamlandı: {Program.EscapeJson(status)}\",\"tenantId\":\"{Program.EscapeJson(LicenseSystem.CompanyCode)}\",\"resolvedAt\":\"{Program.EscapeJson(timeNow)}\"}}";
                         var content2 = new System.Net.Http.StringContent(json2, Encoding.UTF8, "application/json");
                         await client.PostAsync(updateUrl, content2);
                     }
@@ -2266,7 +2268,7 @@ namespace BigLineconnect
                         {
                             using (var client = new System.Net.Http.HttpClient())
                             {
-                                var json = $"{{\"id\":\"{Program.EscapeJson(ticket.Id)}\",\"status\":\"{Program.EscapeJson(newStatus)}\",\"notes\":\"{Program.EscapeJson(newNotes)}\"}}";
+                                var json = $"{{\"id\":\"{Program.EscapeJson(ticket.Id)}\",\"token\":\"{Program.EscapeJson(ticket.Token)}\",\"status\":\"{Program.EscapeJson(newStatus)}\",\"notes\":\"{Program.EscapeJson(newNotes)}\"}}";
                                 var content = new System.Net.Http.StringContent(json, Encoding.UTF8, "application/json");
                                 await client.PostAsync(resolveUrl, content);
                             }

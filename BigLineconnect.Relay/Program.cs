@@ -346,9 +346,14 @@ namespace BigLineconnect.Relay
 
         private static bool _sqliteMigrated = false;
 
+        private static string GetTurkeyTimeString()
+        {
+            return DateTime.UtcNow.AddHours(3).ToString("dd.MM.yyyy HH:mm:ss");
+        }
+
         private static string ExtractDateOnly(string dateTimeStr)
         {
-            if (string.IsNullOrWhiteSpace(dateTimeStr)) return DateTime.Now.ToString("dd.MM.yyyy");
+            if (string.IsNullOrWhiteSpace(dateTimeStr)) return GetTurkeyTimeString().Substring(0, 10);
             string trimmed = dateTimeStr.Trim();
             if (trimmed.Length >= 10 && (trimmed[2] == '.' || trimmed[2] == '/'))
             {
@@ -928,7 +933,7 @@ namespace BigLineconnect.Relay
                     {
                         existingEntry.Status = status;
                         existingEntry.Notes = notes;
-                        existingEntry.ResolvedAt = DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss");
+                        existingEntry.ResolvedAt = GetTurkeyTimeString();
                     }
                     else
                     {
@@ -940,8 +945,8 @@ namespace BigLineconnect.Relay
                             Name = ticket != null ? ticket.Name : ("Müşteri (" + id + ")"),
                             Issue = ticket != null ? ticket.Issue : "Genel Destek",
                             TenantId = ticket != null ? ticket.TenantId : "BIGLINE",
-                            CreatedAt = ticket != null ? ticket.CreatedAt.ToString("dd.MM.yyyy HH:mm:ss") : DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss"),
-                            ResolvedAt = DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss"),
+                            CreatedAt = ticket != null ? ticket.CreatedAt.ToString("dd.MM.yyyy HH:mm:ss") : GetTurkeyTimeString(),
+                            ResolvedAt = GetTurkeyTimeString(),
                             Status = status,
                             Notes = notes
                         });
@@ -976,17 +981,18 @@ namespace BigLineconnect.Relay
                     string body = await reader.ReadToEndAsync();
                     using var doc = System.Text.Json.JsonDocument.Parse(body);
                     var root = doc.RootElement;
-                    string id = root.GetProperty("id").GetString() ?? "";
-                    string status = root.GetProperty("status").GetString() ?? "Çözüldü";
-                    string notes = root.GetProperty("notes").GetString() ?? "";
+                    string id = root.TryGetProperty("id", out var pId) ? pId.GetString() ?? "" : "";
+                    string token = root.TryGetProperty("token", out var pToken) ? pToken.GetString() ?? "" : "";
+                    string status = root.TryGetProperty("status", out var pStatus) ? pStatus.GetString() ?? "Çözüldü" : "Çözüldü";
+                    string notes = root.TryGetProperty("notes", out var pNotes) ? pNotes.GetString() ?? "" : "";
                     
                     var history = LoadSupportHistory();
-                    var entry = history.LastOrDefault(h => h.HostId == id || h.Id == id);
+                    var entry = history.LastOrDefault(h => (!string.IsNullOrEmpty(token) && h.Token == token) || (!string.IsNullOrEmpty(id) && (h.Id == id || h.HostId == id)));
                     if (entry != null)
                     {
                         entry.Status = status;
                         entry.Notes = notes;
-                        entry.ResolvedAt = DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss");
+                        entry.ResolvedAt = GetTurkeyTimeString();
                     }
                     else
                     {
@@ -994,11 +1000,12 @@ namespace BigLineconnect.Relay
                         {
                             Id = Guid.NewGuid().ToString(),
                             HostId = id,
+                            Token = token,
                             Name = "Uzak Masaüstü (" + id + ")",
                             Issue = "Genel Destek",
                             TenantId = "BIGLINE",
-                            CreatedAt = DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss"),
-                            ResolvedAt = DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss"),
+                            CreatedAt = GetTurkeyTimeString(),
+                            ResolvedAt = GetTurkeyTimeString(),
                             Status = status,
                             Notes = notes
                         };
