@@ -449,9 +449,48 @@
         </div>
     </div>
 
-    <!-- Notification Toast -->
-    <div id="toast" class="toast hidden"></div>
+    <script>
+        // Service Worker & PWA Installation
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').then((reg) => {
+                    console.log('PWA Service Worker registered:', reg.scope);
+                }).catch((err) => {
+                    console.warn('PWA Service Worker failed:', err);
+                });
+            });
+        }
 
-    <script src="app.js?v=2001"></script>
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
+
+        if (isIOS && !isStandalone) {
+            window.addEventListener('load', showIosPwaBanner);
+        }
+
+        function showIosPwaBanner() {
+            if (document.getElementById('ios-pwa-banner')) return;
+            const banner = document.createElement('div');
+            banner.id = 'ios-pwa-banner';
+            banner.style.cssText = 'position:fixed;bottom:16px;left:16px;right:16px;background:linear-gradient(135deg, #161b26, #1f283d);border:1.5px solid #00e5ff;border-radius:14px;padding:16px;box-shadow:0 10px 35px rgba(0,0,0,0.9);z-index:99999;color:#fff;font-family:Outfit,sans-serif;';
+            banner.innerHTML = `
+                <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
+                    <div style="display:flex;align-items:center;gap:12px;">
+                        <img src="/logo.png" style="width:40px;height:40px;border-radius:10px;border:1px solid rgba(0,229,255,0.4);">
+                        <div>
+                            <div style="font-weight:700;font-size:15px;color:#00e5ff;">📱 iPhone Ana Ekrana Ekle</div>
+                            <div style="font-size:12px;color:#cbd5e1;margin-top:2px;">Sitemizi uygulama olarak eklemek için:</div>
+                        </div>
+                    </div>
+                    <button onclick="document.getElementById('ios-pwa-banner').remove()" style="background:transparent;color:#94a3b8;border:none;font-size:18px;cursor:pointer;padding:4px;">✕</button>
+                </div>
+                <div style="margin-top:12px;padding:10px;background:rgba(0,229,255,0.08);border-radius:8px;font-size:13px;color:#e2e8f0;line-height:1.5;">
+                    1. Safari'nin altındaki <b>Paylaş (<i class="fa-solid fa-arrow-up-from-bracket" style="color:#00e5ff;"></i>)</b> butonuna basın.<br>
+                    2. Açılan menüden <b>"Ana Ekrana Ekle" (+)</b> seçeneğini seçin.
+                </div>
+            `;
+            document.body.appendChild(banner);
+        }
+    </script>
 </body>
 </html>

@@ -2,7 +2,7 @@
   "name": "BigLineconnect - Mobil Bayi & Destek Portalı",
   "short_name": "BigLine",
   "description": "BigLineconnect Mobil Destek ve Uzaktan Kontrol Portalı",
-  "start_url": "/bayi.html",
+  "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#0b0e14",
