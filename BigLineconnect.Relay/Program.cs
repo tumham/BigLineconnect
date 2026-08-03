@@ -779,31 +779,6 @@ namespace BigLineconnect.Relay
                             {
                                 startCmdText = $"START_STREAM:TICKET:{ticketToken}";
                             }
-
-                            if (ActiveSupportRequests.TryRemove(targetId, out var resolvedTicket))
-                            {
-                                var history = LoadSupportHistory();
-                                history.Add(new SupportHistoryEntry
-                                {
-                                    Id = Guid.NewGuid().ToString(),
-                                    HostId = resolvedTicket.Id,
-                                    Name = resolvedTicket.Name,
-                                    Issue = resolvedTicket.Issue,
-                                    TenantId = resolvedTicket.TenantId,
-                                    CreatedAt = resolvedTicket.CreatedAt.ToString("dd.MM.yyyy HH:mm:ss"),
-                                    ResolvedAt = DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss"),
-                                    Status = "İşlem Yapılıyor",
-                                    Notes = ""
-                                });
-                                SaveSupportHistory(history);
-
-                                try
-                                {
-                                    byte[] notifyMsg = Encoding.UTF8.GetBytes("TICKET_RESOLVED");
-                                    await session.HostSocket.SendAsync(new ArraySegment<byte>(notifyMsg), WebSocketMessageType.Text, true, CancellationToken.None);
-                                }
-                                catch { }
-                            }
                         }
 
                         byte[] startCmd = Encoding.UTF8.GetBytes(startCmdText);
