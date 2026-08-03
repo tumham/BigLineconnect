@@ -1429,10 +1429,7 @@ namespace BigLineconnect
                     }
 
                     ticketMatched = true;
-                    Log("Destek talebi bileti (Ticket Token) doğrulandı! Otomatik onaylandı.");
-                    ActiveSupportToken = ""; // Clear for safety
-                    MainWindow.Instance?.ResetSupportButton();
-                    try { File.WriteAllText(GetSharedFlagPath(), "1"); } catch { }
+                    Log("Destek talebi bileti (Ticket Token) doğrulandı! Uzman bağlandı. Talep butonu aktif olarak kalacak.");
                 }
 
                 if (ticketMatched)

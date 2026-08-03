@@ -1549,17 +1549,21 @@ namespace BigLineconnect
                                          {
                                              if (!oldIds.Contains(ticketItem.Id) && !_knownTicketIds.Contains(ticketItem.Id))
                                              {
-                                                 hasNewTicket = true;
+                                                 if (!_isFirstTicketFetch)
+                                                 {
+                                                     hasNewTicket = true;
+                                                 }
                                                  _knownTicketIds.Add(ticketItem.Id);
                                              }
                                          }
+                                         _isFirstTicketFetch = false;
                                          _activeTickets = tickets;
                                      }
 
                                      if (hasNewTicket)
                                      {
                                          PlayNewTicketNotificationSound();
-                                         AppendLog("[Gelen Çağrı 🔔] Yeni bir canlı destek talebi düşmüştür! Sesli uyarı veriliyor.");
+                                         AppendLog("[Gelen Çağrı 🔔] Yeni bir canlı destek talebi düştü! Yüksek sesli uyarı veriliyor.");
                                      }
 
                                      if (_tabDestekButton != null)
@@ -1585,25 +1589,34 @@ namespace BigLineconnect
         }
 
         private static HashSet<string> _knownTicketIds = new();
+        private static bool _isFirstTicketFetch = true;
+
+        [System.Runtime.InteropServices.DllImport("kernel32.dll", SetLastError = true)]
+        public static extern bool Beep(uint dwFreq, uint dwDuration);
+
+        [System.Runtime.InteropServices.DllImport("user32.dll", SetLastError = true)]
+        public static extern bool MessageBeep(uint uType);
 
         private void PlayNewTicketNotificationSound()
         {
-            try
+            Task.Run(() =>
             {
-                System.Media.SystemSounds.Exclamation.Play();
-
-                Task.Run(() =>
+                try
                 {
-                    try
-                    {
-                        Console.Beep(1046, 140);
-                        Thread.Sleep(60);
-                        Console.Beep(1318, 250);
-                    }
-                    catch { }
-                });
-            }
-            catch { }
+                    MessageBeep(0x00000030); // MB_ICONEXCLAMATION
+
+                    try { System.Media.SystemSounds.Exclamation.Play(); } catch { }
+                    try { System.Media.SystemSounds.Asterisk.Play(); } catch { }
+                    try { System.Media.SystemSounds.Beep.Play(); } catch { }
+
+                    Beep(1046, 180); // C6 (1046 Hz)
+                    Thread.Sleep(40);
+                    Beep(1318, 200); // E6 (1318 Hz)
+                    Thread.Sleep(40);
+                    Beep(1568, 280); // G6 (1568 Hz)
+                }
+                catch { }
+            });
         }
 
         public void SetClipboardText(string text)
