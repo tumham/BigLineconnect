@@ -597,7 +597,7 @@ document.querySelectorAll('.numpad-btn').forEach(btn => {
         } else if (val === 'backspace') {
             accessPasswordInput.value = accessPasswordInput.value.slice(0, -1);
         } else {
-            if (accessPasswordInput.value.length < 8) {
+            if (accessPasswordInput.value.length < 6) {
                 accessPasswordInput.value += val;
             }
         }
@@ -607,7 +607,7 @@ document.querySelectorAll('.numpad-btn').forEach(btn => {
 // Password submit actions
 function sendPassword() {
     if (!accessPasswordInput) return;
-    const pass = accessPasswordInput.value;
+    const pass = accessPasswordInput.value.replace(/\D/g, '');
     if (socket && socket.readyState === WebSocket.OPEN) {
         socket.send("AUTH_PASS:" + pass);
         showToast('Şifre gönderildi, doğrulanıyor...', 'info');
@@ -615,6 +615,9 @@ function sendPassword() {
 }
 if (submitPasswordBtn) submitPasswordBtn.addEventListener('click', sendPassword);
 if (accessPasswordInput) {
+    accessPasswordInput.addEventListener('input', () => {
+        accessPasswordInput.value = accessPasswordInput.value.replace(/\D/g, '').slice(0, 6);
+    });
     accessPasswordInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') sendPassword();
     });

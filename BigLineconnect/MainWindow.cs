@@ -413,13 +413,26 @@ namespace BigLineconnect
                 Location = new Point(380, 12),
                 Size = new Size(125, 25),
                 PasswordChar = '*',
+                MaxLength = 6,
                 Enabled = Program.UsePassword,
                 Text = Program.AccessPassword,
                 BackColor = Color.FromArgb(15, 16, 22),
                 ForeColor = Color.White,
                 Font = new Font("Segoe UI", 9.5F)
             };
+            _passwordTextBox.KeyPress += (s, ev) => {
+                if (!char.IsControl(ev.KeyChar) && !char.IsDigit(ev.KeyChar))
+                {
+                    ev.Handled = true;
+                }
+            };
             _passwordTextBox.TextChanged += (s, ev) => {
+                string digits = new string(_passwordTextBox.Text.Where(char.IsDigit).ToArray());
+                if (digits != _passwordTextBox.Text)
+                {
+                    _passwordTextBox.Text = digits;
+                    _passwordTextBox.SelectionStart = digits.Length;
+                }
                 Program.AccessPassword = _passwordTextBox.Text;
                 Program.SaveSecuritySettings();
             };
