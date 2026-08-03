@@ -156,9 +156,15 @@ namespace BigLineconnect
                 }
             }
 
-            this.Shown += (s, e) =>
+            this.Shown += async (s, e) =>
             {
-                if (!string.IsNullOrEmpty(Program.AutoConnectId))
+                if (Program.WebSocketClient == null || Program.WebSocketClient.State != System.Net.WebSockets.WebSocketState.Open)
+                {
+                    AppendLog("[Otomatik Bağlantı] Bulut sunucusuna otomatik kaydolunuyor...");
+                    await Program.ConnectToRelayAsync(_actualRelayUrl);
+                }
+
+                if (!string.IsNullOrEmpty(Program.AutoConnectId) && _remoteIdTextBox != null)
                 {
                     _remoteIdTextBox.Text = Program.AutoConnectId;
                     AppendLog($"[Komut Satırı] Otomatik bağlantı başlatılıyor (ID: {Program.AutoConnectId})...");
