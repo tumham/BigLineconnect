@@ -1524,43 +1524,86 @@ namespace BigLineconnect
                                         reqConfirmVal = (p6b.ValueKind == System.Text.Json.JsonValueKind.True || (p6b.ValueKind == System.Text.Json.JsonValueKind.String && p6b.GetString() == "true"));
 
                                     var t = new SupportTicket
-                                    {
-                                        Id = element.TryGetProperty("id", out var p1) ? p1.GetString() ?? "" : (element.TryGetProperty("Id", out var p1b) ? p1b.GetString() ?? "" : ""),
-                                        Name = element.TryGetProperty("name", out var p2) ? p2.GetString() ?? "" : (element.TryGetProperty("Name", out var p2b) ? p2b.GetString() ?? "" : ""),
-                                        Issue = element.TryGetProperty("issue", out var p3) ? p3.GetString() ?? "" : (element.TryGetProperty("Issue", out var p3b) ? p3b.GetString() ?? "" : ""),
-                                        Token = element.TryGetProperty("token", out var p4) ? p4.GetString() ?? "" : (element.TryGetProperty("Token", out var p4b) ? p4b.GetString() ?? "" : ""),
-                                        RequiresConfirmation = reqConfirmVal,
-                                        CreatedAt = createdAtVal
-                                    };
-                                    tickets.Add(t);
-                                }
+                                     {
+                                         Id = element.TryGetProperty("id", out var p1) ? p1.GetString() ?? "" : (element.TryGetProperty("Id", out var p1b) ? p1b.GetString() ?? "" : ""),
+                                         Name = element.TryGetProperty("name", out var p2) ? p2.GetString() ?? "" : (element.TryGetProperty("Name", out var p2b) ? p2b.GetString() ?? "" : ""),
+                                         Issue = element.TryGetProperty("issue", out var p3) ? p3.GetString() ?? "" : (element.TryGetProperty("Issue", out var p3b) ? p3b.GetString() ?? "" : ""),
+                                         Token = element.TryGetProperty("token", out var p4) ? p4.GetString() ?? "" : (element.TryGetProperty("Token", out var p4b) ? p4b.GetString() ?? "" : ""),
+                                         RequiresConfirmation = reqConfirmVal,
+                                         CreatedAt = createdAtVal
+                                     };
+                                     tickets.Add(t);
+                                 }
 
-                                tickets.Reverse(); // En yeni talep DAİMA EN ÜSTTE!
+                                 tickets.Reverse();
 
-                                this.Invoke((System.Windows.Forms.MethodInvoker)delegate
-                                {
-                                    if (this.IsDisposed || !this.IsHandleCreated) return;
-                                    lock (_activeTickets)
-                                    {
-                                        _activeTickets = tickets;
-                                    }
-                                    
-                                    if (_tabDestekButton != null)
-                                    {
-                                        _tabDestekButton.Text = $"🆘 Talepler ({tickets.Count})";
-                                    }
-                                    
-                                    if (_isShowingTickets)
-                                    {
-                                        UpdateAddressBookUI();
-                                    }
-                                });
+                                 this.Invoke((System.Windows.Forms.MethodInvoker)delegate
+                                 {
+                                     if (this.IsDisposed || !this.IsHandleCreated) return;
+
+                                     bool hasNewTicket = false;
+                                     lock (_activeTickets)
+                                     {
+                                         var oldIds = _activeTickets.Select(x => x.Id).ToHashSet();
+                                         foreach (var ticketItem in tickets)
+                                         {
+                                             if (!oldIds.Contains(ticketItem.Id) && !_knownTicketIds.Contains(ticketItem.Id))
+                                             {
+                                                 hasNewTicket = true;
+                                                 _knownTicketIds.Add(ticketItem.Id);
+                                             }
+                                         }
+                                         _activeTickets = tickets;
+                                     }
+
+                                     if (hasNewTicket)
+                                     {
+                                         PlayNewTicketNotificationSound();
+                                         AppendLog("[Gelen Çağrı 🔔] Yeni bir canlı destek talebi düşmüştür! Sesli uyarı veriliyor.");
+                                     }
+
+                                     if (_tabDestekButton != null)
+                                     {
+                                         _tabDestekButton.Text = $"🆘 Talepler ({tickets.Count})";
+                                         if (hasNewTicket)
+                                         {
+                                             _tabDestekButton.BackColor = Color.FromArgb(231, 76, 60);
+                                         }
+                                     }
+
+                                     if (_isShowingTickets)
+                                     {
+                                         UpdateAddressBookUI();
+                                     }
+                                 });
                             }
                         }
                     }
                 }
                 catch { }
             });
+        }
+
+        private static HashSet<string> _knownTicketIds = new();
+
+        private void PlayNewTicketNotificationSound()
+        {
+            try
+            {
+                System.Media.SystemSounds.Exclamation.Play();
+
+                Task.Run(() =>
+                {
+                    try
+                    {
+                        Console.Beep(1046, 140);
+                        Thread.Sleep(60);
+                        Console.Beep(1318, 250);
+                    }
+                    catch { }
+                });
+            }
+            catch { }
         }
 
         public void SetClipboardText(string text)
