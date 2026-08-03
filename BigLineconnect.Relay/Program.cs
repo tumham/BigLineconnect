@@ -380,7 +380,18 @@ namespace BigLineconnect.Relay
                     }
                 }
                 catch { }
-                return list;
+
+                var deduplicated = new List<SupportHistoryEntry>();
+                var seenKeys = new HashSet<string>();
+                foreach (var item in list.OrderByDescending(x => x.ResolvedAt).ThenByDescending(x => x.CreatedAt))
+                {
+                    string key = string.IsNullOrEmpty(item.HostId) ? item.Id : $"{item.HostId}_{item.CreatedAt}";
+                    if (string.IsNullOrEmpty(key) || seenKeys.Add(key))
+                    {
+                        deduplicated.Add(item);
+                    }
+                }
+                return deduplicated.OrderBy(x => x.CreatedAt).ToList();
             }
         }
 
@@ -907,40 +918,48 @@ namespace BigLineconnect.Relay
                     using var doc = System.Text.Json.JsonDocument.Parse(body);
                     var root = doc.RootElement;
                     string id = root.GetProperty("id").GetString() ?? "";
-                    if (ActiveSupportRequests.TryRemove(id, out var ticket))
+                    string status = root.TryGetProperty("status", out var pStatus) ? pStatus.GetString() ?? "Çözüldü" : "Çözüldü";
+                    string notes = root.TryGetProperty("notes", out var pNotes) ? pNotes.GetString() ?? "" : "";
+
+                    ActiveSupportRequests.TryRemove(id, out var ticket);
+
+                    var history = LoadSupportHistory();
+                    var existingEntry = history.LastOrDefault(h => h.HostId == id);
+                    if (existingEntry != null)
                     {
-                        var history = LoadSupportHistory();
-                        history.Add(new SupportHistoryEntry
-                        {
-                            Id = Guid.NewGuid().ToString(),
-                            HostId = ticket.Id,
-                            Name = ticket.Name,
-                            Issue = ticket.Issue,
-                            TenantId = ticket.TenantId,
-                            CreatedAt = ticket.CreatedAt.ToString("dd.MM.yyyy HH:mm:ss"),
-                            ResolvedAt = DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss"),
-                            Status = "İşlem Yapılıyor",
-                            Notes = ""
-                        });
-                        SaveSupportHistory(history);
-
-                        if (ActiveHosts.TryGetValue(id, out var session) && session.HostSocket != null && session.HostSocket.State == System.Net.WebSockets.WebSocketState.Open)
-                        {
-                            try
-                            {
-                                byte[] msg = Encoding.UTF8.GetBytes("TICKET_RESOLVED");
-                                await session.HostSocket.SendAsync(new ArraySegment<byte>(msg), System.Net.WebSockets.WebSocketMessageType.Text, true, CancellationToken.None);
-                            }
-                            catch { }
-                        }
-
-                        context.Response.StatusCode = StatusCodes.Status200OK;
-                        await context.Response.WriteAsync("Success");
+                        existingEntry.Status = status;
+                        existingEntry.Notes = notes;
+                        existingEntry.ResolvedAt = DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss");
                     }
                     else
                     {
-                        context.Response.StatusCode = StatusCodes.Status404NotFound;
+                        history.Add(new SupportHistoryEntry
+                        {
+                            Id = Guid.NewGuid().ToString(),
+                            HostId = id,
+                            Name = ticket != null ? ticket.Name : ("Müşteri (" + id + ")"),
+                            Issue = ticket != null ? ticket.Issue : "Genel Destek",
+                            TenantId = ticket != null ? ticket.TenantId : "BIGLINE",
+                            CreatedAt = ticket != null ? ticket.CreatedAt.ToString("dd.MM.yyyy HH:mm:ss") : DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss"),
+                            ResolvedAt = DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss"),
+                            Status = status,
+                            Notes = notes
+                        });
                     }
+                    SaveSupportHistory(history);
+
+                    if (ActiveHosts.TryGetValue(id, out var session) && session.HostSocket != null && session.HostSocket.State == System.Net.WebSockets.WebSocketState.Open)
+                    {
+                        try
+                        {
+                            byte[] msg = Encoding.UTF8.GetBytes("TICKET_RESOLVED");
+                            await session.HostSocket.SendAsync(new ArraySegment<byte>(msg), System.Net.WebSockets.WebSocketMessageType.Text, true, CancellationToken.None);
+                        }
+                        catch { }
+                    }
+
+                    context.Response.StatusCode = StatusCodes.Status200OK;
+                    await context.Response.WriteAsync("Success");
                 }
                 catch
                 {

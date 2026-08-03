@@ -2259,7 +2259,6 @@ namespace BigLineconnect
 
                     string serverUrl = _actualRelayUrl;
                     string resolveUrl = serverUrl.Replace("ws://", "http://").Replace("wss://", "https://").Replace("/register-host", "/api/support/resolve");
-                    string updateUrl = serverUrl.Replace("ws://", "http://").Replace("wss://", "https://").Replace("/register-host", "/api/support/history/update");
 
                     Task.Run(async () =>
                     {
@@ -2267,18 +2266,18 @@ namespace BigLineconnect
                         {
                             using (var client = new System.Net.Http.HttpClient())
                             {
-                                // 1. Remove from active support requests
-                                var json1 = $"{{\"id\":\"{Program.EscapeJson(ticket.Id)}\"}}";
-                                var content1 = new System.Net.Http.StringContent(json1, Encoding.UTF8, "application/json");
-                                await client.PostAsync(resolveUrl, content1);
-
-                                // 2. Update status and notes in CRM history
-                                var json2 = $"{{\"id\":\"{Program.EscapeJson(ticket.Id)}\",\"status\":\"{Program.EscapeJson(newStatus)}\",\"notes\":\"{Program.EscapeJson(newNotes)}\"}}";
-                                var content2 = new System.Net.Http.StringContent(json2, Encoding.UTF8, "application/json");
-                                await client.PostAsync(updateUrl, content2);
+                                var json = $"{{\"id\":\"{Program.EscapeJson(ticket.Id)}\",\"status\":\"{Program.EscapeJson(newStatus)}\",\"notes\":\"{Program.EscapeJson(newNotes)}\"}}";
+                                var content = new System.Net.Http.StringContent(json, Encoding.UTF8, "application/json");
+                                await client.PostAsync(resolveUrl, content);
                             }
                         }
                         catch { }
+
+                        this.BeginInvoke(new Action(() =>
+                        {
+                            RefreshSupportTickets();
+                            RefreshCrmHistory();
+                        }));
                     });
 
                     MessageBox.Show("Destek talebi başarıyla kapatıldı ve CRM geçmişine kaydedildi!", "Başarılı", MessageBoxButtons.OK, MessageBoxIcon.Information);
