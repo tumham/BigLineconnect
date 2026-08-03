@@ -1066,15 +1066,36 @@ namespace BigLineconnect.Relay
             {
                 context.Response.ContentType = "application/json; charset=utf-8";
                 string tenantId = context.Request.Query["tenantId"].ToString() ?? "";
+                string filterTenant = context.Request.Query["filterTenant"].ToString() ?? "";
                 
                 var history = LoadSupportHistory().AsEnumerable();
-                if (!string.IsNullOrEmpty(tenantId) && !tenantId.Equals("SUPERADMIN", StringComparison.OrdinalIgnoreCase))
+                
+                if (!string.IsNullOrEmpty(filterTenant) && !filterTenant.Equals("ALL", StringComparison.OrdinalIgnoreCase))
+                {
+                    history = history.Where(h => h.TenantId.Equals(filterTenant, StringComparison.OrdinalIgnoreCase));
+                }
+                else if (!string.IsNullOrEmpty(tenantId) && 
+                         !tenantId.Equals("SUPERADMIN", StringComparison.OrdinalIgnoreCase) && 
+                         !tenantId.Equals("BIGLINE", StringComparison.OrdinalIgnoreCase) &&
+                         !tenantId.Equals("ALL", StringComparison.OrdinalIgnoreCase))
                 {
                     history = history.Where(h => h.TenantId.Equals(tenantId, StringComparison.OrdinalIgnoreCase));
                 }
 
                 var list = history.OrderByDescending(h => h.ResolvedAt).ToList();
                 await context.Response.WriteAsJsonAsync(list);
+            });
+
+            app.MapGet("/api/support/history/tenants", async context =>
+            {
+                context.Response.ContentType = "application/json; charset=utf-8";
+                var history = LoadSupportHistory();
+                var tenants = history
+                    .Select(h => string.IsNullOrWhiteSpace(h.TenantId) ? "BIGLINE" : h.TenantId.Trim().ToUpper())
+                    .Distinct()
+                    .OrderBy(t => t)
+                    .ToList();
+                await context.Response.WriteAsJsonAsync(tenants);
             });
 
             var handleHistoryDelete = new Func<HttpContext, Task>(async context =>

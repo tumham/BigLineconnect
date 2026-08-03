@@ -1428,6 +1428,17 @@ namespace BigLineconnect
             {
                 System.Diagnostics.Debug.WriteLine($"[CRM Load Error] {ex.Message}");
             }
+
+            // Dealer Scoping: Non-master dealers only see their own CRM records
+            string myTenant = !string.IsNullOrWhiteSpace(LicenseSystem.CompanyCode) ? LicenseSystem.CompanyCode.Trim() : "BIGLINE";
+            if (!string.IsNullOrEmpty(myTenant) && 
+                !myTenant.Equals("BIGLINE", StringComparison.OrdinalIgnoreCase) && 
+                !myTenant.Equals("SUPERADMIN", StringComparison.OrdinalIgnoreCase) &&
+                !myTenant.Equals("ALL", StringComparison.OrdinalIgnoreCase))
+            {
+                list = list.Where(x => x.TenantId.Equals(myTenant, StringComparison.OrdinalIgnoreCase)).ToList();
+            }
+
             return DeduplicateCrmHistoryItems(list);
         }
 
@@ -1490,6 +1501,8 @@ namespace BigLineconnect
                 {
                     string serverUrl = _actualRelayUrl;
                     string httpUrl = serverUrl.Replace("ws://", "http://").Replace("wss://", "https://").Replace("/register-host", "/api/support/history/list");
+                    string myTenantId = !string.IsNullOrWhiteSpace(LicenseSystem.CompanyCode) ? LicenseSystem.CompanyCode.Trim() : "BIGLINE";
+                    httpUrl += "?tenantId=" + Uri.EscapeDataString(myTenantId);
                     
                     using (var client = new System.Net.Http.HttpClient())
                     {
@@ -1875,14 +1888,16 @@ namespace BigLineconnect
             }
             else if (_currentTabMode == 2) // CRM Geçmişi
             {
-                if (_addressBookListView.Columns.Count != 2)
+                if (_addressBookListView.Columns.Count != 3)
                 {
                     _addressBookListView.Columns.Clear();
-                    _addressBookListView.Columns.Add("Müşteri / Firma", 150);
-                    _addressBookListView.Columns.Add("Durum", 100);
+                    _addressBookListView.Columns.Add("Müşteri / Firma", 130);
+                    _addressBookListView.Columns.Add("Durum", 80);
+                    _addressBookListView.Columns.Add("İşleyen Bayi", 80);
                 }
                 _addressBookListView.Columns[0].Text = "Müşteri / Firma";
                 _addressBookListView.Columns[1].Text = "Durum";
+                _addressBookListView.Columns[2].Text = "İşleyen Bayi";
 
                 lock (_crmHistoryItems)
                 {
@@ -1894,6 +1909,7 @@ namespace BigLineconnect
                                            h.Issue.ToLowerInvariant().Contains(search) ||
                                            h.HostId.ToLowerInvariant().Contains(search) ||
                                            h.Status.ToLowerInvariant().Contains(search) ||
+                                           h.TenantId.ToLowerInvariant().Contains(search) ||
                                            h.Notes.ToLowerInvariant().Contains(search);
                             if (!matches) continue;
                         }
@@ -1901,8 +1917,11 @@ namespace BigLineconnect
                         string icon = h.Status == "Çözüldü" ? "✅" : (h.Status.Contains("İptal") ? "🚫" : "⚠️");
                         string displayName = !string.IsNullOrEmpty(h.Name) ? h.Name : (!string.IsNullOrEmpty(h.HostId) ? $"Müşteri ({h.HostId})" : "Müşteri Destek Kaydı");
                         string displayStatus = !string.IsNullOrEmpty(h.Status) ? h.Status : "İşlem Yapıldı";
+                        string displayTenant = !string.IsNullOrWhiteSpace(h.TenantId) ? h.TenantId : "BIGLINE";
+
                         var item = new ListViewItem($"{icon} {displayName}");
                         item.SubItems.Add(displayStatus);
+                        item.SubItems.Add(displayTenant);
                         item.Tag = h; // Store SupportHistoryItem object
                         item.ForeColor = h.Status == "Çözüldü" ? Color.FromArgb(46, 204, 113) : (h.Status.Contains("İptal") ? Color.FromArgb(231, 76, 60) : Color.FromArgb(241, 196, 15));
                         _addressBookListView.Items.Add(item);
