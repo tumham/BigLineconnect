@@ -133,7 +133,7 @@ namespace BigLineconnect
         public static readonly System.Collections.Generic.List<string> InitialLogs = new();
         private static CancellationTokenSource _cts = new CancellationTokenSource();
         public static bool _isStreaming = false;
-        private static string _currentRelayUrl = "wss://biglineconnect-production.up.railway.app/register-host";
+        public static string _currentRelayUrl = "wss://biglineconnect-production.up.railway.app/register-host";
         private static readonly object ReconnectLock = new();
         private static bool _isReconnecting = false;
         private static TaskCompletionSource<string>? _authPasswordTcs;
@@ -3027,6 +3027,29 @@ namespace BigLineconnect
                 WtsHelper.LogService("Warning: Failed to enable SeDebugPrivilege.");
             }
             _running = true;
+
+            // Direct 24/7 Relay Connection from Session 0 Service
+            Task.Run(async () =>
+            {
+                while (_running)
+                {
+                    try
+                    {
+                        if (Program.WebSocketClient == null || Program.WebSocketClient.State != System.Net.WebSockets.WebSocketState.Open)
+                        {
+                            string relayUrl = Program.SanitizeRelayUrl(Program._currentRelayUrl);
+                            WtsHelper.LogService($"Service initiating direct connection to Relay: {relayUrl}");
+                            await Program.ConnectToRelayAsync(relayUrl).ConfigureAwait(false);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        WtsHelper.LogService($"Service connection exception: {ex.Message}");
+                    }
+                    await Task.Delay(5000).ConfigureAwait(false);
+                }
+            });
+
             _monitorThread = new Thread(MonitorLoop) { IsBackground = true };
             _monitorThread.Start();
         }
