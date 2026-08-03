@@ -2512,10 +2512,8 @@ namespace BigLineconnect
                 }
 
                 // 3. Create new service
-                string assemblyPath = Process.GetCurrentProcess().MainModule?.FileName ?? "";
-                string binPath = $"\\\"{assemblyPath}\\\" --service";
-
-                var psi = new ProcessStartInfo("sc.exe", $"create BigLineconnectSvc binPath= \"{binPath}\" start= auto")
+                string assemblyPath = Process.GetCurrentProcess().MainModule?.FileName ?? System.Windows.Forms.Application.ExecutablePath;
+                var psi = new ProcessStartInfo("cmd.exe", $"/c sc.exe delete BigLineconnectSvc & sc.exe create BigLineconnectSvc binPath= \"\\\"{assemblyPath}\\\" --service\" DisplayName= \"BigLineconnect Background Service\" start= auto")
                 {
                     CreateNoWindow = true,
                     UseShellExecute = false
