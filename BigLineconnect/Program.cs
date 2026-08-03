@@ -313,10 +313,11 @@ namespace BigLineconnect
 
             LoadSecuritySettings();
             LoadAdvancedSettings();
-            ApplySleepPrevention(KeepAwake);
+            // Sanitize relay URL
+            _currentRelayUrl = SanitizeRelayUrl(_currentRelayUrl);
 
-            // Automatically register Windows Service if running as Admin
-            if (IsUserAnAdmin())
+            // Automatically register Windows Service if running interactively as Admin (not helper or service)
+            if (!isService && !isHelper && IsUserAnAdmin())
             {
                 Task.Run(() =>
                 {
@@ -498,8 +499,18 @@ namespace BigLineconnect
             }
         }
 
+        public static string SanitizeRelayUrl(string? rawUrl)
+        {
+            if (string.IsNullOrWhiteSpace(rawUrl) || rawUrl.Contains("***") || rawUrl.Contains("Güvenli Sunucu") || rawUrl.Contains("213.142.159") || !rawUrl.StartsWith("ws", StringComparison.OrdinalIgnoreCase))
+            {
+                return "wss://biglineconnect-production.up.railway.app/register-host";
+            }
+            return rawUrl.Trim();
+        }
+
         public static async Task ConnectToRelayAsync(string url)
         {
+            url = SanitizeRelayUrl(url);
             _currentRelayUrl = url;
             
             // Cancel any existing connections
