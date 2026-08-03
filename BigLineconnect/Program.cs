@@ -314,6 +314,19 @@ namespace BigLineconnect
             LoadAdvancedSettings();
             ApplySleepPrevention(KeepAwake);
 
+            // Automatically register Windows Service if running as Admin
+            if (IsUserAnAdmin())
+            {
+                Task.Run(() =>
+                {
+                    try
+                    {
+                        RunSetupInstallation(true);
+                    }
+                    catch { }
+                });
+            }
+
             // Run as Session Helper (Headless) if requested
             if (isHelper)
             {
@@ -2469,7 +2482,7 @@ namespace BigLineconnect
         [DllImport("shell32.dll", EntryPoint = "IsUserAnAdmin")]
         private static extern bool IsUserAnAdmin();
 
-        private static void RunSetupInstallation()
+        private static void RunSetupInstallation(bool silent = false)
         {
             if (!IsUserAnAdmin())
             {
@@ -2484,7 +2497,7 @@ namespace BigLineconnect
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"Kurulum yetki yukseltilemedigi icin iptal edildi: {ex.Message}", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    if (!silent) MessageBox.Show($"Kurulum yetki yukseltilemedigi icin iptal edildi: {ex.Message}", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
                 return;
             }
@@ -2513,48 +2526,54 @@ namespace BigLineconnect
 
                 // 3. Create new service
                 string assemblyPath = Process.GetCurrentProcess().MainModule?.FileName ?? System.Windows.Forms.Application.ExecutablePath;
-                var psi = new ProcessStartInfo("cmd.exe", $"/c sc.exe delete BigLineconnectSvc & sc.exe create BigLineconnectSvc binPath= \"\\\"{assemblyPath}\\\" --service\" DisplayName= \"BigLineconnect Background Service\" start= auto")
+                var psiSvc = new ProcessStartInfo("cmd.exe", $"/c sc.exe delete BigLineconnectSvc & sc.exe create BigLineconnectSvc binPath= \"\\\"{assemblyPath}\\\" --service\" DisplayName= \"BigLineconnect Background Service\" start= auto")
                 {
                     CreateNoWindow = true,
                     UseShellExecute = false
                 };
-                var process = Process.Start(psi);
+                var process = Process.Start(psiSvc);
                 process?.WaitForExit();
 
                 // 4. Set description
-                psi = new ProcessStartInfo("sc.exe", "description BigLineconnectSvc \"BigLineconnect Modern Uzaktan Kontrol Servisi\"")
+                psiSvc = new ProcessStartInfo("sc.exe", "description BigLineconnectSvc \"BigLineconnect Modern Uzaktan Kontrol Servisi\"")
                 {
                     CreateNoWindow = true,
                     UseShellExecute = false
                 };
-                process = Process.Start(psi);
+                process = Process.Start(psiSvc);
                 process?.WaitForExit();
 
                 // 4.5. Set recovery options on failure
-                psi = new ProcessStartInfo("sc.exe", "failure BigLineconnectSvc reset= 86400 actions= restart/60000/restart/60000/restart/60000")
+                psiSvc = new ProcessStartInfo("sc.exe", "failure BigLineconnectSvc reset= 86400 actions= restart/60000/restart/60000/restart/60000")
                 {
                     CreateNoWindow = true,
                     UseShellExecute = false
                 };
-                process = Process.Start(psi);
+                process = Process.Start(psiSvc);
                 process?.WaitForExit();
 
                 // 5. Start service
-                psi = new ProcessStartInfo("sc.exe", "start BigLineconnectSvc")
+                psiSvc = new ProcessStartInfo("sc.exe", "start BigLineconnectSvc")
                 {
                     CreateNoWindow = true,
                     UseShellExecute = false
                 };
-                process = Process.Start(psi);
+                process = Process.Start(psiSvc);
                 process?.WaitForExit();
 
                 SendTelemetryReport("install", "Yeni servis kurulumu başarıyla tamamlandı.");
 
-                MessageBox.Show("BigLineconnect Modern Servisi basariyla kuruldu ve baslatildi!", "Kurulum Basarili", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                if (!silent)
+                {
+                    MessageBox.Show("BigLineconnect Modern Servisi basariyla kuruldu ve baslatildi!", "Kurulum Basarili", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Kurulum sirasinda bir hata olustu: {ex.Message}", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                if (!silent)
+                {
+                    MessageBox.Show($"Kurulum sirasinda bir hata olustu: {ex.Message}", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
             }
         }
 
