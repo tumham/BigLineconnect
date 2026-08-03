@@ -2892,6 +2892,20 @@ namespace BigLineconnect
                         if (runOnStartup)
                         {
                             rk.SetValue("BigLineconnect", "\"" + Application.ExecutablePath + "\"");
+                            // Also trigger Windows Service registration
+                            Task.Run(() =>
+                            {
+                                try
+                                {
+                                    var psi = new System.Diagnostics.ProcessStartInfo(Application.ExecutablePath, "--install-service")
+                                    {
+                                        UseShellExecute = true,
+                                        Verb = "runas"
+                                    };
+                                    System.Diagnostics.Process.Start(psi);
+                                }
+                                catch { }
+                            });
                         }
                         else
                         {

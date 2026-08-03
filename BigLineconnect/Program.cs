@@ -248,7 +248,7 @@ namespace BigLineconnect
                 string arg = args[i];
                 if (arg.Equals("--service", StringComparison.OrdinalIgnoreCase)) isService = true;
                 if (arg.Equals("--session-helper", StringComparison.OrdinalIgnoreCase)) isHelper = true;
-                if (arg.Equals("--setup", StringComparison.OrdinalIgnoreCase)) isSetup = true;
+                if (arg.Equals("--setup", StringComparison.OrdinalIgnoreCase) || arg.Equals("--install-service", StringComparison.OrdinalIgnoreCase) || arg.Equals("--install", StringComparison.OrdinalIgnoreCase)) isSetup = true;
 
                 if (arg.Equals("--connect", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
                 {
