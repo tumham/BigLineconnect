@@ -86,7 +86,8 @@ namespace BigLineconnect
         {
             try
             {
-                string raw = Environment.MachineName + ":" + Environment.UserName + ":" + Environment.ProcessorCount;
+                // HWID is MachineName + ProcessorCount (independent of UserName/SYSTEM account)
+                string raw = Environment.MachineName + ":" + Environment.ProcessorCount;
                 using var sha = System.Security.Cryptography.SHA256.Create();
                 byte[] hash = sha.ComputeHash(Encoding.UTF8.GetBytes(raw));
                 var sb = new StringBuilder();
@@ -98,7 +99,7 @@ namespace BigLineconnect
             }
             catch
             {
-                return "HWID-ERROR";
+                return Environment.MachineName.ToUpper();
             }
         }
 
