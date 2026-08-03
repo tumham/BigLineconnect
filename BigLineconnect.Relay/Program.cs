@@ -244,6 +244,7 @@ namespace BigLineconnect.Relay
         {
             public string Id { get; set; } = "";
             public string HostId { get; set; } = "";
+            public string Token { get; set; } = "";
             public string Name { get; set; } = "";
             public string Issue { get; set; } = "";
             public string TenantId { get; set; } = "BIGLINE";
@@ -376,6 +377,7 @@ namespace BigLineconnect.Relay
                                     {
                                         Id = el.TryGetProperty("Id", out var p1) ? p1.GetString() ?? "" : (el.TryGetProperty("id", out var p1b) ? p1b.GetString() ?? "" : ""),
                                         HostId = el.TryGetProperty("HostId", out var p2) ? p2.GetString() ?? "" : (el.TryGetProperty("hostId", out var p2b) ? p2b.GetString() ?? "" : ""),
+                                        Token = el.TryGetProperty("Token", out var pT) ? pT.GetString() ?? "" : (el.TryGetProperty("token", out var pTb) ? pTb.GetString() ?? "" : ""),
                                         Name = el.TryGetProperty("Name", out var p3) ? p3.GetString() ?? "" : (el.TryGetProperty("name", out var p3b) ? p3b.GetString() ?? "" : ""),
                                         Issue = el.TryGetProperty("Issue", out var p4) ? p4.GetString() ?? "" : (el.TryGetProperty("issue", out var p4b) ? p4b.GetString() ?? "" : ""),
                                         TenantId = el.TryGetProperty("TenantId", out var p5) ? p5.GetString() ?? "BIGLINE" : (el.TryGetProperty("tenantId", out var p5b) ? p5b.GetString() ?? "BIGLINE" : "BIGLINE"),
@@ -396,20 +398,10 @@ namespace BigLineconnect.Relay
                 var seenKeys = new HashSet<string>();
                 foreach (var item in list.OrderByDescending(x => x.ResolvedAt).ThenByDescending(x => x.CreatedAt))
                 {
-                    string hostId = !string.IsNullOrEmpty(item.HostId) ? item.HostId : item.Id;
-                    string datePart = ExtractDateOnly(item.CreatedAt);
-                    string key = $"{item.TenantId}_{hostId}_{datePart}";
+                    string uniqueKey = !string.IsNullOrEmpty(item.Token) ? item.Token : (!string.IsNullOrEmpty(item.Id) ? item.Id : $"{item.HostId}_{item.CreatedAt}");
 
-                    if (string.IsNullOrEmpty(hostId) || seenKeys.Add(key))
+                    if (string.IsNullOrEmpty(uniqueKey) || seenKeys.Add(uniqueKey))
                     {
-                        if (item.Name.StartsWith("Uzak Masaüstü ("))
-                        {
-                            var betterItem = list.FirstOrDefault(x => x.HostId == item.HostId && !x.Name.StartsWith("Uzak Masaüstü ("));
-                            if (betterItem != null && !string.IsNullOrEmpty(betterItem.Name))
-                            {
-                                item.Name = betterItem.Name;
-                            }
-                        }
                         deduplicated.Add(item);
                     }
                 }
@@ -431,6 +423,7 @@ namespace BigLineconnect.Relay
                         sb.Append("  {");
                         sb.Append($"\"Id\":\"{EscapeJsonString(e.Id)}\",");
                         sb.Append($"\"HostId\":\"{EscapeJsonString(e.HostId)}\",");
+                        sb.Append($"\"Token\":\"{EscapeJsonString(e.Token)}\",");
                         sb.Append($"\"Name\":\"{EscapeJsonString(e.Name)}\",");
                         sb.Append($"\"Issue\":\"{EscapeJsonString(e.Issue)}\",");
                         sb.Append($"\"TenantId\":\"{EscapeJsonString(e.TenantId)}\",");
@@ -877,7 +870,8 @@ namespace BigLineconnect.Relay
                         TenantId = tenantId,
                         RequiresConfirmation = dto.RequiresConfirmation
                     };
-                    ActiveSupportRequests[dto.Id] = req;
+                    string reqKey = !string.IsNullOrEmpty(dto.Token) ? dto.Token : dto.Id;
+                    ActiveSupportRequests[reqKey] = req;
                     return Results.Ok("Success");
                 }
                 return Results.BadRequest("Invalid Data");
@@ -886,7 +880,7 @@ namespace BigLineconnect.Relay
             app.MapGet("/api/support/check", async context =>
             {
                 string id = context.Request.Query["id"].ToString() ?? "";
-                bool exists = !string.IsNullOrEmpty(id) && ActiveSupportRequests.ContainsKey(id);
+                bool exists = !string.IsNullOrEmpty(id) && ActiveSupportRequests.Values.Any(r => r.Id == id || r.Token == id);
                 context.Response.ContentType = "application/json";
                 await context.Response.WriteAsync(exists ? "true" : "false");
             });
@@ -914,14 +908,22 @@ namespace BigLineconnect.Relay
                     string body = await reader.ReadToEndAsync();
                     using var doc = System.Text.Json.JsonDocument.Parse(body);
                     var root = doc.RootElement;
-                    string id = root.GetProperty("id").GetString() ?? "";
+                    string id = root.TryGetProperty("id", out var pId) ? pId.GetString() ?? "" : "";
+                    string token = root.TryGetProperty("token", out var pToken) ? pToken.GetString() ?? "" : "";
                     string status = root.TryGetProperty("status", out var pStatus) ? pStatus.GetString() ?? "Çözüldü" : "Çözüldü";
                     string notes = root.TryGetProperty("notes", out var pNotes) ? pNotes.GetString() ?? "" : "";
 
-                    ActiveSupportRequests.TryRemove(id, out var ticket);
+                    SupportRequest? ticket = null;
+                    if (!string.IsNullOrEmpty(token) && ActiveSupportRequests.TryRemove(token, out ticket)) { }
+                    else if (!string.IsNullOrEmpty(id) && ActiveSupportRequests.TryRemove(id, out ticket)) { }
+                    else
+                    {
+                        var matchKey = ActiveSupportRequests.FirstOrDefault(kv => kv.Value.Id == id || kv.Value.Token == token).Key;
+                        if (matchKey != null) ActiveSupportRequests.TryRemove(matchKey, out ticket);
+                    }
 
                     var history = LoadSupportHistory();
-                    var existingEntry = history.LastOrDefault(h => h.HostId == id);
+                    var existingEntry = history.LastOrDefault(h => (!string.IsNullOrEmpty(token) && h.Token == token) || (!string.IsNullOrEmpty(id) && (h.Id == id || h.HostId == id)));
                     if (existingEntry != null)
                     {
                         existingEntry.Status = status;
@@ -933,7 +935,8 @@ namespace BigLineconnect.Relay
                         history.Add(new SupportHistoryEntry
                         {
                             Id = Guid.NewGuid().ToString(),
-                            HostId = id,
+                            HostId = ticket != null ? ticket.Id : id,
+                            Token = ticket != null ? ticket.Token : token,
                             Name = ticket != null ? ticket.Name : ("Müşteri (" + id + ")"),
                             Issue = ticket != null ? ticket.Issue : "Genel Destek",
                             TenantId = ticket != null ? ticket.TenantId : "BIGLINE",
@@ -945,7 +948,8 @@ namespace BigLineconnect.Relay
                     }
                     SaveSupportHistory(history);
 
-                    if (ActiveHosts.TryGetValue(id, out var session) && session.HostSocket != null && session.HostSocket.State == System.Net.WebSockets.WebSocketState.Open)
+                    string hostTargetId = ticket != null ? ticket.Id : id;
+                    if (!string.IsNullOrEmpty(hostTargetId) && ActiveHosts.TryGetValue(hostTargetId, out var session) && session.HostSocket != null && session.HostSocket.State == System.Net.WebSockets.WebSocketState.Open)
                     {
                         try
                         {
