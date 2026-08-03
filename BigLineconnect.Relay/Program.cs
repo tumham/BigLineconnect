@@ -345,6 +345,17 @@ namespace BigLineconnect.Relay
 
         private static bool _sqliteMigrated = false;
 
+        private static string ExtractDateOnly(string dateTimeStr)
+        {
+            if (string.IsNullOrWhiteSpace(dateTimeStr)) return DateTime.Now.ToString("dd.MM.yyyy");
+            string trimmed = dateTimeStr.Trim();
+            if (trimmed.Length >= 10 && (trimmed[2] == '.' || trimmed[2] == '/'))
+            {
+                return trimmed.Substring(0, 10);
+            }
+            return trimmed;
+        }
+
         private static List<SupportHistoryEntry> LoadSupportHistory()
         {
             lock (HistoryLock)
@@ -385,13 +396,24 @@ namespace BigLineconnect.Relay
                 var seenKeys = new HashSet<string>();
                 foreach (var item in list.OrderByDescending(x => x.ResolvedAt).ThenByDescending(x => x.CreatedAt))
                 {
-                    string key = string.IsNullOrEmpty(item.HostId) ? item.Id : $"{item.HostId}_{item.CreatedAt}";
-                    if (string.IsNullOrEmpty(key) || seenKeys.Add(key))
+                    string hostId = !string.IsNullOrEmpty(item.HostId) ? item.HostId : item.Id;
+                    string datePart = ExtractDateOnly(item.CreatedAt);
+                    string key = $"{item.TenantId}_{hostId}_{datePart}";
+
+                    if (string.IsNullOrEmpty(hostId) || seenKeys.Add(key))
                     {
+                        if (item.Name.StartsWith("Uzak Masaüstü ("))
+                        {
+                            var betterItem = list.FirstOrDefault(x => x.HostId == item.HostId && !x.Name.StartsWith("Uzak Masaüstü ("));
+                            if (betterItem != null && !string.IsNullOrEmpty(betterItem.Name))
+                            {
+                                item.Name = betterItem.Name;
+                            }
+                        }
                         deduplicated.Add(item);
                     }
                 }
-                return deduplicated.OrderBy(x => x.CreatedAt).ToList();
+                return deduplicated.OrderByDescending(x => x.CreatedAt).ToList();
             }
         }
 
@@ -955,7 +977,7 @@ namespace BigLineconnect.Relay
                     string notes = root.GetProperty("notes").GetString() ?? "";
                     
                     var history = LoadSupportHistory();
-                    var entry = history.LastOrDefault(h => h.HostId == id && h.Status == "İşlem Yapılıyor");
+                    var entry = history.LastOrDefault(h => h.HostId == id || h.Id == id);
                     if (entry != null)
                     {
                         entry.Status = status;
