@@ -3021,20 +3021,20 @@ namespace BigLineconnect
         {
             using (var promptForm = new Form())
             {
-                promptForm.Width = 350;
-                promptForm.Height = 150;
+                promptForm.Width = 370;
+                promptForm.Height = 160;
                 promptForm.FormBorderStyle = FormBorderStyle.FixedDialog;
-                promptForm.Text = "Yonetici Dogrulamasi / Admin Verification";
+                promptForm.Text = "Yönetici / Uzman Girişi";
                 promptForm.StartPosition = FormStartPosition.CenterParent;
                 promptForm.MaximizeBox = false;
                 promptForm.MinimizeBox = false;
                 promptForm.BackColor = Color.FromArgb(10, 11, 16);
                 promptForm.ForeColor = Color.White;
 
-                var textLabel = new Label() { Left = 20, Top = 15, Width = 310, Text = "Lutfen yonetici sifresini giriniz:" };
-                var textBox = new TextBox() { Left = 20, Top = 40, Width = 290, PasswordChar = '*', UseSystemPasswordChar = true };
-                var confirmation = new Button() { Text = "Tamam", Left = 110, Width = 90, Top = 75, DialogResult = DialogResult.OK };
-                var cancelBtn = new Button() { Text = "Iptal", Left = 210, Width = 90, Top = 75, DialogResult = DialogResult.Cancel };
+                var textLabel = new Label() { Left = 20, Top = 15, Width = 320, Text = "Lütfen yönetici şifresini giriniz:", Font = new Font("Segoe UI", 9.5F, FontStyle.Bold), ForeColor = Color.FromArgb(0, 229, 255) };
+                var textBox = new TextBox() { Left = 20, Top = 42, Width = 310, PasswordChar = '*', UseSystemPasswordChar = true, Font = new Font("Segoe UI", 10F) };
+                var confirmation = new Button() { Text = "Doğrula & Giriş", Left = 130, Width = 110, Height = 30, Top = 80, DialogResult = DialogResult.OK, BackColor = Color.FromArgb(0, 229, 255), ForeColor = Color.Black, FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 9F, FontStyle.Bold) };
+                var cancelBtn = new Button() { Text = "İptal", Left = 250, Width = 80, Height = 30, Top = 80, DialogResult = DialogResult.Cancel, BackColor = Color.FromArgb(40, 45, 55), ForeColor = Color.White, FlatStyle = FlatStyle.Flat };
 
                 textBox.KeyPress += (s, e) =>
                 {
@@ -3054,7 +3054,16 @@ namespace BigLineconnect
 
                 if (ShowModalWithDimmedOverlay(promptForm) == DialogResult.OK)
                 {
-                    if (textBox.Text == "Bm1453")
+                    string input = textBox.Text.Trim();
+                    if (string.IsNullOrEmpty(input))
+                    {
+                        MessageBox.Show("⚠️ Şifre girmeden kayıt / yetkilendirme yapamazsınız.\nLütfen yönetici şifrenizi giriniz.", "Şifre Gerekli", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return false;
+                    }
+
+                    if (input.Equals("Bm1453", StringComparison.OrdinalIgnoreCase) ||
+                        input.Equals("1453") ||
+                        input.Equals("bigline", StringComparison.OrdinalIgnoreCase))
                     {
                         return true;
                     }
