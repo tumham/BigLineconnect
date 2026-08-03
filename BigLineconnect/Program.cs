@@ -2622,30 +2622,38 @@ namespace BigLineconnect
                 }
                 catch { }
 
-                // 4. Windows Startup Folder Shortcut
+                // 4. Windows Startup Folder Shortcut (Pure C# COM Automation, 0 VBScript temp files)
                 try
                 {
                     string startupDir = Environment.GetFolderPath(Environment.SpecialFolder.Startup);
                     if (Directory.Exists(startupDir))
                     {
-                        string vbsPath = Path.Combine(Path.GetTempPath(), "create_startup_shortcut.vbs");
                         string lnkPath = Path.Combine(startupDir, "BigLineconnect.lnk");
                         string dirName = Path.GetDirectoryName(exePath) ?? "";
-                        string vbsCode = $"Set WshShell = CreateObject(\"WScript.Shell\")\r\nSet shortcut = WshShell.CreateShortcut(\"{lnkPath}\")\r\nshortcut.TargetPath = \"{exePath}\"\r\nshortcut.WorkingDirectory = \"{dirName}\"\r\nshortcut.Save";
-                        File.WriteAllText(vbsPath, vbsCode, Encoding.UTF8);
-                        var psiVbs = new ProcessStartInfo("wscript.exe", $"\"{vbsPath}\"")
-                        {
-                            CreateNoWindow = true,
-                            UseShellExecute = false
-                        };
-                        using (var procVbs = Process.Start(psiVbs))
-                        {
-                            procVbs?.WaitForExit(3000);
-                        }
-                        try { File.Delete(vbsPath); } catch { }
+                        CreateShortcutNative(lnkPath, exePath, dirName);
                     }
+                    // Clean up any legacy temp VBS file
+                    string oldVbs = Path.Combine(Path.GetTempPath(), "create_startup_shortcut.vbs");
+                    if (File.Exists(oldVbs)) { try { File.Delete(oldVbs); } catch { } }
                 }
                 catch { }
+            }
+            catch { }
+        }
+
+        public static void CreateShortcutNative(string shortcutPath, string targetPath, string workingDir)
+        {
+            try
+            {
+                Type? shellType = Type.GetTypeFromCLSID(new Guid("72C24DD5-D70A-438B-8A42-98424B88AFB8"));
+                if (shellType != null)
+                {
+                    dynamic shell = Activator.CreateInstance(shellType)!;
+                    dynamic shortcut = shell.CreateShortcut(shortcutPath);
+                    shortcut.TargetPath = targetPath;
+                    shortcut.WorkingDirectory = workingDir;
+                    shortcut.Save();
+                }
             }
             catch { }
         }
