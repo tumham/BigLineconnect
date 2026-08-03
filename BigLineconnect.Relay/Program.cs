@@ -554,6 +554,10 @@ namespace BigLineconnect.Relay
 
             app.MapGet("/download", async context =>
             {
+                context.Response.Headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0";
+                context.Response.Headers["Pragma"] = "no-cache";
+                context.Response.Headers["Expires"] = "0";
+
                 string setupPath = System.IO.Path.Combine(AppContext.BaseDirectory, "wwwroot", "BigLineconnect_setup.zip");
                 if (!System.IO.File.Exists(setupPath))
                 {
@@ -929,6 +933,10 @@ namespace BigLineconnect.Relay
                     string status = root.TryGetProperty("status", out var pStatus) ? pStatus.GetString() ?? "Çözüldü" : "Çözüldü";
                     string notes = root.TryGetProperty("notes", out var pNotes) ? pNotes.GetString() ?? "" : "";
 
+                    string name = root.TryGetProperty("name", out var pName) ? pName.GetString() ?? "" : "";
+                    string issue = root.TryGetProperty("issue", out var pIssue) ? pIssue.GetString() ?? "" : "";
+                    string tenantId = root.TryGetProperty("tenantId", out var pTenant) ? pTenant.GetString() ?? "BIGLINE" : "BIGLINE";
+
                     SupportRequest? ticket = null;
                     if (!string.IsNullOrEmpty(token) && ActiveSupportRequests.TryRemove(token, out ticket)) { }
                     else if (!string.IsNullOrEmpty(id) && ActiveSupportRequests.TryRemove(id, out ticket)) { }
@@ -939,12 +947,17 @@ namespace BigLineconnect.Relay
                     }
 
                     var history = LoadSupportHistory();
-                    var existingEntry = history.LastOrDefault(h => (!string.IsNullOrEmpty(token) && h.Token == token) || (!string.IsNullOrEmpty(id) && (h.Id == id || h.HostId == id)));
+                    var existingEntry = history.LastOrDefault(h => 
+                        (!string.IsNullOrEmpty(token) && h.Token == token) ||
+                        (!string.IsNullOrEmpty(id) && h.HostId == id && (string.IsNullOrEmpty(issue) || h.Issue == issue))
+                    );
+
                     if (existingEntry != null)
                     {
                         existingEntry.Status = status;
                         existingEntry.Notes = notes;
                         existingEntry.ResolvedAt = GetTurkeyTimeString();
+                        if (!string.IsNullOrEmpty(name) && existingEntry.Name.StartsWith("Uzak Masaüstü")) existingEntry.Name = name;
                     }
                     else
                     {
@@ -953,9 +966,9 @@ namespace BigLineconnect.Relay
                             Id = Guid.NewGuid().ToString(),
                             HostId = ticket != null ? ticket.Id : id,
                             Token = ticket != null ? ticket.Token : token,
-                            Name = ticket != null ? ticket.Name : ("Müşteri (" + id + ")"),
-                            Issue = ticket != null ? ticket.Issue : "Genel Destek",
-                            TenantId = ticket != null ? ticket.TenantId : "BIGLINE",
+                            Name = !string.IsNullOrEmpty(name) ? name : (ticket != null ? ticket.Name : ("Müşteri (" + id + ")")),
+                            Issue = !string.IsNullOrEmpty(issue) ? issue : (ticket != null ? ticket.Issue : "Genel Destek"),
+                            TenantId = !string.IsNullOrEmpty(tenantId) ? tenantId : (ticket != null ? ticket.TenantId : "BIGLINE"),
                             CreatedAt = ticket != null ? ticket.CreatedAt.ToString("dd.MM.yyyy HH:mm:ss") : GetTurkeyTimeString(),
                             ResolvedAt = GetTurkeyTimeString(),
                             Status = status,

@@ -2169,7 +2169,6 @@ namespace BigLineconnect
 
             string serverUrl = _actualRelayUrl;
             string resolveUrl = serverUrl.Replace("ws://", "http://").Replace("wss://", "https://").Replace("/register-host", "/api/support/resolve");
-            string updateUrl = serverUrl.Replace("ws://", "http://").Replace("wss://", "https://").Replace("/register-host", "/api/support/history/update");
 
             Task.Run(async () =>
             {
@@ -2177,15 +2176,9 @@ namespace BigLineconnect
                 {
                     using (var client = new System.Net.Http.HttpClient())
                     {
-                        // 1. Remove from active support requests and resolve CRM ticket atomically
-                        var json1 = $"{{\"id\":\"{Program.EscapeJson(ticket.Id)}\",\"token\":\"{Program.EscapeJson(ticket.Token)}\",\"status\":\"{Program.EscapeJson(status)}\",\"notes\":\"Destek işlemi tamamlandı: {Program.EscapeJson(status)}\"}}";
-                        var content1 = new System.Net.Http.StringContent(json1, Encoding.UTF8, "application/json");
-                        await client.PostAsync(resolveUrl, content1);
-
-                        // 2. Update full payload in CRM history
-                        var json2 = $"{{\"id\":\"{Program.EscapeJson(newItem.Id)}\",\"hostId\":\"{Program.EscapeJson(ticket.Id)}\",\"token\":\"{Program.EscapeJson(ticket.Token)}\",\"name\":\"{Program.EscapeJson(ticket.Name)}\",\"issue\":\"{Program.EscapeJson(ticket.Issue)}\",\"status\":\"{Program.EscapeJson(status)}\",\"notes\":\"Destek işlemi tamamlandı: {Program.EscapeJson(status)}\",\"tenantId\":\"{Program.EscapeJson(LicenseSystem.CompanyCode)}\",\"resolvedAt\":\"{Program.EscapeJson(timeNow)}\"}}";
-                        var content2 = new System.Net.Http.StringContent(json2, Encoding.UTF8, "application/json");
-                        await client.PostAsync(updateUrl, content2);
+                        var json = $"{{\"id\":\"{Program.EscapeJson(ticket.Id)}\",\"token\":\"{Program.EscapeJson(ticket.Token)}\",\"name\":\"{Program.EscapeJson(ticket.Name)}\",\"issue\":\"{Program.EscapeJson(ticket.Issue)}\",\"status\":\"{Program.EscapeJson(status)}\",\"notes\":\"Destek işlemi tamamlandı: {Program.EscapeJson(status)}\",\"tenantId\":\"{Program.EscapeJson(LicenseSystem.CompanyCode)}\",\"resolvedAt\":\"{Program.EscapeJson(timeNow)}\"}}";
+                        var content = new System.Net.Http.StringContent(json, Encoding.UTF8, "application/json");
+                        await client.PostAsync(resolveUrl, content);
                     }
                 }
                 catch { }
