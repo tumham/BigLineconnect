@@ -1234,6 +1234,11 @@ namespace BigLineconnect
                         _overlayBannerForm = new RemoteOverlayBannerForm();
                         _overlayBannerForm.Show();
                     }
+                    if (_hasActiveSubmittedTicket && _btnSupport != null && _btnSupport.Text != "🟢 Uzman Bağlandı (İşlem Yapılıyor...)")
+                    {
+                        _btnSupport.Text = "🟢 Uzman Bağlandı (İşlem Yapılıyor...)";
+                        ApplyModernButtonStyle(_btnSupport, Color.FromArgb(46, 204, 113), Color.FromArgb(39, 174, 96), Color.White);
+                    }
                 }
                 else
                 {
@@ -1241,6 +1246,11 @@ namespace BigLineconnect
                     {
                         _overlayBannerForm.Close();
                         _overlayBannerForm = null;
+                    }
+                    if (_hasActiveSubmittedTicket && _btnSupport != null && _btnSupport.Text != "❌ Talebi İptal Et")
+                    {
+                        _btnSupport.Text = "❌ Talebi İptal Et";
+                        ApplyModernButtonStyle(_btnSupport, Color.FromArgb(231, 76, 60), Color.FromArgb(192, 57, 43), Color.White);
                     }
                 }
             }
@@ -1570,16 +1580,17 @@ namespace BigLineconnect
                                      bool hasNewTicket = false;
                                      lock (_activeTickets)
                                      {
-                                         var oldIds = _activeTickets.Select(x => x.Id).ToHashSet();
+                                         var oldTokens = _activeTickets.Select(x => !string.IsNullOrEmpty(x.Token) ? x.Token : x.Id).ToHashSet();
                                          foreach (var ticketItem in tickets)
                                          {
-                                             if (!oldIds.Contains(ticketItem.Id) && !_knownTicketIds.Contains(ticketItem.Id))
+                                             string ticketKey = !string.IsNullOrEmpty(ticketItem.Token) ? ticketItem.Token : ticketItem.Id;
+                                             if (!oldTokens.Contains(ticketKey) && !_knownTicketTokens.Contains(ticketKey))
                                              {
                                                  if (!_isFirstTicketFetch)
                                                  {
                                                      hasNewTicket = true;
                                                  }
-                                                 _knownTicketIds.Add(ticketItem.Id);
+                                                 _knownTicketTokens.Add(ticketKey);
                                              }
                                          }
                                          _isFirstTicketFetch = false;
@@ -1599,6 +1610,10 @@ namespace BigLineconnect
                                          {
                                              _tabDestekButton.BackColor = Color.FromArgb(231, 76, 60);
                                          }
+                                         else
+                                         {
+                                             _tabDestekButton.BackColor = SystemColors.Control;
+                                         }
                                      }
 
                                      if (_isShowingTickets)
@@ -1614,7 +1629,7 @@ namespace BigLineconnect
             });
         }
 
-        private static HashSet<string> _knownTicketIds = new();
+        private static HashSet<string> _knownTicketTokens = new();
         private static bool _isFirstTicketFetch = true;
 
         [System.Runtime.InteropServices.DllImport("kernel32.dll", SetLastError = true)]

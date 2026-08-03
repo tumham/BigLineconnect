@@ -796,23 +796,25 @@ namespace BigLineconnect.Relay
                         TelemetryManager.LogEvent(session.Hwid, session.IpAddress, session.ComputerName, session.Username, session.OsVersion, session.AppVersion, "connect", $"İstemci bağlandı. İstemci IP: {clientIp}, Hedef ID: {targetId}");
 
                         string ticketToken = context.Request.Query["ticketToken"].ToString().Trim();
-                        if (string.IsNullOrEmpty(ticketToken) && ActiveSupportRequests.TryGetValue(targetId, out var activeReq))
+                        
+                        SupportRequest? ticket = null;
+                        if (!string.IsNullOrEmpty(ticketToken) && ActiveSupportRequests.TryGetValue(ticketToken, out ticket)) { }
+                        else
                         {
-                            ticketToken = activeReq.Token;
+                            ticket = ActiveSupportRequests.Values.FirstOrDefault(t => t.Id == targetId || (!string.IsNullOrEmpty(ticketToken) && t.Token == ticketToken));
                         }
 
                         string startCmdText = "START_STREAM";
-                        if (!string.IsNullOrEmpty(ticketToken) && 
-                            ActiveSupportRequests.TryGetValue(targetId, out var ticket) && 
-                            ticket.Token == ticketToken)
+                        if (ticket != null)
                         {
+                            string tToken = !string.IsNullOrEmpty(ticket.Token) ? ticket.Token : ticketToken;
                             if (ticket.RequiresConfirmation)
                             {
-                                startCmdText = $"START_STREAM:PROMPT_CONFIRM:{ticketToken}";
+                                startCmdText = $"START_STREAM:PROMPT_CONFIRM:{tToken}";
                             }
                             else
                             {
-                                startCmdText = $"START_STREAM:TICKET:{ticketToken}";
+                                startCmdText = $"START_STREAM:TICKET:{tToken}";
                             }
                         }
 
