@@ -501,6 +501,7 @@ namespace BigLineconnect.Relay
                     ctx.Context.Response.Headers["Cache-Control"] = "no-cache, no-store, must-revalidate";
                     ctx.Context.Response.Headers["Pragma"] = "no-cache";
                     ctx.Context.Response.Headers["Expires"] = "0";
+                    ctx.Context.Response.Headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains";
                 }
             });
             
