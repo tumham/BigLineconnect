@@ -54,25 +54,52 @@ if (targetIdInput) {
 
 // Toast system
 function showToast(message, type = 'info') {
+    if (!toastElement) return;
     toastElement.textContent = message;
     toastElement.className = `toast ${type}`;
+    toastElement.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:999999;padding:12px 24px;border-radius:10px;font-weight:700;font-size:14px;box-shadow:0 8px 24px rgba(0,0,0,0.8);background:' + (type === 'error' ? '#e74c3c' : (type === 'success' ? '#2ecc71' : '#00e5ff')) + ';color:' + (type === 'info' ? '#000' : '#fff');
     toastElement.classList.remove('hidden');
     
     setTimeout(() => {
-        toastElement.classList.add('hidden');
-    }, 3000);
+        if (toastElement) toastElement.classList.add('hidden');
+    }, 4000);
 }
 
-// Connect Button Event
-if (connectBtn) {
-    connectBtn.addEventListener('click', () => {
-        const rawId = targetIdInput.value.replace(/\s/g, '');
-        if (!rawId || rawId.length !== 9) {
-            showToast('Lütfen 9 haneli geçerli bir bağlantı ID\'si girin.', 'error');
-            return;
+// Connect Button Event Handler
+function startConnectionProcess() {
+    const inputElem = document.getElementById('target-id');
+    const btnElem = document.getElementById('connect-btn');
+    if (!inputElem) return;
+
+    const rawId = inputElem.value.replace(/\D/g, '');
+    if (!rawId || rawId.length < 5) {
+        alert('Lütfen bağlanmak istediğiniz uzaktaki bilgisayarın ID numarasını girin (Örn: 864 688 774).');
+        return;
+    }
+
+    if (btnElem) {
+        btnElem.disabled = true;
+        btnElem.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Bağlanıyor...</span>';
+    }
+
+    showToast(`Masaüstü (${rawId}) aranıyor...`, 'info');
+
+    connectToHost(rawId);
+
+    // Re-enable button if connection times out or closes
+    setTimeout(() => {
+        if (btnElem && !connected) {
+            btnElem.disabled = false;
+            btnElem.innerHTML = '<span>Bağlan</span> <i class="fa-solid fa-arrow-right-to-bracket"></i>';
         }
-        
-        connectToHost(rawId);
+    }, 6000);
+}
+
+// Connect Button Event Listener
+if (connectBtn) {
+    connectBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        startConnectionProcess();
     });
 }
 
