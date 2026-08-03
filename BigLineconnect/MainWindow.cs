@@ -1336,6 +1336,34 @@ namespace BigLineconnect
 
         private static string LocalCrmHistoryPath => ConfigHelper.GetConfigPath("crm_history.json");
 
+        private static List<SupportHistoryItem> DeduplicateCrmHistoryItems(List<SupportHistoryItem> rawList)
+        {
+            var deduplicated = new List<SupportHistoryItem>();
+            var seenKeys = new HashSet<string>();
+
+            foreach (var item in rawList.OrderByDescending(x => x.ResolvedAt).ThenByDescending(x => x.CreatedAt))
+            {
+                string datePart = (item.CreatedAt != null && item.CreatedAt.Length >= 10) ? item.CreatedAt.Substring(0, 10) : "";
+                string key = !string.IsNullOrEmpty(item.Token)
+                    ? item.Token
+                    : $"{item.HostId}_{datePart}_{item.Issue}";
+
+                if (string.IsNullOrEmpty(key) || seenKeys.Add(key))
+                {
+                    if (item.Name.StartsWith("Uzak Masaüstü"))
+                    {
+                        var better = rawList.FirstOrDefault(x => x.HostId == item.HostId && !x.Name.StartsWith("Uzak Masaüstü"));
+                        if (better != null && !string.IsNullOrEmpty(better.Name))
+                        {
+                            item.Name = better.Name;
+                        }
+                    }
+                    deduplicated.Add(item);
+                }
+            }
+            return deduplicated.OrderByDescending(x => x.CreatedAt).ToList();
+        }
+
         private static List<SupportHistoryItem> LoadLocalCrmHistory()
         {
             var list = new List<SupportHistoryItem>();
@@ -1360,6 +1388,7 @@ namespace BigLineconnect
                                 {
                                     Id = element.TryGetProperty("id", out var p1) ? p1.GetString() ?? "" : (element.TryGetProperty("Id", out var p1b) ? p1b.GetString() ?? "" : ""),
                                     HostId = element.TryGetProperty("hostId", out var p2) ? p2.GetString() ?? "" : (element.TryGetProperty("HostId", out var p2b) ? p2b.GetString() ?? "" : ""),
+                                    Token = element.TryGetProperty("token", out var pT) ? pT.GetString() ?? "" : (element.TryGetProperty("Token", out var pTb) ? pTb.GetString() ?? "" : ""),
                                     Name = element.TryGetProperty("name", out var p3) ? p3.GetString() ?? "" : (element.TryGetProperty("Name", out var p3b) ? p3b.GetString() ?? "" : ""),
                                     Issue = element.TryGetProperty("issue", out var p4) ? p4.GetString() ?? "" : (element.TryGetProperty("Issue", out var p4b) ? p4b.GetString() ?? "" : ""),
                                     TenantId = element.TryGetProperty("tenantId", out var p5) ? p5.GetString() ?? "" : (element.TryGetProperty("TenantId", out var p5b) ? p5b.GetString() ?? "" : ""),
@@ -1378,7 +1407,7 @@ namespace BigLineconnect
             {
                 System.Diagnostics.Debug.WriteLine($"[CRM Load Error] {ex.Message}");
             }
-            return list;
+            return DeduplicateCrmHistoryItems(list);
         }
 
         private static void SaveLocalCrmHistory(List<SupportHistoryItem> items)
@@ -1393,6 +1422,7 @@ namespace BigLineconnect
                     sb.Append("  {");
                     sb.Append($"\"id\":\"{Program.EscapeJson(item.Id)}\",");
                     sb.Append($"\"hostId\":\"{Program.EscapeJson(item.HostId)}\",");
+                    sb.Append($"\"token\":\"{Program.EscapeJson(item.Token)}\",");
                     sb.Append($"\"name\":\"{Program.EscapeJson(item.Name)}\",");
                     sb.Append($"\"issue\":\"{Program.EscapeJson(item.Issue)}\",");
                     sb.Append($"\"tenantId\":\"{Program.EscapeJson(item.TenantId)}\",");
@@ -1454,6 +1484,7 @@ namespace BigLineconnect
                                     {
                                         Id = element.TryGetProperty("id", out var p1) ? p1.GetString() ?? "" : (element.TryGetProperty("Id", out var p1b) ? p1b.GetString() ?? "" : ""),
                                         HostId = element.TryGetProperty("hostId", out var p2) ? p2.GetString() ?? "" : (element.TryGetProperty("HostId", out var p2b) ? p2b.GetString() ?? "" : ""),
+                                        Token = element.TryGetProperty("token", out var pT) ? pT.GetString() ?? "" : (element.TryGetProperty("Token", out var pTb) ? pTb.GetString() ?? "" : ""),
                                         Name = element.TryGetProperty("name", out var p3) ? p3.GetString() ?? "" : (element.TryGetProperty("Name", out var p3b) ? p3b.GetString() ?? "" : ""),
                                         Issue = element.TryGetProperty("issue", out var p4) ? p4.GetString() ?? "" : (element.TryGetProperty("Issue", out var p4b) ? p4b.GetString() ?? "" : ""),
                                         TenantId = element.TryGetProperty("tenantId", out var p5) ? p5.GetString() ?? "" : (element.TryGetProperty("TenantId", out var p5b) ? p5b.GetString() ?? "" : ""),
@@ -1462,10 +1493,7 @@ namespace BigLineconnect
                                         Status = element.TryGetProperty("status", out var p8) ? p8.GetString() ?? "" : (element.TryGetProperty("Status", out var p8b) ? p8b.GetString() ?? "" : ""),
                                         Notes = element.TryGetProperty("notes", out var p9) ? p9.GetString() ?? "" : (element.TryGetProperty("Notes", out var p9b) ? p9b.GetString() ?? "" : "")
                                     };
-                                    if (!history.Any(x => (!string.IsNullOrEmpty(x.Id) && x.Id == h.Id) || (x.HostId == h.HostId && x.CreatedAt == h.CreatedAt)))
-                                    {
-                                        history.Add(h);
-                                    }
+                                    history.Add(h);
                                 }
                             }
                         }
@@ -1473,11 +1501,8 @@ namespace BigLineconnect
                 }
                 catch { }
 
-                // Sort by ResolvedAt or CreatedAt descending so newest is ALWAYS at top
-                history = history.Where(x => !string.IsNullOrEmpty(x.Name) || !string.IsNullOrEmpty(x.HostId) || !string.IsNullOrEmpty(x.Issue))
-                                 .OrderByDescending(x => x.ResolvedAt)
-                                 .ThenByDescending(x => x.CreatedAt)
-                                 .ToList();
+                history = DeduplicateCrmHistoryItems(history);
+                SaveLocalCrmHistory(history);
 
                 this.Invoke((System.Windows.Forms.MethodInvoker)delegate
                 {

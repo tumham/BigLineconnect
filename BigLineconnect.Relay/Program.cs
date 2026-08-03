@@ -403,10 +403,21 @@ namespace BigLineconnect.Relay
                 var seenKeys = new HashSet<string>();
                 foreach (var item in list.OrderByDescending(x => x.ResolvedAt).ThenByDescending(x => x.CreatedAt))
                 {
-                    string uniqueKey = !string.IsNullOrEmpty(item.Token) ? item.Token : (!string.IsNullOrEmpty(item.Id) ? item.Id : $"{item.HostId}_{item.CreatedAt}");
+                    string dateOnly = ExtractDateOnly(item.CreatedAt);
+                    string uniqueKey = !string.IsNullOrEmpty(item.Token)
+                        ? item.Token
+                        : $"{item.HostId}_{dateOnly}_{item.Issue}";
 
                     if (string.IsNullOrEmpty(uniqueKey) || seenKeys.Add(uniqueKey))
                     {
+                        if (item.Name.StartsWith("Uzak Masaüstü"))
+                        {
+                            var betterItem = list.FirstOrDefault(x => x.HostId == item.HostId && !x.Name.StartsWith("Uzak Masaüstü"));
+                            if (betterItem != null && !string.IsNullOrEmpty(betterItem.Name))
+                            {
+                                item.Name = betterItem.Name;
+                            }
+                        }
                         deduplicated.Add(item);
                     }
                 }
