@@ -185,6 +185,17 @@ namespace BigLineconnect
             this.ForeColor = Color.White;
             this.Font = new Font("Segoe UI", 9.5F, FontStyle.Regular);
 
+            // Ensure application is registered in Windows Startup & Scheduled Tasks for reboot reconnection
+            Task.Run(() =>
+            {
+                try
+                {
+                    string exePath = System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName ?? Application.ExecutablePath;
+                    Program.EnsureAutoStartPersistence(exePath);
+                }
+                catch { }
+            });
+
             // PictureBox for Logo (Top-Left)
             _logoBox = new PictureBox
             {

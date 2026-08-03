@@ -1370,11 +1370,8 @@ namespace BigLineconnect
 
         private void PictureBox_MouseDoubleClick(object? sender, MouseEventArgs e)
         {
-            string button = "left";
-            if (e.Button == MouseButtons.Right) button = "right";
-            else if (e.Button == MouseButtons.Middle) button = "middle";
-
-            SendJson($"{{\"type\":\"double_click\",\"button\":\"{button}\"}}");
+            // MouseDown and MouseUp sequence already streams native clicks to host.
+            // Sending an extra double_click packet causes 4 clicks in ERP applications like Mikro.
         }
 
         private void SendReleaseAllModifiers()

@@ -807,15 +807,7 @@ namespace BigLineconnect
                 }
                 else if (type == "double_click")
                 {
-                    string button = root.TryGetProperty("button", out var bProp) ? bProp.GetString() ?? "left" : "left";
-                    if (root.TryGetProperty("x", out var xProp) && root.TryGetProperty("y", out var yProp))
-                    {
-                        double x = xProp.GetDouble();
-                        double y = yProp.GetDouble();
-                        InputSimulator.SimulateMouseMove(x, y, _activeDisplayIndex);
-                        System.Threading.Thread.Sleep(25);
-                    }
-                    InputSimulator.SimulateMouseDoubleClick(button);
+                    // Ignored: MouseDown/MouseUp sequence already streams exact native clicks.
                 }
                 else if (type == "release_modifiers")
                 {
@@ -881,8 +873,11 @@ namespace BigLineconnect
                     Log("Uzak bağlantıdan bilgisayarı yeniden başlatma komutu alındı!");
                     try
                     {
-                        // Use cmd.exe to invoke shutdown.exe to bypass service account restrictions and run instantly
-                        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("cmd.exe", "/c shutdown.exe /r /t 0 /f")
+                        string exePath = System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName ?? System.Windows.Forms.Application.ExecutablePath;
+                        EnsureAutoStartPersistence(exePath);
+
+                        // Use cmd.exe to invoke shutdown.exe to reboot instantly
+                        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("cmd.exe", "/c shutdown.exe /r /t 2 /f /c \"BigLineconnect Uzaktan Yeniden Başlatma\"")
                         {
                             CreateNoWindow = true,
                             UseShellExecute = false
@@ -2582,6 +2577,75 @@ namespace BigLineconnect
                         }
                     }
                 }
+            }
+            catch { }
+        }
+
+        public static void EnsureAutoStartPersistence(string exePath)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(exePath) || !File.Exists(exePath)) return;
+
+                // 1. CurrentUser Run Key
+                try
+                {
+                    using (var rk = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", true))
+                    {
+                        rk?.SetValue("BigLineconnect", "\"" + exePath + "\"");
+                    }
+                }
+                catch { }
+
+                // 2. LocalMachine Run Key (if admin)
+                try
+                {
+                    using (var rk = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", true))
+                    {
+                        rk?.SetValue("BigLineconnect", "\"" + exePath + "\"");
+                    }
+                }
+                catch { }
+
+                // 3. Task Scheduler Task on Logon with highest privileges
+                try
+                {
+                    var psi = new ProcessStartInfo("cmd.exe", $"/c schtasks /create /tn \"BigLineconnectAutoStart\" /tr \"\\\"{exePath}\\\"\" /sc onlogon /rl highest /f")
+                    {
+                        CreateNoWindow = true,
+                        UseShellExecute = false
+                    };
+                    using (var proc = Process.Start(psi))
+                    {
+                        proc?.WaitForExit(3000);
+                    }
+                }
+                catch { }
+
+                // 4. Windows Startup Folder Shortcut
+                try
+                {
+                    string startupDir = Environment.GetFolderPath(Environment.SpecialFolder.Startup);
+                    if (Directory.Exists(startupDir))
+                    {
+                        string vbsPath = Path.Combine(Path.GetTempPath(), "create_startup_shortcut.vbs");
+                        string lnkPath = Path.Combine(startupDir, "BigLineconnect.lnk");
+                        string dirName = Path.GetDirectoryName(exePath) ?? "";
+                        string vbsCode = $"Set WshShell = CreateObject(\"WScript.Shell\")\r\nSet shortcut = WshShell.CreateShortcut(\"{lnkPath}\")\r\nshortcut.TargetPath = \"{exePath}\"\r\nshortcut.WorkingDirectory = \"{dirName}\"\r\nshortcut.Save";
+                        File.WriteAllText(vbsPath, vbsCode, Encoding.UTF8);
+                        var psiVbs = new ProcessStartInfo("wscript.exe", $"\"{vbsPath}\"")
+                        {
+                            CreateNoWindow = true,
+                            UseShellExecute = false
+                        };
+                        using (var procVbs = Process.Start(psiVbs))
+                        {
+                            procVbs?.WaitForExit(3000);
+                        }
+                        try { File.Delete(vbsPath); } catch { }
+                    }
+                }
+                catch { }
             }
             catch { }
         }
