@@ -343,16 +343,20 @@
     </div>
 
     <!-- Password Prompt Dialog -->
-    <div id="password-modal" class="hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 10000; display: flex; justify-content: center; align-items: center; padding: 15px;">
-        <div class="glass-card connection-card" style="max-width: 360px; width: 100%; padding: 25px; text-align: center;">
-            <h3 style="margin-bottom: 10px; color: var(--accent-color); font-size: 1.4rem;">Erişim Şifresi Gerekli</h3>
-            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 15px;">Lütfen hedef bilgisayarın kişisel erişim şifresini girin:</p>
-            <div class="input-group" style="margin-bottom: 15px;">
-                <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="6" id="access-password-input" placeholder="6 Haneli Sayısal Şifre" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="text-align: center; width: 100%; padding: 14px; font-size: 22px; letter-spacing: 4px; font-weight: bold; -webkit-text-security: disc; text-security: disc; background: rgba(0,0,0,0.6); border: 2px solid var(--accent-color); border-radius: 10px; color: white;">
+    <div id="password-modal" class="hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(5, 7, 15, 0.92); backdrop-filter: blur(20px); z-index: 10000; display: flex; justify-content: center; align-items: center; padding: 20px;">
+        <div class="glass-card connection-card" style="max-width: 390px; width: 100%; padding: 28px 22px; text-align: center; border: 1.5px solid rgba(0, 229, 255, 0.3); border-radius: 24px; box-shadow: 0 25px 50px rgba(0, 0, 0, 0.9);">
+            <div style="width: 54px; height: 54px; margin: 0 auto 12px; background: rgba(0, 229, 255, 0.12); border: 1px solid var(--accent-color); border-radius: 50%; display: flex; justify-content: center; align-items: center; color: var(--accent-color); font-size: 1.4rem;">
+                <i class="fa-solid fa-lock"></i>
+            </div>
+            <h3 style="margin-bottom: 6px; color: #ffffff; font-size: 1.4rem; font-weight: 800;">Erişim Şifresi Gerekli</h3>
+            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 18px;">Lütfen hedef bilgisayarın 6 haneli şifresini girin:</p>
+            
+            <div class="input-group" style="margin-bottom: 20px; position: relative;">
+                <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="6" id="access-password-input" placeholder="• • • • • •" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="text-align: center; width: 100%; padding: 14px; font-size: 26px; letter-spacing: 12px; font-weight: 900; -webkit-text-security: disc; text-security: disc; background: rgba(15, 23, 42, 0.9); border: 2px solid var(--accent-color); border-radius: 16px; color: #00e5ff; box-shadow: inset 0 2px 8px rgba(0,0,0,0.8), 0 0 15px rgba(0, 229, 255, 0.25);">
             </div>
 
             <!-- Touch Numpad Grid -->
-            <div class="numpad-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 15px;">
+            <div class="numpad-grid">
                 <button type="button" class="numpad-btn" data-val="1">1</button>
                 <button type="button" class="numpad-btn" data-val="2">2</button>
                 <button type="button" class="numpad-btn" data-val="3">3</button>
@@ -362,12 +366,12 @@
                 <button type="button" class="numpad-btn" data-val="7">7</button>
                 <button type="button" class="numpad-btn" data-val="8">8</button>
                 <button type="button" class="numpad-btn" data-val="9">9</button>
-                <button type="button" class="numpad-btn action" data-val="clear">Sil</button>
+                <button type="button" class="numpad-btn action" data-val="clear">C</button>
                 <button type="button" class="numpad-btn" data-val="0">0</button>
                 <button type="button" class="numpad-btn action" data-val="backspace"><i class="fa-solid fa-delete-left"></i></button>
             </div>
 
-            <button id="submit-password-btn" class="primary-btn" style="padding: 14px; font-size: 1.1rem;">Doğrula & Bağlan <i class="fa-solid fa-arrow-right-to-bracket"></i></button>
+            <button id="submit-password-btn" class="primary-btn" style="width: 100%; padding: 16px; font-size: 1.1rem; font-weight: 800; border-radius: 18px;">Doğrula & Bağlan <i class="fa-solid fa-arrow-right-to-bracket"></i></button>
         </div>
     </div>
 

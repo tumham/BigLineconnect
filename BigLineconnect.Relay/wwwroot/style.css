@@ -707,6 +707,62 @@ body, html {
 .toast.error { background: rgba(231, 76, 60, 0.9); }
 .toast.success { background: rgba(46, 204, 113, 0.9); }
 
+/* Touch Numpad Styling */
+.numpad-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+    width: 100%;
+}
+
+.numpad-btn {
+    min-height: 58px;
+    border-radius: 18px;
+    background: rgba(30, 41, 59, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+    font-size: 1.6rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: all 0.12s ease-in-out;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.numpad-btn:hover {
+    background: rgba(51, 65, 85, 0.95);
+    border-color: var(--accent-color);
+    box-shadow: 0 0 15px rgba(0, 229, 255, 0.3);
+}
+
+.numpad-btn:active, .numpad-btn.pressed {
+    transform: scale(0.93);
+    background: linear-gradient(135deg, #00e5ff 0%, #7c4dff 100%);
+    color: #000000;
+    box-shadow: 0 0 20px rgba(0, 229, 255, 0.6);
+    border-color: transparent;
+}
+
+.numpad-btn.action {
+    background: rgba(15, 23, 42, 0.9);
+    border-color: rgba(255, 255, 255, 0.08);
+    color: #a0aec0;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.numpad-btn.action:active, .numpad-btn.action.pressed {
+    background: rgba(239, 68, 68, 0.9);
+    color: #ffffff;
+    border-color: transparent;
+    box-shadow: 0 0 15px rgba(239, 68, 68, 0.5);
+}
+
 .hidden { display: none !important; }
 
 /* Responsive adjustments */

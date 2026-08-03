@@ -585,13 +585,19 @@ if (cadBtn) {
     cadBtn.addEventListener('touchstart', triggerCad);
 }
 
-// On-Screen Touch Numpad Actions
+// On-Screen Touch Numpad Actions with Instant Touch Feedback & Auto-Submit
 document.querySelectorAll('.numpad-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
+    const handlePress = (e) => {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        btn.classList.add('pressed');
+        setTimeout(() => btn.classList.remove('pressed'), 150);
+
         const val = btn.getAttribute('data-val');
         if (!accessPasswordInput) return;
+
         if (val === 'clear') {
             accessPasswordInput.value = '';
         } else if (val === 'backspace') {
@@ -600,6 +606,18 @@ document.querySelectorAll('.numpad-btn').forEach(btn => {
             if (accessPasswordInput.value.length < 6) {
                 accessPasswordInput.value += val;
             }
+        }
+
+        // Auto-Submit when 6th digit is pressed
+        if (accessPasswordInput.value.length === 6) {
+            setTimeout(sendPassword, 180);
+        }
+    };
+
+    btn.addEventListener('touchstart', handlePress, { passive: false });
+    btn.addEventListener('click', (e) => {
+        if (e.detail !== 0 && !('ontouchstart' in window)) {
+            handlePress(e);
         }
     });
 });
