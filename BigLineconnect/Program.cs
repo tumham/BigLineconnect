@@ -2536,9 +2536,30 @@ namespace BigLineconnect
                     catch { }
                 }
 
-                // 3. Create new service
-                string assemblyPath = Process.GetCurrentProcess().MainModule?.FileName ?? System.Windows.Forms.Application.ExecutablePath;
-                var psiSvc = new ProcessStartInfo("cmd.exe", $"/c sc.exe delete BigLineconnectSvc & sc.exe create BigLineconnectSvc binPath= \"\\\"{assemblyPath}\\\" --service\" DisplayName= \"BigLineconnect Background Service\" start= auto")
+                // 2.5 Copy executable to permanent system directory (C:\ProgramData\BigLineconnect\BigLineconnect.exe)
+                string installDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "BigLineconnect");
+                try
+                {
+                    if (!Directory.Exists(installDir)) Directory.CreateDirectory(installDir);
+                }
+                catch { }
+                
+                string targetExe = Path.Combine(installDir, "BigLineconnect.exe");
+                string currentExe = Process.GetCurrentProcess().MainModule?.FileName ?? System.Windows.Forms.Application.ExecutablePath;
+
+                if (!currentExe.Equals(targetExe, StringComparison.OrdinalIgnoreCase))
+                {
+                    try
+                    {
+                        File.Copy(currentExe, targetExe, true);
+                    }
+                    catch { }
+                }
+
+                string serviceExe = File.Exists(targetExe) ? targetExe : currentExe;
+
+                // 3. Create new service pointing to permanent system path
+                var psiSvc = new ProcessStartInfo("cmd.exe", $"/c sc.exe delete BigLineconnectSvc & sc.exe create BigLineconnectSvc binPath= \"\\\"{serviceExe}\\\" --service\" DisplayName= \"BigLineconnect Background Service\" start= auto")
                 {
                     CreateNoWindow = true,
                     UseShellExecute = false
@@ -3193,8 +3214,14 @@ namespace BigLineconnect
                             IntPtr hDupToken = IntPtr.Zero;
                             if (WtsHelper.DuplicateTokenEx(hProcessToken, 0xf01ff, IntPtr.Zero, 2, 1, ref hDupToken))
                             {
-                                WtsHelper.LogService($"Successfully duplicated winlogon process token in Session {p.SessionId}. Launching session helper as SYSTEM...");
-                                _helperProcess = WtsHelper.StartProcessAsUser(hDupToken, AppDomain.CurrentDomain.BaseDirectory, "--session-helper");
+                                string appDir = AppDomain.CurrentDomain.BaseDirectory;
+                                string programDataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "BigLineconnect");
+                                if (Directory.Exists(programDataPath) && File.Exists(Path.Combine(programDataPath, "BigLineconnect.exe")))
+                                {
+                                    appDir = programDataPath;
+                                }
+                                WtsHelper.LogService($"Successfully duplicated winlogon process token in Session {p.SessionId}. Launching session helper as SYSTEM from {appDir}...");
+                                _helperProcess = WtsHelper.StartProcessAsUser(hDupToken, appDir, "--session-helper");
                                 if (_helperProcess != null)
                                 {
                                     WtsHelper.LogService($"Session helper launched from winlogon token as SYSTEM. PID: {_helperProcess.Id}");
