@@ -3082,15 +3082,20 @@ namespace BigLineconnect
             {
                 if (PromptForAdminPassword())
                 {
-                    try
+                    using (var guide = new SpecialistSetupGuideForm())
                     {
-                        File.WriteAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "uzman.txt"), "uzman");
-                        File.WriteAllText(ConfigHelper.GetConfigPath("uzman.txt"), "uzman");
-                    }
-                    catch { }
+                        if (ShowModalWithDimmedOverlay(guide) == DialogResult.OK)
+                        {
+                            try
+                            {
+                                File.WriteAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "uzman.txt"), "uzman");
+                                File.WriteAllText(ConfigHelper.GetConfigPath("uzman.txt"), "uzman");
+                            }
+                            catch { }
 
-                    MessageBox.Show("👨‍💻 Destek Uzmanı Modu Başarıyla Aktif Edildi!\nTüm destek talepleri ve CRM geçmişi ekranınıza yüklenecektir.", "Yetki Doğrulandı", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    Application.Restart();
+                            Application.Restart();
+                        }
+                    }
                 }
             }
             else
@@ -4187,5 +4192,140 @@ namespace BigLineconnect
         }
 
         protected override bool ShowWithoutActivation => true;
+    }
+
+    public class SpecialistSetupGuideForm : Form
+    {
+        private TextBox txtCompanyCode;
+
+        public SpecialistSetupGuideForm()
+        {
+            this.Text = "👨‍💻 Bayi & Uzman Modu Kurulum Sihirbazı";
+            this.Size = new Size(500, 420);
+            this.FormBorderStyle = FormBorderStyle.FixedDialog;
+            this.MaximizeBox = false;
+            this.MinimizeBox = false;
+            this.StartPosition = FormStartPosition.CenterParent;
+            this.BackColor = Color.FromArgb(10, 11, 16);
+            this.ForeColor = Color.White;
+
+            var titleLabel = new Label
+            {
+                Text = "⚡ Destek Uzmanı & Bayi Yetkilendirmesi",
+                Location = new Point(25, 20),
+                Size = new Size(440, 30),
+                Font = new Font("Segoe UI", 12F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(0, 229, 255)
+            };
+            this.Controls.Add(titleLabel);
+
+            var descLabel = new Label
+            {
+                Text = "Müşterilerinizin açacağı canlı destek taleplerinin (Ticket) ekranınıza düşmesi için lütfen aşağıdaki yönergeleri tamamlayınız:",
+                Location = new Point(25, 52),
+                Size = new Size(440, 38),
+                Font = new Font("Segoe UI", 9F),
+                ForeColor = Color.FromArgb(203, 213, 225)
+            };
+            this.Controls.Add(descLabel);
+
+            // Step 1 Panel: Bayi / Şirket Kodu Belirleme
+            var step1Panel = new Panel
+            {
+                Location = new Point(25, 95),
+                Size = new Size(435, 110),
+                BackColor = Color.FromArgb(20, 24, 33),
+                BorderStyle = BorderStyle.FixedSingle
+            };
+
+            var step1Title = new Label
+            {
+                Text = "📌 ADIM 1: Bayi / Şirket Kodunuzu Belirleyin",
+                Location = new Point(12, 10),
+                Size = new Size(410, 22),
+                Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(241, 196, 15)
+            };
+            step1Panel.Controls.Add(step1Title);
+
+            var step1Sub = new Label
+            {
+                Text = "Müşterileriniz destek talebi açarken bu Bayi Kodunu girecektir:",
+                Location = new Point(12, 34),
+                Size = new Size(410, 20),
+                Font = new Font("Segoe UI", 8.5F),
+                ForeColor = Color.FromArgb(148, 163, 184)
+            };
+            step1Panel.Controls.Add(step1Sub);
+
+            txtCompanyCode = new TextBox
+            {
+                Text = LicenseSystem.CompanyCode,
+                Location = new Point(12, 60),
+                Size = new Size(405, 30),
+                BackColor = Color.FromArgb(10, 11, 16),
+                ForeColor = Color.FromArgb(0, 229, 255),
+                Font = new Font("Segoe UI", 11F, FontStyle.Bold),
+                BorderStyle = BorderStyle.FixedSingle
+            };
+            step1Panel.Controls.Add(txtCompanyCode);
+            this.Controls.Add(step1Panel);
+
+            // Step 2 Panel: Canlı Talepler Görsel Açıklama
+            var step2Panel = new Panel
+            {
+                Location = new Point(25, 215),
+                Size = new Size(435, 100),
+                BackColor = Color.FromArgb(20, 24, 33),
+                BorderStyle = BorderStyle.FixedSingle
+            };
+
+            var step2Title = new Label
+            {
+                Text = "🔔 ADIM 2: Talepler Anında Ekranınıza Düşsün",
+                Location = new Point(12, 10),
+                Size = new Size(410, 22),
+                Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(46, 204, 113)
+            };
+            step2Panel.Controls.Add(step2Title);
+
+            var step2Desc = new Label
+            {
+                Text = "Bu Bayi Kodunu yazarak talep açan tüm müşterilerin çağrıları, sesli uyarı ile ekranınızdaki 🆘 Talepler sekmesine düşecek ve tek tıkla şifresiz bağlanabileceksiniz!",
+                Location = new Point(12, 34),
+                Size = new Size(410, 58),
+                Font = new Font("Segoe UI", 8.5F),
+                ForeColor = Color.FromArgb(226, 232, 240)
+            };
+            step2Panel.Controls.Add(step2Desc);
+            this.Controls.Add(step2Panel);
+
+            // Action Button: Save & Activate
+            var btnSave = new Button
+            {
+                Text = "💾 Kaydet ve Uzman Ekranını Başlat 🚀",
+                Location = new Point(25, 330),
+                Size = new Size(435, 42),
+                BackColor = Color.FromArgb(0, 229, 255),
+                ForeColor = Color.Black,
+                Font = new Font("Segoe UI", 10.5F, FontStyle.Bold),
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand
+            };
+            btnSave.Click += (s, e) =>
+            {
+                string code = txtCompanyCode.Text.Trim();
+                if (string.IsNullOrEmpty(code))
+                {
+                    MessageBox.Show("Lütfen bir Bayi / Firma Kodu giriniz.", "Uyarı", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+                LicenseSystem.SaveCompanyCode(code, true);
+                this.DialogResult = DialogResult.OK;
+                this.Close();
+            };
+            this.Controls.Add(btnSave);
+        }
     }
 }
