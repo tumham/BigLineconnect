@@ -2957,8 +2957,11 @@ namespace BigLineconnect
 
             using (var titleFont = new Font("Segoe UI", 9.5F, FontStyle.Bold))
             using (var textBrush = new SolidBrush(Color.FromArgb(0, 229, 255)))
+            using (var bgBrush = new SolidBrush(Color.FromArgb(18, 20, 26)))
             {
-                g.DrawString(title, titleFont, textBrush, rect.X + 15, rect.Y - 8);
+                SizeF textSize = g.MeasureString(title, titleFont);
+                g.FillRectangle(bgBrush, rect.X + 12, rect.Y - 10, textSize.Width + 6, textSize.Height);
+                g.DrawString(title, titleFont, textBrush, rect.X + 15, rect.Y - 10);
             }
         }
 
