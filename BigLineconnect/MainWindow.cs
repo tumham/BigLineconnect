@@ -242,7 +242,20 @@ namespace BigLineconnect
                 TextAlign = ContentAlignment.MiddleRight,
                 Anchor = AnchorStyles.Top | AnchorStyles.Right
             };
-            _btnHelp.Click += (s, e) => ShowHelpManual();
+            var btnUzmanMode = new LinkLabel
+            {
+                Text = LicenseSystem.IsSpecialistMode ? "👨‍💻 Uzman Modu" : "🔑 Uzman Girişi",
+                Location = new Point(410, 25),
+                Size = new Size(135, 25),
+                Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
+                LinkColor = LicenseSystem.IsSpecialistMode ? Color.FromArgb(46, 204, 113) : Color.FromArgb(241, 196, 15),
+                ActiveLinkColor = Color.FromArgb(0, 229, 255),
+                BackColor = Color.Transparent,
+                TextAlign = ContentAlignment.MiddleRight,
+                Anchor = AnchorStyles.Top | AnchorStyles.Right
+            };
+            btnUzmanMode.Click += (s, e) => ToggleSpecialistMode();
+            this.Controls.Add(btnUzmanMode);
             this.Controls.Add(_btnHelp);
 
             // 1. Relay Server config group (Positioned inside Bulut Sunucu Ayarları at 20, 108)
@@ -611,41 +624,13 @@ namespace BigLineconnect
             };
             ApplyModernButtonStyle(_tabRehberButton, Color.FromArgb(0, 229, 255), Color.FromArgb(0, 176, 255), Color.Black);
             _tabRehberButton.Click += (s, e) => SwitchTabMode(0);
-            _tabRehberButton.MouseDoubleClick += (s, e) => {
-                if (!LicenseSystem.IsSpecialistMode)
+            _tabRehberButton.MouseDown += (s, e) => {
+                if (e.Button == MouseButtons.Right)
                 {
-                    if (PromptForAdminPassword())
-                    {
-                        try
-                        {
-                            File.WriteAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "uzman.txt"), "uzman");
-                            File.WriteAllText(ConfigHelper.GetConfigPath("uzman.txt"), "uzman");
-                        }
-                        catch { }
-
-                        MessageBox.Show("👨‍💻 Destek Uzmanı Modu Başarıyla Aktif Edildi!\nTüm destek talepleri ve CRM geçmişi ekranınıza yüklenecektir.", "Yetki Doğrulandı", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        Application.Restart();
-                    }
-                }
-                else
-                {
-                    var res = MessageBox.Show("Müşteri Moduna geçiş yapmak istiyor musunuz?\n(Talepler ve CRM geçmişi sekmeleri gizlenecektir.)", "Müşteri Moduna Geç", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-                    if (res == DialogResult.Yes)
-                    {
-                        try
-                        {
-                            if (File.Exists(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "uzman.txt")))
-                                File.Delete(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "uzman.txt"));
-                            if (File.Exists(ConfigHelper.GetConfigPath("uzman.txt")))
-                                File.Delete(ConfigHelper.GetConfigPath("uzman.txt"));
-                        }
-                        catch { }
-
-                        MessageBox.Show("👤 Müşteri Modu Aktif Edildi!", "Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        Application.Restart();
-                    }
+                    ToggleSpecialistMode();
                 }
             };
+            _tabRehberButton.MouseDoubleClick += (s, e) => ToggleSpecialistMode();
             _addressBookGroup.Controls.Add(_tabRehberButton);
 
             if (isSpecialist)
@@ -2999,6 +2984,36 @@ namespace BigLineconnect
             return path;
         }
 
+        public DialogResult ShowModalWithDimmedOverlay(Form modal)
+        {
+            try
+            {
+                using (var overlay = new Form())
+                {
+                    overlay.FormBorderStyle = FormBorderStyle.None;
+                    overlay.BackColor = Color.Black;
+                    overlay.Opacity = 0.70; // 70% Dark Dimmed Overlay
+                    overlay.ShowInTaskbar = false;
+                    overlay.StartPosition = FormStartPosition.Manual;
+                    overlay.Location = this.Location;
+                    overlay.Size = this.Size;
+                    overlay.Owner = this;
+                    overlay.Show();
+
+                    modal.Owner = overlay;
+                    modal.StartPosition = FormStartPosition.CenterParent;
+                    var result = modal.ShowDialog(overlay);
+                    overlay.Close();
+                    return result;
+                }
+            }
+            catch
+            {
+                modal.StartPosition = FormStartPosition.CenterParent;
+                return modal.ShowDialog(this);
+            }
+        }
+
         private string MaskRelayUrl(string url)
         {
             return "🔒 BigLine Güvenli Sunucu (relay.biglineconnect.com)";
@@ -3039,7 +3054,7 @@ namespace BigLineconnect
                 promptForm.AcceptButton = confirmation;
                 promptForm.CancelButton = cancelBtn;
 
-                if (promptForm.ShowDialog(this) == DialogResult.OK)
+                if (ShowModalWithDimmedOverlay(promptForm) == DialogResult.OK)
                 {
                     if (textBox.Text == "Bm1453")
                     {
@@ -3052,6 +3067,43 @@ namespace BigLineconnect
                 }
             }
             return false;
+        }
+
+        private void ToggleSpecialistMode()
+        {
+            if (!LicenseSystem.IsSpecialistMode)
+            {
+                if (PromptForAdminPassword())
+                {
+                    try
+                    {
+                        File.WriteAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "uzman.txt"), "uzman");
+                        File.WriteAllText(ConfigHelper.GetConfigPath("uzman.txt"), "uzman");
+                    }
+                    catch { }
+
+                    MessageBox.Show("👨‍💻 Destek Uzmanı Modu Başarıyla Aktif Edildi!\nTüm destek talepleri ve CRM geçmişi ekranınıza yüklenecektir.", "Yetki Doğrulandı", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    Application.Restart();
+                }
+            }
+            else
+            {
+                var res = MessageBox.Show("Müşteri Moduna geçiş yapmak istiyor musunuz?\n(Talepler ve CRM geçmişi sekmeleri gizlenecektir.)", "Müşteri Moduna Geç", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                if (res == DialogResult.Yes)
+                {
+                    try
+                    {
+                        if (File.Exists(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "uzman.txt")))
+                            File.Delete(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "uzman.txt"));
+                        if (File.Exists(ConfigHelper.GetConfigPath("uzman.txt")))
+                            File.Delete(ConfigHelper.GetConfigPath("uzman.txt"));
+                    }
+                    catch { }
+
+                    MessageBox.Show("👤 Müşteri Modu Aktif Edildi!", "Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    Application.Restart();
+                }
+            }
         }
 
         private bool TryUnlockRelayUrl()
@@ -3813,7 +3865,7 @@ namespace BigLineconnect
 
             using (var dlg = new SupportRequestDialog())
             {
-                if (dlg.ShowDialog(this) == DialogResult.OK)
+                if (ShowModalWithDimmedOverlay(dlg) == DialogResult.OK)
                 {
                     if (!string.IsNullOrEmpty(dlg.CompanyCodeInput))
                     {
