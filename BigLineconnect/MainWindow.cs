@@ -242,20 +242,18 @@ namespace BigLineconnect
                 TextAlign = ContentAlignment.MiddleRight,
                 Anchor = AnchorStyles.Top | AnchorStyles.Right
             };
-            var btnUzmanMode = new LinkLabel
+            _titleLabel.MouseDoubleClick += (s, e) => ToggleSpecialistMode();
+            _logoBox.MouseDoubleClick += (s, e) => ToggleSpecialistMode();
+
+            this.KeyPreview = true;
+            this.KeyDown += (s, e) =>
             {
-                Text = LicenseSystem.IsSpecialistMode ? "👨‍💻 Uzman Modu" : "🔑 Uzman Girişi",
-                Location = new Point(410, 25),
-                Size = new Size(135, 25),
-                Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
-                LinkColor = LicenseSystem.IsSpecialistMode ? Color.FromArgb(46, 204, 113) : Color.FromArgb(241, 196, 15),
-                ActiveLinkColor = Color.FromArgb(0, 229, 255),
-                BackColor = Color.Transparent,
-                TextAlign = ContentAlignment.MiddleRight,
-                Anchor = AnchorStyles.Top | AnchorStyles.Right
+                if (e.Control && e.Shift && e.KeyCode == Keys.U)
+                {
+                    e.SuppressKeyPress = true;
+                    ToggleSpecialistMode();
+                }
             };
-            btnUzmanMode.Click += (s, e) => ToggleSpecialistMode();
-            this.Controls.Add(btnUzmanMode);
             this.Controls.Add(_btnHelp);
 
             // 1. Relay Server config group (Positioned inside Bulut Sunucu Ayarları at 20, 108)
