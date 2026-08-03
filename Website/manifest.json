@@ -1,0 +1,25 @@
+{
+  "name": "BigLineconnect - Mobil Bayi & Destek Portalı",
+  "short_name": "BigLine",
+  "description": "BigLineconnect Mobil Destek ve Uzaktan Kontrol Portalı",
+  "start_url": "/bayi.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0b0e14",
+  "theme_color": "#00e5ff",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
