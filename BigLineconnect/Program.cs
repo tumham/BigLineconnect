@@ -3071,21 +3071,7 @@ namespace BigLineconnect
             }
         }
 
-        protected override void OnStart(string[] args)
-        {
-            WtsHelper.LogService("Service OnStart triggered.");
-
-            if (WtsHelper.EnableDebugPrivilege())
-            {
-                WtsHelper.LogService("SeDebugPrivilege successfully enabled.");
-            }
-            else
-            {
-                WtsHelper.LogService("Warning: Failed to enable SeDebugPrivilege.");
-            }
-            _running = true;
-
-        public static bool IsGuiOrHelperRunningInActiveSession()
+        private bool IsGuiOrHelperRunningInActiveSession()
         {
             try
             {
@@ -3111,6 +3097,20 @@ namespace BigLineconnect
             catch { }
             return false;
         }
+
+        protected override void OnStart(string[] args)
+        {
+            WtsHelper.LogService("Service OnStart triggered.");
+
+            if (WtsHelper.EnableDebugPrivilege())
+            {
+                WtsHelper.LogService("SeDebugPrivilege successfully enabled.");
+            }
+            else
+            {
+                WtsHelper.LogService("Warning: Failed to enable SeDebugPrivilege.");
+            }
+            _running = true;
 
             // Direct 24/7 Relay Connection from Session 0 Service
             Task.Run(async () =>
