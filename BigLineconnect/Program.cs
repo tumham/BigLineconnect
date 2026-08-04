@@ -3075,6 +3075,10 @@ namespace BigLineconnect
             }
             catch
             {
+                return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, filename);
+            }
+        }
+
         public static readonly string CURRENT_VERSION = "1.0.5";
 
         public static async Task CheckAndApplySilentUpdateAsync()
