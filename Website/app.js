@@ -206,11 +206,36 @@ function connectToHost(id) {
                 if (connectionStatus) {
                     connectionStatus.innerHTML = `<span class="status-dot online"></span>${debugInfo} ${sizeKb.toFixed(0)} KB`;
                 }
-                const url = URL.createObjectURL(blob);
-                const oldUrl = screenImg.src;
-                screenImg.src = url;
-                if (oldUrl.startsWith('blob:')) {
-                    URL.revokeObjectURL(oldUrl); // Free memory!
+
+                const screenCanvas = document.getElementById('screen-canvas');
+                if (screenCanvas && window.createImageBitmap) {
+                    try {
+                        const bitmap = await createImageBitmap(blob);
+                        if (screenCanvas.style.display === 'none') {
+                            screenCanvas.style.display = 'block';
+                            if (screenImg) screenImg.style.display = 'none';
+                        }
+                        if (screenCanvas.width !== bitmap.width || screenCanvas.height !== bitmap.height) {
+                            screenCanvas.width = bitmap.width;
+                            screenCanvas.height = bitmap.height;
+                        }
+                        const ctx = screenCanvas.getContext('2d', { alpha: false, desynchronized: true });
+                        if (ctx) {
+                            ctx.drawImage(bitmap, 0, 0);
+                        }
+                        bitmap.close(); // Free GPU memory immediately!
+                    } catch (e) {
+                        // Fallback to Blob URL if createImageBitmap fails
+                        const url = URL.createObjectURL(blob);
+                        const oldUrl = screenImg.src;
+                        screenImg.src = url;
+                        if (oldUrl.startsWith('blob:')) URL.revokeObjectURL(oldUrl);
+                    }
+                } else {
+                    const url = URL.createObjectURL(blob);
+                    const oldUrl = screenImg.src;
+                    screenImg.src = url;
+                    if (oldUrl.startsWith('blob:')) URL.revokeObjectURL(oldUrl);
                 }
             } else if (typeof event.data === 'string') {
                 if (event.data === 'ERROR:ID_NOT_FOUND') {
