@@ -420,8 +420,34 @@ function getMousePos(canvas, clientX, clientY) {
     };
 }
 
-if (screenImg) {
-    screenImg.addEventListener('mousedown', (e) => {
+// Global Desktop Physical Keyboard Listeners
+window.addEventListener('keydown', (e) => {
+    if (!connected || !socket) return;
+    if (passwordModal && !passwordModal.classList.contains('hidden')) return;
+    if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+
+    let keyName = e.key;
+    if (keyName === ' ') keyName = 'space';
+    sendKey(keyName, 'down');
+    e.preventDefault();
+});
+
+window.addEventListener('keyup', (e) => {
+    if (!connected || !socket) return;
+    if (passwordModal && !passwordModal.classList.contains('hidden')) return;
+    if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+
+    let keyName = e.key;
+    if (keyName === ' ') keyName = 'space';
+    sendKey(keyName, 'up');
+    e.preventDefault();
+});
+
+// Mouse & Touch Event Listeners on Container & Image
+const activeInteractionElem = canvasContainer || screenImg;
+
+if (activeInteractionElem) {
+    activeInteractionElem.addEventListener('mousedown', (e) => {
         if (!connected) return;
         const pos = getMousePos(screenImg, e.clientX, e.clientY);
         sendMove(pos.x, pos.y);
@@ -434,7 +460,7 @@ if (screenImg) {
         e.preventDefault();
     });
 
-    screenImg.addEventListener('mouseup', (e) => {
+    activeInteractionElem.addEventListener('mouseup', (e) => {
         if (!connected) return;
         let button = 'left';
         if (e.button === 2) button = 'right';
@@ -444,18 +470,18 @@ if (screenImg) {
         e.preventDefault();
     });
 
-    screenImg.addEventListener('mousemove', (e) => {
+    activeInteractionElem.addEventListener('mousemove', (e) => {
         if (!connected) return;
         const pos = getMousePos(screenImg, e.clientX, e.clientY);
         sendMove(pos.x, pos.y);
         e.preventDefault();
     });
 
-    screenImg.addEventListener('contextmenu', (e) => {
+    activeInteractionElem.addEventListener('contextmenu', (e) => {
         e.preventDefault();
     });
 
-    screenImg.addEventListener('wheel', (e) => {
+    activeInteractionElem.addEventListener('wheel', (e) => {
         if (!connected) return;
         const delta = e.deltaY < 0 ? 120 : -120;
         sendScroll(delta);
@@ -467,7 +493,7 @@ if (screenImg) {
     let touchStartX = 0, touchStartY = 0, touchStartTime = 0, isMultiTouch = false;
     let lastTapTime = 0, lastTapX = 0, lastTapY = 0;
 
-    screenImg.addEventListener('touchstart', (e) => {
+    activeInteractionElem.addEventListener('touchstart', (e) => {
         if (!connected) return;
         
         if (e.touches.length === 1) {
@@ -498,7 +524,7 @@ if (screenImg) {
         e.preventDefault();
     }, { passive: false });
 
-    screenImg.addEventListener('touchmove', (e) => {
+    activeInteractionElem.addEventListener('touchmove', (e) => {
         if (!connected) return;
         
         if (e.touches.length === 1) {
@@ -528,7 +554,7 @@ if (screenImg) {
         e.preventDefault();
     }, { passive: false });
 
-    screenImg.addEventListener('touchend', (e) => {
+    activeInteractionElem.addEventListener('touchend', (e) => {
         if (!connected || isMultiTouch) return;
         
         const now = Date.now();
@@ -542,16 +568,6 @@ if (screenImg) {
                 const pos = getMousePos(screenImg, touch.clientX, touch.clientY);
                 sendMove(pos.x, pos.y);
 
-                const timeDiff = now - lastTapTime;
-                const doubleTapDist = Math.sqrt((touch.clientX - lastTapX) ** 2 + (touch.clientY - lastTapY) ** 2);
-
-                if (timeDiff < 500 && doubleTapDist < 60) {
-                    sendDoubleClick('left', pos.x, pos.y);
-                    showToast('Çift Tıklama Yollandı ⚡', 'info');
-                    lastTapTime = 0;
-                } else if (currentMouseMode === 'double') {
-                    sendDoubleClick('left', pos.x, pos.y);
-                    showToast('Çift Tıklama Yollandı ⚡', 'info');
                     lastTapTime = 0;
                 } else if (currentMouseMode === 'right') {
                     sendClick('right', 'down');
