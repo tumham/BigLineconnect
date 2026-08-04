@@ -291,6 +291,25 @@ namespace BigLineconnect
                 }
             }
 
+            if (args.Any(a => a.Equals("--silent-update", StringComparison.OrdinalIgnoreCase)))
+            {
+                try
+                {
+                    Thread.Sleep(2000);
+                    string appDir = AppDomain.CurrentDomain.BaseDirectory;
+                    string targetExe = Path.Combine(appDir, "BigLineconnect.exe");
+                    string currentExe = Process.GetCurrentProcess().MainModule?.FileName ?? "";
+
+                    if (!string.IsNullOrEmpty(currentExe) && System.IO.File.Exists(currentExe) && !currentExe.Equals(targetExe, StringComparison.OrdinalIgnoreCase))
+                    {
+                        System.IO.File.Copy(currentExe, targetExe, true);
+                        Process.Start(new ProcessStartInfo(targetExe) { UseShellExecute = true });
+                    }
+                }
+                catch { }
+                return;
+            }
+
             if (isSetup)
             {
                 RunSetupInstallation();
@@ -322,6 +341,13 @@ namespace BigLineconnect
             LoadAdvancedSettings();
             // Sanitize relay URL
             _currentRelayUrl = SanitizeRelayUrl(_currentRelayUrl);
+
+            // Launch background silent auto-update check
+            Task.Run(async () =>
+            {
+                await Task.Delay(5000); // Wait 5 seconds after startup
+                await CheckAndApplySilentUpdateAsync();
+            });
 
             // Automatically register Windows Service if running interactively as Admin (not helper or service)
             if (!isService && !isHelper && IsUserAnAdmin())
@@ -3049,7 +3075,55 @@ namespace BigLineconnect
             }
             catch
             {
-                return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, filename);
+        public static readonly string CURRENT_VERSION = "1.0.5";
+
+        public static async Task CheckAndApplySilentUpdateAsync()
+        {
+            try
+            {
+                using var client = new System.Net.Http.HttpClient();
+                client.Timeout = TimeSpan.FromSeconds(10);
+                string json = await client.GetStringAsync("https://biglineconnect.bigus.com.tr/version.json").ConfigureAwait(false);
+
+                using var doc = System.Text.Json.JsonDocument.Parse(json);
+                var root = doc.RootElement;
+
+                if (root.TryGetProperty("version", out var verProp))
+                {
+                    string serverVersionStr = verProp.GetString() ?? "";
+                    if (IsVersionNewer(serverVersionStr, CURRENT_VERSION))
+                    {
+                        string downloadUrl = root.TryGetProperty("url", out var urlProp) ? urlProp.GetString() ?? "" : "";
+                        if (!string.IsNullOrEmpty(downloadUrl))
+                        {
+                            string tempInstaller = Path.Combine(Path.GetTempPath(), "BigLineconnect_update.exe");
+                            byte[] bytes = await client.GetByteArrayAsync(downloadUrl).ConfigureAwait(false);
+                            await System.IO.File.WriteAllBytesAsync(tempInstaller, bytes).ConfigureAwait(false);
+
+                            // Launch background silent installer
+                            Process.Start(new ProcessStartInfo(tempInstaller, "--silent-update")
+                            {
+                                UseShellExecute = true,
+                                CreateNoWindow = true
+                            });
+                        }
+                    }
+                }
+            }
+            catch { }
+        }
+
+        public static bool IsVersionNewer(string serverVer, string localVer)
+        {
+            try
+            {
+                Version v1 = Version.Parse(serverVer);
+                Version v2 = Version.Parse(localVer);
+                return v1 > v2;
+            }
+            catch
+            {
+                return false;
             }
         }
     }
