@@ -139,8 +139,15 @@ function connectToHost(id) {
             connected = true;
             customCloseReason = null;
             showToast('Bağlantı kuruldu!', 'success');
-            if (landingPage) landingPage.classList.add('hidden');
-            if (viewerScreen) viewerScreen.classList.remove('hidden');
+            if (landingPage) {
+                landingPage.classList.add('hidden');
+                landingPage.style.display = 'none';
+            }
+            if (viewerScreen) {
+                viewerScreen.classList.remove('hidden');
+                viewerScreen.style.display = 'flex';
+                viewerScreen.style.zIndex = '99999';
+            }
             startFreeSessionTimer();
         };
         
@@ -151,9 +158,19 @@ function connectToHost(id) {
             } else {
                 showToast('Bağlantı sonlandırıldı.', 'info');
             }
-            if (viewerScreen) viewerScreen.classList.add('hidden');
-            if (landingPage) landingPage.classList.remove('hidden');
-            if (passwordModal) passwordModal.classList.add('hidden');
+            if (viewerScreen) {
+                viewerScreen.classList.add('hidden');
+                viewerScreen.style.display = 'none';
+            }
+            if (landingPage) {
+                landingPage.classList.remove('hidden');
+                landingPage.style.display = 'block';
+            }
+            if (passwordModal) {
+                passwordModal.classList.add('hidden');
+                passwordModal.style.display = 'none';
+                passwordModal.style.pointerEvents = 'none';
+            }
             if (hiddenKeyboardInput) hiddenKeyboardInput.disabled = false;
             socket = null;
             
