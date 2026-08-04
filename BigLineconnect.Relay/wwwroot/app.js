@@ -208,14 +208,25 @@ function connectToHost(id) {
                     }
                     showToast('Bağlantı için karşı bilgisayarın onayı bekleniyor...', 'info');
                 } else if (event.data === 'AUTH_SUCCESS') {
+                    const btnElem = document.getElementById('submit-password-btn');
+                    if (btnElem) {
+                        btnElem.disabled = false;
+                        btnElem.innerHTML = 'Doğrula & Bağlan <i class="fa-solid fa-arrow-right-to-bracket"></i>';
+                    }
                     if (passwordModal) passwordModal.classList.add('hidden');
                     if (hiddenKeyboardInput) hiddenKeyboardInput.disabled = false;
-                    showToast('Doğrulama başarılı!', 'success');
+                    showToast('Doğrulama başarılı! Ekran yükleniyor...', 'success');
                 } else if (event.data === 'AUTH_FAILED') {
-                    customCloseReason = 'Hatalı erişim şifresi girildi!';
-                    if (passwordModal) passwordModal.classList.add('hidden');
-                    if (hiddenKeyboardInput) hiddenKeyboardInput.disabled = false;
-                    socket.close();
+                    const btnElem = document.getElementById('submit-password-btn');
+                    if (btnElem) {
+                        btnElem.disabled = false;
+                        btnElem.innerHTML = 'Doğrula & Bağlan <i class="fa-solid fa-arrow-right-to-bracket"></i>';
+                    }
+                    alert('❌ Hatalı Erişim Şifresi! Lütfen karşı bilgisayardaki 6 haneli şifreyi kontrol edip tekrar giriniz.');
+                    if (accessPasswordInput) {
+                        accessPasswordInput.value = '';
+                        accessPasswordInput.focus();
+                    }
                 } else if (event.data === 'AUTH_REJECTED') {
                     customCloseReason = 'Bağlantı isteği kullanıcı tarafından reddedildi!';
                     if (passwordModal) passwordModal.classList.add('hidden');
