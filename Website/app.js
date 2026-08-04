@@ -568,6 +568,9 @@ if (activeInteractionElem) {
                 const pos = getMousePos(screenImg, touch.clientX, touch.clientY);
                 sendMove(pos.x, pos.y);
 
+                if (currentMouseMode === 'double') {
+                    sendDoubleClick('left', pos.x, pos.y);
+                    showToast('Çift Tıklama Yollandı ⚡', 'info');
                     lastTapTime = 0;
                 } else if (currentMouseMode === 'right') {
                     sendClick('right', 'down');
