@@ -362,9 +362,14 @@ function sendMove(x, y) {
     }
 }
 
-function sendClick(button, action) {
+function sendClick(button, action, x = null, y = null) {
     if (socket && socket.readyState === WebSocket.OPEN) {
-        socket.send(JSON.stringify({ type: 'click', button, action }));
+        const payload = { type: 'click', button, action };
+        if (x !== null && y !== null) {
+            payload.x = x;
+            payload.y = y;
+        }
+        socket.send(JSON.stringify(payload));
     }
 }
 
@@ -461,23 +466,23 @@ if (activeInteractionElem) {
     activeInteractionElem.addEventListener('mousedown', (e) => {
         if (!connected) return;
         const pos = getMousePos(screenImg, e.clientX, e.clientY);
-        sendMove(pos.x, pos.y);
         
         let button = 'left';
         if (e.button === 2) button = 'right';
         else if (e.button === 1) button = 'middle';
         
-        sendClick(button, 'down');
+        sendClick(button, 'down', pos.x, pos.y);
         e.preventDefault();
     });
 
     activeInteractionElem.addEventListener('mouseup', (e) => {
         if (!connected) return;
+        const pos = getMousePos(screenImg, e.clientX, e.clientY);
         let button = 'left';
         if (e.button === 2) button = 'right';
         else if (e.button === 1) button = 'middle';
         
-        sendClick(button, 'up');
+        sendClick(button, 'up', pos.x, pos.y);
         e.preventDefault();
     });
 

@@ -829,6 +829,12 @@ namespace BigLineconnect
                 {
                     string button = root.GetProperty("button").GetString() ?? "";
                     string action = root.GetProperty("action").GetString() ?? "";
+                    if (root.TryGetProperty("x", out var xProp) && root.TryGetProperty("y", out var yProp))
+                    {
+                        double x = xProp.GetDouble();
+                        double y = yProp.GetDouble();
+                        InputSimulator.SimulateMouseMove(x, y, _activeDisplayIndex);
+                    }
                     InputSimulator.SimulateMouseButton(button, action);
                 }
                 else if (type == "double_click")

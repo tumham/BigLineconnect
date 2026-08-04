@@ -158,6 +158,26 @@ namespace BigLineconnect
                 }
 
                 if (flags == 0) return;
+
+                INPUT[] inputs = new INPUT[1];
+                inputs[0] = new INPUT
+                {
+                    type = INPUT_MOUSE,
+                    U = new InputUnion
+                    {
+                        mi = new MOUSEINPUT
+                        {
+                            dx = 0,
+                            dy = 0,
+                            mouseData = 0,
+                            dwFlags = flags,
+                            time = 0,
+                            dwExtraInfo = IntPtr.Zero
+                        }
+                    }
+                };
+
+                SendInput(1, inputs, Marshal.SizeOf<INPUT>());
                 mouse_event(flags, 0, 0, 0, UIntPtr.Zero);
             }
             catch { }
