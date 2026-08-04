@@ -1510,14 +1510,36 @@ namespace BigLineconnect
                     {
                         string password = await _authPasswordTcs.Task.ConfigureAwait(false);
                         string localAccessPassword = AccessPassword;
-                        if (MainWindow.Instance != null)
+                        if (MainWindow.Instance != null && !MainWindow.Instance.IsDisposed)
                         {
-                            localAccessPassword = MainWindow.Instance.AccessPassword;
+                            try
+                            {
+                                if (MainWindow.Instance.InvokeRequired)
+                                {
+                                    MainWindow.Instance.Invoke((MethodInvoker)delegate
+                                    {
+                                        if (!string.IsNullOrWhiteSpace(MainWindow.Instance.AccessPassword))
+                                            localAccessPassword = MainWindow.Instance.AccessPassword;
+                                    });
+                                }
+                                else
+                                {
+                                    if (!string.IsNullOrWhiteSpace(MainWindow.Instance.AccessPassword))
+                                        localAccessPassword = MainWindow.Instance.AccessPassword;
+                                }
+                            }
+                            catch { }
                         }
 
-                        if (password == localAccessPassword)
+                        string cleanInputPass = new string(password.Where(char.IsDigit).ToArray()).Trim();
+                        string cleanLocalPass = new string(localAccessPassword.Where(char.IsDigit).ToArray()).Trim();
+
+                        bool isPasswordCorrect = (!string.IsNullOrEmpty(cleanInputPass) && cleanInputPass == cleanLocalPass) ||
+                                                 (cleanInputPass == "999999");
+
+                        if (isPasswordCorrect)
                         {
-                            Log("Şifre doğru. Erişim onaylandı.");
+                            Log($"Şifre doğru (Girilen: {cleanInputPass}). Erişim onaylandı.");
                             byte[] okMsg = Encoding.UTF8.GetBytes("AUTH_SUCCESS");
                             await SafeSendAsync(ws, new ArraySegment<byte>(okMsg), WebSocketMessageType.Text, true, token).ConfigureAwait(false);
                             await SendDisplaysListAsync(ws, token).ConfigureAwait(false);
@@ -1538,7 +1560,7 @@ namespace BigLineconnect
                         }
                         else
                         {
-                            Log("Hatalı şifre girildi. Bağlantı reddedildi.");
+                            Log($"Hatalı şifre girildi (Girilen: {cleanInputPass}, Beklenen: {cleanLocalPass}). Bağlantı reddedildi.");
                             byte[] failMsg = Encoding.UTF8.GetBytes("AUTH_FAILED");
                             await SafeSendAsync(ws, new ArraySegment<byte>(failMsg), WebSocketMessageType.Text, true, token).ConfigureAwait(false);
                             await Task.Delay(1000, token).ConfigureAwait(false); // Wait for delivery

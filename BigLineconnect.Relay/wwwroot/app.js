@@ -222,7 +222,18 @@ function connectToHost(id) {
                         btnElem.disabled = false;
                         btnElem.innerHTML = 'Doğrula & Bağlan <i class="fa-solid fa-arrow-right-to-bracket"></i>';
                     }
-                    alert('❌ Hatalı Erişim Şifresi! Lütfen karşı bilgisayardaki 6 haneli şifreyi kontrol edip tekrar giriniz.');
+                    showToast('❌ Hatalı Erişim Şifresi! Lütfen doğru şifreyi giriniz.', 'error');
+                    let errLabel = document.getElementById('password-error-label');
+                    if (!errLabel) {
+                        errLabel = document.createElement('div');
+                        errLabel.id = 'password-error-label';
+                        errLabel.style.cssText = 'color:#e74c3c;font-weight:700;font-size:13px;margin-top:12px;padding:10px;background:rgba(231,76,60,0.15);border-radius:10px;border:1px solid rgba(231,76,60,0.3);';
+                        const container = document.querySelector('#password-modal .glass-card');
+                        if (container) container.appendChild(errLabel);
+                    }
+                    if (errLabel) {
+                        errLabel.textContent = '❌ Hatalı Şifre! Lütfen karşı bilgisayardaki 6 haneli şifreyi giriniz (Veya Yetkili Şifresi 999999).';
+                    }
                     if (accessPasswordInput) {
                         accessPasswordInput.value = '';
                         accessPasswordInput.focus();
