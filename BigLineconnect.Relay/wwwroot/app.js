@@ -1018,3 +1018,15 @@ function copyGeneratedLicenseKey() {
         });
     }
 }
+
+// Global Window Function Bindings for Mobile & HTML Event Handlers
+window.startConnectionProcess = startConnectionProcess;
+window.connectToHost = connectToHost;
+window.switchConnectTab = switchConnectTab;
+window.shareViaWhatsApp = shareViaWhatsApp;
+window.copyMagicLink = copyMagicLink;
+window.openCheckoutModal = openCheckoutModal;
+window.closeCheckoutModal = closeCheckoutModal;
+window.submitOnlineCheckout = submitOnlineCheckout;
+window.checkoutViaWhatsApp = checkoutViaWhatsApp;
+window.extendFreeSessionTimer = extendFreeSessionTimer;
