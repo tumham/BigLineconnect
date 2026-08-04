@@ -178,7 +178,6 @@ namespace BigLineconnect
                 };
 
                 SendInput(1, inputs, Marshal.SizeOf<INPUT>());
-                mouse_event(flags, 0, 0, 0, UIntPtr.Zero);
             }
             catch { }
         }
@@ -213,20 +212,11 @@ namespace BigLineconnect
             try
             {
                 DesktopHelper.AttachToInputDesktop();
-                uint downFlag = MOUSEEVENTF_LEFTDOWN;
-                uint upFlag = MOUSEEVENTF_LEFTUP;
-
-                if (button.Equals("right", StringComparison.OrdinalIgnoreCase))
-                {
-                    downFlag = MOUSEEVENTF_RIGHTDOWN;
-                    upFlag = MOUSEEVENTF_RIGHTUP;
-                }
-
-                mouse_event(downFlag, 0, 0, 0, UIntPtr.Zero);
-                mouse_event(upFlag, 0, 0, 0, UIntPtr.Zero);
-                System.Threading.Thread.Sleep(30);
-                mouse_event(downFlag, 0, 0, 0, UIntPtr.Zero);
-                mouse_event(upFlag, 0, 0, 0, UIntPtr.Zero);
+                SimulateMouseButton(button, "down");
+                SimulateMouseButton(button, "up");
+                System.Threading.Thread.Sleep(40);
+                SimulateMouseButton(button, "down");
+                SimulateMouseButton(button, "up");
             }
             catch { }
         }
