@@ -275,15 +275,15 @@ namespace BigLineconnect
             var cmsQuality = new ContextMenuStrip();
             var itemLow = new ToolStripMenuItem("Düşük Kalite (Hızlı)", null, (s, e) => {
                 btnQuality.Text = "Kalite: Düşük 🎨";
-                SendJson("{\"type\":\"set_quality\",\"quality\":35,\"maxDim\":1280}");
+                SendJson("{\"type\":\"set_quality\",\"quality\":35,\"maxDim\":1024}");
             });
             var itemMid = new ToolStripMenuItem("Yüksek Kalite", null, (s, e) => {
                 btnQuality.Text = "Kalite: Yüksek 🎨";
-                SendJson("{\"type\":\"set_quality\",\"quality\":55,\"maxDim\":1600}");
+                SendJson("{\"type\":\"set_quality\",\"quality\":50,\"maxDim\":1280}");
             });
             var itemHigh = new ToolStripMenuItem("En Yüksek Kalite", null, (s, e) => {
                 btnQuality.Text = "Kalite: En Yüksek 🎨";
-                SendJson("{\"type\":\"set_quality\",\"quality\":85,\"maxDim\":1920}");
+                SendJson("{\"type\":\"set_quality\",\"quality\":65,\"maxDim\":1440}");
             });
             cmsQuality.Items.Add(itemLow);
             cmsQuality.Items.Add(itemMid);

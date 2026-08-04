@@ -975,6 +975,7 @@ namespace BigLineconnect
                     int maxDim = root.GetProperty("maxDim").GetInt32();
                     CurrentQuality = q;
                     CurrentMaxDimension = maxDim;
+                    _lastSentFrameBytes = null; // Instantly flush old frame cache so new quality applies in 0ms!
                     Log($"Görüntü kalitesi değiştirildi: %{q}, MaxDim: {maxDim}");
                 }
                 else if (type == "toggle_wallpaper")
