@@ -763,7 +763,9 @@ body, html {
     box-shadow: 0 0 15px rgba(239, 68, 68, 0.5);
 }
 
-.hidden { display: none !important; }
+.hidden { display: none !important; pointer-events: none !important; }
+#password-modal { display: none; pointer-events: none; }
+#password-modal:not(.hidden) { display: flex !important; pointer-events: auto !important; }
 
 /* Responsive adjustments */
 @media (max-width: 992px) {

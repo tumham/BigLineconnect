@@ -203,7 +203,11 @@ function connectToHost(id) {
                     customCloseReason = 'Bu bilgisayar şu an meşgul.';
                     socket.close();
                 } else if (event.data === 'AUTH_REQUIRED') {
-                    if (passwordModal) passwordModal.classList.remove('hidden');
+                    if (passwordModal) {
+                        passwordModal.classList.remove('hidden');
+                        passwordModal.style.display = 'flex';
+                        passwordModal.style.pointerEvents = 'auto';
+                    }
                     if (hiddenKeyboardInput) hiddenKeyboardInput.disabled = true;
                     if (accessPasswordInput) {
                         accessPasswordInput.disabled = false;
@@ -224,7 +228,11 @@ function connectToHost(id) {
                         btnElem.disabled = false;
                         btnElem.innerHTML = 'Doğrula & Bağlan <i class="fa-solid fa-arrow-right-to-bracket"></i>';
                     }
-                    if (passwordModal) passwordModal.classList.add('hidden');
+                    if (passwordModal) {
+                        passwordModal.classList.add('hidden');
+                        passwordModal.style.display = 'none';
+                        passwordModal.style.pointerEvents = 'none';
+                    }
                     if (hiddenKeyboardInput) hiddenKeyboardInput.disabled = false;
                     showToast('Doğrulama başarılı! Ekran yükleniyor...', 'success');
                 } else if (event.data === 'AUTH_FAILED') {
