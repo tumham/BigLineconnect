@@ -314,8 +314,34 @@ namespace BigLineconnect
                 }
             };
 
+            bool isOriginalMode = false;
+            var btnDisplayMode = new NoFocusButton
+            {
+                Text = "Görünüm: Sığdır 📐",
+                Location = new Point(975, 7),
+                Size = new Size(130, 26)
+            };
+            ModernUIHelper.ApplyButtonStyle(btnDisplayMode, Color.FromArgb(0, 188, 212), Color.FromArgb(0, 151, 167), Color.White);
+
+            btnDisplayMode.Click += (s, e) => {
+                isOriginalMode = !isOriginalMode;
+                if (isOriginalMode)
+                {
+                    btnDisplayMode.Text = "Görünüm: 1:1 Net 📐";
+                    if (_pictureBox != null) _pictureBox.SizeMode = PictureBoxSizeMode.CenterImage;
+                    ModernUIHelper.ApplyButtonStyle(btnDisplayMode, Color.FromArgb(233, 30, 99), Color.FromArgb(194, 24, 91), Color.White);
+                }
+                else
+                {
+                    btnDisplayMode.Text = "Görünüm: Sığdır 📐";
+                    if (_pictureBox != null) _pictureBox.SizeMode = PictureBoxSizeMode.Zoom;
+                    ModernUIHelper.ApplyButtonStyle(btnDisplayMode, Color.FromArgb(0, 188, 212), Color.FromArgb(0, 151, 167), Color.White);
+                }
+            };
+
             panelTop.Controls.Add(btnQuality);
             panelTop.Controls.Add(btnWallpaper);
+            panelTop.Controls.Add(btnDisplayMode);
 
             _lblFpsStats = new Label
             {
@@ -1124,6 +1150,59 @@ namespace BigLineconnect
             SendJson($"{{\"type\":\"select_display\",\"index\":{_cbDisplays.SelectedIndex}}}");
         }
 
+        private (double x, double y) GetNormalizedMousePos(MouseEventArgs e, PictureBox box)
+        {
+            if (box.Image == null || box.Width <= 0 || box.Height <= 0)
+                return (0, 0);
+
+            int imgWidth = box.Image.Width;
+            int imgHeight = box.Image.Height;
+
+            if (box.SizeMode == PictureBoxSizeMode.CenterImage)
+            {
+                int offsetX = (box.Width - imgWidth) / 2;
+                int offsetY = (box.Height - imgHeight) / 2;
+
+                int mouseX = e.X - offsetX;
+                int mouseY = e.Y - offsetY;
+
+                double normX = (double)mouseX / imgWidth;
+                double normY = (double)mouseY / imgHeight;
+
+                return (Math.Max(0, Math.Min(1, normX)), Math.Max(0, Math.Min(1, normY)));
+            }
+            else // Zoom mode
+            {
+                double imgAspect = (double)imgWidth / imgHeight;
+                double boxAspect = (double)box.Width / box.Height;
+
+                double renderedWidth, renderedHeight, offsetX, offsetY;
+
+                if (boxAspect > imgAspect)
+                {
+                    renderedHeight = box.Height;
+                    renderedWidth = box.Height * imgAspect;
+                    offsetX = (box.Width - renderedWidth) / 2;
+                    offsetY = 0;
+                }
+                else
+                {
+                    renderedWidth = box.Width;
+                    renderedHeight = box.Width / imgAspect;
+                    offsetX = 0;
+                    offsetY = (box.Height - renderedHeight) / 2;
+                }
+
+                double mouseX = e.X - offsetX;
+                double mouseY = e.Y - offsetY;
+
+                double normX = mouseX / renderedWidth;
+                double normY = mouseY / renderedHeight;
+
+                return (Math.Max(0, Math.Min(1, normX)), Math.Max(0, Math.Min(1, normY)));
+            }
+        }
+
         private void PictureBox_MouseMove(object? sender, MouseEventArgs e)
         {
             if (_pictureBox == null) return;
@@ -1132,8 +1211,7 @@ namespace BigLineconnect
             _lastMoveSent = DateTime.Now;
             _lastSentMousePos = e.Location;
 
-            double x = (double)e.X / _pictureBox.Width;
-            double y = (double)e.Y / _pictureBox.Height;
+            var (x, y) = GetNormalizedMousePos(e, _pictureBox);
 
             SendJson($"{{\"type\":\"move\",\"x\":{x.ToString(System.Globalization.CultureInfo.InvariantCulture)},\"y\":{y.ToString(System.Globalization.CultureInfo.InvariantCulture)}}}");
         }
@@ -1145,8 +1223,7 @@ namespace BigLineconnect
             // Focus form to ensure key capture works
             this.Focus();
 
-            double x = (double)e.X / _pictureBox.Width;
-            double y = (double)e.Y / _pictureBox.Height;
+            var (x, y) = GetNormalizedMousePos(e, _pictureBox);
             SendJson($"{{\"type\":\"move\",\"x\":{x.ToString(System.Globalization.CultureInfo.InvariantCulture)},\"y\":{y.ToString(System.Globalization.CultureInfo.InvariantCulture)}}}");
 
             string button = "left";
