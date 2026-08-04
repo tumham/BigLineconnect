@@ -776,19 +776,16 @@ namespace BigLineconnect.Relay
                         return;
                     }
 
-                    bool isViewOnly = false;
-                    if (session.ClientSocket != null && session.ClientSocket.State == WebSocketState.Open)
-                    {
-                        isViewOnly = true;
-                    }
-                    else
-                    {
-                        session.ClientSocket = null;
-                        try { session.Cts?.Cancel(); } catch { }
-                    }
-
+                    bool isViewOnly = context.Request.Query["viewOnly"] == "true";
+                    
                     if (!isViewOnly)
                     {
+                        if (session.ClientSocket != null)
+                        {
+                            try { session.ClientSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Replaced by new client", CancellationToken.None); } catch { }
+                            try { session.Cts?.Cancel(); } catch { }
+                        }
+
                         session.ClientSocket = clientSocket;
                         session.Cts = new CancellationTokenSource();
                         Console.WriteLine($"[Relay] Client connected to Host ID: {targetId}");
