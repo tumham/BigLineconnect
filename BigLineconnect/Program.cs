@@ -731,7 +731,7 @@ namespace BigLineconnect
                             _latestFrame = frame;
                         }
                     }
-                    Thread.Sleep(50);
+                    Thread.Sleep(20);
                 }
                 ScreenCapturer.SuppressWallpaper(false);
                 Log("Ekran yakalama döngüsü sonlandı.");

@@ -17,9 +17,11 @@ namespace BigLineconnect
 
         private static ImageCodecInfo? _jpegEncoder;
         private static DxgiScreenCapturer? _dxgiCapturer;
-        private static bool _useDxgi = false;
+        private static bool _useDxgi = true;
         private static int _consecutiveBlackFrames = 0;
         public static int CurrentDisplayIndex { get; set; } = 0;
+        private static readonly MemoryStream _sharedMs = new MemoryStream(1024 * 1024 * 4);
+        private static readonly object _compressLock = new object();
 
         [DllImport("user32.dll", CharSet = CharSet.Auto)]
         private static extern int SystemParametersInfo(int uAction, int uParam, string lpvParam, int fuWinIni);
@@ -279,18 +281,19 @@ namespace BigLineconnect
         {
             if (_jpegEncoder == null) return Array.Empty<byte>();
 
-            using (MemoryStream ms = new MemoryStream())
+            lock (_compressLock)
             {
+                _sharedMs.Position = 0;
+                _sharedMs.SetLength(0);
+
                 using (EncoderParameters encoderParams = new EncoderParameters(1))
+                using (EncoderParameter encoderParam = new EncoderParameter(Encoder.Quality, (long)quality))
                 {
-                    using (EncoderParameter encoderParam = new EncoderParameter(Encoder.Quality, (long)quality))
-                    {
-                        encoderParams.Param[0] = encoderParam;
-                        bmp.Save(ms, _jpegEncoder, encoderParams);
-                    }
+                    encoderParams.Param[0] = encoderParam;
+                    bmp.Save(_sharedMs, _jpegEncoder, encoderParams);
                 }
-                
-                return ms.ToArray();
+
+                return _sharedMs.ToArray();
             }
         }
 
