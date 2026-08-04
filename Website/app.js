@@ -509,13 +509,22 @@ window.addEventListener('keyup', (e) => {
     e.preventDefault();
 });
 
+function getActiveRenderElement() {
+    const screenCanvas = document.getElementById('screen-canvas');
+    if (screenCanvas && screenCanvas.style.display !== 'none' && screenCanvas.offsetWidth > 0) {
+        return screenCanvas;
+    }
+    return screenImg || canvasContainer;
+}
+
 // Mouse & Touch Event Listeners on Container & Image
 const activeInteractionElem = canvasContainer || screenImg;
 
 if (activeInteractionElem) {
     activeInteractionElem.addEventListener('mousedown', (e) => {
         if (!connected) return;
-        const pos = getMousePos(screenImg, e.clientX, e.clientY);
+        const targetElem = getActiveRenderElement();
+        const pos = getMousePos(targetElem, e.clientX, e.clientY);
         
         let button = 'left';
         if (e.button === 2) button = 'right';
@@ -527,7 +536,8 @@ if (activeInteractionElem) {
 
     activeInteractionElem.addEventListener('mouseup', (e) => {
         if (!connected) return;
-        const pos = getMousePos(screenImg, e.clientX, e.clientY);
+        const targetElem = getActiveRenderElement();
+        const pos = getMousePos(targetElem, e.clientX, e.clientY);
         let button = 'left';
         if (e.button === 2) button = 'right';
         else if (e.button === 1) button = 'middle';
@@ -543,7 +553,8 @@ if (activeInteractionElem) {
         if (now - lastMouseMoveTime < 16) return; // 60 FPS max rate limit to prevent packet flooding
         lastMouseMoveTime = now;
 
-        const pos = getMousePos(screenImg, e.clientX, e.clientY);
+        const targetElem = getActiveRenderElement();
+        const pos = getMousePos(targetElem, e.clientX, e.clientY);
         sendMove(pos.x, pos.y);
         e.preventDefault();
     });
