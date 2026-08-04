@@ -304,6 +304,13 @@ namespace BigLineconnect
                 return;
             }
 
+            // Prevent duplicate GUI instances in the same user session
+            using var singleInstanceMutex = new Mutex(true, "Global\\BigLineconnectSingleInstanceMutex_" + (isHelper ? "Helper" : "Gui"), out bool isNewInstance);
+            if (!isNewInstance && !isHelper)
+            {
+                return;
+            }
+
             // Register custom URI scheme for deep linking (bigline://)
             RegisterUriScheme();
 
@@ -3078,6 +3085,33 @@ namespace BigLineconnect
             }
             _running = true;
 
+        public static bool IsGuiOrHelperRunningInActiveSession()
+        {
+            try
+            {
+                uint activeSessionId = WtsHelper.GetActiveSessionId();
+                if (activeSessionId == 0) return false;
+
+                var procs = Process.GetProcessesByName("BigLineconnect");
+                int currentPid = Environment.ProcessId;
+
+                foreach (var p in procs)
+                {
+                    if (p.Id == currentPid) continue;
+                    try
+                    {
+                        if (p.SessionId == (int)activeSessionId)
+                        {
+                            return true;
+                        }
+                    }
+                    catch { }
+                }
+            }
+            catch { }
+            return false;
+        }
+
             // Direct 24/7 Relay Connection from Session 0 Service
             Task.Run(async () =>
             {
@@ -3085,6 +3119,13 @@ namespace BigLineconnect
                 {
                     try
                     {
+                        if (IsGuiOrHelperRunningInActiveSession())
+                        {
+                            // Active desktop UI or helper is running in user session; yield relay connection to GUI!
+                            await Task.Delay(3000).ConfigureAwait(false);
+                            continue;
+                        }
+
                         if (Program.WebSocketClient == null || Program.WebSocketClient.State != System.Net.WebSockets.WebSocketState.Open)
                         {
                             string relayUrl = Program.SanitizeRelayUrl(Program._currentRelayUrl);
