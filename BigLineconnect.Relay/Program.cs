@@ -482,6 +482,7 @@ namespace BigLineconnect.Relay
             public WebSocket? ClientSocket { get; set; }
             public List<WebSocket> ViewOnlyClients { get; set; } = new();
             public CancellationTokenSource Cts { get; set; } = new();
+            public CancellationTokenSource? ClientCts { get; set; }
             
             public string Hwid { get; set; } = "Bilinmeyen";
             public string ComputerName { get; set; } = "Bilinmeyen";
@@ -783,11 +784,11 @@ namespace BigLineconnect.Relay
                         if (session.ClientSocket != null)
                         {
                             try { session.ClientSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Replaced by new client", CancellationToken.None); } catch { }
-                            try { session.Cts?.Cancel(); } catch { }
+                            try { session.ClientCts?.Cancel(); } catch { }
                         }
 
                         session.ClientSocket = clientSocket;
-                        session.Cts = new CancellationTokenSource();
+                        session.ClientCts = new CancellationTokenSource();
                         Console.WriteLine($"[Relay] Client connected to Host ID: {targetId}");
                         string clientIp = context.Connection.RemoteIpAddress?.ToString() ?? "Bilinmeyen";
                         TelemetryManager.LogEvent(session.Hwid, session.IpAddress, session.ComputerName, session.Username, session.OsVersion, session.AppVersion, "connect", $"İstemci bağlandı. İstemci IP: {clientIp}, Hedef ID: {targetId}");
@@ -822,13 +823,13 @@ namespace BigLineconnect.Relay
 
                         try
                         {
-                            await Task.WhenAny(clientToHostTask, Task.Delay(-1, session.Cts.Token));
+                            await Task.WhenAny(clientToHostTask, Task.Delay(-1, session.ClientCts.Token));
                         }
                         catch { }
 
-                        try { session.Cts.Cancel(); } catch { }
+                        try { session.ClientCts?.Cancel(); } catch { }
                         session.ClientSocket = null;
-                        session.Cts = new CancellationTokenSource();
+                        session.ClientCts = null;
                         Console.WriteLine($"[Relay] Client disconnected from Host ID: {targetId}");
                         TelemetryManager.LogEvent(session.Hwid, session.IpAddress, session.ComputerName, session.Username, session.OsVersion, session.AppVersion, "disconnect", $"İstemci bağlantısı kesildi. Hedef ID: {targetId}");
 
@@ -2567,9 +2568,10 @@ namespace BigLineconnect.Relay
         private static async Task TunnelClientToHost(HostSession session)
         {
             var buffer = new byte[1024 * 8]; // 8KB read buffer for inputs
+            var token = session.ClientCts?.Token ?? session.Cts.Token;
             try
             {
-                while (!session.Cts.Token.IsCancellationRequested &&
+                while (!token.IsCancellationRequested &&
                        session.HostSocket.State == WebSocketState.Open &&
                        session.ClientSocket != null &&
                        session.ClientSocket.State == WebSocketState.Open)
@@ -2579,7 +2581,7 @@ namespace BigLineconnect.Relay
                         WebSocketReceiveResult result;
                         do
                         {
-                            result = await session.ClientSocket.ReceiveAsync(new ArraySegment<byte>(buffer), session.Cts.Token);
+                            result = await session.ClientSocket.ReceiveAsync(new ArraySegment<byte>(buffer), token);
                             if (result.MessageType == WebSocketMessageType.Close) break;
                             ms.Write(buffer, 0, result.Count);
                         }
@@ -2594,7 +2596,7 @@ namespace BigLineconnect.Relay
                                 new ArraySegment<byte>(entireMsg),
                                 result.MessageType,
                                 true, // End of message
-                                session.Cts.Token
+                                token
                             );
                         }
                     }
