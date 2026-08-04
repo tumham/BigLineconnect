@@ -245,15 +245,18 @@ namespace BigLineconnect
             _btnHelp = new LinkLabel
             {
                 Text = "❓ Yardım / HELP 🚀",
-                Location = new Point(560, 25),
+                Location = new Point(540, 25),
                 Size = new Size(165, 25),
                 Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
                 LinkColor = Color.FromArgb(0, 229, 255),
                 ActiveLinkColor = Color.FromArgb(213, 0, 249),
                 BackColor = Color.Transparent,
                 TextAlign = ContentAlignment.MiddleRight,
-                Anchor = AnchorStyles.Top | AnchorStyles.Right
+                Anchor = AnchorStyles.Top | AnchorStyles.Right,
+                Cursor = Cursors.Hand
             };
+            _btnHelp.Click += (s, e) => ShowHelpManual();
+            _btnHelp.LinkClicked += (s, e) => ShowHelpManual();
             _titleLabel.MouseDoubleClick += (s, e) => ToggleSpecialistMode();
             _logoBox.MouseDoubleClick += (s, e) => ToggleSpecialistMode();
 
