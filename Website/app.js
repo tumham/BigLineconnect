@@ -651,14 +651,50 @@ document.querySelectorAll('.numpad-btn').forEach(btn => {
 
 // Password submit actions
 function sendPassword() {
-    if (!accessPasswordInput) return;
-    const pass = accessPasswordInput.value.replace(/\D/g, '');
-    if (socket && socket.readyState === WebSocket.OPEN) {
-        socket.send("AUTH_PASS:" + pass);
-        showToast('Şifre gönderildi, doğrulanıyor...', 'info');
+    const inputElem = document.getElementById('access-password-input');
+    const modalElem = document.getElementById('password-modal');
+    const btnElem = document.getElementById('submit-password-btn');
+
+    if (!inputElem) return;
+    const pass = inputElem.value.replace(/\D/g, '');
+
+    if (!pass || pass.length === 0) {
+        alert('Lütfen uzaktaki bilgisayarın 6 haneli şifresini giriniz.');
+        return;
     }
+
+    if (!socket || socket.readyState !== WebSocket.OPEN) {
+        alert('Sunucu bağlantısı koptu veya henüz hazır değil. Lütfen tekrar deneyiniz.');
+        return;
+    }
+
+    if (btnElem) {
+        btnElem.disabled = true;
+        btnElem.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Doğrulanıyor...</span>';
+    }
+
+    socket.send("AUTH_PASS:" + pass);
+    showToast('Şifre sunucuya gönderildi, doğrulanıyor...', 'info');
+
+    setTimeout(() => {
+        if (btnElem) {
+            btnElem.disabled = false;
+            btnElem.innerHTML = 'Doğrula & Bağlan <i class="fa-solid fa-arrow-right-to-bracket"></i>';
+        }
+    }, 4000);
 }
-if (submitPasswordBtn) submitPasswordBtn.addEventListener('click', sendPassword);
+
+if (submitPasswordBtn) {
+    submitPasswordBtn.addEventListener('click', (e) => {
+        if (e) e.preventDefault();
+        sendPassword();
+    });
+    submitPasswordBtn.addEventListener('touchend', (e) => {
+        if (e) e.preventDefault();
+        sendPassword();
+    });
+}
+
 if (accessPasswordInput) {
     accessPasswordInput.addEventListener('input', () => {
         accessPasswordInput.value = accessPasswordInput.value.replace(/\D/g, '').slice(0, 6);
@@ -1022,6 +1058,7 @@ function copyGeneratedLicenseKey() {
 // Global Window Function Bindings for Mobile & HTML Event Handlers
 window.startConnectionProcess = startConnectionProcess;
 window.connectToHost = connectToHost;
+window.sendPassword = sendPassword;
 window.switchConnectTab = switchConnectTab;
 window.shareViaWhatsApp = shareViaWhatsApp;
 window.copyMagicLink = copyMagicLink;
