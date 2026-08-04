@@ -186,56 +186,26 @@ function connectToHost(id) {
             showToast('Bağlantı hatası!', 'error');
         };
         
-        socket.onmessage = async (event) => {
-            let debugInfo = "";
+        socket.onmessage = (event) => {
             let sizeKb = 0;
             let blob = null;
             if (event.data instanceof ArrayBuffer) {
-                const header = new Uint8Array(event.data.slice(0, 4));
-                const hex = Array.from(header).map(b => b.toString(16).toUpperCase().padStart(2, '0')).join(' ');
-                debugInfo = `AB [${hex}]`;
                 sizeKb = event.data.byteLength / 1024;
                 blob = new Blob([event.data], { type: 'image/jpeg' });
             } else if (event.data instanceof Blob) {
-                debugInfo = `Blob ${event.data.size} B`;
                 sizeKb = event.data.size / 1024;
-                blob = event.data.slice(0, event.data.size, 'image/jpeg'); // Change content type safely
+                blob = event.data;
             }
 
             if (blob) {
                 if (connectionStatus) {
-                    connectionStatus.innerHTML = `<span class="status-dot online"></span>${debugInfo} ${sizeKb.toFixed(0)} KB`;
+                    connectionStatus.innerHTML = `<span class="status-dot online"></span>${sizeKb.toFixed(0)} KB`;
                 }
-
-                const screenCanvas = document.getElementById('screen-canvas');
-                if (screenCanvas && window.createImageBitmap) {
-                    try {
-                        const bitmap = await createImageBitmap(blob);
-                        if (screenCanvas.style.display === 'none') {
-                            screenCanvas.style.display = 'block';
-                            if (screenImg) screenImg.style.display = 'none';
-                        }
-                        if (screenCanvas.width !== bitmap.width || screenCanvas.height !== bitmap.height) {
-                            screenCanvas.width = bitmap.width;
-                            screenCanvas.height = bitmap.height;
-                        }
-                        const ctx = screenCanvas.getContext('2d', { alpha: false, desynchronized: true });
-                        if (ctx) {
-                            ctx.drawImage(bitmap, 0, 0);
-                        }
-                        bitmap.close(); // Free GPU memory immediately!
-                    } catch (e) {
-                        // Fallback to Blob URL if createImageBitmap fails
-                        const url = URL.createObjectURL(blob);
-                        const oldUrl = screenImg.src;
-                        screenImg.src = url;
-                        if (oldUrl.startsWith('blob:')) URL.revokeObjectURL(oldUrl);
-                    }
-                } else {
-                    const url = URL.createObjectURL(blob);
-                    const oldUrl = screenImg.src;
-                    screenImg.src = url;
-                    if (oldUrl.startsWith('blob:')) URL.revokeObjectURL(oldUrl);
+                const url = URL.createObjectURL(blob);
+                const oldUrl = screenImg.src;
+                screenImg.src = url;
+                if (oldUrl && oldUrl.startsWith('blob:')) {
+                    setTimeout(() => URL.revokeObjectURL(oldUrl), 500);
                 }
             } else if (typeof event.data === 'string') {
                 if (event.data === 'ERROR:ID_NOT_FOUND') {
@@ -523,8 +493,7 @@ const activeInteractionElem = canvasContainer || screenImg;
 if (activeInteractionElem) {
     activeInteractionElem.addEventListener('mousedown', (e) => {
         if (!connected) return;
-        const targetElem = getActiveRenderElement();
-        const pos = getMousePos(targetElem, e.clientX, e.clientY);
+        const pos = getMousePos(screenImg, e.clientX, e.clientY);
         
         let button = 'left';
         if (e.button === 2) button = 'right';
@@ -536,8 +505,7 @@ if (activeInteractionElem) {
 
     activeInteractionElem.addEventListener('mouseup', (e) => {
         if (!connected) return;
-        const targetElem = getActiveRenderElement();
-        const pos = getMousePos(targetElem, e.clientX, e.clientY);
+        const pos = getMousePos(screenImg, e.clientX, e.clientY);
         let button = 'left';
         if (e.button === 2) button = 'right';
         else if (e.button === 1) button = 'middle';
@@ -553,8 +521,7 @@ if (activeInteractionElem) {
         if (now - lastMouseMoveTime < 16) return; // 60 FPS max rate limit to prevent packet flooding
         lastMouseMoveTime = now;
 
-        const targetElem = getActiveRenderElement();
-        const pos = getMousePos(targetElem, e.clientX, e.clientY);
+        const pos = getMousePos(screenImg, e.clientX, e.clientY);
         sendMove(pos.x, pos.y);
         e.preventDefault();
     });
