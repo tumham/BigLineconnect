@@ -67,7 +67,6 @@ namespace BigLineconnect
 
         public static byte[] Capture(int quality = 50, int maxDimension = 1366)
         {
-            DesktopHelper.AttachToInputDesktop();
             if (_useDxgi)
             {
                 if (_dxgiCapturer == null)
