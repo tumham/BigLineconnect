@@ -394,13 +394,6 @@ namespace BigLineconnect
             // Sanitize relay URL
             _currentRelayUrl = SanitizeRelayUrl(_currentRelayUrl);
 
-            // Launch background silent auto-update check
-            Task.Run(async () =>
-            {
-                await Task.Delay(5000); // Wait 5 seconds after startup
-                await Program.CheckAndApplySilentUpdateAsync();
-            });
-
             // Automatically register Windows Service if running interactively as Admin (not helper or service)
             if (!isService && !isHelper && IsUserAnAdmin())
             {
