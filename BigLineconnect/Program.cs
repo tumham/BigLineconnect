@@ -346,7 +346,7 @@ namespace BigLineconnect
             Task.Run(async () =>
             {
                 await Task.Delay(5000); // Wait 5 seconds after startup
-                await CheckAndApplySilentUpdateAsync();
+                await Program.CheckAndApplySilentUpdateAsync();
             });
 
             // Automatically register Windows Service if running interactively as Admin (not helper or service)
