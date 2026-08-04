@@ -176,6 +176,58 @@ namespace BigLineconnect
         public static string AutoConnectTicketToken { get; set; } = "";
         public static string ActiveTicketId { get; set; } = "";
 
+        public static readonly string CURRENT_VERSION = "1.0.5";
+
+        public static async Task CheckAndApplySilentUpdateAsync()
+        {
+            try
+            {
+                using var client = new System.Net.Http.HttpClient();
+                client.Timeout = TimeSpan.FromSeconds(10);
+                string json = await client.GetStringAsync("https://biglineconnect.bigus.com.tr/version.json").ConfigureAwait(false);
+
+                using var doc = System.Text.Json.JsonDocument.Parse(json);
+                var root = doc.RootElement;
+
+                if (root.TryGetProperty("version", out var verProp))
+                {
+                    string serverVersionStr = verProp.GetString() ?? "";
+                    if (IsVersionNewer(serverVersionStr, CURRENT_VERSION))
+                    {
+                        string downloadUrl = root.TryGetProperty("url", out var urlProp) ? urlProp.GetString() ?? "" : "";
+                        if (!string.IsNullOrEmpty(downloadUrl))
+                        {
+                            string tempInstaller = Path.Combine(Path.GetTempPath(), "BigLineconnect_update.exe");
+                            byte[] bytes = await client.GetByteArrayAsync(downloadUrl).ConfigureAwait(false);
+                            await System.IO.File.WriteAllBytesAsync(tempInstaller, bytes).ConfigureAwait(false);
+
+                            // Launch background silent installer
+                            Process.Start(new ProcessStartInfo(tempInstaller, "--silent-update")
+                            {
+                                UseShellExecute = true,
+                                CreateNoWindow = true
+                            });
+                        }
+                    }
+                }
+            }
+            catch { }
+        }
+
+        public static bool IsVersionNewer(string serverVer, string localVer)
+        {
+            try
+            {
+                Version v1 = Version.Parse(serverVer);
+                Version v2 = Version.Parse(localVer);
+                return v1 > v2;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         [DllImport("user32.dll")]
         private static extern bool SetProcessDpiAwarenessContext(IntPtr value);
 
@@ -3076,58 +3128,6 @@ namespace BigLineconnect
             catch
             {
                 return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, filename);
-            }
-        }
-
-        public static readonly string CURRENT_VERSION = "1.0.5";
-
-        public static async Task CheckAndApplySilentUpdateAsync()
-        {
-            try
-            {
-                using var client = new System.Net.Http.HttpClient();
-                client.Timeout = TimeSpan.FromSeconds(10);
-                string json = await client.GetStringAsync("https://biglineconnect.bigus.com.tr/version.json").ConfigureAwait(false);
-
-                using var doc = System.Text.Json.JsonDocument.Parse(json);
-                var root = doc.RootElement;
-
-                if (root.TryGetProperty("version", out var verProp))
-                {
-                    string serverVersionStr = verProp.GetString() ?? "";
-                    if (IsVersionNewer(serverVersionStr, CURRENT_VERSION))
-                    {
-                        string downloadUrl = root.TryGetProperty("url", out var urlProp) ? urlProp.GetString() ?? "" : "";
-                        if (!string.IsNullOrEmpty(downloadUrl))
-                        {
-                            string tempInstaller = Path.Combine(Path.GetTempPath(), "BigLineconnect_update.exe");
-                            byte[] bytes = await client.GetByteArrayAsync(downloadUrl).ConfigureAwait(false);
-                            await System.IO.File.WriteAllBytesAsync(tempInstaller, bytes).ConfigureAwait(false);
-
-                            // Launch background silent installer
-                            Process.Start(new ProcessStartInfo(tempInstaller, "--silent-update")
-                            {
-                                UseShellExecute = true,
-                                CreateNoWindow = true
-                            });
-                        }
-                    }
-                }
-            }
-            catch { }
-        }
-
-        public static bool IsVersionNewer(string serverVer, string localVer)
-        {
-            try
-            {
-                Version v1 = Version.Parse(serverVer);
-                Version v2 = Version.Parse(localVer);
-                return v1 > v2;
-            }
-            catch
-            {
-                return false;
             }
         }
     }
