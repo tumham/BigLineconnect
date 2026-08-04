@@ -701,7 +701,7 @@ namespace BigLineconnect
 
         public static int CurrentQuality { get; set; } = 65;
         public static int CurrentMaxDimension { get; set; } = 1920;
-        public static bool SuppressWallpaperEnabled { get; set; } = true;
+        public static bool SuppressWallpaperEnabled { get; set; } = false;
 
         private static void CaptureLoop(CancellationToken token)
         {
@@ -724,7 +724,7 @@ namespace BigLineconnect
                             _latestFrame = frame;
                         }
                     }
-                    Thread.Sleep(70);
+                    Thread.Sleep(50);
                 }
                 ScreenCapturer.SuppressWallpaper(false);
                 Log("Ekran yakalama döngüsü sonlandı.");
@@ -756,6 +756,7 @@ namespace BigLineconnect
                 Log("Görüntü gönderim döngüsü başladı.");
                 _lastSentFrameBytes = null;
                 _lastSentFrameTime = DateTime.MinValue;
+                int initialFrameCount = 0;
 
                 while (!token.IsCancellationRequested && _isStreaming && ws.State == WebSocketState.Open)
                 {
@@ -763,13 +764,12 @@ namespace BigLineconnect
                     lock (FrameLock)
                     {
                         frameToSend = _latestFrame;
-                        _latestFrame = null; // Clear so we don't send the same frame twice if capture is slow
                     }
                     
                     if (frameToSend != null && frameToSend.Length > 0)
                     {
                         bool isDuplicate = AreByteArraysEqual(frameToSend, _lastSentFrameBytes);
-                        bool forceSend = (DateTime.Now - _lastSentFrameTime).TotalMilliseconds >= 10000; // 10 saniyede bir kalp atışı pinglemesi (kota dostu)
+                        bool forceSend = initialFrameCount < 10 || (DateTime.Now - _lastSentFrameTime).TotalMilliseconds >= 1500;
 
                         if (!isDuplicate || forceSend)
                         {
@@ -783,10 +783,11 @@ namespace BigLineconnect
 
                             _lastSentFrameBytes = frameToSend;
                             _lastSentFrameTime = DateTime.Now;
+                            initialFrameCount++;
                         }
                     }
 
-                    await Task.Delay(80, token).ConfigureAwait(false);
+                    await Task.Delay(50, token).ConfigureAwait(false);
                 }
                 Log("Görüntü gönderim döngüsü sonlandı.");
             }
