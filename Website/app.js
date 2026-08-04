@@ -67,38 +67,49 @@ function showToast(message, type = 'info') {
 
 // Connect Button Event Handler
 function startConnectionProcess() {
-    const inputElem = document.getElementById('target-id');
-    const btnElem = document.getElementById('connect-btn');
-    if (!inputElem) return;
-
-    const rawId = inputElem.value.replace(/\D/g, '');
-    if (!rawId || rawId.length < 5) {
-        alert('Lütfen bağlanmak istediğiniz uzaktaki bilgisayarın ID numarasını girin (Örn: 864 688 774).');
-        return;
-    }
-
-    if (btnElem) {
-        btnElem.disabled = true;
-        btnElem.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Bağlanıyor...</span>';
-    }
-
-    showToast(`Masaüstü (${rawId}) aranıyor...`, 'info');
-
-    connectToHost(rawId);
-
-    // Re-enable button if connection times out or closes
-    setTimeout(() => {
-        if (btnElem && !connected) {
-            btnElem.disabled = false;
-            btnElem.innerHTML = '<span>Bağlan</span> <i class="fa-solid fa-arrow-right-to-bracket"></i>';
+    try {
+        const inputElem = document.getElementById('target-id');
+        const btnElem = document.getElementById('connect-btn');
+        if (!inputElem) {
+            alert('Hata: ID giriş kutusu bulunamadı.');
+            return;
         }
-    }, 6000);
+
+        const rawId = inputElem.value.replace(/\D/g, '');
+        if (!rawId || rawId.length < 5) {
+            alert('Lütfen bağlanmak istediğiniz uzaktaki bilgisayarın ID numarasını girin (Örn: 864 688 774).');
+            return;
+        }
+
+        if (btnElem) {
+            btnElem.disabled = true;
+            btnElem.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Bağlanıyor...</span>';
+        }
+
+        showToast(`Masaüstü (${rawId}) aranıyor...`, 'info');
+
+        connectToHost(rawId);
+
+        // Re-enable button if connection times out or closes
+        setTimeout(() => {
+            if (btnElem && !connected) {
+                btnElem.disabled = false;
+                btnElem.innerHTML = '<span>Bağlan</span> <i class="fa-solid fa-arrow-right-to-bracket"></i>';
+            }
+        }, 6000);
+    } catch (err) {
+        alert('Bağlantı Başlatma Hatası: ' + err.message);
+    }
 }
 
 // Connect Button Event Listener
 if (connectBtn) {
     connectBtn.addEventListener('click', (e) => {
-        e.preventDefault();
+        if (e) e.preventDefault();
+        startConnectionProcess();
+    });
+    connectBtn.addEventListener('touchend', (e) => {
+        if (e) e.preventDefault();
         startConnectionProcess();
     });
 }

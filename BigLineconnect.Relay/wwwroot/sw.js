@@ -1,48 +1,21 @@
-const CACHE_NAME = 'bigline-pwa-v1';
-const ASSETS_TO_CACHE = [
-  '/',
-  '/bayi.html',
-  '/index.html',
-  '/admin.html',
-  '/style.css',
-  '/app.js',
-  '/i18n.js',
-  '/logo.png',
-  '/manifest.json'
-];
+const CACHE_NAME = 'bigline-pwa-v9999';
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS_TO_CACHE);
-    }).then(() => self.skipWaiting())
-  );
+  self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
       return Promise.all(
-        keys.map((key) => {
-          if (key !== CACHE_NAME) {
-            return caches.delete(key);
-          }
-        })
+        keys.map((key) => caches.delete(key))
       );
     }).then(() => self.clients.claim())
   );
 });
 
 self.addEventListener('fetch', (event) => {
-  if (event.request.method !== 'GET') return;
   event.respondWith(
-    fetch(event.request).catch(() => {
-      return caches.match(event.request).then((cachedResponse) => {
-        if (cachedResponse) return cachedResponse;
-        if (event.request.headers.get('accept').includes('text/html')) {
-          return caches.match('/bayi.html');
-        }
-      });
-    })
+    fetch(event.request).catch(() => caches.match(event.request))
   );
 });
