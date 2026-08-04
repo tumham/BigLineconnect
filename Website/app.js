@@ -511,8 +511,13 @@ if (activeInteractionElem) {
         e.preventDefault();
     });
 
+    let lastMouseMoveTime = 0;
     activeInteractionElem.addEventListener('mousemove', (e) => {
         if (!connected) return;
+        const now = performance.now();
+        if (now - lastMouseMoveTime < 16) return; // 60 FPS max rate limit to prevent packet flooding
+        lastMouseMoveTime = now;
+
         const pos = getMousePos(screenImg, e.clientX, e.clientY);
         sendMove(pos.x, pos.y);
         e.preventDefault();

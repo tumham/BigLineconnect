@@ -131,7 +131,6 @@ namespace BigLineconnect
                 int actualX = bounds.X + (int)(xPercent * bounds.Width);
                 int actualY = bounds.Y + (int)(yPercent * bounds.Height);
 
-                DesktopHelper.AttachToInputDesktop();
                 SetCursorPos(actualX, actualY);
             }
             catch { }

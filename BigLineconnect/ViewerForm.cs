@@ -1128,7 +1128,7 @@ namespace BigLineconnect
         {
             if (_pictureBox == null) return;
             if (e.Location == _lastSentMousePos) return;
-            if (DateTime.Now - _lastMoveSent < TimeSpan.FromMilliseconds(30)) return;
+            if (DateTime.Now - _lastMoveSent < TimeSpan.FromMilliseconds(16)) return;
             _lastMoveSent = DateTime.Now;
             _lastSentMousePos = e.Location;
 
