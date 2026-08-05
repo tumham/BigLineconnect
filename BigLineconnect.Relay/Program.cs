@@ -757,7 +757,109 @@ namespace BigLineconnect.Relay
                 }
                 else
                 {
-                    context.Response.StatusCode = StatusCodes.Status400BadRequest;
+            // -------------------------------------------------------------
+            // LIGHTCONNECT STANDALONE RELAY ROUTES (/lc-host & /lc-client)
+            // -------------------------------------------------------------
+            var lcSessions = new System.Collections.Concurrent.ConcurrentDictionary<string, (WebSocket HostSocket, WebSocket? ClientSocket, CancellationTokenSource Cts)>();
+
+            app.Map("/lc-host", async context =>
+            {
+                if (context.WebSockets.IsWebSocketRequest)
+                {
+                    string hostId = context.Request.Query["id"].ToString().Replace(" ", "").Trim();
+                    using var hostSocket = await context.WebSockets.AcceptWebSocketAsync();
+                    var cts = new CancellationTokenSource();
+
+                    var session = (HostSocket: hostSocket, ClientSocket: (WebSocket?)null, Cts: cts);
+                    lcSessions[hostId] = session;
+                    Console.WriteLine($"[LightConnect] Host registered: {hostId}");
+
+                    var buffer = new byte[8192];
+                    try
+                    {
+                        while (!cts.Token.IsCancellationRequested && hostSocket.State == WebSocketState.Open)
+                        {
+                            using var ms = new MemoryStream();
+                            WebSocketReceiveResult res;
+                            do
+                            {
+                                res = await hostSocket.ReceiveAsync(new ArraySegment<byte>(buffer), cts.Token);
+                                if (res.MessageType == WebSocketMessageType.Close) break;
+                                ms.Write(buffer, 0, res.Count);
+                            }
+                            while (!res.EndOfMessage);
+
+                            if (res.MessageType == WebSocketMessageType.Close) break;
+
+                            if (ms.Length > 0 && lcSessions.TryGetValue(hostId, out var activeSess) && activeSess.ClientSocket != null && activeSess.ClientSocket.State == WebSocketState.Open)
+                            {
+                                await activeSess.ClientSocket.SendAsync(new ArraySegment<byte>(ms.ToArray()), res.MessageType, true, cts.Token);
+                            }
+                        }
+                    }
+                    catch { }
+                    finally
+                    {
+                        lcSessions.TryRemove(hostId, out _);
+                        Console.WriteLine($"[LightConnect] Host unregistered: {hostId}");
+                    }
+                }
+            });
+
+            app.Map("/lc-client", async context =>
+            {
+                if (context.WebSockets.IsWebSocketRequest)
+                {
+                    string targetId = context.Request.Query["id"].ToString().Replace(" ", "").Trim();
+                    using var clientSocket = await context.WebSockets.AcceptWebSocketAsync();
+
+                    if (!lcSessions.TryGetValue(targetId, out var hostSession) || hostSession.HostSocket.State != WebSocketState.Open)
+                    {
+                        byte[] err = Encoding.UTF8.GetBytes("ERROR:NOT_FOUND");
+                        await clientSocket.SendAsync(new ArraySegment<byte>(err), WebSocketMessageType.Text, true, CancellationToken.None);
+                        return;
+                    }
+
+                    var updatedSession = (hostSession.HostSocket, ClientSocket: clientSocket, hostSession.Cts);
+                    lcSessions[targetId] = updatedSession;
+                    Console.WriteLine($"[LightConnect] Client connected to: {targetId}");
+
+                    byte[] startMsg = Encoding.UTF8.GetBytes("START_STREAM");
+                    await hostSession.HostSocket.SendAsync(new ArraySegment<byte>(startMsg), WebSocketMessageType.Text, true, CancellationToken.None);
+
+                    var buffer = new byte[8192];
+                    try
+                    {
+                        while (clientSocket.State == WebSocketState.Open && hostSession.HostSocket.State == WebSocketState.Open)
+                        {
+                            using var ms = new MemoryStream();
+                            WebSocketReceiveResult res;
+                            do
+                            {
+                                res = await clientSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+                                if (res.MessageType == WebSocketMessageType.Close) break;
+                                ms.Write(buffer, 0, res.Count);
+                            }
+                            while (!res.EndOfMessage);
+
+                            if (res.MessageType == WebSocketMessageType.Close) break;
+
+                            if (ms.Length > 0 && hostSession.HostSocket.State == WebSocketState.Open)
+                            {
+                                await hostSession.HostSocket.SendAsync(new ArraySegment<byte>(ms.ToArray()), res.MessageType, true, CancellationToken.None);
+                            }
+                        }
+                    }
+                    catch { }
+                    finally
+                    {
+                        if (hostSession.HostSocket.State == WebSocketState.Open)
+                        {
+                            byte[] stopMsg = Encoding.UTF8.GetBytes("STOP_STREAM");
+                            try { await hostSession.HostSocket.SendAsync(new ArraySegment<byte>(stopMsg), WebSocketMessageType.Text, true, CancellationToken.None); } catch { }
+                        }
+                        Console.WriteLine($"[LightConnect] Client disconnected from: {targetId}");
+                    }
                 }
             });
 
