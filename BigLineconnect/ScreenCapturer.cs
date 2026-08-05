@@ -207,30 +207,7 @@ namespace BigLineconnect
                 }
                 catch { }
 
-                // Create fallback JPEG image so stream never drops or turns black
-                try
-                {
-                    using (Bitmap fallbackBmp = new Bitmap(1280, 720, PixelFormat.Format32bppArgb))
-                    {
-                        using (Graphics g = Graphics.FromImage(fallbackBmp))
-                        {
-                            g.Clear(Color.FromArgb(15, 23, 42)); // Dark blue slate
-                            using (Font f1 = new Font("Segoe UI", 24, FontStyle.Bold))
-                            using (Font f2 = new Font("Segoe UI", 14, FontStyle.Regular))
-                            using (Brush b1 = new SolidBrush(Color.FromArgb(0, 229, 255)))
-                            using (Brush b2 = new SolidBrush(Color.White))
-                            {
-                                g.DrawString("BigLineconnect Uzaktan Masaüstü", f1, b1, new PointF(360, 300));
-                                g.DrawString("Uzak Masaüstü Oturumu Bağlanıyor...", f2, b2, new PointF(410, 360));
-                            }
-                        }
-                        return ProcessAndCompress(fallbackBmp, quality, maxDimension);
-                    }
-                }
-                catch
-                {
-                    return Array.Empty<byte>();
-                }
+                return Array.Empty<byte>();
             }
         }
 
