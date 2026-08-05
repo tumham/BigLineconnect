@@ -200,14 +200,28 @@ namespace BigLineconnect
                 LogHelper($"[GDI+ Capture Error]: {ex.Message}\r\n{ex.StackTrace}");
                 try { MainWindow.Instance?.AppendLog($"[GDI+ Capture Error]: {ex.Message}"); } catch { }
 
-                // Try re-attaching desktop once
                 try
                 {
                     DesktopHelper.AttachToInputDesktop();
-                }
-                catch { }
+                    int screenWidth = GetSystemMetrics(SM_CXSCREEN);
+                    int screenHeight = GetSystemMetrics(SM_CYSCREEN);
+                    if (screenWidth <= 0) screenWidth = 1920;
+                    if (screenHeight <= 0) screenHeight = 1080;
 
-                return Array.Empty<byte>();
+                    using (Bitmap bmpScreen = new Bitmap(screenWidth, screenHeight, PixelFormat.Format32bppArgb))
+                    {
+                        using (Graphics gScreen = Graphics.FromImage(bmpScreen))
+                        {
+                            gScreen.CopyFromScreen(0, 0, 0, 0, new Size(screenWidth, screenHeight), CopyPixelOperation.SourceCopy);
+                        }
+                        return ProcessAndCompress(bmpScreen, quality, maxDimension);
+                    }
+                }
+                catch
+                {
+                    _useDxgi = true;
+                    return Array.Empty<byte>();
+                }
             }
         }
 
