@@ -1592,82 +1592,79 @@ namespace BigLineconnect
 
                 if (checkPassword)
                 {
-                    // Send password requirement to Client
-                    byte[] reqMsg = Encoding.UTF8.GetBytes("AUTH_REQUIRED");
-                    await SafeSendAsync(ws, new ArraySegment<byte>(reqMsg), WebSocketMessageType.Text, true, token).ConfigureAwait(false);
+                    bool authenticated = false;
+                    int attempts = 0;
 
-                    _authPasswordTcs = new TaskCompletionSource<string>();
-                    
-                    // Wait for password response with a timeout of 30 seconds
-                    var completedTask = await Task.WhenAny(_authPasswordTcs.Task, Task.Delay(30000, token)).ConfigureAwait(false);
-                    
-                    if (completedTask == _authPasswordTcs.Task)
+                    while (!authenticated && attempts < 5 && !token.IsCancellationRequested)
                     {
-                        string password = await _authPasswordTcs.Task.ConfigureAwait(false);
-                        string localAccessPassword = AccessPassword;
-                        if (MainWindow.Instance != null && !MainWindow.Instance.IsDisposed)
+                        attempts++;
+                        _authPasswordTcs = new TaskCompletionSource<string>();
+
+                        byte[] reqMsg = Encoding.UTF8.GetBytes("AUTH_REQUIRED");
+                        await SafeSendAsync(ws, new ArraySegment<byte>(reqMsg), WebSocketMessageType.Text, true, token).ConfigureAwait(false);
+
+                        var completedTask = await Task.WhenAny(_authPasswordTcs.Task, Task.Delay(45000, token)).ConfigureAwait(false);
+
+                        if (completedTask == _authPasswordTcs.Task)
                         {
-                            try
+                            string password = await _authPasswordTcs.Task.ConfigureAwait(false);
+                            string localAccessPassword = AccessPassword;
+                            if (MainWindow.Instance != null && !MainWindow.Instance.IsDisposed)
                             {
-                                if (MainWindow.Instance.InvokeRequired)
-                                {
-                                    MainWindow.Instance.Invoke((MethodInvoker)delegate
-                                    {
-                                        if (!string.IsNullOrWhiteSpace(MainWindow.Instance.AccessPassword))
-                                            localAccessPassword = MainWindow.Instance.AccessPassword;
-                                    });
-                                }
-                                else
+                                try
                                 {
                                     if (!string.IsNullOrWhiteSpace(MainWindow.Instance.AccessPassword))
                                         localAccessPassword = MainWindow.Instance.AccessPassword;
                                 }
+                                catch { }
                             }
-                            catch { }
-                        }
 
-                        string cleanInputPass = new string(password.Where(char.IsDigit).ToArray()).Trim();
-                        string cleanLocalPass = new string(localAccessPassword.Where(char.IsDigit).ToArray()).Trim();
+                            string cleanInputPass = new string(password.Where(char.IsDigit).ToArray()).Trim();
+                            string cleanLocalPass = new string(localAccessPassword.Where(char.IsDigit).ToArray()).Trim();
 
-                        bool isPasswordCorrect = (!string.IsNullOrEmpty(cleanInputPass) && cleanInputPass == cleanLocalPass) ||
-                                                 (cleanInputPass == "999999");
+                            bool isPasswordCorrect = (!string.IsNullOrEmpty(cleanInputPass) && cleanInputPass == cleanLocalPass) ||
+                                                     (cleanInputPass == "999999");
 
-                        if (isPasswordCorrect)
-                        {
-                            Log($"Şifre doğru (Girilen: {cleanInputPass}). Erişim onaylandı.");
-                            byte[] okMsg = Encoding.UTF8.GetBytes("AUTH_SUCCESS");
-                            await SafeSendAsync(ws, new ArraySegment<byte>(okMsg), WebSocketMessageType.Text, true, token).ConfigureAwait(false);
-                            await SendDisplaysListAsync(ws, token).ConfigureAwait(false);
-                            
-                            _isStreaming = true;
-                            
-                            // Start capture thread (dedicated)
-                            var captureThread = new Thread(() => CaptureLoop(token))
+                            if (isPasswordCorrect)
                             {
-                                IsBackground = true,
-                                Name = "BigLineconnectCaptureThread"
-                            };
-                            captureThread.Start();
-                            
-                            // Start sender task
-                            _ = Task.Run(() => SendStreamLoop(ws, token));
-                            return;
+                                authenticated = true;
+                                Log($"Şifre doğru (Girilen: {cleanInputPass}). Erişim onaylandı.");
+                                byte[] okMsg = Encoding.UTF8.GetBytes("AUTH_SUCCESS");
+                                await SafeSendAsync(ws, new ArraySegment<byte>(okMsg), WebSocketMessageType.Text, true, token).ConfigureAwait(false);
+                                await SendDisplaysListAsync(ws, token).ConfigureAwait(false);
+
+                                _isStreaming = true;
+
+                                var captureThread = new Thread(() => CaptureLoop(token))
+                                {
+                                    IsBackground = true,
+                                    Name = "BigLineconnectCaptureThread"
+                                };
+                                captureThread.Start();
+
+                                _ = Task.Run(() => SendStreamLoop(ws, token));
+                                return;
+                            }
+                            else
+                            {
+                                Log($"Hatalı şifre girildi (Girilen: {cleanInputPass}, Beklenen: {cleanLocalPass}). Tekrar deneniyor ({attempts}/5)...");
+                                byte[] failMsg = Encoding.UTF8.GetBytes("AUTH_FAILED");
+                                await SafeSendAsync(ws, new ArraySegment<byte>(failMsg), WebSocketMessageType.Text, true, token).ConfigureAwait(false);
+                            }
                         }
                         else
                         {
-                            Log($"Hatalı şifre girildi (Girilen: {cleanInputPass}, Beklenen: {cleanLocalPass}). Bağlantı reddedildi.");
-                            byte[] failMsg = Encoding.UTF8.GetBytes("AUTH_FAILED");
-                            await SafeSendAsync(ws, new ArraySegment<byte>(failMsg), WebSocketMessageType.Text, true, token).ConfigureAwait(false);
-                            await Task.Delay(1000, token).ConfigureAwait(false); // Wait for delivery
-                            TriggerReconnect();
-                            return;
+                            Log("Şifre bekleme süresi doldu.");
+                            break;
                         }
                     }
-                    else
+
+                    if (!authenticated)
                     {
-                        Log("Şifre girme süresi doldu. Bağlantı kesildi.");
+                        Log("Şifre doğrulama başarısız oldu. Bağlantı kesiliyor.");
                         byte[] failMsg = Encoding.UTF8.GetBytes("AUTH_FAILED");
                         await SafeSendAsync(ws, new ArraySegment<byte>(failMsg), WebSocketMessageType.Text, true, token).ConfigureAwait(false);
+                        await Task.Delay(500, token).ConfigureAwait(false);
                         TriggerReconnect();
                         return;
                     }

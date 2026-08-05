@@ -765,19 +765,27 @@ document.querySelectorAll('.numpad-btn').forEach(btn => {
 // Password submit actions
 function sendPassword() {
     const inputElem = document.getElementById('access-password-input');
-    const modalElem = document.getElementById('password-modal');
     const btnElem = document.getElementById('submit-password-btn');
 
     if (!inputElem) return;
     const pass = inputElem.value.replace(/\D/g, '');
 
     if (!pass || pass.length === 0) {
-        alert('Lütfen uzaktaki bilgisayarın 6 haneli şifresini giriniz.');
+        showToast('Lütfen uzaktaki bilgisayarın 6 haneli şifresini giriniz.', 'error');
         return;
     }
 
     if (!socket || socket.readyState !== WebSocket.OPEN) {
-        alert('Sunucu bağlantısı koptu veya henüz hazır değil. Lütfen tekrar deneyiniz.');
+        showToast('Sunucuya yeniden bağlanılıyor...', 'info');
+        const rawId = targetIdInput ? targetIdInput.value.replace(/\D/g, '') : '';
+        if (rawId) {
+            connectToHost(rawId);
+            setTimeout(() => {
+                if (socket && socket.readyState === WebSocket.OPEN) {
+                    socket.send("AUTH_PASS:" + pass);
+                }
+            }, 1000);
+        }
         return;
     }
 
@@ -787,14 +795,14 @@ function sendPassword() {
     }
 
     socket.send("AUTH_PASS:" + pass);
-    showToast('Şifre sunucuya gönderildi, doğrulanıyor...', 'info');
+    showToast('Şifre gönderildi, doğrulanıyor...', 'info');
 
     setTimeout(() => {
         if (btnElem) {
             btnElem.disabled = false;
             btnElem.innerHTML = 'Doğrula & Bağlan <i class="fa-solid fa-arrow-right-to-bracket"></i>';
         }
-    }, 4000);
+    }, 3000);
 }
 
 if (submitPasswordBtn) {
