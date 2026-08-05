@@ -2657,112 +2657,154 @@ namespace BigLineconnect.Relay
                 }
             });
 
-            // LightConnect Static File Handlers (with multi-directory resolution for Linux containers)
+            // LightConnect Static File Handlers (with robust error handling)
             app.MapGet("/lc", async context =>
             {
-                string path = System.IO.Path.Combine(AppContext.BaseDirectory, "wwwroot", "lc", "index.html");
-                if (!System.IO.File.Exists(path))
-                    path = System.IO.Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "lc", "index.html");
-
-                if (System.IO.File.Exists(path))
+                context.Response.ContentType = "text/html; charset=utf-8";
+                try
                 {
-                    context.Response.ContentType = "text/html; charset=utf-8";
-                    await context.Response.WriteAsync(await System.IO.File.ReadAllTextAsync(path));
+                    string path1 = System.IO.Path.Combine(AppContext.BaseDirectory, "wwwroot", "lc", "index.html");
+                    string path2 = System.IO.Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "lc", "index.html");
+                    string target = System.IO.File.Exists(path1) ? path1 : (System.IO.File.Exists(path2) ? path2 : "");
+                    if (!string.IsNullOrEmpty(target))
+                    {
+                        await context.Response.WriteAsync(await System.IO.File.ReadAllTextAsync(target));
+                    }
+                    else
+                    {
+                        context.Response.StatusCode = 404;
+                        await context.Response.WriteAsync("LightConnect index.html not found on server.");
+                    }
                 }
-                else
+                catch (Exception ex)
                 {
-                    context.Response.StatusCode = 404;
-                    await context.Response.WriteAsync("LightConnect index.html not found.");
+                    context.Response.StatusCode = 500;
+                    await context.Response.WriteAsync("Error: " + ex.Message);
                 }
             });
 
             app.MapGet("/lc/", async context =>
             {
-                string path = System.IO.Path.Combine(AppContext.BaseDirectory, "wwwroot", "lc", "index.html");
-                if (!System.IO.File.Exists(path))
-                    path = System.IO.Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "lc", "index.html");
-
-                if (System.IO.File.Exists(path))
+                context.Response.ContentType = "text/html; charset=utf-8";
+                try
                 {
-                    context.Response.ContentType = "text/html; charset=utf-8";
-                    await context.Response.WriteAsync(await System.IO.File.ReadAllTextAsync(path));
+                    string path1 = System.IO.Path.Combine(AppContext.BaseDirectory, "wwwroot", "lc", "index.html");
+                    string path2 = System.IO.Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "lc", "index.html");
+                    string target = System.IO.File.Exists(path1) ? path1 : (System.IO.File.Exists(path2) ? path2 : "");
+                    if (!string.IsNullOrEmpty(target))
+                    {
+                        await context.Response.WriteAsync(await System.IO.File.ReadAllTextAsync(target));
+                    }
+                    else
+                    {
+                        context.Response.StatusCode = 404;
+                        await context.Response.WriteAsync("LightConnect index.html not found on server.");
+                    }
                 }
-                else
+                catch (Exception ex)
                 {
-                    context.Response.StatusCode = 404;
-                    await context.Response.WriteAsync("LightConnect index.html not found.");
+                    context.Response.StatusCode = 500;
+                    await context.Response.WriteAsync("Error: " + ex.Message);
                 }
             });
 
             app.MapGet("/lc/index.html", async context =>
             {
-                string path = System.IO.Path.Combine(AppContext.BaseDirectory, "wwwroot", "lc", "index.html");
-                if (!System.IO.File.Exists(path))
-                    path = System.IO.Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "lc", "index.html");
-
-                if (System.IO.File.Exists(path))
+                context.Response.ContentType = "text/html; charset=utf-8";
+                try
                 {
-                    context.Response.ContentType = "text/html; charset=utf-8";
-                    await context.Response.WriteAsync(await System.IO.File.ReadAllTextAsync(path));
+                    string path1 = System.IO.Path.Combine(AppContext.BaseDirectory, "wwwroot", "lc", "index.html");
+                    string path2 = System.IO.Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "lc", "index.html");
+                    string target = System.IO.File.Exists(path1) ? path1 : (System.IO.File.Exists(path2) ? path2 : "");
+                    if (!string.IsNullOrEmpty(target))
+                    {
+                        await context.Response.WriteAsync(await System.IO.File.ReadAllTextAsync(target));
+                    }
+                    else
+                    {
+                        context.Response.StatusCode = 404;
+                        await context.Response.WriteAsync("LightConnect index.html not found on server.");
+                    }
                 }
-                else
+                catch (Exception ex)
                 {
-                    context.Response.StatusCode = 404;
-                    await context.Response.WriteAsync("LightConnect index.html not found.");
+                    context.Response.StatusCode = 500;
+                    await context.Response.WriteAsync("Error: " + ex.Message);
                 }
             });
 
             app.MapGet("/lc/lc.js", async context =>
             {
-                string path = System.IO.Path.Combine(AppContext.BaseDirectory, "wwwroot", "lc", "lc.js");
-                if (!System.IO.File.Exists(path))
-                    path = System.IO.Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "lc", "lc.js");
-
-                if (System.IO.File.Exists(path))
+                context.Response.ContentType = "application/javascript; charset=utf-8";
+                try
                 {
-                    context.Response.ContentType = "application/javascript; charset=utf-8";
-                    await context.Response.WriteAsync(await System.IO.File.ReadAllTextAsync(path));
+                    string path1 = System.IO.Path.Combine(AppContext.BaseDirectory, "wwwroot", "lc", "lc.js");
+                    string path2 = System.IO.Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "lc", "lc.js");
+                    string target = System.IO.File.Exists(path1) ? path1 : (System.IO.File.Exists(path2) ? path2 : "");
+                    if (!string.IsNullOrEmpty(target))
+                    {
+                        await context.Response.WriteAsync(await System.IO.File.ReadAllTextAsync(target));
+                    }
+                    else
+                    {
+                        context.Response.StatusCode = 404;
+                        await context.Response.WriteAsync("LightConnect lc.js not found on server.");
+                    }
                 }
-                else
+                catch (Exception ex)
                 {
-                    context.Response.StatusCode = 404;
-                    await context.Response.WriteAsync("LightConnect lc.js not found.");
+                    context.Response.StatusCode = 500;
+                    await context.Response.WriteAsync("Error: " + ex.Message);
                 }
             });
 
             app.MapGet("/lc/lc.css", async context =>
             {
-                string path = System.IO.Path.Combine(AppContext.BaseDirectory, "wwwroot", "lc", "lc.css");
-                if (!System.IO.File.Exists(path))
-                    path = System.IO.Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "lc", "lc.css");
-
-                if (System.IO.File.Exists(path))
+                context.Response.ContentType = "text/css; charset=utf-8";
+                try
                 {
-                    context.Response.ContentType = "text/css; charset=utf-8";
-                    await context.Response.WriteAsync(await System.IO.File.ReadAllTextAsync(path));
+                    string path1 = System.IO.Path.Combine(AppContext.BaseDirectory, "wwwroot", "lc", "lc.css");
+                    string path2 = System.IO.Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "lc", "lc.css");
+                    string target = System.IO.File.Exists(path1) ? path1 : (System.IO.File.Exists(path2) ? path2 : "");
+                    if (!string.IsNullOrEmpty(target))
+                    {
+                        await context.Response.WriteAsync(await System.IO.File.ReadAllTextAsync(target));
+                    }
+                    else
+                    {
+                        context.Response.StatusCode = 404;
+                        await context.Response.WriteAsync("LightConnect lc.css not found on server.");
+                    }
                 }
-                else
+                catch (Exception ex)
                 {
-                    context.Response.StatusCode = 404;
-                    await context.Response.WriteAsync("LightConnect lc.css not found.");
+                    context.Response.StatusCode = 500;
+                    await context.Response.WriteAsync("Error: " + ex.Message);
                 }
             });
 
             app.MapGet("/lc/LightConnect_setup.exe", async context =>
             {
-                string path = System.IO.Path.Combine(AppContext.BaseDirectory, "wwwroot", "lc", "LightConnect_setup.exe");
-                if (!System.IO.File.Exists(path))
-                    path = System.IO.Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "lc", "LightConnect_setup.exe");
-                if (!System.IO.File.Exists(path))
-                    path = System.IO.Path.Combine(AppContext.BaseDirectory, "wwwroot", "BigLineconnect_setup.exe");
-
-                if (System.IO.File.Exists(path))
+                try
                 {
-                    context.Response.ContentType = "application/octet-stream";
-                    context.Response.Headers["Content-Disposition"] = "attachment; filename=LightConnect_setup.exe";
-                    await context.Response.Body.WriteAsync(await System.IO.File.ReadAllBytesAsync(path));
+                    string path1 = System.IO.Path.Combine(AppContext.BaseDirectory, "wwwroot", "lc", "LightConnect_setup.exe");
+                    string path2 = System.IO.Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "lc", "LightConnect_setup.exe");
+                    string path3 = System.IO.Path.Combine(AppContext.BaseDirectory, "wwwroot", "BigLineconnect_setup.exe");
+                    string target = System.IO.File.Exists(path1) ? path1 : (System.IO.File.Exists(path2) ? path2 : (System.IO.File.Exists(path3) ? path3 : ""));
+
+                    if (!string.IsNullOrEmpty(target))
+                    {
+                        context.Response.ContentType = "application/octet-stream";
+                        context.Response.Headers["Content-Disposition"] = "attachment; filename=LightConnect_setup.exe";
+                        await context.Response.Body.WriteAsync(await System.IO.File.ReadAllBytesAsync(target));
+                    }
+                    else { context.Response.StatusCode = 404; }
                 }
-                else { context.Response.StatusCode = 404; }
+                catch (Exception ex)
+                {
+                    context.Response.StatusCode = 500;
+                    await context.Response.WriteAsync("Error: " + ex.Message);
+                }
             });
 
             // Start server
