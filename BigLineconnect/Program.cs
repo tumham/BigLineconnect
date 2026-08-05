@@ -781,7 +781,7 @@ namespace BigLineconnect
         public static int CurrentMaxDimension { get; set; } = 1366;
         public static bool SuppressWallpaperEnabled { get; set; } = false;
 
-        private static volatile bool _forceImmediateFrameSend = false;
+        private static long _forceSendUntilTicks = 0;
         private static volatile bool _isSendingFrame = false;
 
         private static void CaptureLoop(CancellationToken token)
@@ -853,11 +853,11 @@ namespace BigLineconnect
                     if (frameToSend != null && frameToSend.Length > 0)
                     {
                         bool isDuplicate = AreByteArraysEqual(frameToSend, _lastSentFrameBytes);
-                        bool forceSend = _forceImmediateFrameSend || initialFrameCount < 10 || (DateTime.Now - _lastSentFrameTime).TotalMilliseconds >= 200;
+                        bool isPostClickBurst = DateTime.Now.Ticks < Interlocked.Read(ref _forceSendUntilTicks);
+                        bool forceSend = isPostClickBurst || initialFrameCount < 10 || (DateTime.Now - _lastSentFrameTime).TotalMilliseconds >= 200;
 
                         if (!isDuplicate || forceSend)
                         {
-                            _forceImmediateFrameSend = false;
                             _isSendingFrame = true;
                             try
                             {
@@ -906,7 +906,7 @@ namespace BigLineconnect
 
                 if (type == "click" || type == "key" || type == "scroll" || type == "double_click")
                 {
-                    _forceImmediateFrameSend = true;
+                    Interlocked.Exchange(ref _forceSendUntilTicks, DateTime.Now.AddMilliseconds(250).Ticks);
                     _lastSentFrameBytes = null;
                 }
 
