@@ -2657,65 +2657,318 @@ namespace BigLineconnect.Relay
                 }
             });
 
-            // LightConnect Static File Handlers
+            // LightConnect Static File Handlers (with embedded fallbacks for Linux containers)
+            string lcHtmlFallback = @"<!DOCTYPE html>
+<html lang=""tr"">
+<head>
+    <meta charset=""UTF-8"">
+    <meta name=""viewport"" content=""width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"">
+    <title>LightConnect - Web Uzak Masaüstü Portalı</title>
+    <link rel=""stylesheet"" href=""https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"">
+    <link rel=""stylesheet"" href=""/lc/lc.css"">
+</head>
+<body>
+    <div id=""landing-page"" class=""landing-page"">
+        <div class=""glass-card"">
+            <div class=""brand"">
+                <div class=""logo"">⚡</div>
+                <h1>LightConnect</h1>
+                <p>Hızlı & Bağımsız Web Uzak Masaüstü Portalı</p>
+            </div>
+            <div class=""input-box"">
+                <label for=""lc-id-input""><i class=""fa-solid fa-desktop""></i> UZAKTAKİ LIGHTCONNECT ID</label>
+                <input type=""text"" id=""lc-id-input"" placeholder=""Örn: 849 102"" maxlength=""10"" autocomplete=""off"">
+            </div>
+            <button id=""lc-connect-btn"" class=""btn-primary"">
+                <span>Bağlan</span> <i class=""fa-solid fa-bolt""></i>
+            </button>
+            <div class=""status-msg"" id=""lc-status"">ID girip ""Bağlan"" butonuna basınız.</div>
+        </div>
+    </div>
+    <div id=""viewport"" class=""viewport hidden"">
+        <header class=""v-header"">
+            <div class=""v-title"">⚡ LightConnect Canlı Bağlantı</div>
+            <div class=""v-badge"" id=""v-kb-badge"">0 KB</div>
+            <button id=""v-disconnect-btn"" class=""v-btn-danger""><i class=""fa-solid fa-xmark""></i> Bağlantıyı Kes</button>
+        </header>
+        <div class=""canvas-box"" id=""canvas-box"">
+            <canvas id=""lc-canvas""></canvas>
+        </div>
+        <div class=""v-toolbar"">
+            <button id=""tb-esc"" class=""tb-btn"">Esc</button>
+            <button id=""tb-tab"" class=""tb-btn"">Tab</button>
+            <button id=""tb-cad"" class=""tb-btn danger"">Ctrl+Alt+Del</button>
+            <button id=""tb-rclick"" class=""tb-btn active"">Sağ Tık</button>
+        </div>
+    </div>
+    <script src=""/lc/lc.js""></script>
+</body>
+</html>";
+
+            string lcCssFallback = @"* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+body { background: #0b0c10; color: #fff; height: 100vh; overflow: hidden; display: flex; justify-content: center; align-items: center; }
+.landing-page { width: 100%; max-width: 440px; padding: 20px; }
+.glass-card { background: rgba(22, 24, 34, 0.95); border: 1px solid rgba(0, 229, 255, 0.2); border-radius: 24px; padding: 36px 28px; text-align: center; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 30px rgba(0, 229, 255, 0.1); }
+.brand .logo { font-size: 3rem; margin-bottom: 8px; }
+.brand h1 { font-size: 2rem; font-weight: 800; background: linear-gradient(135deg, #00e5ff, #3b82f6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.brand p { font-size: 0.85rem; color: #a0aec0; margin-top: 4px; margin-bottom: 28px; }
+.input-box label { display: block; font-size: 0.75rem; font-weight: 700; color: #00e5ff; letter-spacing: 1px; margin-bottom: 8px; text-align: left; }
+.input-box input { width: 100%; padding: 16px; border-radius: 14px; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); color: #fff; font-size: 1.4rem; font-weight: 800; text-align: center; letter-spacing: 3px; outline: none; transition: all 0.3s ease; }
+.input-box input:focus { border-color: #00e5ff; box-shadow: 0 0 15px rgba(0, 229, 255, 0.3); }
+.btn-primary { width: 100%; padding: 16px; margin-top: 20px; border-radius: 14px; border: none; background: linear-gradient(135deg, #00e5ff, #00b0ff); color: #000; font-size: 1.1rem; font-weight: 800; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 10px; transition: all 0.2s ease; }
+.status-msg { margin-top: 18px; font-size: 0.85rem; color: #a0aec0; }
+.viewport { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #000; display: flex; flex-direction: column; z-index: 99999; }
+.hidden { display: none !important; }
+.v-header { height: 48px; background: rgba(15, 16, 22, 0.95); border-bottom: 1px solid rgba(255, 255, 255, 0.1); display: flex; align-items: center; justify-content: space-between; padding: 0 16px; }
+.v-title { font-size: 0.95rem; font-weight: 700; color: #00e5ff; }
+.v-badge { background: rgba(46, 204, 113, 0.2); color: #2ecc71; border: 1px solid #2ecc71; padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 700; }
+.v-btn-danger { background: rgba(231, 76, 60, 0.2); border: 1px solid #e74c3c; color: #e74c3c; padding: 6px 14px; border-radius: 8px; font-size: 0.8rem; font-weight: 700; cursor: pointer; }
+.canvas-box { flex: 1; display: flex; justify-content: center; align-items: center; overflow: hidden; position: relative; }
+#lc-canvas { width: 100%; height: 100%; object-fit: contain; touch-action: none; cursor: crosshair; }
+.v-toolbar { height: 54px; background: rgba(15, 16, 22, 0.95); border-top: 1px solid rgba(255, 255, 255, 0.1); display: flex; justify-content: center; align-items: center; gap: 12px; padding: 0 12px; }
+.tb-btn { padding: 8px 16px; border-radius: 8px; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.1); color: #fff; font-weight: 700; font-size: 0.85rem; cursor: pointer; }
+.tb-btn.danger { background: rgba(231, 76, 60, 0.2); color: #e74c3c; border-color: #e74c3c; }";
+
+            string lcJsFallback = @"document.addEventListener('DOMContentLoaded', () => {
+    const landingPage = document.getElementById('landing-page');
+    const viewport = document.getElementById('viewport');
+    const idInput = document.getElementById('lc-id-input');
+    const connectBtn = document.getElementById('lc-connect-btn');
+    const statusMsg = document.getElementById('lc-status');
+    const canvas = document.getElementById('lc-canvas');
+    const ctx = canvas.getContext('2d', { alpha: false, desynchronized: true });
+    const kbBadge = document.getElementById('v-kb-badge');
+    const disconnectBtn = document.getElementById('v-disconnect-btn');
+
+    let socket = null;
+    let connected = false;
+    let lastMoveTime = 0;
+
+    idInput.addEventListener('input', (e) => {
+        let val = e.target.value.replace(/\D/g, '');
+        if (val.length > 3) {
+            val = val.substring(0, 3) + ' ' + val.substring(3, 6);
+        }
+        e.target.value = val;
+    });
+
+    connectBtn.addEventListener('click', () => {
+        const rawId = idInput.value.replace(/\D/g, '');
+        if (rawId.length !== 6) {
+            statusMsg.textContent = '❌ Lütfen 6 haneli geçerli bir LightConnect ID giriniz.';
+            statusMsg.style.color = '#e74c3c';
+            return;
+        }
+        startLightConnection(rawId);
+    });
+
+    disconnectBtn.addEventListener('click', () => {
+        if (socket) socket.close();
+    });
+
+    function startLightConnection(id) {
+        connectBtn.disabled = true;
+        connectBtn.innerHTML = '<i class=""fa-solid fa-spinner fa-spin""></i> <span>Bağlanıyor...</span>';
+        statusMsg.textContent = '🟡 Sunucuya bağlanılıyor...';
+        statusMsg.style.color = '#f1c40f';
+
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${protocol}//${window.location.host}/lc-client?id=${id}`;
+
+        try {
+            socket = new WebSocket(wsUrl);
+            socket.binaryType = 'arraybuffer';
+
+            socket.onopen = () => {
+                connected = true;
+                statusMsg.textContent = '🟢 Bağlandı! Ekran bekleniyor...';
+                statusMsg.style.color = '#2ecc71';
+            };
+
+            socket.onmessage = (event) => {
+                if (event.data instanceof ArrayBuffer) {
+                    const sizeKb = event.data.byteLength / 1024;
+                    kbBadge.textContent = `${sizeKb.toFixed(0)} KB`;
+
+                    if (viewport.classList.contains('hidden')) {
+                        landingPage.classList.add('hidden');
+                        viewport.classList.remove('hidden');
+                    }
+
+                    const blob = new Blob([event.data], { type: 'image/jpeg' });
+                    const url = URL.createObjectURL(blob);
+                    const img = new Image();
+                    img.onload = () => {
+                        if (canvas.width !== img.width || canvas.height !== img.height) {
+                            canvas.width = img.width;
+                            canvas.height = img.height;
+                        }
+                        ctx.drawImage(img, 0, 0);
+                        URL.revokeObjectURL(url);
+                    };
+                    img.onerror = () => URL.revokeObjectURL(url);
+                    img.src = url;
+                } else if (typeof event.data === 'string') {
+                    if (event.data === 'ERROR:NOT_FOUND') {
+                        alert('❌ Uzak Masaüstü ID bulunamadı veya kapalı!');
+                        socket.close();
+                    }
+                }
+            };
+
+            socket.onclose = () => {
+                connected = false;
+                viewport.classList.add('hidden');
+                landingPage.classList.remove('hidden');
+                connectBtn.disabled = false;
+                connectBtn.innerHTML = '<span>Bağlan</span> <i class=""fa-solid fa-bolt""></i>';
+                statusMsg.textContent = '🔴 Bağlantı sonlandırıldı.';
+                statusMsg.style.color = '#e74c3c';
+            };
+
+            socket.onerror = () => {
+                statusMsg.textContent = '❌ Bağlantı Hatası!';
+                statusMsg.style.color = '#e74c3c';
+            };
+
+        } catch (err) {
+            connectBtn.disabled = false;
+            connectBtn.innerHTML = '<span>Bağlan</span> <i class=""fa-solid fa-bolt""></i>';
+            statusMsg.textContent = '❌ Bağlantı hatası: ' + err.message;
+        }
+    }
+
+    function getCanvasMousePos(e) {
+        const rect = canvas.getBoundingClientRect();
+        if (rect.width <= 0 || rect.height <= 0) return { x: 0, y: 0 };
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+        const x = Math.max(0, Math.min(1, mouseX / rect.width));
+        const y = Math.max(0, Math.min(1, mouseY / rect.height));
+        return { x, y };
+    }
+
+    function sendClick(button, action, x, y) {
+        if (connected && socket && socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify({ type: 'click', button, action, x, y }));
+        }
+    }
+
+    function sendMove(x, y) {
+        if (connected && socket && socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify({ type: 'move', x, y }));
+        }
+    }
+
+    canvas.addEventListener('mousedown', (e) => {
+        if (!connected) return;
+        const pos = getCanvasMousePos(e);
+        let button = e.button === 2 ? 'right' : (e.button === 1 ? 'middle' : 'left');
+        sendClick(button, 'down', pos.x, pos.y);
+        e.preventDefault();
+    });
+
+    canvas.addEventListener('mouseup', (e) => {
+        if (!connected) return;
+        const pos = getCanvasMousePos(e);
+        let button = e.button === 2 ? 'right' : (e.button === 1 ? 'middle' : 'left');
+        sendClick(button, 'up', pos.x, pos.y);
+        e.preventDefault();
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+        if (!connected) return;
+        const now = performance.now();
+        if (now - lastMoveTime < 16) return;
+        lastMoveTime = now;
+        const pos = getCanvasMousePos(e);
+        sendMove(pos.x, pos.y);
+        e.preventDefault();
+    });
+
+    canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+
+    document.getElementById('tb-esc').addEventListener('click', () => {
+        if (connected && socket) socket.send(JSON.stringify({ type: 'key', key: 'escape', action: 'down' }));
+    });
+    document.getElementById('tb-tab').addEventListener('click', () => {
+        if (connected && socket) socket.send(JSON.stringify({ type: 'key', key: 'tab', action: 'down' }));
+    });
+    document.getElementById('tb-cad').addEventListener('click', () => {
+        if (connected && socket) socket.send(JSON.stringify({ type: 'key', key: 'delete', action: 'down' }));
+    });
+
+    window.addEventListener('keydown', (e) => {
+        if (!connected || !socket) return;
+        let keyName = e.key;
+        if (keyName === ' ') keyName = 'space';
+        socket.send(JSON.stringify({ type: 'key', key: keyName, action: 'down' }));
+    });
+
+    window.addEventListener('keyup', (e) => {
+        if (!connected || !socket) return;
+        let keyName = e.key;
+        if (keyName === ' ') keyName = 'space';
+        socket.send(JSON.stringify({ type: 'key', key: keyName, action: 'up' }));
+    });
+});";
+
             app.MapGet("/lc", async context =>
             {
+                context.Response.ContentType = "text/html; charset=utf-8";
                 string path = System.IO.Path.Combine(AppContext.BaseDirectory, "wwwroot", "lc", "index.html");
                 if (System.IO.File.Exists(path))
-                {
-                    context.Response.ContentType = "text/html; charset=utf-8";
                     await context.Response.WriteAsync(await System.IO.File.ReadAllTextAsync(path));
-                }
-                else { context.Response.StatusCode = 404; }
+                else
+                    await context.Response.WriteAsync(lcHtmlFallback);
             });
 
             app.MapGet("/lc/", async context =>
             {
+                context.Response.ContentType = "text/html; charset=utf-8";
                 string path = System.IO.Path.Combine(AppContext.BaseDirectory, "wwwroot", "lc", "index.html");
                 if (System.IO.File.Exists(path))
-                {
-                    context.Response.ContentType = "text/html; charset=utf-8";
                     await context.Response.WriteAsync(await System.IO.File.ReadAllTextAsync(path));
-                }
-                else { context.Response.StatusCode = 404; }
+                else
+                    await context.Response.WriteAsync(lcHtmlFallback);
             });
 
             app.MapGet("/lc/index.html", async context =>
             {
+                context.Response.ContentType = "text/html; charset=utf-8";
                 string path = System.IO.Path.Combine(AppContext.BaseDirectory, "wwwroot", "lc", "index.html");
                 if (System.IO.File.Exists(path))
-                {
-                    context.Response.ContentType = "text/html; charset=utf-8";
                     await context.Response.WriteAsync(await System.IO.File.ReadAllTextAsync(path));
-                }
-                else { context.Response.StatusCode = 404; }
+                else
+                    await context.Response.WriteAsync(lcHtmlFallback);
             });
 
             app.MapGet("/lc/lc.js", async context =>
             {
+                context.Response.ContentType = "application/javascript; charset=utf-8";
                 string path = System.IO.Path.Combine(AppContext.BaseDirectory, "wwwroot", "lc", "lc.js");
                 if (System.IO.File.Exists(path))
-                {
-                    context.Response.ContentType = "application/javascript; charset=utf-8";
                     await context.Response.WriteAsync(await System.IO.File.ReadAllTextAsync(path));
-                }
-                else { context.Response.StatusCode = 404; }
+                else
+                    await context.Response.WriteAsync(lcJsFallback);
             });
 
             app.MapGet("/lc/lc.css", async context =>
             {
+                context.Response.ContentType = "text/css; charset=utf-8";
                 string path = System.IO.Path.Combine(AppContext.BaseDirectory, "wwwroot", "lc", "lc.css");
                 if (System.IO.File.Exists(path))
-                {
-                    context.Response.ContentType = "text/css; charset=utf-8";
                     await context.Response.WriteAsync(await System.IO.File.ReadAllTextAsync(path));
-                }
-                else { context.Response.StatusCode = 404; }
+                else
+                    await context.Response.WriteAsync(lcCssFallback);
             });
 
             app.MapGet("/lc/LightConnect_setup.exe", async context =>
             {
                 string path = System.IO.Path.Combine(AppContext.BaseDirectory, "wwwroot", "lc", "LightConnect_setup.exe");
+                if (!System.IO.File.Exists(path))
+                    path = System.IO.Path.Combine(AppContext.BaseDirectory, "wwwroot", "BigLineconnect_setup.exe");
+
                 if (System.IO.File.Exists(path))
                 {
                     context.Response.ContentType = "application/octet-stream";
