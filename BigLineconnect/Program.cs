@@ -700,7 +700,7 @@ namespace BigLineconnect
 
                         if (result.MessageType == WebSocketMessageType.Text && ms.Length > 0)
                         {
-                            string message = Encoding.UTF8.GetString(ms.GetBuffer(), 0, (int)ms.Length);
+                            string message = Encoding.UTF8.GetString(ms.ToArray()).Trim();
                             
                             if (message.StartsWith("ID:"))
                             {
@@ -1674,76 +1674,23 @@ namespace BigLineconnect
                 }
                 else
                 {
-                    // No password - ask for manual acceptance on Host UI, or auto-accept in service mode
-                    if (MainWindow.Instance == null)
-                    {
-                        Log("Servis/Arka plan modunda otomatik onay verildi.");
-                        byte[] okMsg = Encoding.UTF8.GetBytes("AUTH_SUCCESS");
-                        await SafeSendAsync(ws, new ArraySegment<byte>(okMsg), WebSocketMessageType.Text, true, token).ConfigureAwait(false);
-                        await SendDisplaysListAsync(ws, token).ConfigureAwait(false);
+                    // No password check required - grant immediate access
+                    Log("Şifresiz modda doğrudan bağlantı onaylandı.");
+                    byte[] okMsg = Encoding.UTF8.GetBytes("AUTH_SUCCESS");
+                    await SafeSendAsync(ws, new ArraySegment<byte>(okMsg), WebSocketMessageType.Text, true, token).ConfigureAwait(false);
+                    await SendDisplaysListAsync(ws, token).ConfigureAwait(false);
 
-                        _isStreaming = true;
-                        
-                        var captureThread = new Thread(() => CaptureLoop(token))
-                        {
-                            IsBackground = true,
-                            Name = "BigLineconnectCaptureThread"
-                        };
-                        captureThread.Start();
-                        
-                        _ = Task.Run(() => SendStreamLoop(ws, token));
-                        return;
-                    }
-
-                    byte[] waitingMsg = Encoding.UTF8.GetBytes("AUTH_WAITING");
-                    await SafeSendAsync(ws, new ArraySegment<byte>(waitingMsg), WebSocketMessageType.Text, true, token).ConfigureAwait(false);
-
-                    bool accepted = false;
-                    if (!EnableKvkkDisclaimer || KvkkMode == 2 || (KvkkMode == 1 && KvkkAcceptedOnce))
+                    _isStreaming = true;
+                    
+                    var captureThread = new Thread(() => CaptureLoop(token))
                     {
-                        Log("KVKK / Onay modu otomatik kabule ayarlı, doğrudan onaylandı.");
-                        accepted = true;
-                    }
-                    else
-                    {
-                        MainWindow.Instance.Invoke((MethodInvoker)delegate
-                        {
-                            using (var reqForm = new RequestForm())
-                            {
-                                var result = reqForm.ShowDialog(MainWindow.Instance);
-                                accepted = (result == DialogResult.OK);
-                            }
-                        });
-                    }
-
-                    if (accepted)
-                    {
-                        Log("Bağlantı kullanıcı tarafından kabul edildi.");
-                        byte[] okMsg = Encoding.UTF8.GetBytes("AUTH_SUCCESS");
-                        await SafeSendAsync(ws, new ArraySegment<byte>(okMsg), WebSocketMessageType.Text, true, token).ConfigureAwait(false);
-                        await SendDisplaysListAsync(ws, token).ConfigureAwait(false);
-
-                        _isStreaming = true;
-                        
-                        // Start capture thread (dedicated)
-                        var captureThread = new Thread(() => CaptureLoop(token))
-                        {
-                            IsBackground = true,
-                            Name = "BigLineconnectCaptureThread"
-                        };
-                        captureThread.Start();
-                        
-                        // Start sender task
-                        _ = Task.Run(() => SendStreamLoop(ws, token));
-                    }
-                    else
-                    {
-                        Log("Bağlantı kullanıcı tarafından reddedildi.");
-                        byte[] rejectMsg = Encoding.UTF8.GetBytes("AUTH_REJECTED");
-                        await SafeSendAsync(ws, new ArraySegment<byte>(rejectMsg), WebSocketMessageType.Text, true, token).ConfigureAwait(false);
-                        await Task.Delay(1000, token).ConfigureAwait(false);
-                        TriggerReconnect();
-                    }
+                        IsBackground = true,
+                        Name = "BigLineconnectCaptureThread"
+                    };
+                    captureThread.Start();
+                    
+                    _ = Task.Run(() => SendStreamLoop(ws, token));
+                    return;
                 }
             }
             catch (Exception ex)
