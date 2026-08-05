@@ -496,17 +496,13 @@ namespace BigLineconnect
                                 {
                                     _lblFpsStats.Text = $"⚡ {displayFps} FPS | {displayLatency} ms";
                                 }
+                                string cleanTitle = LanguageManager.Get("title_viewer", _targetId);
+                                if (this.Text != cleanTitle)
+                                {
+                                    this.Text = cleanTitle;
+                                }
                             }));
                         }
-
-                        this.BeginInvoke(new Action(() =>
-                        {
-                            string cleanTitle = LanguageManager.Get("title_viewer", _targetId);
-                            if (this.Text != cleanTitle)
-                            {
-                                this.Text = cleanTitle;
-                            }
-                        }));
 
                         // Deduplication for frame recording: skip identical static frames
                         ulong currentFrameHash = FastBufferHash(buffer, totalReceived);
@@ -534,20 +530,28 @@ namespace BigLineconnect
                             }
                         }
 
-                        // Load image frame
+                        // Load image frame cleanly without memory leaks
+                        Image? newImg = null;
                         using (var ms = new MemoryStream(buffer, 0, totalReceived))
                         {
                             try
                             {
-                                Image img = Image.FromStream(ms);
-                                _pictureBox?.BeginInvoke(new Action(() =>
+                                using (Image tempImg = Image.FromStream(ms, false, false))
                                 {
-                                    var oldImg = _pictureBox.Image;
-                                    _pictureBox.Image = img;
-                                    oldImg?.Dispose(); // Free memory
-                                }));
+                                    newImg = new Bitmap(tempImg);
+                                }
                             }
                             catch { }
+                        }
+
+                        if (newImg != null)
+                        {
+                            _pictureBox?.BeginInvoke(new Action(() =>
+                            {
+                                var oldImg = _pictureBox.Image;
+                                _pictureBox.Image = newImg;
+                                oldImg?.Dispose();
+                            }));
                         }
                     }
                     else if (result.MessageType == WebSocketMessageType.Text)
