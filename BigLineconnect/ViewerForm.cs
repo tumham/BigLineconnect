@@ -1224,22 +1224,25 @@ namespace BigLineconnect
             this.Focus();
 
             var (x, y) = GetNormalizedMousePos(e, _pictureBox);
-            SendJson($"{{\"type\":\"move\",\"x\":{x.ToString(System.Globalization.CultureInfo.InvariantCulture)},\"y\":{y.ToString(System.Globalization.CultureInfo.InvariantCulture)}}}");
 
             string button = "left";
             if (e.Button == MouseButtons.Right) button = "right";
             else if (e.Button == MouseButtons.Middle) button = "middle";
 
-            SendJson($"{{\"type\":\"click\",\"button\":\"{button}\",\"action\":\"down\"}}");
+            SendJson($"{{\"type\":\"click\",\"button\":\"{button}\",\"action\":\"down\",\"x\":{x.ToString(System.Globalization.CultureInfo.InvariantCulture)},\"y\":{y.ToString(System.Globalization.CultureInfo.InvariantCulture)}}}");
         }
 
         private void PictureBox_MouseUp(object? sender, MouseEventArgs e)
         {
+            if (_pictureBox == null) return;
+
+            var (x, y) = GetNormalizedMousePos(e, _pictureBox);
+
             string button = "left";
             if (e.Button == MouseButtons.Right) button = "right";
             else if (e.Button == MouseButtons.Middle) button = "middle";
 
-            SendJson($"{{\"type\":\"click\",\"button\":\"{button}\",\"action\":\"up\"}}");
+            SendJson($"{{\"type\":\"click\",\"button\":\"{button}\",\"action\":\"up\",\"x\":{x.ToString(System.Globalization.CultureInfo.InvariantCulture)},\"y\":{y.ToString(System.Globalization.CultureInfo.InvariantCulture)}}}");
         }
 
         private void PictureBox_MouseWheel(object? sender, MouseEventArgs e)

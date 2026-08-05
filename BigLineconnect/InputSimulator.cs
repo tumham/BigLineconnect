@@ -158,6 +158,16 @@ namespace BigLineconnect
             catch { }
         }
 
+        [DllImport("user32.dll")]
+        private static extern bool GetCursorPos(out POINT lpPoint);
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct POINT
+        {
+            public int X;
+            public int Y;
+        }
+
         public static void SimulateMouseButton(string button, string action, double? xPercent = null, double? yPercent = null, int displayIndex = 0)
         {
             try
@@ -179,6 +189,10 @@ namespace BigLineconnect
 
                 if (flags == 0) return;
 
+                var screens = System.Windows.Forms.Screen.AllScreens;
+                if (displayIndex < 0 || displayIndex >= screens.Length) displayIndex = 0;
+                var bounds = screens[displayIndex].Bounds;
+
                 INPUT[] inputs = new INPUT[1];
                 var mi = new MOUSEINPUT
                 {
@@ -188,19 +202,27 @@ namespace BigLineconnect
                     dwExtraInfo = IntPtr.Zero
                 };
 
+                double targetX = 0;
+                double targetY = 0;
+
                 if (xPercent.HasValue && yPercent.HasValue)
                 {
-                    var screens = System.Windows.Forms.Screen.AllScreens;
-                    if (displayIndex < 0 || displayIndex >= screens.Length) displayIndex = 0;
-                    var bounds = screens[displayIndex].Bounds;
-                    int actualX = bounds.X + (int)(xPercent.Value * bounds.Width);
-                    int actualY = bounds.Y + (int)(yPercent.Value * bounds.Height);
-                    SetCursorPos(actualX, actualY);
-
-                    mi.dx = Math.Max(0, Math.Min(65535, (int)(xPercent.Value * 65535)));
-                    mi.dy = Math.Max(0, Math.Min(65535, (int)(yPercent.Value * 65535)));
-                    mi.dwFlags |= MOUSEEVENTF_ABSOLUTE;
+                    targetX = xPercent.Value;
+                    targetY = yPercent.Value;
                 }
+                else if (GetCursorPos(out POINT pt))
+                {
+                    targetX = Math.Max(0, Math.Min(1.0, (double)(pt.X - bounds.X) / bounds.Width));
+                    targetY = Math.Max(0, Math.Min(1.0, (double)(pt.Y - bounds.Y) / bounds.Height));
+                }
+
+                int actualX = bounds.X + (int)(targetX * bounds.Width);
+                int actualY = bounds.Y + (int)(targetY * bounds.Height);
+                SetCursorPos(actualX, actualY);
+
+                mi.dx = Math.Max(0, Math.Min(65535, (int)(targetX * 65535)));
+                mi.dy = Math.Max(0, Math.Min(65535, (int)(targetY * 65535)));
+                mi.dwFlags |= MOUSEEVENTF_ABSOLUTE;
 
                 inputs[0] = new INPUT
                 {
