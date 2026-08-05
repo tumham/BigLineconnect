@@ -96,19 +96,19 @@ function startConnectionProcess() {
                 btnElem.disabled = false;
                 btnElem.innerHTML = '<span>Bağlan</span> <i class="fa-solid fa-arrow-right-to-bracket"></i>';
             }
-        }, 6000);
+        }, 5000);
     } catch (err) {
-        alert('Bağlantı Başlatma Hatası: ' + err.message);
+        showToast('Bağlantı Başlatma Hatası: ' + err.message, 'error');
+        if (btnElem) {
+            btnElem.disabled = false;
+            btnElem.innerHTML = '<span>Bağlan</span> <i class="fa-solid fa-arrow-right-to-bracket"></i>';
+        }
     }
 }
 
-// Connect Button Event Listener
+// Connect Button Event Listener (single click binding)
 if (connectBtn) {
     connectBtn.addEventListener('click', (e) => {
-        if (e) e.preventDefault();
-        startConnectionProcess();
-    });
-    connectBtn.addEventListener('touchend', (e) => {
         if (e) e.preventDefault();
         startConnectionProcess();
     });
