@@ -140,7 +140,6 @@ namespace BigLineconnect
         {
             try
             {
-                DesktopHelper.AttachToInputDesktop();
                 uint flags = 0;
 
                 if (button.Equals("left", StringComparison.OrdinalIgnoreCase))
@@ -269,7 +268,6 @@ namespace BigLineconnect
 
         public static void SimulateKey(string key, string action)
         {
-            DesktopHelper.AttachToInputDesktop();
             if (key.Equals("release_all", StringComparison.OrdinalIgnoreCase) || 
                 key.Equals("release_modifiers", StringComparison.OrdinalIgnoreCase))
             {

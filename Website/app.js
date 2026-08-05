@@ -430,9 +430,10 @@ function sendKey(key, action) {
 
 // Mouse Event listeners on canvas
 function getMousePos(canvas, clientX, clientY) {
-    const rect = canvas.getBoundingClientRect();
-    const naturalWidth = canvas.naturalWidth || canvas.width || 1920;
-    const naturalHeight = canvas.naturalHeight || canvas.height || 1080;
+    const elem = document.getElementById('screen-canvas') || canvasContainer;
+    const rect = elem.getBoundingClientRect();
+    const naturalWidth = (elem.width && elem.width > 300) ? elem.width : 1920;
+    const naturalHeight = (elem.height && elem.height > 150) ? elem.height : 1080;
     
     if (rect.width <= 0 || rect.height <= 0) return { x: 0, y: 0 };
 
