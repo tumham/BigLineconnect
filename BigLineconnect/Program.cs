@@ -782,6 +782,7 @@ namespace BigLineconnect
         public static bool SuppressWallpaperEnabled { get; set; } = false;
 
         private static volatile bool _forceImmediateFrameSend = false;
+        private static volatile bool _isSendingFrame = false;
 
         private static void CaptureLoop(CancellationToken token)
         {
@@ -804,7 +805,7 @@ namespace BigLineconnect
                             _latestFrame = frame;
                         }
                     }
-                    Thread.Sleep(15);
+                    Thread.Sleep(10);
                 }
                 ScreenCapturer.SuppressWallpaper(false);
                 Log("Ekran yakalama döngüsü sonlandı.");
@@ -831,10 +832,18 @@ namespace BigLineconnect
                 Log("Görüntü gönderim döngüsü başladı.");
                 _lastSentFrameBytes = null;
                 _lastSentFrameTime = DateTime.MinValue;
+                _isSendingFrame = false;
                 int initialFrameCount = 0;
 
                 while (!token.IsCancellationRequested && _isStreaming && ws.State == WebSocketState.Open)
                 {
+                    if (_isSendingFrame)
+                    {
+                        // Socket is busy sending previous frame. Drop frame to keep socket queue at EXACTLY 0 bytes!
+                        await Task.Delay(10, token).ConfigureAwait(false);
+                        continue;
+                    }
+
                     byte[]? frameToSend = null;
                     lock (FrameLock)
                     {
@@ -844,26 +853,34 @@ namespace BigLineconnect
                     if (frameToSend != null && frameToSend.Length > 0)
                     {
                         bool isDuplicate = AreByteArraysEqual(frameToSend, _lastSentFrameBytes);
-                        bool forceSend = _forceImmediateFrameSend || initialFrameCount < 10 || (DateTime.Now - _lastSentFrameTime).TotalMilliseconds >= 150;
+                        bool forceSend = _forceImmediateFrameSend || initialFrameCount < 10 || (DateTime.Now - _lastSentFrameTime).TotalMilliseconds >= 200;
 
                         if (!isDuplicate || forceSend)
                         {
                             _forceImmediateFrameSend = false;
-                            await SafeSendAsync(
-                                ws,
-                                new ArraySegment<byte>(frameToSend),
-                                WebSocketMessageType.Binary,
-                                true,
-                                token
-                            ).ConfigureAwait(false);
+                            _isSendingFrame = true;
+                            try
+                            {
+                                await SafeSendAsync(
+                                    ws,
+                                    new ArraySegment<byte>(frameToSend),
+                                    WebSocketMessageType.Binary,
+                                    true,
+                                    token
+                                ).ConfigureAwait(false);
 
-                            _lastSentFrameBytes = frameToSend;
-                            _lastSentFrameTime = DateTime.Now;
-                            initialFrameCount++;
+                                _lastSentFrameBytes = frameToSend;
+                                _lastSentFrameTime = DateTime.Now;
+                                initialFrameCount++;
+                            }
+                            finally
+                            {
+                                _isSendingFrame = false;
+                            }
                         }
                     }
 
-                    await Task.Delay(15, token).ConfigureAwait(false);
+                    await Task.Delay(10, token).ConfigureAwait(false);
                 }
                 Log("Görüntü gönderim döngüsü sonlandı.");
             }
