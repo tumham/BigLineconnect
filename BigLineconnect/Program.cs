@@ -781,6 +781,8 @@ namespace BigLineconnect
         public static int CurrentMaxDimension { get; set; } = 1920;
         public static bool SuppressWallpaperEnabled { get; set; } = false;
 
+        private static volatile bool _forceImmediateFrameSend = false;
+
         private static void CaptureLoop(CancellationToken token)
         {
             try
@@ -802,7 +804,7 @@ namespace BigLineconnect
                             _latestFrame = frame;
                         }
                     }
-                    Thread.Sleep(20);
+                    Thread.Sleep(15);
                 }
                 ScreenCapturer.SuppressWallpaper(false);
                 Log("Ekran yakalama döngüsü sonlandı.");
@@ -842,10 +844,11 @@ namespace BigLineconnect
                     if (frameToSend != null && frameToSend.Length > 0)
                     {
                         bool isDuplicate = AreByteArraysEqual(frameToSend, _lastSentFrameBytes);
-                        bool forceSend = initialFrameCount < 10 || (DateTime.Now - _lastSentFrameTime).TotalMilliseconds >= 1500;
+                        bool forceSend = _forceImmediateFrameSend || initialFrameCount < 10 || (DateTime.Now - _lastSentFrameTime).TotalMilliseconds >= 150;
 
                         if (!isDuplicate || forceSend)
                         {
+                            _forceImmediateFrameSend = false;
                             await SafeSendAsync(
                                 ws,
                                 new ArraySegment<byte>(frameToSend),
@@ -860,7 +863,7 @@ namespace BigLineconnect
                         }
                     }
 
-                    await Task.Delay(50, token).ConfigureAwait(false);
+                    await Task.Delay(15, token).ConfigureAwait(false);
                 }
                 Log("Görüntü gönderim döngüsü sonlandı.");
             }
@@ -882,6 +885,12 @@ namespace BigLineconnect
                 if (type != "move" && !json.Contains("\"chunk\":") && !json.Contains("\"data\":"))
                 {
                     Log($"[Girdi Paketi]: {json}");
+                }
+
+                if (type == "click" || type == "key" || type == "scroll" || type == "double_click")
+                {
+                    _forceImmediateFrameSend = true;
+                    _lastSentFrameBytes = null;
                 }
 
                 if (type == "move")
