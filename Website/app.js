@@ -202,6 +202,16 @@ function connectToHost(id) {
                     connectionStatus.innerHTML = `<span class="status-dot online"></span>${sizeKb.toFixed(0)} KB`;
                 }
 
+                if (viewerScreen && viewerScreen.style.display === 'none') {
+                    if (landingPage) {
+                        landingPage.classList.add('hidden');
+                        landingPage.style.display = 'none';
+                    }
+                    viewerScreen.classList.remove('hidden');
+                    viewerScreen.style.display = 'flex';
+                    viewerScreen.style.zIndex = '99999';
+                }
+
                 const screenCanvas = document.getElementById('screen-canvas');
                 const ctx = screenCanvas ? screenCanvas.getContext('2d', { alpha: false, desynchronized: true }) : null;
 
@@ -247,6 +257,15 @@ function connectToHost(id) {
                     }
                     showToast('Bağlantı için karşı bilgisayarın onayı bekleniyor...', 'info');
                 } else if (event.data === 'AUTH_SUCCESS') {
+                    if (landingPage) {
+                        landingPage.classList.add('hidden');
+                        landingPage.style.display = 'none';
+                    }
+                    if (viewerScreen) {
+                        viewerScreen.classList.remove('hidden');
+                        viewerScreen.style.display = 'flex';
+                        viewerScreen.style.zIndex = '99999';
+                    }
                     const btnElem = document.getElementById('submit-password-btn');
                     if (btnElem) {
                         btnElem.disabled = false;
@@ -258,7 +277,7 @@ function connectToHost(id) {
                         passwordModal.style.pointerEvents = 'none';
                     }
                     if (hiddenKeyboardInput) hiddenKeyboardInput.disabled = false;
-                    showToast('Doğrulama başarılı! Ekran yükleniyor...', 'success');
+                    showToast('Bağlantı başarılı! Ekran yükleniyor...', 'success');
                 } else if (event.data === 'AUTH_FAILED') {
                     const btnElem = document.getElementById('submit-password-btn');
                     if (btnElem) {
