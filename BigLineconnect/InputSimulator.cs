@@ -124,12 +124,13 @@ namespace BigLineconnect
         {
             try
             {
+                DesktopHelper.AttachToInputDesktop();
                 var screens = System.Windows.Forms.Screen.AllScreens;
                 if (displayIndex < 0 || displayIndex >= screens.Length) displayIndex = 0;
 
                 var bounds = screens[displayIndex].Bounds;
-                int actualX = bounds.X + (int)(xPercent * bounds.Width);
-                int actualY = bounds.Y + (int)(yPercent * bounds.Height);
+                int actualX = bounds.X + Math.Min(bounds.Width - 1, (int)(xPercent * bounds.Width));
+                int actualY = bounds.Y + Math.Min(bounds.Height - 1, (int)(yPercent * bounds.Height));
 
                 SetCursorPos(actualX, actualY);
 
@@ -153,7 +154,10 @@ namespace BigLineconnect
                         }
                     }
                 };
-                SendInput(1, inputs, Marshal.SizeOf<INPUT>());
+                if (SendInput(1, inputs, Marshal.SizeOf<INPUT>()) == 0)
+                {
+                    mouse_event(MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE, (uint)normX, (uint)normY, 0, UIntPtr.Zero);
+                }
             }
             catch { }
         }
@@ -172,6 +176,7 @@ namespace BigLineconnect
         {
             try
             {
+                DesktopHelper.AttachToInputDesktop();
                 uint flags = 0;
 
                 if (button.Equals("left", StringComparison.OrdinalIgnoreCase))
@@ -216,8 +221,8 @@ namespace BigLineconnect
                     targetY = Math.Max(0, Math.Min(1.0, (double)(pt.Y - bounds.Y) / bounds.Height));
                 }
 
-                int actualX = bounds.X + (int)(targetX * bounds.Width);
-                int actualY = bounds.Y + (int)(targetY * bounds.Height);
+                int actualX = bounds.X + Math.Min(bounds.Width - 1, (int)(targetX * bounds.Width));
+                int actualY = bounds.Y + Math.Min(bounds.Height - 1, (int)(targetY * bounds.Height));
                 SetCursorPos(actualX, actualY);
 
                 mi.dx = Math.Max(0, Math.Min(65535, (int)(targetX * 65535)));
@@ -230,7 +235,10 @@ namespace BigLineconnect
                     U = new InputUnion { mi = mi }
                 };
 
-                SendInput(1, inputs, Marshal.SizeOf<INPUT>());
+                if (SendInput(1, inputs, Marshal.SizeOf<INPUT>()) == 0)
+                {
+                    mouse_event(flags | MOUSEEVENTF_ABSOLUTE, (uint)mi.dx, (uint)mi.dy, 0, UIntPtr.Zero);
+                }
             }
             catch { }
         }
