@@ -534,6 +534,10 @@ namespace BigLineconnect
                             }
                         }
 
+                        // Thread-safe isolated frame copy for GDI+ JPEG decoding
+                        byte[] isolatedFrame = new byte[totalReceived];
+                        Buffer.BlockCopy(_receiveBuffer, 0, isolatedFrame, 0, totalReceived);
+
                         if (this.WindowState == FormWindowState.Minimized)
                         {
                             // Do NOT process or queue GDI+ BeginInvoke calls while minimized to prevent WinForms UI queue deadlocks!
@@ -542,7 +546,7 @@ namespace BigLineconnect
 
                         // Load image frame cleanly without memory leaks
                         Image? newImg = null;
-                        using (var ms = new MemoryStream(_receiveBuffer, 0, totalReceived))
+                        using (var ms = new MemoryStream(isolatedFrame, 0, totalReceived))
                         {
                             try
                             {
