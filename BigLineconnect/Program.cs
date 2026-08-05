@@ -777,8 +777,8 @@ namespace BigLineconnect
             }
         }
 
-        public static int CurrentQuality { get; set; } = 65;
-        public static int CurrentMaxDimension { get; set; } = 1920;
+        public static int CurrentQuality { get; set; } = 55;
+        public static int CurrentMaxDimension { get; set; } = 1366;
         public static bool SuppressWallpaperEnabled { get; set; } = false;
 
         private static volatile bool _forceImmediateFrameSend = false;

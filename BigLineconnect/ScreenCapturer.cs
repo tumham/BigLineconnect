@@ -256,8 +256,8 @@ namespace BigLineconnect
                     {
                         using (Graphics gResized = Graphics.FromImage(bmpResized))
                         {
-                            gResized.InterpolationMode = InterpolationMode.Bilinear; // Smooth & Crisp Text
-                            gResized.CompositingQuality = CompositingQuality.HighQuality;
+                            gResized.InterpolationMode = InterpolationMode.Bilinear; // Fast & Crisp
+                            gResized.CompositingQuality = CompositingQuality.HighSpeed;
                             gResized.SmoothingMode = SmoothingMode.HighSpeed;
                             gResized.DrawImage(bmpScreen, 0, 0, targetWidth, targetHeight);
                         }
