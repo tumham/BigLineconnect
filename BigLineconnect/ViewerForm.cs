@@ -1222,7 +1222,8 @@ namespace BigLineconnect
         {
             if (_pictureBox == null) return;
             if (e.Location == _lastSentMousePos) return;
-            if (DateTime.Now - _lastMoveSent < TimeSpan.FromMilliseconds(16)) return;
+            int throttleMs = (e.Button != MouseButtons.None) ? 20 : 50;
+            if (DateTime.Now - _lastMoveSent < TimeSpan.FromMilliseconds(throttleMs)) return;
             _lastMoveSent = DateTime.Now;
             _lastSentMousePos = e.Location;
 
