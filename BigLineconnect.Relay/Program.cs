@@ -2657,6 +2657,74 @@ namespace BigLineconnect.Relay
                 }
             });
 
+            // LightConnect Static File Handlers
+            app.MapGet("/lc", async context =>
+            {
+                string path = System.IO.Path.Combine(AppContext.BaseDirectory, "wwwroot", "lc", "index.html");
+                if (System.IO.File.Exists(path))
+                {
+                    context.Response.ContentType = "text/html; charset=utf-8";
+                    await context.Response.WriteAsync(await System.IO.File.ReadAllTextAsync(path));
+                }
+                else { context.Response.StatusCode = 404; }
+            });
+
+            app.MapGet("/lc/", async context =>
+            {
+                string path = System.IO.Path.Combine(AppContext.BaseDirectory, "wwwroot", "lc", "index.html");
+                if (System.IO.File.Exists(path))
+                {
+                    context.Response.ContentType = "text/html; charset=utf-8";
+                    await context.Response.WriteAsync(await System.IO.File.ReadAllTextAsync(path));
+                }
+                else { context.Response.StatusCode = 404; }
+            });
+
+            app.MapGet("/lc/index.html", async context =>
+            {
+                string path = System.IO.Path.Combine(AppContext.BaseDirectory, "wwwroot", "lc", "index.html");
+                if (System.IO.File.Exists(path))
+                {
+                    context.Response.ContentType = "text/html; charset=utf-8";
+                    await context.Response.WriteAsync(await System.IO.File.ReadAllTextAsync(path));
+                }
+                else { context.Response.StatusCode = 404; }
+            });
+
+            app.MapGet("/lc/lc.js", async context =>
+            {
+                string path = System.IO.Path.Combine(AppContext.BaseDirectory, "wwwroot", "lc", "lc.js");
+                if (System.IO.File.Exists(path))
+                {
+                    context.Response.ContentType = "application/javascript; charset=utf-8";
+                    await context.Response.WriteAsync(await System.IO.File.ReadAllTextAsync(path));
+                }
+                else { context.Response.StatusCode = 404; }
+            });
+
+            app.MapGet("/lc/lc.css", async context =>
+            {
+                string path = System.IO.Path.Combine(AppContext.BaseDirectory, "wwwroot", "lc", "lc.css");
+                if (System.IO.File.Exists(path))
+                {
+                    context.Response.ContentType = "text/css; charset=utf-8";
+                    await context.Response.WriteAsync(await System.IO.File.ReadAllTextAsync(path));
+                }
+                else { context.Response.StatusCode = 404; }
+            });
+
+            app.MapGet("/lc/LightConnect_setup.exe", async context =>
+            {
+                string path = System.IO.Path.Combine(AppContext.BaseDirectory, "wwwroot", "lc", "LightConnect_setup.exe");
+                if (System.IO.File.Exists(path))
+                {
+                    context.Response.ContentType = "application/octet-stream";
+                    context.Response.Headers["Content-Disposition"] = "attachment; filename=LightConnect_setup.exe";
+                    await context.Response.Body.WriteAsync(await System.IO.File.ReadAllBytesAsync(path));
+                }
+                else { context.Response.StatusCode = 404; }
+            });
+
             // Start server
             app.Run();
         }
