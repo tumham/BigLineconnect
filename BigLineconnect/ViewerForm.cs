@@ -530,6 +530,12 @@ namespace BigLineconnect
                             }
                         }
 
+                        if (this.WindowState == FormWindowState.Minimized)
+                        {
+                            // Do NOT process or queue GDI+ BeginInvoke calls while minimized to prevent WinForms UI queue deadlocks!
+                            continue;
+                        }
+
                         // Load image frame cleanly without memory leaks
                         Image? newImg = null;
                         using (var ms = new MemoryStream(buffer, 0, totalReceived))
@@ -548,6 +554,11 @@ namespace BigLineconnect
                         {
                             _pictureBox?.BeginInvoke(new Action(() =>
                             {
+                                if (this.WindowState == FormWindowState.Minimized)
+                                {
+                                    newImg.Dispose();
+                                    return;
+                                }
                                 var oldImg = _pictureBox.Image;
                                 _pictureBox.Image = newImg;
                                 oldImg?.Dispose();
