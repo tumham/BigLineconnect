@@ -537,6 +537,7 @@ namespace BigLineconnect.Relay
             app.UseForwardedHeaders(forwardedOptions);
 
             app.UseCors();
+            app.UseDefaultFiles();
             app.UseStaticFiles(new StaticFileOptions
             {
                 OnPrepareResponse = ctx =>
@@ -547,6 +548,9 @@ namespace BigLineconnect.Relay
                     ctx.Context.Response.Headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains";
                 }
             });
+
+            app.MapGet("/lc", ctx => { ctx.Response.Redirect("/lc/index.html"); return Task.CompletedTask; });
+            app.MapGet("/lc/", ctx => { ctx.Response.Redirect("/lc/index.html"); return Task.CompletedTask; });
             
             app.UseWebSockets(new WebSocketOptions
             {
