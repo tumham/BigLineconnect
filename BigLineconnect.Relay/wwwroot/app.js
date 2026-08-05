@@ -511,19 +511,14 @@ window.addEventListener('keyup', (e) => {
     e.preventDefault();
 });
 
-function getActiveRenderElement() {
-    const screenCanvas = document.getElementById('screen-canvas');
-    if (screenCanvas && screenCanvas.style.display !== 'none' && screenCanvas.offsetWidth > 0) {
-        return screenCanvas;
-    }
-    return screenImg || canvasContainer;
-}
+let lastMouseMoveTime = 0;
+const interactionTargets = [
+    document.getElementById('screen-canvas'),
+    canvasContainer
+].filter(Boolean);
 
-// Mouse & Touch Event Listeners on Container & Image
-const activeInteractionElem = canvasContainer || document.getElementById('screen-canvas');
-
-if (activeInteractionElem) {
-    activeInteractionElem.addEventListener('mousedown', (e) => {
+interactionTargets.forEach(elem => {
+    elem.addEventListener('mousedown', (e) => {
         if (!connected) return;
         const targetElem = document.getElementById('screen-canvas') || canvasContainer;
         const pos = getMousePos(targetElem, e.clientX, e.clientY);
@@ -536,7 +531,7 @@ if (activeInteractionElem) {
         e.preventDefault();
     });
 
-    activeInteractionElem.addEventListener('mouseup', (e) => {
+    elem.addEventListener('mouseup', (e) => {
         if (!connected) return;
         const targetElem = document.getElementById('screen-canvas') || canvasContainer;
         const pos = getMousePos(targetElem, e.clientX, e.clientY);
@@ -548,7 +543,7 @@ if (activeInteractionElem) {
         e.preventDefault();
     });
 
-    activeInteractionElem.addEventListener('dblclick', (e) => {
+    elem.addEventListener('dblclick', (e) => {
         if (!connected) return;
         const targetElem = document.getElementById('screen-canvas') || canvasContainer;
         const pos = getMousePos(targetElem, e.clientX, e.clientY);
@@ -556,11 +551,10 @@ if (activeInteractionElem) {
         e.preventDefault();
     });
 
-    let lastMouseMoveTime = 0;
-    activeInteractionElem.addEventListener('mousemove', (e) => {
+    elem.addEventListener('mousemove', (e) => {
         if (!connected) return;
         const now = performance.now();
-        if (now - lastMouseMoveTime < 16) return; // 60 FPS max rate limit to prevent packet flooding
+        if (now - lastMouseMoveTime < 16) return; // 60 FPS max rate limit
         lastMouseMoveTime = now;
 
         const targetElem = document.getElementById('screen-canvas') || canvasContainer;
@@ -569,16 +563,17 @@ if (activeInteractionElem) {
         e.preventDefault();
     });
 
-    activeInteractionElem.addEventListener('contextmenu', (e) => {
+    elem.addEventListener('contextmenu', (e) => {
         e.preventDefault();
     });
 
-    activeInteractionElem.addEventListener('wheel', (e) => {
+    elem.addEventListener('wheel', (e) => {
         if (!connected) return;
         const delta = e.deltaY < 0 ? 120 : -120;
         sendScroll(delta);
         e.preventDefault();
     }, { passive: false });
+});
 
     // Mobile Touch Events & Bulletproof Tap Engine
     let startTouch1X = null, startTouch1Y = null, startPan1X = 0, startPan1Y = 0;

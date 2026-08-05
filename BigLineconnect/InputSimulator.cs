@@ -132,11 +132,33 @@ namespace BigLineconnect
                 int actualY = bounds.Y + (int)(yPercent * bounds.Height);
 
                 SetCursorPos(actualX, actualY);
+
+                int normX = Math.Max(0, Math.Min(65535, (int)(xPercent * 65535)));
+                int normY = Math.Max(0, Math.Min(65535, (int)(yPercent * 65535)));
+
+                INPUT[] inputs = new INPUT[1];
+                inputs[0] = new INPUT
+                {
+                    type = INPUT_MOUSE,
+                    U = new InputUnion
+                    {
+                        mi = new MOUSEINPUT
+                        {
+                            dx = normX,
+                            dy = normY,
+                            mouseData = 0,
+                            dwFlags = MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE,
+                            time = 0,
+                            dwExtraInfo = IntPtr.Zero
+                        }
+                    }
+                };
+                SendInput(1, inputs, Marshal.SizeOf<INPUT>());
             }
             catch { }
         }
 
-        public static void SimulateMouseButton(string button, string action)
+        public static void SimulateMouseButton(string button, string action, double? xPercent = null, double? yPercent = null, int displayIndex = 0)
         {
             try
             {
@@ -158,21 +180,32 @@ namespace BigLineconnect
                 if (flags == 0) return;
 
                 INPUT[] inputs = new INPUT[1];
+                var mi = new MOUSEINPUT
+                {
+                    mouseData = 0,
+                    dwFlags = flags,
+                    time = 0,
+                    dwExtraInfo = IntPtr.Zero
+                };
+
+                if (xPercent.HasValue && yPercent.HasValue)
+                {
+                    var screens = System.Windows.Forms.Screen.AllScreens;
+                    if (displayIndex < 0 || displayIndex >= screens.Length) displayIndex = 0;
+                    var bounds = screens[displayIndex].Bounds;
+                    int actualX = bounds.X + (int)(xPercent.Value * bounds.Width);
+                    int actualY = bounds.Y + (int)(yPercent.Value * bounds.Height);
+                    SetCursorPos(actualX, actualY);
+
+                    mi.dx = Math.Max(0, Math.Min(65535, (int)(xPercent.Value * 65535)));
+                    mi.dy = Math.Max(0, Math.Min(65535, (int)(yPercent.Value * 65535)));
+                    mi.dwFlags |= MOUSEEVENTF_ABSOLUTE;
+                }
+
                 inputs[0] = new INPUT
                 {
                     type = INPUT_MOUSE,
-                    U = new InputUnion
-                    {
-                        mi = new MOUSEINPUT
-                        {
-                            dx = 0,
-                            dy = 0,
-                            mouseData = 0,
-                            dwFlags = flags,
-                            time = 0,
-                            dwExtraInfo = IntPtr.Zero
-                        }
-                    }
+                    U = new InputUnion { mi = mi }
                 };
 
                 SendInput(1, inputs, Marshal.SizeOf<INPUT>());
