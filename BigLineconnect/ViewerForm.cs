@@ -454,8 +454,12 @@ namespace BigLineconnect
                 }
                 catch {}
             }
+        }
 
-            var buffer = new byte[1024 * 1024 * 2]; // 2MB frame buffer
+        private readonly byte[] _receiveBuffer = new byte[1024 * 1024 * 2];
+
+        private async Task ReceiveLoop(ClientWebSocket ws, CancellationToken token)
+        {
             try
             {
                 while (!token.IsCancellationRequested && ws.State == WebSocketState.Open)
@@ -465,7 +469,7 @@ namespace BigLineconnect
                     
                     do
                     {
-                        var segment = new ArraySegment<byte>(buffer, totalReceived, buffer.Length - totalReceived);
+                        var segment = new ArraySegment<byte>(_receiveBuffer, totalReceived, _receiveBuffer.Length - totalReceived);
                         result = await ws.ReceiveAsync(segment, token);
                         totalReceived += result.Count;
                     } 
@@ -505,7 +509,7 @@ namespace BigLineconnect
                         }
 
                         // Deduplication for frame recording: skip identical static frames
-                        ulong currentFrameHash = FastBufferHash(buffer, totalReceived);
+                        ulong currentFrameHash = FastBufferHash(_receiveBuffer, totalReceived);
                         bool isDuplicateFrame = (currentFrameHash == _lastFrameHash);
                         _lastFrameHash = currentFrameHash;
 
@@ -522,7 +526,7 @@ namespace BigLineconnect
                                 int currentSavedIndex = _savedFrameIndex;
                                 string framePath = Path.Combine(_recordDir, $"frame_{currentSavedIndex:D6}.jpg");
                                 byte[] frameBytes = new byte[totalReceived];
-                                Array.Copy(buffer, 0, frameBytes, 0, totalReceived);
+                                Array.Copy(_receiveBuffer, 0, frameBytes, 0, totalReceived);
                                 _ = Task.Run(() =>
                                 {
                                     try { File.WriteAllBytes(framePath, frameBytes); } catch { }
@@ -538,7 +542,7 @@ namespace BigLineconnect
 
                         // Load image frame cleanly without memory leaks
                         Image? newImg = null;
-                        using (var ms = new MemoryStream(buffer, 0, totalReceived))
+                        using (var ms = new MemoryStream(_receiveBuffer, 0, totalReceived))
                         {
                             try
                             {
@@ -567,7 +571,7 @@ namespace BigLineconnect
                     }
                     else if (result.MessageType == WebSocketMessageType.Text)
                     {
-                        string message = Encoding.UTF8.GetString(buffer, 0, totalReceived);
+                        string message = Encoding.UTF8.GetString(_receiveBuffer, 0, totalReceived);
                         if (message.Contains("ERROR:BUSY"))
                         {
                             if (_hasConnectedOnce)
