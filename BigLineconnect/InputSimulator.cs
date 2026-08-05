@@ -275,16 +275,16 @@ namespace BigLineconnect
             SendInput(1, inputs, Marshal.SizeOf<INPUT>());
         }
 
-        public static void SimulateMouseDoubleClick(string button)
+        public static void SimulateMouseDoubleClick(string button, double? xPercent = null, double? yPercent = null, int displayIndex = 0)
         {
             try
             {
                 DesktopHelper.AttachToInputDesktop();
-                SimulateMouseButton(button, "down");
-                SimulateMouseButton(button, "up");
-                System.Threading.Thread.Sleep(40);
-                SimulateMouseButton(button, "down");
-                SimulateMouseButton(button, "up");
+                SimulateMouseButton(button, "down", xPercent, yPercent, displayIndex);
+                SimulateMouseButton(button, "up", xPercent, yPercent, displayIndex);
+                System.Threading.Thread.Sleep(15);
+                SimulateMouseButton(button, "down", xPercent, yPercent, displayIndex);
+                SimulateMouseButton(button, "up", xPercent, yPercent, displayIndex);
             }
             catch { }
         }

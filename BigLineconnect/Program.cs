@@ -925,13 +925,14 @@ namespace BigLineconnect
                     string button = "left";
                     if (root.TryGetProperty("button", out var btnProp)) button = btnProp.GetString() ?? "left";
 
+                    double? x = null;
+                    double? y = null;
                     if (root.TryGetProperty("x", out var xProp) && root.TryGetProperty("y", out var yProp))
                     {
-                        double x = xProp.GetDouble();
-                        double y = yProp.GetDouble();
-                        InputSimulator.SimulateMouseMove(x, y, _activeDisplayIndex);
+                        x = xProp.GetDouble();
+                        y = yProp.GetDouble();
                     }
-                    InputSimulator.SimulateMouseDoubleClick(button);
+                    InputSimulator.SimulateMouseDoubleClick(button, x, y, _activeDisplayIndex);
                 }
                 else if (type == "release_modifiers")
                 {
