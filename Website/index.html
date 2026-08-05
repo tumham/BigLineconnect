@@ -320,9 +320,10 @@
             </div>
         </header>
 
-        <!-- Remote screen rendering image -->
+        <!-- Remote screen rendering canvas -->
         <div class="canvas-container" id="canvas-container">
-            <img id="screen-img" style="width: 100%; height: 100%; object-fit: contain; cursor: default; display: block; user-select: none; -webkit-user-drag: none;">
+            <canvas id="screen-canvas" style="width: 100%; height: 100%; object-fit: contain; cursor: default; display: block; user-select: none;"></canvas>
+            <img id="screen-img" style="display: none;">
         </div>
 
         <!-- Floating Controls for Mobile & Actions -->

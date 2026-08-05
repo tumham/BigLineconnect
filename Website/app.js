@@ -201,12 +201,24 @@ function connectToHost(id) {
                 if (connectionStatus) {
                     connectionStatus.innerHTML = `<span class="status-dot online"></span>${sizeKb.toFixed(0)} KB`;
                 }
+
+                const screenCanvas = document.getElementById('screen-canvas');
+                const ctx = screenCanvas ? screenCanvas.getContext('2d', { alpha: false, desynchronized: true }) : null;
+
                 const url = URL.createObjectURL(blob);
-                const oldUrl = screenImg.src;
-                screenImg.src = url;
-                if (oldUrl && oldUrl.startsWith('blob:')) {
-                    setTimeout(() => URL.revokeObjectURL(oldUrl), 500);
-                }
+                const img = new Image();
+                img.onload = () => {
+                    if (screenCanvas && ctx) {
+                        if (screenCanvas.width !== img.width || screenCanvas.height !== img.height) {
+                            screenCanvas.width = img.width;
+                            screenCanvas.height = img.height;
+                        }
+                        ctx.drawImage(img, 0, 0);
+                    }
+                    URL.revokeObjectURL(url);
+                };
+                img.onerror = () => URL.revokeObjectURL(url);
+                img.src = url;
             } else if (typeof event.data === 'string') {
                 if (event.data === 'ERROR:ID_NOT_FOUND') {
                     customCloseReason = 'Bağlantı ID\'si bulunamadı veya bilgisayar kapalı.';
@@ -488,12 +500,13 @@ function getActiveRenderElement() {
 }
 
 // Mouse & Touch Event Listeners on Container & Image
-const activeInteractionElem = canvasContainer || screenImg;
+const activeInteractionElem = canvasContainer || document.getElementById('screen-canvas');
 
 if (activeInteractionElem) {
     activeInteractionElem.addEventListener('mousedown', (e) => {
         if (!connected) return;
-        const pos = getMousePos(screenImg, e.clientX, e.clientY);
+        const targetElem = document.getElementById('screen-canvas') || canvasContainer;
+        const pos = getMousePos(targetElem, e.clientX, e.clientY);
         
         let button = 'left';
         if (e.button === 2) button = 'right';
@@ -505,12 +518,21 @@ if (activeInteractionElem) {
 
     activeInteractionElem.addEventListener('mouseup', (e) => {
         if (!connected) return;
-        const pos = getMousePos(screenImg, e.clientX, e.clientY);
+        const targetElem = document.getElementById('screen-canvas') || canvasContainer;
+        const pos = getMousePos(targetElem, e.clientX, e.clientY);
         let button = 'left';
         if (e.button === 2) button = 'right';
         else if (e.button === 1) button = 'middle';
         
         sendClick(button, 'up', pos.x, pos.y);
+        e.preventDefault();
+    });
+
+    activeInteractionElem.addEventListener('dblclick', (e) => {
+        if (!connected) return;
+        const targetElem = document.getElementById('screen-canvas') || canvasContainer;
+        const pos = getMousePos(targetElem, e.clientX, e.clientY);
+        sendDoubleClick('left', pos.x, pos.y);
         e.preventDefault();
     });
 
@@ -521,7 +543,8 @@ if (activeInteractionElem) {
         if (now - lastMouseMoveTime < 16) return; // 60 FPS max rate limit to prevent packet flooding
         lastMouseMoveTime = now;
 
-        const pos = getMousePos(screenImg, e.clientX, e.clientY);
+        const targetElem = document.getElementById('screen-canvas') || canvasContainer;
+        const pos = getMousePos(targetElem, e.clientX, e.clientY);
         sendMove(pos.x, pos.y);
         e.preventDefault();
     });
