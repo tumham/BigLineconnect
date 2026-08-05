@@ -235,16 +235,10 @@ namespace BigLineconnect
                     U = new InputUnion { mi = mi }
                 };
 
-                SendInput(1, inputs, Marshal.SizeOf<INPUT>());
-                mouse_event(flags | MOUSEEVENTF_ABSOLUTE, (uint)mi.dx, (uint)mi.dy, 0, UIntPtr.Zero);
-
-                // If action is "up", force release ALL mouse buttons (Left, Right, Middle) to prevent stuck drag states
-                if (action.Equals("up", StringComparison.OrdinalIgnoreCase))
+                // Clean single execution: Try SendInput first. Only fallback to mouse_event if SendInput fails!
+                if (SendInput(1, inputs, Marshal.SizeOf<INPUT>()) == 0)
                 {
-                    uint releaseAll = MOUSEEVENTF_LEFTUP | MOUSEEVENTF_RIGHTUP | MOUSEEVENTF_MIDDLEUP | MOUSEEVENTF_ABSOLUTE;
-                    inputs[0].U.mi.dwFlags = releaseAll;
-                    SendInput(1, inputs, Marshal.SizeOf<INPUT>());
-                    mouse_event(releaseAll, (uint)mi.dx, (uint)mi.dy, 0, UIntPtr.Zero);
+                    mouse_event(flags | MOUSEEVENTF_ABSOLUTE, (uint)mi.dx, (uint)mi.dy, 0, UIntPtr.Zero);
                 }
             }
             catch { }

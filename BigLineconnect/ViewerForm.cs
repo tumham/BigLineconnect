@@ -1465,14 +1465,7 @@ namespace BigLineconnect
 
         private void PictureBox_MouseDoubleClick(object? sender, MouseEventArgs e)
         {
-            if (_pictureBox == null) return;
-
-            var (x, y) = GetNormalizedMousePos(e, _pictureBox);
-            string button = "left";
-            if (e.Button == MouseButtons.Right) button = "right";
-            else if (e.Button == MouseButtons.Middle) button = "middle";
-
-            SendJson($"{{\"type\":\"double_click\",\"button\":\"{button}\",\"x\":{x.ToString(System.Globalization.CultureInfo.InvariantCulture)},\"y\":{y.ToString(System.Globalization.CultureInfo.InvariantCulture)}}}");
+            // MouseDown and MouseUp sequence already streams native clean clicks to host.
         }
 
         private void SendReleaseAllModifiers()
