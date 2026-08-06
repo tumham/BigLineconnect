@@ -4089,9 +4089,11 @@ namespace BigLineconnect
 
         private void SplashScreenForm_Paint(object? sender, PaintEventArgs e)
         {
-            var g = e.Graphics;
-            g.SmoothingMode = SmoothingMode.AntiAlias;
-            g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
+            try
+            {
+                var g = e.Graphics;
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+                g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
 
             // Pure frameless floating splash animation - zero borders, zero background boxes!
             float xc = this.Width / 2F;
@@ -4251,6 +4253,8 @@ namespace BigLineconnect
                     }
                 }
             }
+            }
+            catch { }
         }
 
         private Color InterpolateColor(Color c1, Color c2, double ratio)
