@@ -3830,7 +3830,9 @@ namespace BigLineconnect
             this.Height = 340;
             this.FormBorderStyle = FormBorderStyle.None;
             this.StartPosition = FormStartPosition.CenterScreen;
-            this.BackColor = Color.FromArgb(10, 11, 16);
+            this.AllowTransparency = true;
+            this.BackColor = Color.Magenta;
+            this.TransparencyKey = Color.Magenta; // Pure transparent background, zero boxes/borders
             this.ForeColor = Color.White;
             this.DoubleBuffered = true;
             this.ShowInTaskbar = false;
@@ -3880,6 +3882,7 @@ namespace BigLineconnect
                 Size = new Size(480, 65),
                 Font = new Font("Segoe UI", 26F, FontStyle.Bold),
                 ForeColor = Color.FromArgb(0, 229, 255),
+                BackColor = Color.Transparent,
                 TextAlign = ContentAlignment.MiddleCenter
             };
 
@@ -3890,6 +3893,7 @@ namespace BigLineconnect
                 Size = new Size(480, 20),
                 Font = new Font("Segoe UI", 9F, FontStyle.Bold),
                 ForeColor = Color.FromArgb(150, 255, 255, 255),
+                BackColor = Color.Transparent,
                 TextAlign = ContentAlignment.MiddleCenter
             };
 
@@ -3900,6 +3904,7 @@ namespace BigLineconnect
                 Size = new Size(480, 25),
                 Font = new Font("Segoe UI", 9F, FontStyle.Regular),
                 ForeColor = Color.FromArgb(180, 180, 180),
+                BackColor = Color.Transparent,
                 TextAlign = ContentAlignment.MiddleCenter
             };
 
@@ -4087,29 +4092,7 @@ namespace BigLineconnect
             var g = e.Graphics;
             g.SmoothingMode = SmoothingMode.AntiAlias;
 
-            // Draw glowing outer border
-            var borderRect = new Rectangle(0, 0, this.Width - 1, this.Height - 1);
-            using (var borderBrush = new LinearGradientBrush(
-                borderRect,
-                Color.FromArgb(0, 229, 255),
-                Color.FromArgb(213, 0, 249),
-                45F))
-            using (var pen = new Pen(borderBrush, 3))
-            {
-                g.DrawRectangle(pen, borderRect);
-            }
-
-            // Draw interior background panel gradient
-            var bgRect = new Rectangle(2, 2, this.Width - 4, this.Height - 4);
-            using (var bgBrush = new LinearGradientBrush(
-                bgRect,
-                Color.FromArgb(10, 11, 16),
-                Color.FromArgb(22, 24, 33),
-                90F))
-            {
-                g.FillRectangle(bgBrush, bgRect);
-            }
-
+            // Pure frameless floating splash animation - zero borders, zero background boxes!
             float xc = this.Width / 2F;
             float yc = 185F;
 
