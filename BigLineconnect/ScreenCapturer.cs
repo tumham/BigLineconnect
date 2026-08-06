@@ -218,10 +218,10 @@ namespace BigLineconnect
                         using (Graphics gScreen = Graphics.FromImage(bmpScreen))
                         {
                             IntPtr hdcDest = gScreen.GetHdc();
-                            IntPtr hdcSrc = GetDC(GetDesktopWindow());
+                            IntPtr hdcSrc = GetDC(IntPtr.Zero); // 100% Direct Primary Screen DC
                             BitBlt(hdcDest, 0, 0, screenWidth, screenHeight, hdcSrc, 0, 0, 0x00CC0020);
                             gScreen.ReleaseHdc(hdcDest);
-                            ReleaseDC(GetDesktopWindow(), hdcSrc);
+                            ReleaseDC(IntPtr.Zero, hdcSrc);
                         }
                         return ProcessAndCompress(bmpScreen, quality, maxDimension);
                     }
@@ -229,7 +229,6 @@ namespace BigLineconnect
                 catch (Exception ex2)
                 {
                     LogHelper($"[BitBlt Fallback Error]: {ex2.Message}");
-                    _useDxgi = true;
                     return Array.Empty<byte>();
                 }
             }
