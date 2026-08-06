@@ -124,7 +124,6 @@ namespace BigLineconnect
         {
             try
             {
-                DesktopHelper.AttachToInputDesktop();
                 var screens = System.Windows.Forms.Screen.AllScreens;
                 if (displayIndex < 0 || displayIndex >= screens.Length) displayIndex = 0;
 
@@ -133,31 +132,6 @@ namespace BigLineconnect
                 int actualY = bounds.Y + Math.Min(bounds.Height - 1, (int)(yPercent * bounds.Height));
 
                 SetCursorPos(actualX, actualY);
-
-                int normX = Math.Max(0, Math.Min(65535, (int)(xPercent * 65535)));
-                int normY = Math.Max(0, Math.Min(65535, (int)(yPercent * 65535)));
-
-                INPUT[] inputs = new INPUT[1];
-                inputs[0] = new INPUT
-                {
-                    type = INPUT_MOUSE,
-                    U = new InputUnion
-                    {
-                        mi = new MOUSEINPUT
-                        {
-                            dx = normX,
-                            dy = normY,
-                            mouseData = 0,
-                            dwFlags = MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE,
-                            time = 0,
-                            dwExtraInfo = IntPtr.Zero
-                        }
-                    }
-                };
-                if (SendInput(1, inputs, Marshal.SizeOf<INPUT>()) == 0)
-                {
-                    mouse_event(MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE, (uint)normX, (uint)normY, 0, UIntPtr.Zero);
-                }
             }
             catch { }
         }
@@ -176,7 +150,6 @@ namespace BigLineconnect
         {
             try
             {
-                DesktopHelper.AttachToInputDesktop();
                 uint flags = 0;
 
                 if (button.Equals("left", StringComparison.OrdinalIgnoreCase))
@@ -198,56 +171,40 @@ namespace BigLineconnect
                 if (displayIndex < 0 || displayIndex >= screens.Length) displayIndex = 0;
                 var bounds = screens[displayIndex].Bounds;
 
-                INPUT[] inputs = new INPUT[1];
-                var mi = new MOUSEINPUT
-                {
-                    mouseData = 0,
-                    dwFlags = flags,
-                    time = 0,
-                    dwExtraInfo = IntPtr.Zero
-                };
-
-                double targetX = 0;
-                double targetY = 0;
-
                 if (xPercent.HasValue && yPercent.HasValue)
                 {
-                    targetX = xPercent.Value;
-                    targetY = yPercent.Value;
-                }
-                else if (GetCursorPos(out POINT pt))
-                {
-                    targetX = Math.Max(0, Math.Min(1.0, (double)(pt.X - bounds.X) / bounds.Width));
-                    targetY = Math.Max(0, Math.Min(1.0, (double)(pt.Y - bounds.Y) / bounds.Height));
+                    int actualX = bounds.X + Math.Min(bounds.Width - 1, (int)(xPercent.Value * bounds.Width));
+                    int actualY = bounds.Y + Math.Min(bounds.Height - 1, (int)(yPercent.Value * bounds.Height));
+                    SetCursorPos(actualX, actualY);
                 }
 
-                int actualX = bounds.X + Math.Min(bounds.Width - 1, (int)(targetX * bounds.Width));
-                int actualY = bounds.Y + Math.Min(bounds.Height - 1, (int)(targetY * bounds.Height));
-                SetCursorPos(actualX, actualY);
-
-                mi.dx = Math.Max(0, Math.Min(65535, (int)(targetX * 65535)));
-                mi.dy = Math.Max(0, Math.Min(65535, (int)(targetY * 65535)));
-                mi.dwFlags |= MOUSEEVENTF_ABSOLUTE;
-
+                INPUT[] inputs = new INPUT[1];
                 inputs[0] = new INPUT
                 {
                     type = INPUT_MOUSE,
-                    U = new InputUnion { mi = mi }
+                    U = new InputUnion
+                    {
+                        mi = new MOUSEINPUT
+                        {
+                            dx = 0,
+                            dy = 0,
+                            mouseData = 0,
+                            dwFlags = flags,
+                            time = 0,
+                            dwExtraInfo = IntPtr.Zero
+                        }
+                    }
                 };
 
-                // Clean single execution: Try SendInput first. Only fallback to mouse_event if SendInput fails!
                 if (SendInput(1, inputs, Marshal.SizeOf<INPUT>()) == 0)
                 {
-                    mouse_event(flags | MOUSEEVENTF_ABSOLUTE, (uint)mi.dx, (uint)mi.dy, 0, UIntPtr.Zero);
+                    mouse_event(flags, 0, 0, 0, UIntPtr.Zero);
                 }
             }
             catch { }
         }
-
         public static void SimulateMouseScroll(int deltaY)
         {
-            DesktopHelper.AttachToInputDesktop();
-            // deltaY is usually +120 or -120 per scroll click
             INPUT[] inputs = new INPUT[1];
             inputs[0] = new INPUT
             {
@@ -273,7 +230,6 @@ namespace BigLineconnect
         {
             try
             {
-                DesktopHelper.AttachToInputDesktop();
                 SimulateMouseButton(button, "down", xPercent, yPercent, displayIndex);
                 SimulateMouseButton(button, "up", xPercent, yPercent, displayIndex);
                 System.Threading.Thread.Sleep(15);
