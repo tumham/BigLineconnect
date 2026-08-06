@@ -1083,7 +1083,10 @@ namespace BigLineconnect
                     }));
 
                     _isReconnecting = false;
-                    _ = Task.Run(() => ReceiveScreenLoop(_ws, _cts.Token));
+                    _ = Task.Run(async () => {
+                        await ReceiveScreenLoop(_ws, _cts.Token);
+                        await ReceiveLoop(_ws, _cts.Token);
+                    });
                     return;
                 }
                 catch
