@@ -89,53 +89,83 @@ if (string.IsNullOrEmpty(_savedPassword))
 
 ---
 
-## 💎 MODÜL 7: Müşteri Destek Talepleri Geçmişi & Ezilmeyen Sıralama Sistemi (`MySubmittedTicketsForm`)
-- **Hata Tanımı:** Müşterinin açtığı yeni destek talebinin önceki çözülmüş talebi ezip silmesi ve göz yoran beyaz tablo çizgileri.
-- **Kök Neden:** Yerel ve sunucu verileri birleştirilirken jeton (`Token`) kontrolleri olmadan gevşek sorun başlığı eşleştirmesi yapılıyordu; WinForms varsayılan GridLines özelliği siyah fon üzerinde sert beyaz çizgiler çiziyordu.
+## 💎 MODÜL 7: Gelen Canlı Destek Talebi Düşme & Sesli/Kırmızı Uyarı Butonu Sistemi (`RefreshSupportTickets`)
+- **Açıklama:** Müşterilerden gelen canlı destek taleplerini HTTP tüneli (`/api/support/list`) üzerinden sorgulayan, yeni bir talep düştüğünde uzmanın ana ekranındaki butonun adını `🆘 Talepler (N)` yaparak canlı kırmızı renge bürüyen ve `MessageBeep` / `Beep` ile sesli zil uyarısı veren sistem.
 - **Onaylanmış Kod Pasajı (`MainWindow.cs`):**
 ```csharp
-// 1. Benzersiz Token & Zaman Damgası İle Ezilmeyen Eşleştirme/Ekleme
-public static void SaveLocalSubmittedTicket(LocalSubmittedTicket ticket)
+// 1. Canlı Destek Taleplerini Sorgulama ve Kırmızı Buton Tetikleme
+public void RefreshSupportTickets()
 {
-    var tickets = LoadLocalSubmittedTickets();
-    tickets.RemoveAll(t => 
-        (!string.IsNullOrEmpty(ticket.Token) && !string.IsNullOrEmpty(t.Token) && t.Token.Trim() == ticket.Token.Trim()) ||
-        (t.HostId == ticket.HostId && t.Issue == ticket.Issue && Math.Abs((t.CreatedAt - ticket.CreatedAt).TotalSeconds) < 5)
-    );
-    tickets.Insert(0, ticket);
-    File.WriteAllText(GetLocalSubmittedTicketsFilePath(), System.Text.Json.JsonSerializer.Serialize(tickets));
+    Task.Run(async () => {
+        string serverUrl = _actualRelayUrl;
+        string tenantCode = Uri.EscapeDataString(LicenseSystem.CompanyCode);
+        string httpUrl = serverUrl.Replace("ws://", "http://").Replace("wss://", "https://").Replace("/register-host", $"/api/support/list?tenantId={tenantCode}");
+        
+        using (var client = new System.Net.Http.HttpClient())
+        {
+            var response = await client.GetAsync(httpUrl);
+            if (response.IsSuccessStatusCode)
+            {
+                string jsonText = await response.Content.ReadAsStringAsync();
+                using (var doc = System.Text.Json.JsonDocument.Parse(jsonText))
+                {
+                    var tickets = new List<SupportTicket>();
+                    foreach (var element in doc.RootElement.EnumerateArray())
+                    {
+                        // Ticket parsing (Id, Name, Issue, Token, CreatedAt)
+                    }
+
+                    this.Invoke((System.Windows.Forms.MethodInvoker)delegate {
+                        if (this.IsDisposed || !this.IsHandleCreated) return;
+
+                        bool hasNewTicket = false;
+                        lock (_activeTickets)
+                        {
+                            var oldTokens = _activeTickets.Select(x => !string.IsNullOrEmpty(x.Token) ? x.Token : x.Id).ToHashSet();
+                            foreach (var ticketItem in tickets)
+                            {
+                                string ticketKey = !string.IsNullOrEmpty(ticketItem.Token) ? ticketItem.Token : ticketItem.Id;
+                                if (!oldTokens.Contains(ticketKey) && !_knownTicketTokens.Contains(ticketKey))
+                                {
+                                    if (!_isFirstTicketFetch) hasNewTicket = true;
+                                    _knownTicketTokens.Add(ticketKey);
+                                }
+                            }
+                            _isFirstTicketFetch = false;
+                            _activeTickets = tickets;
+                        }
+
+                        // Kırmızı Uyarı Butonu ve Sesli Zil Tetikleme
+                        if (hasNewTicket)
+                        {
+                            PlayNewTicketNotificationSound();
+                            AppendLog("[Gelen Çağrı 🔔] Yeni bir canlı destek talebi düştü!");
+                        }
+
+                        if (_tabDestekButton != null)
+                        {
+                            _tabDestekButton.Text = $"🆘 Talepler ({tickets.Count})";
+                            _tabDestekButton.BackColor = hasNewTicket ? Color.FromArgb(231, 76, 60) : SystemColors.Control;
+                        }
+
+                        if (_isShowingTickets) UpdateAddressBookUI();
+                    });
+                }
+            }
+        }
+    });
 }
 
-// 2. Göz Yormayan Alternatif Koyu Satır Renkleri (Zebra Striping, GridLines=false)
-lstTickets.GridLines = false;
-Color rowBg = (rowIndex % 2 == 0) ? Color.FromArgb(24, 29, 40) : Color.FromArgb(16, 20, 28);
-item.BackColor = rowBg;
-item.UseItemStyleForSubItems = false;
-```
-
----
-
-## 💎 MODÜL 8: 0ms Sıfır Gecikmeli Klavye İletimi & 4K Kristal Netlik Motoru
-- **Hata Tanımı:** Klavye harflerinin teker teker takılarak arkadan gelmesi ("kağnı arabası gibi") ve ekran yazılarının bulanık olması.
-- **Kök Neden:** Harf başı `DesktopHelper.AttachToInputDesktop()` Win32 sorgusu ve disk log yazımı (LogHelper) 50ms gecikme yapıyordu; varsayılan ekran kalitesi %55 JPEG ve 1366px çözünürlükle sınırlandırılmıştı.
-- **Onaylanmış Kod Pasajı (`DesktopHelper.cs` & `ViewerForm.cs` & `Program.cs`):**
-```csharp
-// 1. 0ms Tuş Yanıtı Önbellekleme (DesktopHelper.cs)
-private static DateTime _lastDesktopAttachTime = DateTime.MinValue;
-public static void AttachToInputDesktop()
+// 2. Sesli Zil Uyarısı (Windows Native Beep & SystemSounds)
+private void PlayNewTicketNotificationSound()
 {
-    if ((DateTime.UtcNow - _lastDesktopAttachTime).TotalMilliseconds < 2000 && _currentThreadDesktop != IntPtr.Zero)
-        return; // Tuş başına Win32 ve Log I/O yapılmasını engelleyerek Mercedes hızında 0ms yanıt verir
-    _lastDesktopAttachTime = DateTime.UtcNow;
-    ...
+    Task.Run(() => {
+        try { MessageBeep(0x00000030); } catch { } // MB_ICONEXCLAMATION
+        try { System.Media.SystemSounds.Exclamation.Play(); } catch { }
+        try { System.Media.SystemSounds.Asterisk.Play(); } catch { }
+        try { Beep(880, 250); Beep(1320, 350); } catch { } // Dual Tone Alarm
+    });
 }
-
-// 2. HighQualityBicubic 4K Pırıl Pırıl Ekran Çizimi (ViewerForm.cs Paint)
-_pictureBox.Paint += (s, pe) => {
-    pe.Graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
-    pe.Graphics.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.HighQuality;
-    pe.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighQuality;
-};
 ```
 
 ---
