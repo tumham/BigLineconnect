@@ -274,17 +274,17 @@ namespace BigLineconnect
             ModernUIHelper.ApplyButtonStyle(btnQuality, Color.FromArgb(156, 39, 176), Color.FromArgb(123, 31, 162), Color.White);
             
             var cmsQuality = new ContextMenuStrip();
-            var itemLow = new ToolStripMenuItem("Düşük Kalite (Hızlı)", null, (s, e) => {
-                btnQuality.Text = "Kalite: Düşük 🎨";
-                SendJson("{\"type\":\"set_quality\",\"quality\":35,\"maxDim\":1024}");
+            var itemLow = new ToolStripMenuItem("Ekonomi (Hızlı Hız)", null, (s, e) => {
+                btnQuality.Text = "Kalite: Ekonomi 🎨";
+                SendJson("{\"type\":\"set_quality\",\"quality\":60,\"maxDim\":1600}");
             });
-            var itemMid = new ToolStripMenuItem("Yüksek Kalite", null, (s, e) => {
+            var itemMid = new ToolStripMenuItem("Yüksek Kalite (Dengeli - 1080p)", null, (s, e) => {
                 btnQuality.Text = "Kalite: Yüksek 🎨";
-                SendJson("{\"type\":\"set_quality\",\"quality\":50,\"maxDim\":1280}");
+                SendJson("{\"type\":\"set_quality\",\"quality\":80,\"maxDim\":1920}");
             });
-            var itemHigh = new ToolStripMenuItem("En Yüksek Kalite", null, (s, e) => {
-                btnQuality.Text = "Kalite: En Yüksek 🎨";
-                SendJson("{\"type\":\"set_quality\",\"quality\":65,\"maxDim\":1440}");
+            var itemHigh = new ToolStripMenuItem("En Yüksek (Pırıl Pırıl Orijinal 4K)", null, (s, e) => {
+                btnQuality.Text = "Kalite: Pırıl Pırıl (4K) 🎨";
+                SendJson("{\"type\":\"set_quality\",\"quality\":95,\"maxDim\":3840}");
             });
             cmsQuality.Items.Add(itemLow);
             cmsQuality.Items.Add(itemMid);
@@ -363,9 +363,13 @@ namespace BigLineconnect
                 BackColor = Color.FromArgb(12, 14, 20)
             };
 
-            // Custom Paint event when image is null to render modern status overlay instead of pitch black box
+            // Custom Paint event to enforce high quality interpolation and render modern overlay when image is null
             _pictureBox.Paint += (s, pe) =>
             {
+                pe.Graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+                pe.Graphics.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.HighQuality;
+                pe.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighQuality;
+
                 if (_pictureBox.Image == null)
                 {
                     var g = pe.Graphics;

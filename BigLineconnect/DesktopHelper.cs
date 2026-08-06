@@ -77,8 +77,16 @@ namespace BigLineconnect
             }
         }
 
+        private static DateTime _lastDesktopAttachTime = DateTime.MinValue;
+
         public static void AttachToInputDesktop()
         {
+            if ((DateTime.UtcNow - _lastDesktopAttachTime).TotalMilliseconds < 2000 && _currentThreadDesktop != IntPtr.Zero)
+            {
+                return;
+            }
+            _lastDesktopAttachTime = DateTime.UtcNow;
+
             try
             {
                 IntPtr hDesk = OpenInputDesktop(0, true, MAXIMUM_ALLOWED);
@@ -103,25 +111,14 @@ namespace BigLineconnect
                             CloseDesktop(_currentThreadDesktop);
                         }
                         _currentThreadDesktop = hDesk;
-                        LogHelper($"Successfully attached thread to input desktop. Handle: {hDesk}");
                     }
                     else
                     {
-                        int err = Marshal.GetLastWin32Error();
-                        LogHelper($"SetThreadDesktop failed. Error: {err}");
                         CloseDesktop(hDesk);
                     }
                 }
-                else
-                {
-                    int err = Marshal.GetLastWin32Error();
-                    LogHelper($"OpenInputDesktop failed. Error: {err}");
-                }
             }
-            catch (Exception ex)
-            {
-                LogHelper($"AttachToInputDesktop exception: {ex.Message}");
-            }
+            catch { }
         }
 
         private static void LogHelper(string message)
