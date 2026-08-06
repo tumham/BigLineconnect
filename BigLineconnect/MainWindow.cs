@@ -178,7 +178,7 @@ namespace BigLineconnect
         private void InitializeComponent()
         {
             Program.LoadSecuritySettings();
-            this.Text = "BigLineconnect v2.5.1 - Uzaktan Kontrol (BigLine-RT & 100FPS P2P)";
+            this.Text = "BigLineconnect v2.5.2 - Uzaktan Kontrol (Anti-Tearing & 100FPS P2P)";
             this.Size = new Size(880, 750);
             this.MinimumSize = new Size(880, 750);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -208,7 +208,7 @@ namespace BigLineconnect
 
             _titleLabel = new Label
             {
-                Text = "BigLineconnect v2.5.1 🚀",
+                Text = "BigLineconnect v2.5.2 🚀",
                 Location = new Point(105, 15),
                 Size = new Size(330, 42),
                 Font = new Font("Segoe UI", 20F, FontStyle.Bold),
@@ -219,7 +219,7 @@ namespace BigLineconnect
 
             var versionBadge = new Label
             {
-                Text = " SÜRÜM: v2.5.1 ",
+                Text = " SÜRÜM: v2.5.2 ",
                 Location = new Point(440, 22),
                 Size = new Size(130, 28),
                 Font = new Font("Segoe UI", 10F, FontStyle.Bold),
@@ -231,7 +231,7 @@ namespace BigLineconnect
 
             var subtitleLabel = new Label
             {
-                Text = "REMOTE DESKTOP CLIENT • v2.5.1 (BigLine-RT & P2P 100FPS)",
+                Text = "REMOTE DESKTOP CLIENT • v2.5.2 (Anti-Tearing Double Buffer & P2P 100FPS)",
                 Location = new Point(108, 58),
                 Size = new Size(450, 20),
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),

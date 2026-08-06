@@ -166,7 +166,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v2.5.1 (100 FPS P2P)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v2.5.2 (Anti-Tearing Double Buffer)";
             this.Size = new Size(1024, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
@@ -358,7 +358,7 @@ namespace BigLineconnect
             };
             panelTop.Controls.Add(_lblFpsStats);
 
-            _pictureBox = new PictureBox
+            _pictureBox = new DoubleBufferedPictureBox
             {
                 Dock = DockStyle.Fill,
                 SizeMode = PictureBoxSizeMode.StretchImage,
@@ -628,7 +628,6 @@ namespace BigLineconnect
                                 var oldImg = _pictureBox.Image;
                                 _pictureBox.Image = newImg;
                                 _pictureBox.Invalidate();
-                                _pictureBox.Update();
                                 oldImg?.Dispose();
                             }));
                         }
@@ -3854,5 +3853,23 @@ namespace BigLineconnect
         }
 
         protected override bool ShowFocusCues => false;
+    }
+
+    public class DoubleBufferedPictureBox : PictureBox
+    {
+        public DoubleBufferedPictureBox()
+        {
+            this.DoubleBuffered = true;
+            this.SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint | ControlStyles.OptimizedDoubleBuffer, true);
+            this.UpdateStyles();
+        }
+
+        protected override void OnPaintBackground(PaintEventArgs e)
+        {
+            if (this.Image == null)
+            {
+                base.OnPaintBackground(e);
+            }
+        }
     }
 }
