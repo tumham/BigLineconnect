@@ -843,21 +843,20 @@ namespace BigLineconnect.Relay
                     {
                         while (clientSocket.State == WebSocketState.Open && hostSession.HostSocket.State == WebSocketState.Open)
                         {
-                            using var ms = new MemoryStream();
-                            WebSocketReceiveResult res;
-                            do
+                            byte[] pooledBuffer = System.Buffers.ArrayPool<byte>.Shared.Rent(buffer.Length);
+                            try
                             {
-                                res = await clientSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+                                var res = await clientSocket.ReceiveAsync(new ArraySegment<byte>(pooledBuffer), CancellationToken.None);
                                 if (res.MessageType == WebSocketMessageType.Close) break;
-                                ms.Write(buffer, 0, res.Count);
+
+                                if (res.Count > 0 && hostSession.HostSocket.State == WebSocketState.Open)
+                                {
+                                    await hostSession.HostSocket.SendAsync(new ArraySegment<byte>(pooledBuffer, 0, res.Count), res.MessageType, res.EndOfMessage, CancellationToken.None);
+                                }
                             }
-                            while (!res.EndOfMessage);
-
-                            if (res.MessageType == WebSocketMessageType.Close) break;
-
-                            if (ms.Length > 0 && hostSession.HostSocket.State == WebSocketState.Open)
+                            finally
                             {
-                                await hostSession.HostSocket.SendAsync(new ArraySegment<byte>(ms.ToArray()), res.MessageType, true, CancellationToken.None);
+                                System.Buffers.ArrayPool<byte>.Shared.Return(pooledBuffer);
                             }
                         }
                     }

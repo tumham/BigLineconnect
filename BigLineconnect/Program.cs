@@ -757,6 +757,11 @@ namespace BigLineconnect
                                 ProcessRemoteInput(message);
                             }
                         }
+                        else if (result.MessageType == WebSocketMessageType.Binary && ms.Length >= 5)
+                        {
+                            byte[] binPkt = ms.ToArray();
+                            ProcessBinaryRemoteInput(binPkt);
+                        }
                     }
                 }
                 catch (OperationCanceledException) { }
@@ -890,6 +895,19 @@ namespace BigLineconnect
             catch (Exception ex)
             {
                 Log($"Gönderim döngüsü hatası: {ex.Message}");
+            }
+        }
+
+        public static void ProcessBinaryRemoteInput(byte[] pkt)
+        {
+            if (pkt == null || pkt.Length < 5) return;
+            if (pkt[0] == 0x4D) // 'M' for fast mouse move
+            {
+                ushort ux = BitConverter.ToUInt16(pkt, 1);
+                ushort uy = BitConverter.ToUInt16(pkt, 3);
+                double x = (double)ux / 65535.0;
+                double y = (double)uy / 65535.0;
+                InputSimulator.SimulateMouseMove(x, y);
             }
         }
 

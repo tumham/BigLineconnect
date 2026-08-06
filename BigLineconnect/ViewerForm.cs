@@ -1300,18 +1300,37 @@ namespace BigLineconnect
             }
         }
 
+        private void SendFastMouseMove(double x, double y)
+        {
+            ushort ux = (ushort)(Math.Max(0, Math.Min(1, x)) * 65535);
+            ushort uy = (ushort)(Math.Max(0, Math.Min(1, y)) * 65535);
+
+            byte[] pkt = new byte[5];
+            pkt[0] = 0x4D; // 'M' for Move
+            BitConverter.TryWriteBytes(new Span<byte>(pkt, 1, 2), ux);
+            BitConverter.TryWriteBytes(new Span<byte>(pkt, 3, 2), uy);
+
+            if (P2pDirectEngine.IsP2pConnected)
+            {
+                P2pDirectEngine.SendP2pPacket(pkt);
+            }
+            else if (_ws != null && _ws.State == WebSocketState.Open)
+            {
+                _ws.SendAsync(new ArraySegment<byte>(pkt), WebSocketMessageType.Binary, true, CancellationToken.None);
+            }
+        }
+
         private void PictureBox_MouseMove(object? sender, MouseEventArgs e)
         {
             if (_pictureBox == null) return;
             if (e.Location == _lastSentMousePos) return;
-            int throttleMs = (e.Button != MouseButtons.None) ? 20 : 50;
+            int throttleMs = 10; // 100 FPS ultra-fast mouse tracking!
             if (DateTime.Now - _lastMoveSent < TimeSpan.FromMilliseconds(throttleMs)) return;
             _lastMoveSent = DateTime.Now;
             _lastSentMousePos = e.Location;
 
             var (x, y) = GetNormalizedMousePos(e, _pictureBox);
-
-            SendJson($"{{\"type\":\"move\",\"x\":{x.ToString(System.Globalization.CultureInfo.InvariantCulture)},\"y\":{y.ToString(System.Globalization.CultureInfo.InvariantCulture)}}}");
+            SendFastMouseMove(x, y);
         }
 
         private void PictureBox_MouseDown(object? sender, MouseEventArgs e)
