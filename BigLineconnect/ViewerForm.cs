@@ -586,7 +586,7 @@ namespace BigLineconnect
                         try
                         {
                             using (var ms = new MemoryStream(isolatedFrame, 0, totalReceived))
-                            using (var tempImg = Image.FromStream(ms, true, true))
+                            using (var tempImg = Image.FromStream(ms, false, false))
                             {
                                 var bmpCopy = new Bitmap(tempImg.Width, tempImg.Height, PixelFormat.Format32bppArgb);
                                 using (var g = Graphics.FromImage(bmpCopy))
