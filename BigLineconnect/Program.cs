@@ -881,7 +881,9 @@ namespace BigLineconnect
                         }
                     }
 
-                    await Task.Delay(10, token).ConfigureAwait(false);
+                    bool activeMotion = DateTime.Now.Ticks < Interlocked.Read(ref _forceSendUntilTicks);
+                    int loopDelay = activeMotion ? 2 : 15;
+                    await Task.Delay(loopDelay, token).ConfigureAwait(false);
                 }
                 Log("Görüntü gönderim döngüsü sonlandı.");
             }

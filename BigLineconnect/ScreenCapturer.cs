@@ -29,7 +29,7 @@ namespace BigLineconnect
 
         private static ImageCodecInfo? _jpegEncoder;
         private static DxgiScreenCapturer? _dxgiCapturer;
-        private static bool _useDxgi = false; // Default to GDI+ for 100% guaranteed real desktop capture
+        private static bool _useDxgi = true; // Default to DXGI for ultra-fast 60 FPS DirectX hardware capture with automatic GDI+ fallback
         private static int _consecutiveBlackFrames = 0;
         public static int CurrentDisplayIndex { get; set; } = 0;
         private static readonly MemoryStream _sharedMs = new MemoryStream(1024 * 1024 * 4);
