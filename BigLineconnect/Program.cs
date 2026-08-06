@@ -3160,35 +3160,7 @@ namespace BigLineconnect
             }
             _running = true;
 
-            // Direct 24/7 Relay Connection from Session 0 Service
-            Task.Run(async () =>
-            {
-                while (_running)
-                {
-                    try
-                    {
-                        if (IsGuiOrHelperRunningInActiveSession())
-                        {
-                            // Active desktop UI or helper is running in user session; yield relay connection to GUI!
-                            await Task.Delay(3000).ConfigureAwait(false);
-                            continue;
-                        }
-
-                        if (Program.WebSocketClient == null || Program.WebSocketClient.State != System.Net.WebSockets.WebSocketState.Open)
-                        {
-                            string relayUrl = Program.SanitizeRelayUrl(Program._currentRelayUrl);
-                            WtsHelper.LogService($"Service initiating direct connection to Relay: {relayUrl}");
-                            await Program.ConnectToRelayAsync(relayUrl).ConfigureAwait(false);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        WtsHelper.LogService($"Service connection exception: {ex.Message}");
-                    }
-                    await Task.Delay(5000).ConfigureAwait(false);
-                }
-            });
-
+            // Monitor loop automatically launches the helper process in the active user desktop (Session 1/2)
             _monitorThread = new Thread(MonitorLoop) { IsBackground = true };
             _monitorThread.Start();
         }
