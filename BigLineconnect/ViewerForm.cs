@@ -544,19 +544,25 @@ namespace BigLineconnect
                             continue;
                         }
 
-                        // Load image frame cleanly without memory leaks
+                        // Load image frame cleanly without stream disposal black screen bugs
                         Image? newImg = null;
-                        using (var ms = new MemoryStream(isolatedFrame, 0, totalReceived))
+                        try
                         {
-                            try
+                            using (var ms = new MemoryStream(isolatedFrame, 0, totalReceived))
+                            using (var tempImg = Image.FromStream(ms, true, true))
                             {
-                                using (Image tempImg = Image.FromStream(ms, false, false))
+                                var bmpCopy = new Bitmap(tempImg.Width, tempImg.Height, PixelFormat.Format32bppArgb);
+                                using (var g = Graphics.FromImage(bmpCopy))
                                 {
-                                    newImg = new Bitmap(tempImg);
+                                    g.CompositingMode = CompositingMode.SourceCopy;
+                                    g.CompositingQuality = CompositingQuality.HighSpeed;
+                                    g.InterpolationMode = InterpolationMode.Low;
+                                    g.DrawImage(tempImg, 0, 0, tempImg.Width, tempImg.Height);
                                 }
+                                newImg = bmpCopy;
                             }
-                            catch { }
                         }
+                        catch { }
 
                         if (newImg != null)
                         {
