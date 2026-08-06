@@ -12,6 +12,18 @@ namespace BigLineconnect
         [DllImport("user32.dll")]
         private static extern int GetSystemMetrics(int nIndex);
 
+        [DllImport("user32.dll")]
+        private static extern IntPtr GetDesktopWindow();
+
+        [DllImport("user32.dll")]
+        private static extern IntPtr GetDC(IntPtr hWnd);
+
+        [DllImport("user32.dll")]
+        private static extern int ReleaseDC(IntPtr hWnd, IntPtr hDC);
+
+        [DllImport("gdi32.dll")]
+        private static extern bool BitBlt(IntPtr hdcDest, int nXDest, int nYDest, int nWidth, int nHeight, IntPtr hdcSrc, int nXSrc, int nYSrc, uint dwRop);
+
         private const int SM_CXSCREEN = 0;
         private const int SM_CYSCREEN = 1;
 
@@ -212,13 +224,18 @@ namespace BigLineconnect
                     {
                         using (Graphics gScreen = Graphics.FromImage(bmpScreen))
                         {
-                            gScreen.CopyFromScreen(0, 0, 0, 0, new Size(screenWidth, screenHeight), CopyPixelOperation.SourceCopy);
+                            IntPtr hdcDest = gScreen.GetHdc();
+                            IntPtr hdcSrc = GetDC(GetDesktopWindow());
+                            BitBlt(hdcDest, 0, 0, screenWidth, screenHeight, hdcSrc, 0, 0, 0x00CC0020);
+                            gScreen.ReleaseHdc(hdcDest);
+                            ReleaseDC(GetDesktopWindow(), hdcSrc);
                         }
                         return ProcessAndCompress(bmpScreen, quality, maxDimension);
                     }
                 }
-                catch
+                catch (Exception ex2)
                 {
+                    LogHelper($"[BitBlt Fallback Error]: {ex2.Message}");
                     _useDxgi = true;
                     return Array.Empty<byte>();
                 }
