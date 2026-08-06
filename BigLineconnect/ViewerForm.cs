@@ -124,6 +124,7 @@ namespace BigLineconnect
         private DateTime _lastFpsCalcTime = DateTime.Now;
         private DateTime _lastFrameReceivedTime = DateTime.Now;
         private Label? _lblFpsStats;
+        private string _connectionStatusText = "";
 
         private static ulong FastBufferHash(byte[] buffer, int count)
         {
@@ -385,7 +386,9 @@ namespace BigLineconnect
                     using (var subBrush = new SolidBrush(Color.FromArgb(180, 205, 230)))
                     {
                         string titleText = "🚀 BigLineconnect Uzaktan Masaüstü";
-                        string subText = "🔒 Uzak bilgisayara bağlanılıyor, canlı masaüstü aktarımı başlatılıyor...\r\nLütfen bekleyiniz.";
+                        string subText = string.IsNullOrEmpty(_connectionStatusText) 
+                            ? "🔒 Uzak bilgisayara bağlanılıyor, canlı masaüstü aktarımı başlatılıyor...\r\nLütfen bekleyiniz." 
+                            : _connectionStatusText;
 
                         var titleSize = g.MeasureString(titleText, titleFont);
                         var subSize = g.MeasureString(subText, subFont);
@@ -652,7 +655,9 @@ namespace BigLineconnect
                         else if (message == "AUTH_REQUIRED")
                         {
                             _hasConnectedOnce = true;
+                            _connectionStatusText = "🔑 Uzak bilgisayar erişim şifresi bekleniyor...\r\nLütfen açılan pencereye karşı bilgisayarın 6 haneli erişim şifresini giriniz.";
                             this.BeginInvoke(new Action(async () => {
+                                _pictureBox?.Invalidate();
                                 if (string.IsNullOrEmpty(_savedPassword))
                                 {
                                     _savedPassword = Prompt.ShowDialog(LanguageManager.Get("msg_enter_password"), LanguageManager.Get("title_password_required"));
@@ -667,14 +672,18 @@ namespace BigLineconnect
                         else if (message == "AUTH_WAITING")
                         {
                             _hasConnectedOnce = true;
+                            _connectionStatusText = "🛡️ Müşteri bilgisayarından bağlantı onayı bekleniyor...\r\nLütfen karşı bilgisayarın ekrandaki 'İzin Ver' butonuna basmasını bekleyiniz.";
                             this.BeginInvoke(new Action(() => {
+                                _pictureBox?.Invalidate();
                                 this.Text = $"ID: {_targetId} - " + LanguageManager.Get("msg_waiting_approval");
                             }));
                         }
                         else if (message == "AUTH_SUCCESS")
                         {
                             _hasConnectedOnce = true;
+                            _connectionStatusText = "⚡ Bağlantı doğrulandı, canlı ekran karesi aktarılıyor...";
                             this.BeginInvoke(new Action(() => {
+                                _pictureBox?.Invalidate();
                                 this.Text = LanguageManager.Get("title_viewer", _targetId);
                             }));
                         }
