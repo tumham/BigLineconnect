@@ -128,6 +128,12 @@ namespace BigLineconnect
         private Label? _lblFpsStats;
         private string _connectionStatusText = "";
 
+        private int _isRenderingFrame = 0;
+        private int _isSendingBinaryMove = 0;
+        private ushort _latestMouseUx = 0;
+        private ushort _latestMouseUy = 0;
+        private bool _hasUnsentMouseMove = false;
+
         private static ulong FastBufferHash(byte[] buffer, int count)
         {
             unchecked
@@ -166,7 +172,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v2.9.0 (Black Background & Low Quality Auto-Start)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.0.0 (Zero-Queue Memory & Socket Engine)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
@@ -584,52 +590,60 @@ namespace BigLineconnect
                         byte[] isolatedFrame = new byte[totalReceived];
                         Buffer.BlockCopy(_receiveBuffer, 0, isolatedFrame, 0, totalReceived);
 
-                        if (this.WindowState == FormWindowState.Minimized)
+                        if (this.WindowState != FormWindowState.Minimized && Interlocked.CompareExchange(ref _isRenderingFrame, 1, 0) == 0)
                         {
-                            // Do NOT process or queue GDI+ BeginInvoke calls while minimized to prevent WinForms UI queue deadlocks!
-                            continue;
-                        }
-
-                        // Load image frame cleanly (Supports both BigLine-RT tiles and fallback JPEG frames)
-                        Image? newImg = null;
-                        try
-                        {
-                            if (BigLineRtEngine.IsBigLineRtPacket(isolatedFrame))
+                            try
                             {
-                                lock (_rtCanvasLock)
+                                Image? newImg = null;
+                                if (BigLineRtEngine.IsBigLineRtPacket(isolatedFrame))
                                 {
-                                    var updatedBmp = BigLineRtEngine.ProcessRtPacket(isolatedFrame, ref _rtCanvas);
-                                    if (updatedBmp != null)
+                                    lock (_rtCanvasLock)
                                     {
-                                        newImg = new Bitmap(updatedBmp);
+                                        var updatedBmp = BigLineRtEngine.ProcessRtPacket(isolatedFrame, ref _rtCanvas);
+                                        if (updatedBmp != null) newImg = new Bitmap(updatedBmp);
                                     }
                                 }
-                            }
-                            else
-                            {
-                                using (var ms = new MemoryStream(isolatedFrame, 0, totalReceived))
-                                using (var tempImg = Image.FromStream(ms))
+                                else
                                 {
-                                    newImg = new Bitmap(tempImg);
+                                    using (var ms = new MemoryStream(isolatedFrame, 0, totalReceived))
+                                    {
+                                        newImg = Image.FromStream(ms);
+                                    }
                                 }
-                            }
-                        }
-                        catch { }
 
-                        if (newImg != null)
-                        {
-                            _pictureBox?.BeginInvoke(new Action(() =>
-                            {
-                                if (this.WindowState == FormWindowState.Minimized)
+                                if (newImg != null)
                                 {
-                                    newImg.Dispose();
-                                    return;
+                                    _pictureBox?.BeginInvoke(new Action(() =>
+                                    {
+                                        try
+                                        {
+                                            if (this.WindowState != FormWindowState.Minimized && _pictureBox != null)
+                                            {
+                                                var oldImg = _pictureBox.Image;
+                                                _pictureBox.Image = newImg;
+                                                _pictureBox.Invalidate();
+                                                oldImg?.Dispose();
+                                            }
+                                            else
+                                            {
+                                                newImg.Dispose();
+                                            }
+                                        }
+                                        finally
+                                        {
+                                            Interlocked.Exchange(ref _isRenderingFrame, 0);
+                                        }
+                                    }));
                                 }
-                                var oldImg = _pictureBox.Image;
-                                _pictureBox.Image = newImg;
-                                _pictureBox.Invalidate();
-                                oldImg?.Dispose();
-                            }));
+                                else
+                                {
+                                    Interlocked.Exchange(ref _isRenderingFrame, 0);
+                                }
+                            }
+                            catch
+                            {
+                                Interlocked.Exchange(ref _isRenderingFrame, 0);
+                            }
                         }
                     }
                     else if (result.MessageType == WebSocketMessageType.Text)
@@ -1312,10 +1326,47 @@ namespace BigLineconnect
             if (P2pDirectEngine.IsP2pConnected)
             {
                 P2pDirectEngine.SendP2pPacket(pkt);
+                return;
             }
-            else if (_ws != null && _ws.State == WebSocketState.Open)
+
+            _latestMouseUx = ux;
+            _latestMouseUy = uy;
+            _hasUnsentMouseMove = true;
+
+            if (Interlocked.CompareExchange(ref _isSendingBinaryMove, 1, 0) == 0)
             {
-                _ws.SendAsync(new ArraySegment<byte>(pkt), WebSocketMessageType.Binary, true, CancellationToken.None);
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        while (_hasUnsentMouseMove && _ws != null && _ws.State == WebSocketState.Open)
+                        {
+                            _hasUnsentMouseMove = false;
+                            byte[] mPkt = new byte[5];
+                            mPkt[0] = 0x4D;
+                            BitConverter.TryWriteBytes(new Span<byte>(mPkt, 1, 2), _latestMouseUx);
+                            BitConverter.TryWriteBytes(new Span<byte>(mPkt, 3, 2), _latestMouseUy);
+
+                            await _sendSemaphore.WaitAsync().ConfigureAwait(false);
+                            try
+                            {
+                                if (_ws.State == WebSocketState.Open)
+                                {
+                                    await _ws.SendAsync(new ArraySegment<byte>(mPkt), WebSocketMessageType.Binary, true, CancellationToken.None).ConfigureAwait(false);
+                                }
+                            }
+                            finally
+                            {
+                                _sendSemaphore.Release();
+                            }
+                        }
+                    }
+                    catch { }
+                    finally
+                    {
+                        Interlocked.Exchange(ref _isSendingBinaryMove, 0);
+                    }
+                });
             }
         }
 
