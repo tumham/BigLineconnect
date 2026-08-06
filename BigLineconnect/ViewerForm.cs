@@ -612,6 +612,8 @@ namespace BigLineconnect
                                 }
                                 var oldImg = _pictureBox.Image;
                                 _pictureBox.Image = newImg;
+                                _pictureBox.Invalidate();
+                                _pictureBox.Update();
                                 oldImg?.Dispose();
                             }));
                         }
