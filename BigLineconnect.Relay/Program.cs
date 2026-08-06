@@ -1171,10 +1171,19 @@ namespace BigLineconnect.Relay
                 context.Response.ContentType = "application/json; charset=utf-8";
                 string tenantId = context.Request.Query["tenantId"].ToString() ?? "";
                 string filterTenant = context.Request.Query["filterTenant"].ToString() ?? "";
+                string hostId = context.Request.Query["hostId"].ToString() ?? "";
                 
                 var history = LoadSupportHistory().AsEnumerable();
                 
-                if (!string.IsNullOrEmpty(filterTenant) && !filterTenant.Equals("ALL", StringComparison.OrdinalIgnoreCase))
+                if (!string.IsNullOrEmpty(hostId))
+                {
+                    string cleanHostId = hostId.Replace(" ", "").Trim();
+                    history = history.Where(h => 
+                        (!string.IsNullOrEmpty(h.HostId) && h.HostId.Replace(" ", "").Equals(cleanHostId, StringComparison.OrdinalIgnoreCase)) ||
+                        (!string.IsNullOrEmpty(h.Id) && h.Id.Replace(" ", "").Equals(cleanHostId, StringComparison.OrdinalIgnoreCase))
+                    );
+                }
+                else if (!string.IsNullOrEmpty(filterTenant) && !filterTenant.Equals("ALL", StringComparison.OrdinalIgnoreCase))
                 {
                     history = history.Where(h => h.TenantId.Equals(filterTenant, StringComparison.OrdinalIgnoreCase));
                 }

@@ -42,7 +42,7 @@ namespace BigLineconnect
         // Relay Server settings group
         private Panel? _serverGroup;
         private TextBox? _relayUrlTextBox;
-        private string _actualRelayUrl = "wss://biglineconnect-production.up.railway.app/register-host";
+        public string _actualRelayUrl = "wss://relay.biglineconnect.com/register-host";
         private Button? _reconnectButton;
 
         // AnyDesk columns
@@ -82,6 +82,7 @@ namespace BigLineconnect
         private HashSet<string> _connectedTicketIds = new();
         private System.Windows.Forms.Timer? _ticketsTimer;
         private Button? _btnSupport;
+        private Button? _btnMyTickets;
         private bool _hasActiveSubmittedTicket = false;
         private static RemoteOverlayBannerForm? _overlayBannerForm = null;
 
@@ -806,15 +807,27 @@ namespace BigLineconnect
 
             _btnSupport = new Button
             {
-                Text = "🆘 Destek İste / Sorun Bildir",
-                Location = new Point(575, 630),
-                Size = new Size(260, 35),
-                Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
+                Text = "🆘 Destek İste",
+                Location = new Point(560, 630),
+                Size = new Size(130, 35),
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
                 Cursor = Cursors.Hand
             };
             ApplyModernButtonStyle(_btnSupport, Color.FromArgb(230, 126, 34), Color.FromArgb(211, 84, 0), Color.White);
             _btnSupport.Click += RequestSupport_Click;
             this.Controls.Add(_btnSupport);
+
+            _btnMyTickets = new Button
+            {
+                Text = "📋 Taleplerim",
+                Location = new Point(700, 630),
+                Size = new Size(135, 35),
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                Cursor = Cursors.Hand
+            };
+            ApplyModernButtonStyle(_btnMyTickets, Color.FromArgb(41, 128, 185), Color.FromArgb(31, 97, 141), Color.White);
+            _btnMyTickets.Click += (s, e) => ShowMySubmittedTicketsDialog();
+            this.Controls.Add(_btnMyTickets);
 
             // NotifyIcon for Tray
             _notifyIcon = new NotifyIcon
@@ -3965,7 +3978,7 @@ namespace BigLineconnect
             }
         }
 
-        private void RequestSupport_Click(object? sender, EventArgs e)
+        public void RequestSupport_Click(object? sender, EventArgs e)
         {
             if (_idLabel == null || _idLabel.Text == "--- --- ---")
             {
@@ -4054,7 +4067,8 @@ namespace BigLineconnect
                                             ApplyModernButtonStyle(_btnSupport, Color.FromArgb(231, 76, 60), Color.FromArgb(192, 57, 43), Color.White);
                                         }
 
-                                        MessageBox.Show($"Destek talebiniz başarıyla '{LicenseSystem.CompanyCode}' kanalına iletildi.\nUzman bekleniyor...", "Başarılı", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                                        SaveLocalSubmittedTicket(new LocalSubmittedTicket { Token = token, HostId = hostId, Name = name, Issue = issue, TenantId = LicenseSystem.CompanyCode, CreatedAt = DateTime.Now, Status = "⏳ Sırada Bekliyor", Notes = "Destek uzmanının bağlanması bekleniyor..." });
+                                        MessageBox.Show($"Destek talebiniz başarıyla '{LicenseSystem.CompanyCode}' kanalına iletildi.\n\nAçtığınız talepleri '📋 Taleplerim' butonundan takip edebilirsiniz.", "Başarılı", MessageBoxButtons.OK, MessageBoxIcon.Information);
                                         AppendLog($"[Destek] Destek talebi oluşturuldu: {name} ({LicenseSystem.CompanyCode}) - {issue}");
                                     }
                                     else
@@ -4224,6 +4238,317 @@ namespace BigLineconnect
                     this.Close();
                 };
                 this.Controls.Add(btnCancel);
+
+                var btnHistory = new Button
+                {
+                    Text = "📋 Daha Önce Açtığım Taleplerim ve Durumları",
+                    Location = new Point(25, 308),
+                    Size = new Size(355, 32),
+                    BackColor = Color.FromArgb(30, 35, 45),
+                    ForeColor = Color.FromArgb(0, 229, 255),
+                    FlatStyle = FlatStyle.Flat,
+                    Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                    Cursor = Cursors.Hand
+                };
+                btnHistory.FlatAppearance.BorderColor = Color.FromArgb(0, 229, 255);
+                btnHistory.Click += (s, e) => {
+                    MainWindow.Instance?.ShowMySubmittedTicketsDialog();
+                };
+                this.Controls.Add(btnHistory);
+            }
+        }
+
+        public void ShowMySubmittedTicketsDialog()
+        {
+            try
+            {
+                using (var form = new MySubmittedTicketsForm(this))
+                {
+                    form.ShowDialog(this);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Taleplerim ekranı açılamadı: {ex.Message}", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        public class LocalSubmittedTicket
+        {
+            public string Token { get; set; } = "";
+            public string HostId { get; set; } = "";
+            public string Name { get; set; } = "";
+            public string Issue { get; set; } = "";
+            public string TenantId { get; set; } = "";
+            public DateTime CreatedAt { get; set; } = DateTime.Now;
+            public string Status { get; set; } = "⏳ Sırada Bekliyor";
+            public string Notes { get; set; } = "";
+        }
+
+        public static string GetLocalSubmittedTicketsFilePath()
+        {
+            string dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "BigLineconnect");
+            if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
+            return Path.Combine(dir, "my_submitted_tickets.json");
+        }
+
+        public static void SaveLocalSubmittedTicket(LocalSubmittedTicket ticket)
+        {
+            try
+            {
+                var tickets = LoadLocalSubmittedTickets();
+                tickets.RemoveAll(t => t.Token == ticket.Token || (t.HostId == ticket.HostId && t.Issue == ticket.Issue && Math.Abs((t.CreatedAt - ticket.CreatedAt).TotalSeconds) < 5));
+                tickets.Insert(0, ticket);
+                if (tickets.Count > 50) tickets = tickets.Take(50).ToList();
+
+                string json = System.Text.Json.JsonSerializer.Serialize(tickets, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+                File.WriteAllText(GetLocalSubmittedTicketsFilePath(), json);
+            }
+            catch { }
+        }
+
+        public static List<LocalSubmittedTicket> LoadLocalSubmittedTickets()
+        {
+            try
+            {
+                string path = GetLocalSubmittedTicketsFilePath();
+                if (File.Exists(path))
+                {
+                    string json = File.ReadAllText(path);
+                    var list = System.Text.Json.JsonSerializer.Deserialize<List<LocalSubmittedTicket>>(json);
+                    if (list != null) return list;
+                }
+            }
+            catch { }
+            return new List<LocalSubmittedTicket>();
+        }
+
+        public class MySubmittedTicketsForm : Form
+        {
+            private MainWindow _main;
+            private ListView lstTickets;
+            private Button btnRefresh;
+            private Button btnNewTicket;
+            private Button btnCancelTicket;
+            private Button btnClose;
+
+            public MySubmittedTicketsForm(MainWindow main)
+            {
+                _main = main;
+                this.Text = "📋 Açtığım Destek Taleplerim ve Durumları";
+                this.Size = new Size(680, 460);
+                this.StartPosition = FormStartPosition.CenterParent;
+                this.FormBorderStyle = FormBorderStyle.FixedDialog;
+                this.MaximizeBox = false;
+                this.MinimizeBox = false;
+                this.BackColor = Color.FromArgb(15, 17, 23);
+                this.ForeColor = Color.White;
+
+                var lblTitle = new Label
+                {
+                    Text = "📋 Açtığım Destek Talepleri Geçmişi",
+                    Location = new Point(20, 15),
+                    Size = new Size(620, 28),
+                    Font = new Font("Segoe UI", 13F, FontStyle.Bold),
+                    ForeColor = Color.FromArgb(0, 229, 255)
+                };
+                this.Controls.Add(lblTitle);
+
+                lstTickets = new ListView
+                {
+                    Location = new Point(20, 50),
+                    Size = new Size(625, 300),
+                    View = View.Details,
+                    FullRowSelect = true,
+                    GridLines = true,
+                    BackColor = Color.FromArgb(22, 25, 35),
+                    ForeColor = Color.White,
+                    Font = new Font("Segoe UI", 9.5F),
+                    BorderStyle = BorderStyle.FixedSingle
+                };
+                lstTickets.Columns.Add("Tarih / Saat", 130);
+                lstTickets.Columns.Add("Sorun / Açıklama", 210);
+                lstTickets.Columns.Add("Durum", 130);
+                lstTickets.Columns.Add("Uzman Çözüm Notu", 140);
+                this.Controls.Add(lstTickets);
+
+                btnRefresh = new Button
+                {
+                    Text = "🔄 Yenile",
+                    Location = new Point(20, 365),
+                    Size = new Size(110, 35),
+                    BackColor = Color.FromArgb(41, 128, 185),
+                    ForeColor = Color.White,
+                    FlatStyle = FlatStyle.Flat,
+                    Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                    Cursor = Cursors.Hand
+                };
+                btnRefresh.Click += (s, e) => LoadAndRefreshTickets();
+                this.Controls.Add(btnRefresh);
+
+                btnNewTicket = new Button
+                {
+                    Text = "➕ Yeni Talep Aç",
+                    Location = new Point(140, 365),
+                    Size = new Size(130, 35),
+                    BackColor = Color.FromArgb(46, 204, 113),
+                    ForeColor = Color.White,
+                    FlatStyle = FlatStyle.Flat,
+                    Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                    Cursor = Cursors.Hand
+                };
+                btnNewTicket.Click += (s, e) =>
+                {
+                    this.Close();
+                    _main.RequestSupport_Click(s, e);
+                };
+                this.Controls.Add(btnNewTicket);
+
+                btnCancelTicket = new Button
+                {
+                    Text = "❌ Talebi İptal Et",
+                    Location = new Point(280, 365),
+                    Size = new Size(130, 35),
+                    BackColor = Color.FromArgb(231, 76, 60),
+                    ForeColor = Color.White,
+                    FlatStyle = FlatStyle.Flat,
+                    Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                    Cursor = Cursors.Hand
+                };
+                btnCancelTicket.Click += (s, e) => CancelSelectedTicket();
+                this.Controls.Add(btnCancelTicket);
+
+                btnClose = new Button
+                {
+                    Text = "Kapat",
+                    Location = new Point(535, 365),
+                    Size = new Size(110, 35),
+                    BackColor = Color.FromArgb(50, 55, 65),
+                    ForeColor = Color.White,
+                    FlatStyle = FlatStyle.Flat,
+                    Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                    Cursor = Cursors.Hand
+                };
+                btnClose.Click += (s, e) => this.Close();
+                this.Controls.Add(btnClose);
+
+                this.Load += (s, e) => LoadAndRefreshTickets();
+            }
+
+            private void LoadAndRefreshTickets()
+            {
+                lstTickets.Items.Clear();
+                var localTickets = LoadLocalSubmittedTickets();
+                string myHostId = Program.CurrentHostId != null ? Program.CurrentHostId.Replace(" ", "").Trim() : "";
+
+                Task.Run(async () =>
+                {
+                    List<LocalSubmittedTicket> serverHistoryList = new();
+                    try
+                    {
+                        string serverUrl = _main._actualRelayUrl;
+                        string httpUrl = serverUrl.Replace("ws://", "http://").Replace("wss://", "https://").Replace("/register-host", $"/api/support/history/list?hostId={myHostId}");
+                        using var client = new System.Net.Http.HttpClient();
+                        var res = await client.GetAsync(httpUrl);
+                        if (res.IsSuccessStatusCode)
+                        {
+                            string json = await res.Content.ReadAsStringAsync();
+                            using var doc = System.Text.Json.JsonDocument.Parse(json);
+                            foreach (var elem in doc.RootElement.EnumerateArray())
+                            {
+                                string issue = elem.TryGetProperty("issue", out var p1) ? p1.GetString() ?? "" : (elem.TryGetProperty("Issue", out var p1b) ? p1b.GetString() ?? "" : "");
+                                string status = elem.TryGetProperty("status", out var p2) ? p2.GetString() ?? "" : (elem.TryGetProperty("Status", out var p2b) ? p2b.GetString() ?? "" : "");
+                                string notes = elem.TryGetProperty("notes", out var p3) ? p3.GetString() ?? "" : (elem.TryGetProperty("Notes", out var p3b) ? p3b.GetString() ?? "" : "");
+                                DateTime dt = elem.TryGetProperty("resolvedAt", out var p4) && DateTime.TryParse(p4.GetString(), out var dtVal) ? dtVal : DateTime.Now;
+
+                                serverHistoryList.Add(new LocalSubmittedTicket
+                                {
+                                    Issue = issue,
+                                    Status = status,
+                                    Notes = notes,
+                                    CreatedAt = dt
+                                });
+                            }
+                        }
+                    }
+                    catch { }
+
+                    this.Invoke((System.Windows.Forms.MethodInvoker)delegate
+                    {
+                        if (this.IsDisposed) return;
+                        var combinedList = new List<LocalSubmittedTicket>(localTickets);
+
+                        foreach (var sh in serverHistoryList)
+                        {
+                            var existing = combinedList.FirstOrDefault(t => t.Issue == sh.Issue || Math.Abs((t.CreatedAt - sh.CreatedAt).TotalMinutes) < 10);
+                            if (existing != null)
+                            {
+                                existing.Status = sh.Status;
+                                existing.Notes = sh.Notes;
+                            }
+                            else
+                            {
+                                combinedList.Add(sh);
+                            }
+                        }
+
+                        foreach (var t in combinedList.OrderByDescending(x => x.CreatedAt))
+                        {
+                            string timeStr = t.CreatedAt != default ? t.CreatedAt.ToString("dd.MM.yyyy HH:mm") : "---";
+                            var item = new ListViewItem(timeStr);
+                            item.SubItems.Add(t.Issue);
+
+                            string statusText = t.Status;
+                            if (statusText.Contains("Çözüldü"))
+                            {
+                                item.SubItems.Add("✅ Çözüldü");
+                                item.ForeColor = Color.FromArgb(46, 204, 113);
+                            }
+                            else if (statusText.Contains("Çözülmedi"))
+                            {
+                                item.SubItems.Add("❌ Çözülmedi");
+                                item.ForeColor = Color.FromArgb(231, 76, 60);
+                            }
+                            else if (statusText.Contains("Bağlandı") || statusText.Contains("İşlemde"))
+                            {
+                                item.SubItems.Add("⚡ Uzman İşlemde");
+                                item.ForeColor = Color.FromArgb(0, 229, 255);
+                            }
+                            else
+                            {
+                                item.SubItems.Add(string.IsNullOrEmpty(statusText) ? "⏳ Sırada Bekliyor" : statusText);
+                                item.ForeColor = Color.FromArgb(241, 196, 15);
+                            }
+
+                            item.SubItems.Add(string.IsNullOrEmpty(t.Notes) ? "—" : t.Notes);
+                            item.Tag = t;
+                            lstTickets.Items.Add(item);
+                        }
+                    });
+                });
+            }
+
+            private void CancelSelectedTicket()
+            {
+                if (lstTickets.SelectedItems.Count == 0)
+                {
+                    MessageBox.Show("Lütfen iptal etmek istediğiniz talebi seçin.", "Uyarı", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+                var item = lstTickets.SelectedItems[0];
+                if (item.Tag is LocalSubmittedTicket t)
+                {
+                    var res = MessageBox.Show($"'({t.Issue})' başlıklı talebinizi iptal etmek istiyor musunuz?", "Talep İptali", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                    if (res == DialogResult.Yes)
+                    {
+                        var localList = LoadLocalSubmittedTickets();
+                        localList.RemoveAll(x => x.Token == t.Token || x.Issue == t.Issue);
+                        string json = System.Text.Json.JsonSerializer.Serialize(localList, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+                        File.WriteAllText(GetLocalSubmittedTicketsFilePath(), json);
+                        LoadAndRefreshTickets();
+                        MessageBox.Show("Talebiniz iptal edildi.", "Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                }
             }
         }
     }
@@ -4465,4 +4790,233 @@ namespace BigLineconnect
             this.Controls.Add(btnSave);
         }
     }
-}
+
+        public class MySubmittedTicketsForm : Form
+        {
+            private MainWindow _main;
+            private ListView lstTickets;
+            private Button btnRefresh;
+            private Button btnNewTicket;
+            private Button btnCancelTicket;
+            private Button btnClose;
+
+            public MySubmittedTicketsForm(MainWindow main)
+            {
+                _main = main;
+                this.Text = "📋 Açtığım Destek Taleplerim ve Durumları";
+                this.Size = new Size(680, 460);
+                this.StartPosition = FormStartPosition.CenterParent;
+                this.FormBorderStyle = FormBorderStyle.FixedDialog;
+                this.MaximizeBox = false;
+                this.MinimizeBox = false;
+                this.BackColor = Color.FromArgb(15, 17, 23);
+                this.ForeColor = Color.White;
+
+                var lblTitle = new Label
+                {
+                    Text = "📋 Açtığım Destek Talepleri Geçmişi",
+                    Location = new Point(20, 15),
+                    Size = new Size(620, 28),
+                    Font = new Font("Segoe UI", 13F, FontStyle.Bold),
+                    ForeColor = Color.FromArgb(0, 229, 255)
+                };
+                this.Controls.Add(lblTitle);
+
+                lstTickets = new ListView
+                {
+                    Location = new Point(20, 50),
+                    Size = new Size(625, 300),
+                    View = View.Details,
+                    FullRowSelect = true,
+                    GridLines = true,
+                    BackColor = Color.FromArgb(22, 25, 35),
+                    ForeColor = Color.White,
+                    Font = new Font("Segoe UI", 9.5F),
+                    BorderStyle = BorderStyle.FixedSingle
+                };
+                lstTickets.Columns.Add("Tarih / Saat", 130);
+                lstTickets.Columns.Add("Sorun / Açıklama", 210);
+                lstTickets.Columns.Add("Durum", 130);
+                lstTickets.Columns.Add("Uzman Çözüm Notu", 140);
+                this.Controls.Add(lstTickets);
+
+                btnRefresh = new Button
+                {
+                    Text = "🔄 Yenile",
+                    Location = new Point(20, 365),
+                    Size = new Size(110, 35),
+                    BackColor = Color.FromArgb(41, 128, 185),
+                    ForeColor = Color.White,
+                    FlatStyle = FlatStyle.Flat,
+                    Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                    Cursor = Cursors.Hand
+                };
+                btnRefresh.Click += (s, e) => LoadAndRefreshTickets();
+                this.Controls.Add(btnRefresh);
+
+                btnNewTicket = new Button
+                {
+                    Text = "➕ Yeni Talep Aç",
+                    Location = new Point(140, 365),
+                    Size = new Size(130, 35),
+                    BackColor = Color.FromArgb(46, 204, 113),
+                    ForeColor = Color.White,
+                    FlatStyle = FlatStyle.Flat,
+                    Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                    Cursor = Cursors.Hand
+                };
+                btnNewTicket.Click += (s, e) =>
+                {
+                    this.Close();
+                    _main.RequestSupport_Click(s, e);
+                };
+                this.Controls.Add(btnNewTicket);
+
+                btnCancelTicket = new Button
+                {
+                    Text = "❌ Talebi İptal Et",
+                    Location = new Point(280, 365),
+                    Size = new Size(130, 35),
+                    BackColor = Color.FromArgb(231, 76, 60),
+                    ForeColor = Color.White,
+                    FlatStyle = FlatStyle.Flat,
+                    Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                    Cursor = Cursors.Hand
+                };
+                btnCancelTicket.Click += (s, e) => CancelSelectedTicket();
+                this.Controls.Add(btnCancelTicket);
+
+                btnClose = new Button
+                {
+                    Text = "Kapat",
+                    Location = new Point(535, 365),
+                    Size = new Size(110, 35),
+                    BackColor = Color.FromArgb(50, 55, 65),
+                    ForeColor = Color.White,
+                    FlatStyle = FlatStyle.Flat,
+                    Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                    Cursor = Cursors.Hand
+                };
+                btnClose.Click += (s, e) => this.Close();
+                this.Controls.Add(btnClose);
+
+                this.Load += (s, e) => LoadAndRefreshTickets();
+            }
+
+            private void LoadAndRefreshTickets()
+            {
+                lstTickets.Items.Clear();
+                var localTickets = MainWindow.LoadLocalSubmittedTickets();
+                string myHostId = Program.CurrentHostId != null ? Program.CurrentHostId.Replace(" ", "").Trim() : "";
+
+                Task.Run(async () =>
+                {
+                    List<MainWindow.LocalSubmittedTicket> serverHistoryList = new();
+                    try
+                    {
+                        string serverUrl = _main._actualRelayUrl;
+                        string httpUrl = serverUrl.Replace("ws://", "http://").Replace("wss://", "https://").Replace("/register-host", $"/api/support/history/list?hostId={myHostId}");
+                        using var client = new System.Net.Http.HttpClient();
+                        var res = await client.GetAsync(httpUrl);
+                        if (res.IsSuccessStatusCode)
+                        {
+                            string json = await res.Content.ReadAsStringAsync();
+                            using var doc = System.Text.Json.JsonDocument.Parse(json);
+                            foreach (var elem in doc.RootElement.EnumerateArray())
+                            {
+                                string issue = elem.TryGetProperty("issue", out var p1) ? p1.GetString() ?? "" : (elem.TryGetProperty("Issue", out var p1b) ? p1b.GetString() ?? "" : "");
+                                string status = elem.TryGetProperty("status", out var p2) ? p2.GetString() ?? "" : (elem.TryGetProperty("Status", out var p2b) ? p2b.GetString() ?? "" : "");
+                                string notes = elem.TryGetProperty("notes", out var p3) ? p3.GetString() ?? "" : (elem.TryGetProperty("Notes", out var p3b) ? p3b.GetString() ?? "" : "");
+                                DateTime dt = elem.TryGetProperty("resolvedAt", out var p4) && DateTime.TryParse(p4.GetString(), out var dtVal) ? dtVal : DateTime.Now;
+
+                                serverHistoryList.Add(new MainWindow.LocalSubmittedTicket
+                                {
+                                    Issue = issue,
+                                    Status = status,
+                                    Notes = notes,
+                                    CreatedAt = dt
+                                });
+                            }
+                        }
+                    }
+                    catch { }
+
+                    this.Invoke((System.Windows.Forms.MethodInvoker)delegate
+                    {
+                        if (this.IsDisposed) return;
+                        var combinedList = new List<MainWindow.LocalSubmittedTicket>(localTickets);
+
+                        foreach (var sh in serverHistoryList)
+                        {
+                            var existing = combinedList.FirstOrDefault(t => t.Issue == sh.Issue || Math.Abs((t.CreatedAt - sh.CreatedAt).TotalMinutes) < 10);
+                            if (existing != null)
+                            {
+                                existing.Status = sh.Status;
+                                existing.Notes = sh.Notes;
+                            }
+                            else
+                            {
+                                combinedList.Add(sh);
+                            }
+                        }
+
+                        foreach (var t in combinedList.OrderByDescending(x => x.CreatedAt))
+                        {
+                            string timeStr = t.CreatedAt != default ? t.CreatedAt.ToString("dd.MM.yyyy HH:mm") : "---";
+                            var item = new ListViewItem(timeStr);
+                            item.SubItems.Add(t.Issue);
+
+                            string statusText = t.Status;
+                            if (statusText.Contains("Çözüldü"))
+                            {
+                                item.SubItems.Add("✅ Çözüldü");
+                                item.ForeColor = Color.FromArgb(46, 204, 113);
+                            }
+                            else if (statusText.Contains("Çözülmedi"))
+                            {
+                                item.SubItems.Add("❌ Çözülmedi");
+                                item.ForeColor = Color.FromArgb(231, 76, 60);
+                            }
+                            else if (statusText.Contains("Bağlandı") || statusText.Contains("İşlemde"))
+                            {
+                                item.SubItems.Add("⚡ Uzman İşlemde");
+                                item.ForeColor = Color.FromArgb(0, 229, 255);
+                            }
+                            else
+                            {
+                                item.SubItems.Add(string.IsNullOrEmpty(statusText) ? "⏳ Sırada Bekliyor" : statusText);
+                                item.ForeColor = Color.FromArgb(241, 196, 15);
+                            }
+
+                            item.SubItems.Add(string.IsNullOrEmpty(t.Notes) ? "—" : t.Notes);
+                            item.Tag = t;
+                            lstTickets.Items.Add(item);
+                        }
+                    });
+                });
+            }
+
+            private void CancelSelectedTicket()
+            {
+                if (lstTickets.SelectedItems.Count == 0)
+                {
+                    MessageBox.Show("Lütfen iptal etmek istediğiniz talebi seçin.", "Uyarı", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+                var item = lstTickets.SelectedItems[0];
+                if (item.Tag is MainWindow.LocalSubmittedTicket t)
+                {
+                    var res = MessageBox.Show($"'({t.Issue})' başlıklı talebinizi iptal etmek istiyor musunuz?", "Talep İptali", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                    if (res == DialogResult.Yes)
+                    {
+                        var localList = MainWindow.LoadLocalSubmittedTickets();
+                        localList.RemoveAll(x => x.Token == t.Token || x.Issue == t.Issue);
+                        string json = System.Text.Json.JsonSerializer.Serialize(localList, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+                        File.WriteAllText(MainWindow.GetLocalSubmittedTicketsFilePath(), json);
+                        LoadAndRefreshTickets();
+                        MessageBox.Show("Talebiniz iptal edildi.", "Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                }
+            }
+        }
+    }
