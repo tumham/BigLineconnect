@@ -178,7 +178,7 @@ namespace BigLineconnect
         private void InitializeComponent()
         {
             Program.LoadSecuritySettings();
-            this.Text = "BigLineconnect v3.0.0 - Uzaktan Kontrol (Zero-Swell Memory & Socket Engine)";
+            this.Text = "BigLineconnect v3.1.0 - Uzaktan Kontrol (Pixel-Exact Mouse Calibration Engine)";
             this.Size = new Size(880, 750);
             this.MinimumSize = new Size(880, 750);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -208,7 +208,7 @@ namespace BigLineconnect
 
             _titleLabel = new Label
             {
-                Text = "BigLineconnect v3.0.0 🚀",
+                Text = "BigLineconnect v3.1.0 🚀",
                 Location = new Point(105, 15),
                 Size = new Size(330, 42),
                 Font = new Font("Segoe UI", 20F, FontStyle.Bold),
@@ -219,7 +219,7 @@ namespace BigLineconnect
 
             var versionBadge = new Label
             {
-                Text = " SÜRÜM: v3.0.0 ",
+                Text = " SÜRÜM: v3.1.0 ",
                 Location = new Point(440, 22),
                 Size = new Size(130, 28),
                 Font = new Font("Segoe UI", 10F, FontStyle.Bold),
@@ -231,7 +231,7 @@ namespace BigLineconnect
 
             var subtitleLabel = new Label
             {
-                Text = "REMOTE DESKTOP CLIENT • v3.0.0 (Zero-Queue Memory Leak & Socket Swelling Fixed)",
+                Text = "REMOTE DESKTOP CLIENT • v3.1.0 (Pixel-Exact Mouse Calibration & Zero Offset)",
                 Location = new Point(108, 58),
                 Size = new Size(450, 20),
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),

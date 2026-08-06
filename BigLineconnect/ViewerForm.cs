@@ -172,7 +172,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.0.0 (Zero-Queue Memory & Socket Engine)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.1.0 (Pixel-Exact Mouse Calibration)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
@@ -1262,14 +1262,21 @@ namespace BigLineconnect
 
         private (double x, double y) GetNormalizedMousePos(MouseEventArgs e, PictureBox box)
         {
-            if (box.Image == null || box.Width <= 0 || box.Height <= 0)
+            if (box == null || box.Width <= 0 || box.Height <= 0)
                 return (0, 0);
 
-            int imgWidth = box.Image.Width;
-            int imgHeight = box.Image.Height;
-
-            if (box.SizeMode == PictureBoxSizeMode.CenterImage)
+            if (box.SizeMode == PictureBoxSizeMode.StretchImage || box.Image == null)
             {
+                double normX = (double)e.X / box.Width;
+                double normY = (double)e.Y / box.Height;
+
+                return (Math.Max(0, Math.Min(1, normX)), Math.Max(0, Math.Min(1, normY)));
+            }
+            else if (box.SizeMode == PictureBoxSizeMode.CenterImage)
+            {
+                int imgWidth = box.Image.Width;
+                int imgHeight = box.Image.Height;
+
                 int offsetX = (box.Width - imgWidth) / 2;
                 int offsetY = (box.Height - imgHeight) / 2;
 
@@ -1281,8 +1288,11 @@ namespace BigLineconnect
 
                 return (Math.Max(0, Math.Min(1, normX)), Math.Max(0, Math.Min(1, normY)));
             }
-            else // Zoom mode
+            else if (box.SizeMode == PictureBoxSizeMode.Zoom)
             {
+                int imgWidth = box.Image.Width;
+                int imgHeight = box.Image.Height;
+
                 double imgAspect = (double)imgWidth / imgHeight;
                 double boxAspect = (double)box.Width / box.Height;
 
@@ -1292,7 +1302,7 @@ namespace BigLineconnect
                 {
                     renderedHeight = box.Height;
                     renderedWidth = box.Height * imgAspect;
-                    offsetX = (box.Width - renderedWidth) / 2;
+                    offsetX = (box.Width - renderedWidth) / 2.0;
                     offsetY = 0;
                 }
                 else
@@ -1300,7 +1310,7 @@ namespace BigLineconnect
                     renderedWidth = box.Width;
                     renderedHeight = box.Width / imgAspect;
                     offsetX = 0;
-                    offsetY = (box.Height - renderedHeight) / 2;
+                    offsetY = (box.Height - renderedHeight) / 2.0;
                 }
 
                 double mouseX = e.X - offsetX;
@@ -1308,6 +1318,13 @@ namespace BigLineconnect
 
                 double normX = mouseX / renderedWidth;
                 double normY = mouseY / renderedHeight;
+
+                return (Math.Max(0, Math.Min(1, normX)), Math.Max(0, Math.Min(1, normY)));
+            }
+            else
+            {
+                double normX = (double)e.X / box.Width;
+                double normY = (double)e.Y / box.Height;
 
                 return (Math.Max(0, Math.Min(1, normX)), Math.Max(0, Math.Min(1, normY)));
             }
