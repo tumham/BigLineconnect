@@ -93,6 +93,8 @@ namespace BigLineconnect
         private bool _hasConnectedOnce = false;
         private bool _isReconnecting = false;
         private string _savedPassword = "";
+        private Bitmap? _rtCanvas = null;
+        private readonly object _rtCanvasLock = new object();
         
         // Custom features forms
         private ClientChatForm? _clientChatForm;
@@ -588,14 +590,28 @@ namespace BigLineconnect
                             continue;
                         }
 
-                        // Load image frame cleanly without stream disposal black screen bugs
+                        // Load image frame cleanly (Supports both BigLine-RT tiles and fallback JPEG frames)
                         Image? newImg = null;
                         try
                         {
-                            using (var ms = new MemoryStream(isolatedFrame, 0, totalReceived))
-                            using (var tempImg = Image.FromStream(ms))
+                            if (BigLineRtEngine.IsBigLineRtPacket(isolatedFrame))
                             {
-                                newImg = new Bitmap(tempImg);
+                                lock (_rtCanvasLock)
+                                {
+                                    var updatedBmp = BigLineRtEngine.ProcessRtPacket(isolatedFrame, ref _rtCanvas);
+                                    if (updatedBmp != null)
+                                    {
+                                        newImg = new Bitmap(updatedBmp);
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                using (var ms = new MemoryStream(isolatedFrame, 0, totalReceived))
+                                using (var tempImg = Image.FromStream(ms))
+                                {
+                                    newImg = new Bitmap(tempImg);
+                                }
                             }
                         }
                         catch { }

@@ -855,7 +855,7 @@ namespace BigLineconnect
                     {
                         bool isDuplicate = AreByteArraysEqual(frameToSend, _lastSentFrameBytes);
                         bool isPostClickBurst = DateTime.Now.Ticks < Interlocked.Read(ref _forceSendUntilTicks);
-                        bool forceSend = isPostClickBurst || initialFrameCount < 10 || (DateTime.Now - _lastSentFrameTime).TotalMilliseconds >= 30;
+                        bool forceSend = isPostClickBurst || initialFrameCount < 10 || (DateTime.Now - _lastSentFrameTime).TotalMilliseconds >= 16;
 
                         if (!isDuplicate || forceSend)
                         {

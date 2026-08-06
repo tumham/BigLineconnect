@@ -1,0 +1,293 @@
+using System;
+using System.Buffers;
+using System.Collections.Generic;
+using System.Drawing;
+using System.Drawing.Drawing2D;
+using System.Drawing.Imaging;
+using System.IO;
+
+namespace BigLineconnect
+{
+    /// <summary>
+    /// BigLine-RT: 64x64 Tile-Based Differential Screen Capture and Assembly Engine (AnyDesk DeskRT equivalent)
+    /// </summary>
+    public static class BigLineRtEngine
+    {
+        public const ushort MAGIC_HEADER = 0x5452; // 'R', 'T' in little endian (0x52, 0x54)
+        public const int TILE_SIZE = 64; // 64x64 pixel tiles for optimal compression & throughput
+
+        public const byte FLAG_KEYFRAME = 0x01;
+        public const byte FLAG_TILES = 0x02;
+
+        private static ushort[]? _lastTileHashes;
+        private static int _lastScreenWidth = 0;
+        private static int _lastScreenHeight = 0;
+        private static ushort _tileCols = 0;
+        private static ushort _tileRows = 0;
+
+        private static ImageCodecInfo? _jpegEncoder;
+
+        static BigLineRtEngine()
+        {
+            _jpegEncoder = GetEncoder(ImageFormat.Jpeg);
+        }
+
+        private static ImageCodecInfo? GetEncoder(ImageFormat format)
+        {
+            ImageCodecInfo[] codecs = ImageCodecInfo.GetImageEncoders();
+            foreach (ImageCodecInfo codec in codecs)
+            {
+                if (codec.FormatID == format.Guid)
+                    return codec;
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Compresses screen bitmap into BigLine-RT differential tile packet or keyframe packet.
+        /// </summary>
+        public static byte[] EncodeFrame(Bitmap bmpScreen, int quality, bool forceKeyframe = false)
+        {
+            int width = bmpScreen.Width;
+            int height = bmpScreen.Height;
+
+            ushort cols = (ushort)((width + TILE_SIZE - 1) / TILE_SIZE);
+            ushort rows = (ushort)((height + TILE_SIZE - 1) / TILE_SIZE);
+            int totalTiles = cols * rows;
+
+            bool isDimensionChanged = width != _lastScreenWidth || height != _lastScreenHeight || _lastTileHashes == null || _lastTileHashes.Length != totalTiles;
+            if (isDimensionChanged)
+            {
+                _lastScreenWidth = width;
+                _lastScreenHeight = height;
+                _tileCols = cols;
+                _tileRows = rows;
+                _lastTileHashes = new ushort[totalTiles];
+                forceKeyframe = true;
+            }
+
+            // Lock bitmap bits for fast SIMD / span comparison
+            BitmapData bd = bmpScreen.LockBits(new Rectangle(0, 0, width, height), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
+            
+            try
+            {
+                var dirtyTileIndices = new List<ushort>();
+                var currentHashes = new ushort[totalTiles];
+
+                unsafe
+                {
+                    byte* pBase = (byte*)bd.Scan0;
+                    int stride = bd.Stride;
+
+                    for (ushort r = 0; r < rows; r++)
+                    {
+                        for (ushort c = 0; c < cols; c++)
+                        {
+                            int tileIdx = r * cols + c;
+                            int tileX = c * TILE_SIZE;
+                            int tileY = r * TILE_SIZE;
+                            int tileW = Math.Min(TILE_SIZE, width - tileX);
+                            int tileH = Math.Min(TILE_SIZE, height - tileY);
+
+                            // Calculate fast 16-bit hash for 64x64 tile pixel span
+                            ushort hash = ComputeTileHash(pBase, stride, tileX, tileY, tileW, tileH);
+                            currentHashes[tileIdx] = hash;
+
+                            if (forceKeyframe || _lastTileHashes == null || _lastTileHashes[tileIdx] != hash)
+                            {
+                                dirtyTileIndices.Add((ushort)tileIdx);
+                            }
+                        }
+                    }
+                }
+
+                // Update hash cache
+                _lastTileHashes = currentHashes;
+
+                // If no tiles changed and not keyframe, return empty array to save bandwidth completely
+                if (dirtyTileIndices.Count == 0 && !forceKeyframe)
+                {
+                    return Array.Empty<byte>();
+                }
+
+                // If more than 60% of tiles changed, issue full Keyframe for efficiency
+                if (forceKeyframe || dirtyTileIndices.Count > (totalTiles * 0.6))
+                {
+                    return BuildKeyframePacket(bmpScreen, width, height, quality);
+                }
+
+                // Otherwise build differential tiles packet
+                return BuildTilesPacket(bmpScreen, dirtyTileIndices, cols, width, height, quality);
+            }
+            finally
+            {
+                bmpScreen.UnlockBits(bd);
+            }
+        }
+
+        private static unsafe ushort ComputeTileHash(byte* pBase, int stride, int x, int y, int w, int h)
+        {
+            uint hash = 2166136261;
+            // Sample pixels inside tile (stride fast loop)
+            for (int r = 0; r < h; r += 2) // Step 2 for ultra speed
+            {
+                uint* rowPtr = (uint*)(pBase + (y + r) * stride + x * 4);
+                for (int c = 0; c < w; c += 2)
+                {
+                    hash = (hash ^ rowPtr[c]) * 16777619;
+                }
+            }
+            return (ushort)((hash ^ (hash >> 16)) & 0xFFFF);
+        }
+
+        private static byte[] BuildKeyframePacket(Bitmap bmpScreen, int width, int height, int quality)
+        {
+            using (var ms = new MemoryStream())
+            using (var writer = new BinaryWriter(ms))
+            {
+                writer.Write(MAGIC_HEADER);
+                writer.Write(FLAG_KEYFRAME);
+                writer.Write((ushort)width);
+                writer.Write((ushort)height);
+
+                // Compress full image to JPEG
+                using (var imgMs = new MemoryStream())
+                {
+                    using (EncoderParameters encoderParams = new EncoderParameters(1))
+                    using (EncoderParameter encoderParam = new EncoderParameter(Encoder.Quality, (long)quality))
+                    {
+                        encoderParams.Param[0] = encoderParam;
+                        bmpScreen.Save(imgMs, _jpegEncoder ?? ImageCodecInfo.GetImageEncoders()[0], encoderParams);
+                    }
+                    byte[] jpegData = imgMs.ToArray();
+                    writer.Write(jpegData.Length);
+                    writer.Write(jpegData);
+                }
+
+                return ms.ToArray();
+            }
+        }
+
+        private static byte[] BuildTilesPacket(Bitmap bmpScreen, List<ushort> dirtyIndices, ushort cols, int width, int height, int quality)
+        {
+            using (var ms = new MemoryStream())
+            using (var writer = new BinaryWriter(ms))
+            {
+                writer.Write(MAGIC_HEADER);
+                writer.Write(FLAG_TILES);
+                writer.Write((ushort)width);
+                writer.Write((ushort)height);
+                writer.Write((ushort)dirtyIndices.Count);
+
+                using (EncoderParameters encoderParams = new EncoderParameters(1))
+                using (EncoderParameter encoderParam = new EncoderParameter(Encoder.Quality, (long)quality))
+                {
+                    encoderParams.Param[0] = encoderParam;
+                    var encoder = _jpegEncoder ?? ImageCodecInfo.GetImageEncoders()[0];
+
+                    foreach (ushort tileIdx in dirtyIndices)
+                    {
+                        int c = tileIdx % cols;
+                        int r = tileIdx / cols;
+                        int x = c * TILE_SIZE;
+                        int y = r * TILE_SIZE;
+                        int w = Math.Min(TILE_SIZE, width - x);
+                        int h = Math.Min(TILE_SIZE, height - y);
+
+                        writer.Write((ushort)c);
+                        writer.Write((ushort)r);
+
+                        // Crop tile and compress
+                        using (Bitmap tileBmp = bmpScreen.Clone(new Rectangle(x, y, w, h), PixelFormat.Format32bppArgb))
+                        using (MemoryStream tileMs = new MemoryStream())
+                        {
+                            tileBmp.Save(tileMs, encoder, encoderParams);
+                            byte[] tileJpeg = tileMs.ToArray();
+                            writer.Write(tileJpeg.Length);
+                            writer.Write(tileJpeg);
+                        }
+                    }
+                }
+
+                return ms.ToArray();
+            }
+        }
+
+        /// <summary>
+        /// Checks if a binary packet is a BigLine-RT differential packet.
+        /// </summary>
+        public static bool IsBigLineRtPacket(byte[] data)
+        {
+            if (data == null || data.Length < 3) return false;
+            ushort header = BitConverter.ToUInt16(data, 0);
+            return header == MAGIC_HEADER;
+        }
+
+        /// <summary>
+        /// Decodes a BigLine-RT packet and patches the canvas bitmap in place.
+        /// </summary>
+        public static Bitmap? ProcessRtPacket(byte[] packet, ref Bitmap? currentCanvas)
+        {
+            if (!IsBigLineRtPacket(packet)) return null;
+
+            using (var ms = new MemoryStream(packet))
+            using (var reader = new BinaryReader(ms))
+            {
+                ushort magic = reader.ReadUInt16();
+                byte flag = reader.ReadByte();
+                ushort width = reader.ReadUInt16();
+                ushort height = reader.ReadUInt16();
+
+                if (flag == FLAG_KEYFRAME)
+                {
+                    int length = reader.ReadInt32();
+                    byte[] jpegData = reader.ReadBytes(length);
+
+                    using (var jpegMs = new MemoryStream(jpegData))
+                    {
+                        var fullBmp = new Bitmap(jpegMs);
+                        currentCanvas?.Dispose();
+                        currentCanvas = new Bitmap(fullBmp);
+                        return currentCanvas;
+                    }
+                }
+                else if (flag == FLAG_TILES)
+                {
+                    ushort tileCount = reader.ReadUInt16();
+                    if (currentCanvas == null || currentCanvas.Width != width || currentCanvas.Height != height)
+                    {
+                        currentCanvas?.Dispose();
+                        currentCanvas = new Bitmap(width, height, PixelFormat.Format32bppArgb);
+                    }
+
+                    using (Graphics g = Graphics.FromImage(currentCanvas))
+                    {
+                        g.CompositingMode = CompositingMode.SourceCopy;
+                        g.InterpolationMode = InterpolationMode.NearestNeighbor;
+
+                        for (int i = 0; i < tileCount; i++)
+                        {
+                            ushort col = reader.ReadUInt16();
+                            ushort row = reader.ReadUInt16();
+                            int dataLen = reader.ReadInt32();
+                            byte[] tileJpeg = reader.ReadBytes(dataLen);
+
+                            int x = col * TILE_SIZE;
+                            int y = row * TILE_SIZE;
+
+                            using (var tileMs = new MemoryStream(tileJpeg))
+                            using (var tileBmp = new Bitmap(tileMs))
+                            {
+                                g.DrawImage(tileBmp, x, y);
+                            }
+                        }
+                    }
+
+                    return currentCanvas;
+                }
+            }
+
+            return null;
+        }
+    }
+}

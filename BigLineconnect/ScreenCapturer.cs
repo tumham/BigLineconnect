@@ -238,41 +238,12 @@ namespace BigLineconnect
         {
             try
             {
-                int screenWidth = bmpScreen.Width;
-                int screenHeight = bmpScreen.Height;
-
-                double scale = 1.0;
-                if (screenWidth > maxDimension || screenHeight > maxDimension)
-                {
-                    scale = (double)maxDimension / Math.Max(screenWidth, screenHeight);
-                }
-
-                int targetWidth = (int)(screenWidth * scale);
-                int targetHeight = (int)(screenHeight * scale);
-
-                if (scale < 1.0)
-                {
-                    using (Bitmap bmpResized = new Bitmap(targetWidth, targetHeight, PixelFormat.Format32bppArgb))
-                    {
-                        using (Graphics gResized = Graphics.FromImage(bmpResized))
-                        {
-                            gResized.InterpolationMode = InterpolationMode.HighQualityBicubic;
-                            gResized.CompositingQuality = CompositingQuality.HighQuality;
-                            gResized.SmoothingMode = SmoothingMode.HighQuality;
-                            gResized.PixelOffsetMode = PixelOffsetMode.HighQuality;
-                            gResized.DrawImage(bmpScreen, 0, 0, targetWidth, targetHeight);
-                        }
-
-                        return CompressToJpeg(bmpResized, quality);
-                    }
-                }
-
-                return CompressToJpeg(bmpScreen, quality);
+                return BigLineRtEngine.EncodeFrame(bmpScreen, quality);
             }
             catch (Exception ex)
             {
                 LogHelper($"[Process/Compress Error]: {ex.Message}\r\n{ex.StackTrace}");
-                try { MainWindow.Instance.AppendLog($"[Process/Compress Error]: {ex.Message}"); } catch { }
+                try { MainWindow.Instance?.AppendLog($"[Process/Compress Error]: {ex.Message}"); } catch { }
                 return Array.Empty<byte>();
             }
         }
