@@ -4297,7 +4297,10 @@ namespace BigLineconnect
             try
             {
                 var tickets = LoadLocalSubmittedTickets();
-                tickets.RemoveAll(t => t.Token == ticket.Token || (t.HostId == ticket.HostId && t.Issue == ticket.Issue && Math.Abs((t.CreatedAt - ticket.CreatedAt).TotalSeconds) < 5));
+                tickets.RemoveAll(t => 
+                    (!string.IsNullOrEmpty(ticket.Token) && !string.IsNullOrEmpty(t.Token) && t.Token.Trim() == ticket.Token.Trim()) ||
+                    (t.HostId == ticket.HostId && t.Issue == ticket.Issue && Math.Abs((t.CreatedAt - ticket.CreatedAt).TotalSeconds) < 5)
+                );
                 tickets.Insert(0, ticket);
                 if (tickets.Count > 50) tickets = tickets.Take(50).ToList();
 
@@ -4828,9 +4831,9 @@ namespace BigLineconnect
                     Size = new Size(625, 300),
                     View = View.Details,
                     FullRowSelect = true,
-                    GridLines = true,
-                    BackColor = Color.FromArgb(22, 25, 35),
-                    ForeColor = Color.White,
+                    GridLines = false,
+                    BackColor = Color.FromArgb(16, 20, 28),
+                    ForeColor = Color.FromArgb(230, 235, 245),
                     Font = new Font("Segoe UI", 9.5F),
                     BorderStyle = BorderStyle.FixedSingle
                 };
@@ -4924,13 +4927,22 @@ namespace BigLineconnect
                             using var doc = System.Text.Json.JsonDocument.Parse(json);
                             foreach (var elem in doc.RootElement.EnumerateArray())
                             {
+                                string token = elem.TryGetProperty("token", out var pT) ? pT.GetString() ?? "" : (elem.TryGetProperty("Token", out var pTb) ? pTb.GetString() ?? "" : "");
                                 string issue = elem.TryGetProperty("issue", out var p1) ? p1.GetString() ?? "" : (elem.TryGetProperty("Issue", out var p1b) ? p1b.GetString() ?? "" : "");
                                 string status = elem.TryGetProperty("status", out var p2) ? p2.GetString() ?? "" : (elem.TryGetProperty("Status", out var p2b) ? p2b.GetString() ?? "" : "");
                                 string notes = elem.TryGetProperty("notes", out var p3) ? p3.GetString() ?? "" : (elem.TryGetProperty("Notes", out var p3b) ? p3b.GetString() ?? "" : "");
-                                DateTime dt = elem.TryGetProperty("resolvedAt", out var p4) && DateTime.TryParse(p4.GetString(), out var dtVal) ? dtVal : DateTime.Now;
+                                
+                                DateTime dt = DateTime.Now;
+                                if (elem.TryGetProperty("createdAt", out var pC) && DateTime.TryParse(pC.GetString(), out var dtCreate))
+                                    dt = dtCreate;
+                                else if (elem.TryGetProperty("CreatedAt", out var pCb) && DateTime.TryParse(pCb.GetString(), out var dtCreateb))
+                                    dt = dtCreateb;
+                                else if (elem.TryGetProperty("resolvedAt", out var p4) && DateTime.TryParse(p4.GetString(), out var dtVal))
+                                    dt = dtVal;
 
                                 serverHistoryList.Add(new MainWindow.LocalSubmittedTicket
                                 {
+                                    Token = token,
                                     Issue = issue,
                                     Status = status,
                                     Notes = notes,
@@ -4948,11 +4960,19 @@ namespace BigLineconnect
 
                         foreach (var sh in serverHistoryList)
                         {
-                            var existing = combinedList.FirstOrDefault(t => t.Issue == sh.Issue || Math.Abs((t.CreatedAt - sh.CreatedAt).TotalMinutes) < 10);
+                            var existing = combinedList.FirstOrDefault(t => 
+                                (!string.IsNullOrEmpty(sh.Token) && !string.IsNullOrEmpty(t.Token) && t.Token.Trim() == sh.Token.Trim()) ||
+                                (t.Issue.Trim() == sh.Issue.Trim() && Math.Abs((t.CreatedAt - sh.CreatedAt).TotalMinutes) < 3)
+                            );
+
                             if (existing != null)
                             {
                                 existing.Status = sh.Status;
                                 existing.Notes = sh.Notes;
+                                if (sh.CreatedAt != default && (existing.CreatedAt == default || Math.Abs((existing.CreatedAt - sh.CreatedAt).TotalHours) > 24))
+                                {
+                                    existing.CreatedAt = sh.CreatedAt;
+                                }
                             }
                             else
                             {
@@ -4960,6 +4980,7 @@ namespace BigLineconnect
                             }
                         }
 
+                        int rowIndex = 0;
                         foreach (var t in combinedList.OrderByDescending(x => x.CreatedAt))
                         {
                             string timeStr = t.CreatedAt != default ? t.CreatedAt.ToString("dd.MM.yyyy HH:mm") : "---";
@@ -4970,27 +4991,49 @@ namespace BigLineconnect
                             if (statusText.Contains("Çözüldü"))
                             {
                                 item.SubItems.Add("✅ Çözüldü");
-                                item.ForeColor = Color.FromArgb(46, 204, 113);
                             }
                             else if (statusText.Contains("Çözülmedi"))
                             {
                                 item.SubItems.Add("❌ Çözülmedi");
-                                item.ForeColor = Color.FromArgb(231, 76, 60);
                             }
                             else if (statusText.Contains("Bağlandı") || statusText.Contains("İşlemde"))
                             {
                                 item.SubItems.Add("⚡ Uzman İşlemde");
-                                item.ForeColor = Color.FromArgb(0, 229, 255);
                             }
                             else
                             {
                                 item.SubItems.Add(string.IsNullOrEmpty(statusText) ? "⏳ Sırada Bekliyor" : statusText);
-                                item.ForeColor = Color.FromArgb(241, 196, 15);
                             }
 
                             item.SubItems.Add(string.IsNullOrEmpty(t.Notes) ? "—" : t.Notes);
                             item.Tag = t;
+
+                            // Alternating soft background for zero eye strain
+                            Color rowBg = (rowIndex % 2 == 0) ? Color.FromArgb(24, 29, 40) : Color.FromArgb(16, 20, 28);
+                            item.BackColor = rowBg;
+                            item.UseItemStyleForSubItems = false;
+
+                            item.SubItems[0].BackColor = rowBg;
+                            item.SubItems[0].ForeColor = Color.FromArgb(170, 185, 205);
+
+                            item.SubItems[1].BackColor = rowBg;
+                            item.SubItems[1].ForeColor = Color.FromArgb(235, 240, 250);
+
+                            item.SubItems[2].BackColor = rowBg;
+                            if (statusText.Contains("Çözüldü"))
+                                item.SubItems[2].ForeColor = Color.FromArgb(46, 204, 113);
+                            else if (statusText.Contains("Çözülmedi"))
+                                item.SubItems[2].ForeColor = Color.FromArgb(231, 76, 60);
+                            else if (statusText.Contains("Bağlandı") || statusText.Contains("İşlemde"))
+                                item.SubItems[2].ForeColor = Color.FromArgb(0, 229, 255);
+                            else
+                                item.SubItems[2].ForeColor = Color.FromArgb(241, 196, 15);
+
+                            item.SubItems[3].BackColor = rowBg;
+                            item.SubItems[3].ForeColor = Color.FromArgb(180, 190, 205);
+
                             lstTickets.Items.Add(item);
+                            rowIndex++;
                         }
                     });
                 });
