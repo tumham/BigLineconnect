@@ -238,7 +238,7 @@ namespace BigLineconnect
         {
             try
             {
-                return BigLineRtEngine.EncodeFrame(bmpScreen, quality);
+                return CompressToJpeg(bmpScreen, quality);
             }
             catch (Exception ex)
             {
