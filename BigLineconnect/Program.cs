@@ -4091,17 +4091,68 @@ namespace BigLineconnect
         {
             var g = e.Graphics;
             g.SmoothingMode = SmoothingMode.AntiAlias;
+            g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
 
             // Pure frameless floating splash animation - zero borders, zero background boxes!
             float xc = this.Width / 2F;
             float yc = 185F;
 
+            // Draw crisp dark contrast shadows behind labels so text is 100% sharp on pure white AND black wallpapers
+            if (lblTitle != null && !string.IsNullOrEmpty(lblTitle.Text))
+            {
+                using (var font = lblTitle.Font)
+                using (var shadowBrush = new SolidBrush(Color.FromArgb(220, 0, 0, 0)))
+                {
+                    var size = g.MeasureString(lblTitle.Text, font);
+                    float x = xc - size.Width / 2F;
+                    float y = lblTitle.Top;
+
+                    g.DrawString(lblTitle.Text, font, shadowBrush, x + 1.5F, y + 1.5F);
+                    g.DrawString(lblTitle.Text, font, shadowBrush, x - 1F, y + 1.5F);
+                }
+            }
+
+            if (lblSubtitle != null && !string.IsNullOrEmpty(lblSubtitle.Text))
+            {
+                using (var font = lblSubtitle.Font)
+                using (var shadowBrush = new SolidBrush(Color.FromArgb(240, 0, 0, 0)))
+                {
+                    var size = g.MeasureString(lblSubtitle.Text, font);
+                    float x = xc - size.Width / 2F;
+                    float y = lblSubtitle.Top;
+
+                    g.DrawString(lblSubtitle.Text, font, shadowBrush, x + 1F, y + 1F);
+                    g.DrawString(lblSubtitle.Text, font, shadowBrush, x - 1F, y + 1F);
+                    g.DrawString(lblSubtitle.Text, font, shadowBrush, x + 1F, y - 1F);
+                    g.DrawString(lblSubtitle.Text, font, shadowBrush, x - 1F, y - 1F);
+                }
+            }
+
+            if (lblStatus != null && !string.IsNullOrEmpty(lblStatus.Text))
+            {
+                using (var font = lblStatus.Font)
+                using (var shadowBrush = new SolidBrush(Color.FromArgb(200, 0, 0, 0)))
+                {
+                    var size = g.MeasureString(lblStatus.Text, font);
+                    float x = xc - size.Width / 2F;
+                    float y = lblStatus.Top;
+
+                    g.DrawString(lblStatus.Text, font, shadowBrush, x + 1F, y + 1F);
+                }
+            }
+
             if (UseBcLogoPath && _logoImage != null)
             {
-                // Mode 1: Render the actual BC Logo Image at the center
-                // Size: Width = 180, Height = 135
+                // Render the actual BC Logo Image at the center
                 float lw = 180F;
                 float lh = 135F;
+
+                // Soft ambient dark drop shadow behind the logo for perfect contrast on light/white wallpapers
+                using (var shadowBrush = new SolidBrush(Color.FromArgb(120, 0, 0, 0)))
+                {
+                    g.FillEllipse(shadowBrush, xc - lw / 2F + 3, yc - lh / 2F + 3, lw - 6, lh - 6);
+                }
+
                 g.DrawImage(_logoImage, xc - lw / 2F, yc - lh / 2F, lw, lh);
 
                 // Draw animated fluid particles circulating along the BC path on top of it
