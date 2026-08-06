@@ -73,17 +73,18 @@ private static bool _useDxgi = true;
 
 ---
 
-## 💎 MODÜL 6: Master Şifre ve Boş Şifre Otomatik Geçiş Sistemi (`999999`)
-- **Hata Tanımı:** Şifre ekranı boş bırakıldığında veya şifre sorusunda tünelin takılı kalması.
-- **Onaylanmış Kod Pasajı (`ViewerForm.cs` & `Program.cs`):**
+## 💎 MODÜL 6: Birebir 6 Haneli Şifre Koruması (Strict Password Security)
+- **Açıklama:** Erişim için Karşı Bilgisayarın ürettiği 6 haneli rastgele şifrenin %100 birebir eşleşmesi zorunludur.
+- **Onaylanmış Sıkı Güvenlik Kodu (`Program.cs` & `ViewerForm.cs`):**
 ```csharp
-if (string.IsNullOrEmpty(_savedPassword))
+// Karşı tarafta gelen şifre tam eşleşmek zorundadır:
+bool isPasswordCorrect = !string.IsNullOrEmpty(cleanInputPass) && cleanInputPass == cleanLocalPass;
+
+if (!isPasswordCorrect)
 {
-    _savedPassword = Prompt.ShowDialog(...);
-    if (string.IsNullOrEmpty(_savedPassword))
-    {
-        _savedPassword = "999999"; // Otomatik Master Bypass Kodu
-    }
+    // Hatalı şifrede erişim derhal engellenir:
+    byte[] failMsg = Encoding.UTF8.GetBytes("AUTH_FAILED");
+    await SafeSendAsync(ws, new ArraySegment<byte>(failMsg), WebSocketMessageType.Text, true, token);
 }
 ```
 
