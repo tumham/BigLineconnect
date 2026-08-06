@@ -36,12 +36,20 @@ namespace BigLineconnect
         private static readonly object _compressLock = new object();
 
         [DllImport("user32.dll", CharSet = CharSet.Auto)]
-        private static extern int SystemParametersInfo(int uAction, int uParam, string lpvParam, int fuWinIni);
+        private static extern int SystemParametersInfo(int uAction, int uParam, string? lpvParam, int fuWinIni);
+
+        [DllImport("user32.dll", CharSet = CharSet.Auto)]
+        private static extern int SystemParametersInfo(int uAction, int uParam, System.Text.StringBuilder lpvParam, int fuWinIni);
 
         private const int SPI_GETDESKWALLPAPER = 0x0073;
         private const int SPI_SETDESKWALLPAPER = 0x0014;
+        private const int SPIF_UPDATEINIFILE = 0x01;
         private const int SPIF_SENDCHANGE = 0x02;
 
+        [DllImport("user32.dll")]
+        private static extern bool SetSysColors(int cElements, int[] lpaElements, uint[] lpaRgbValues);
+
+        private const int COLOR_DESKTOP = 1;
         private static string? _originalWallpaper = null;
 
         public static void SuppressWallpaper(bool suppress)
@@ -52,17 +60,31 @@ namespace BigLineconnect
                 {
                     if (_originalWallpaper == null)
                     {
-                        var sb = new System.Text.StringBuilder(260);
-                        SystemParametersInfo(SPI_GETDESKWALLPAPER, sb.Capacity, sb.ToString(), 0);
+                        var sb = new System.Text.StringBuilder(500);
+                        SystemParametersInfo(SPI_GETDESKWALLPAPER, sb.Capacity, sb, 0);
                         _originalWallpaper = sb.ToString();
                     }
-                    SystemParametersInfo(SPI_SETDESKWALLPAPER, 0, "", SPIF_SENDCHANGE);
+
+                    int[] elements = new int[] { COLOR_DESKTOP };
+                    uint[] colors = new uint[] { 0x000000 }; // Solid Black
+                    SetSysColors(1, elements, colors);
+
+                    SystemParametersInfo(SPI_SETDESKWALLPAPER, 0, "", SPIF_UPDATEINIFILE | SPIF_SENDCHANGE);
+
+                    try
+                    {
+                        using (var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(@"Control Panel\Colors", true))
+                        {
+                            key?.SetValue("Background", "0 0 0");
+                        }
+                    }
+                    catch { }
                 }
                 else
                 {
                     if (_originalWallpaper != null && !string.IsNullOrEmpty(_originalWallpaper))
                     {
-                        SystemParametersInfo(SPI_SETDESKWALLPAPER, 0, _originalWallpaper, SPIF_SENDCHANGE);
+                        SystemParametersInfo(SPI_SETDESKWALLPAPER, 0, _originalWallpaper, SPIF_UPDATEINIFILE | SPIF_SENDCHANGE);
                         _originalWallpaper = null;
                     }
                 }

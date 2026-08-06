@@ -178,7 +178,7 @@ namespace BigLineconnect
         private void InitializeComponent()
         {
             Program.LoadSecuritySettings();
-            this.Text = "BigLineconnect v2.8.0 - Uzaktan Kontrol (Motion-Pause Priority Engine)";
+            this.Text = "BigLineconnect v2.9.0 - Uzaktan Kontrol (Black Background & Auto Low Mode)";
             this.Size = new Size(880, 750);
             this.MinimumSize = new Size(880, 750);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -208,7 +208,7 @@ namespace BigLineconnect
 
             _titleLabel = new Label
             {
-                Text = "BigLineconnect v2.8.0 🚀",
+                Text = "BigLineconnect v2.9.0 🚀",
                 Location = new Point(105, 15),
                 Size = new Size(330, 42),
                 Font = new Font("Segoe UI", 20F, FontStyle.Bold),
@@ -219,7 +219,7 @@ namespace BigLineconnect
 
             var versionBadge = new Label
             {
-                Text = " SÜRÜM: v2.8.0 ",
+                Text = " SÜRÜM: v2.9.0 ",
                 Location = new Point(440, 22),
                 Size = new Size(130, 28),
                 Font = new Font("Segoe UI", 10F, FontStyle.Bold),
@@ -231,7 +231,7 @@ namespace BigLineconnect
 
             var subtitleLabel = new Label
             {
-                Text = "REMOTE DESKTOP CLIENT • v2.8.0 (Motion-Pause Priority & Local Cursor Engine)",
+                Text = "REMOTE DESKTOP CLIENT • v2.9.0 (Solid Black Wallpaper & Low Quality 1280px Auto)",
                 Location = new Point(108, 58),
                 Size = new Size(450, 20),
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),

@@ -166,8 +166,8 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v2.8.0 (Motion-Pause Priority Engine)";
-            this.Size = new Size(1024, 768);
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v2.9.0 (Black Background & Low Quality Auto-Start)";
+            this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
             this.KeyPreview = true;
@@ -269,24 +269,24 @@ namespace BigLineconnect
 
             var btnQuality = new NoFocusButton
             {
-                Text = "Kalite: Düşük 🎨",
+                Text = "Kalite: Düşük (1280p) 🎨",
                 Location = new Point(725, 7),
-                Size = new Size(125, 26)
+                Size = new Size(130, 26)
             };
             ModernUIHelper.ApplyButtonStyle(btnQuality, Color.FromArgb(156, 39, 176), Color.FromArgb(123, 31, 162), Color.White);
             
             var cmsQuality = new ContextMenuStrip();
-            var itemLow = new ToolStripMenuItem("Ekonomi (Hızlı Hız)", null, (s, e) => {
-                btnQuality.Text = "Kalite: Ekonomi 🎨";
-                SendJson("{\"type\":\"set_quality\",\"quality\":60,\"maxDim\":1600}");
+            var itemLow = new ToolStripMenuItem("Düşük Mod (Ekonomi Hızlı - 1280p)", null, (s, e) => {
+                btnQuality.Text = "Kalite: Düşük (1280p) 🎨";
+                SendJson("{\"type\":\"set_quality\",\"quality\":40,\"maxDim\":1280}");
             });
-            var itemMid = new ToolStripMenuItem("Yüksek Kalite (Dengeli - 1080p)", null, (s, e) => {
-                btnQuality.Text = "Kalite: Yüksek 🎨";
-                SendJson("{\"type\":\"set_quality\",\"quality\":80,\"maxDim\":1920}");
+            var itemMid = new ToolStripMenuItem("Orta Mod (Dengeli - 1080p)", null, (s, e) => {
+                btnQuality.Text = "Kalite: Orta (1080p) 🎨";
+                SendJson("{\"type\":\"set_quality\",\"quality\":75,\"maxDim\":1920}");
             });
             var itemHigh = new ToolStripMenuItem("En Yüksek (Pırıl Pırıl Orijinal 4K)", null, (s, e) => {
                 btnQuality.Text = "Kalite: Pırıl Pırıl (4K) 🎨";
-                SendJson("{\"type\":\"set_quality\",\"quality\":95,\"maxDim\":3840}");
+                SendJson("{\"type\":\"set_quality\",\"quality\":90,\"maxDim\":3840}");
             });
             cmsQuality.Items.Add(itemLow);
             cmsQuality.Items.Add(itemMid);
@@ -296,9 +296,9 @@ namespace BigLineconnect
             bool wallpaperEnabled = false;
             var btnWallpaper = new NoFocusButton
             {
-                Text = "Arka Plan 🖼️",
-                Location = new Point(855, 7),
-                Size = new Size(115, 26)
+                Text = "Arka Plan: Siyah ⬛",
+                Location = new Point(860, 7),
+                Size = new Size(120, 26)
             };
             ModernUIHelper.ApplyButtonStyle(btnWallpaper, Color.FromArgb(76, 175, 80), Color.FromArgb(56, 142, 60), Color.White);
             btnWallpaper.Click += (s, e) => {
@@ -311,7 +311,7 @@ namespace BigLineconnect
                 }
                 else
                 {
-                    btnWallpaper.Text = "Arka Plan: Siyah 🖼️";
+                    btnWallpaper.Text = "Arka Plan: Siyah ⬛";
                     ModernUIHelper.ApplyButtonStyle(btnWallpaper, Color.FromArgb(76, 175, 80), Color.FromArgb(56, 142, 60), Color.White);
                     SendJson("{\"type\":\"toggle_wallpaper\",\"enable\":false}");
                 }
