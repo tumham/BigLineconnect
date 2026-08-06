@@ -166,7 +166,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v2.7.0 (AnyDesk Butter Mouse)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v2.8.0 (Motion-Pause Priority Engine)";
             this.Size = new Size(1024, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;

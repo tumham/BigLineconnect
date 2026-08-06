@@ -801,6 +801,14 @@ namespace BigLineconnect
 
                 while (!token.IsCancellationRequested && _isStreaming)
                 {
+                    bool isMouseActivelyMoving = (DateTime.Now - _lastMouseMoveTime) < TimeSpan.FromMilliseconds(250);
+
+                    if (isMouseActivelyMoving)
+                    {
+                        // Give 100% priority to mouse movement. Throttle capture to ~20 FPS during rapid mouse drag
+                        Thread.Sleep(45);
+                    }
+
                     byte[] frame = ScreenCapturer.Capture(quality: CurrentQuality, maxDimension: CurrentMaxDimension);
                     
                     if (frame != null && frame.Length > 0)
@@ -810,7 +818,9 @@ namespace BigLineconnect
                             _latestFrame = frame;
                         }
                     }
-                    Thread.Sleep(10);
+
+                    int sleepMs = isMouseActivelyMoving ? 45 : 12;
+                    Thread.Sleep(sleepMs);
                 }
                 ScreenCapturer.SuppressWallpaper(false);
                 Log("Ekran yakalama döngüsü sonlandı.");
@@ -898,6 +908,7 @@ namespace BigLineconnect
             }
         }
 
+        private static DateTime _lastMouseMoveTime = DateTime.MinValue;
         private static double _pendingMouseX = -1;
         private static double _pendingMouseY = -1;
         private static int _hasPendingMouseMove = 0;
@@ -922,6 +933,7 @@ namespace BigLineconnect
             if (pkt == null || pkt.Length < 5) return;
             if (pkt[0] == 0x4D) // 'M' for fast mouse move
             {
+                _lastMouseMoveTime = DateTime.Now;
                 ushort ux = BitConverter.ToUInt16(pkt, 1);
                 ushort uy = BitConverter.ToUInt16(pkt, 3);
                 double x = (double)ux / 65535.0;
