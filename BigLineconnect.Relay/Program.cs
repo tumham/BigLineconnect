@@ -559,16 +559,23 @@ namespace BigLineconnect.Relay
                 context.Response.Headers["Pragma"] = "no-cache";
                 context.Response.Headers["Expires"] = "0";
 
-                string setupPath = System.IO.Path.Combine(AppContext.BaseDirectory, "wwwroot", "BigLineconnect_setup.zip");
+                string setupPath = System.IO.Path.Combine(AppContext.BaseDirectory, "wwwroot", "BigLineconnect_setup_v2.exe");
+                if (!System.IO.File.Exists(setupPath))
+                {
+                    setupPath = System.IO.Path.Combine(AppContext.BaseDirectory, "wwwroot", "BigLineconnect.exe");
+                }
                 if (!System.IO.File.Exists(setupPath))
                 {
                     setupPath = System.IO.Path.Combine(AppContext.BaseDirectory, "wwwroot", "BigLineconnect_setup.exe");
                 }
+                if (!System.IO.File.Exists(setupPath))
+                {
+                    setupPath = System.IO.Path.Combine(AppContext.BaseDirectory, "wwwroot", "BigLineconnect_setup.zip");
+                }
                 if (System.IO.File.Exists(setupPath))
                 {
-                    string filename = System.IO.Path.GetFileName(setupPath);
-                    context.Response.ContentType = filename.EndsWith(".zip") ? "application/zip" : "application/octet-stream";
-                    context.Response.Headers["Content-Disposition"] = $"attachment; filename=\"{filename}\"";
+                    context.Response.ContentType = "application/octet-stream";
+                    context.Response.Headers["Content-Disposition"] = "attachment; filename=\"BigLineconnect_setup.exe\"";
                     await context.Response.SendFileAsync(setupPath);
                 }
                 else
