@@ -210,12 +210,24 @@ namespace BigLineconnect
             {
                 Text = "BigLineconnect v2.5.0 🚀",
                 Location = new Point(105, 15),
-                Size = new Size(400, 42),
+                Size = new Size(330, 42),
                 Font = new Font("Segoe UI", 20F, FontStyle.Bold),
                 ForeColor = Color.White,
                 BackColor = Color.Transparent
             };
             this.Controls.Add(_titleLabel);
+
+            var versionBadge = new Label
+            {
+                Text = " SÜRÜM: v2.5.0 ",
+                Location = new Point(440, 22),
+                Size = new Size(130, 28),
+                Font = new Font("Segoe UI", 10F, FontStyle.Bold),
+                ForeColor = Color.White,
+                BackColor = Color.FromArgb(156, 39, 176),
+                TextAlign = ContentAlignment.MiddleCenter
+            };
+            this.Controls.Add(versionBadge);
 
             var subtitleLabel = new Label
             {
