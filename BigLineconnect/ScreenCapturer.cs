@@ -29,7 +29,7 @@ namespace BigLineconnect
 
         private static ImageCodecInfo? _jpegEncoder;
         private static DxgiScreenCapturer? _dxgiCapturer;
-        private static bool _useDxgi = true;
+        private static bool _useDxgi = false; // Default to GDI+ for 100% guaranteed real desktop capture
         private static int _consecutiveBlackFrames = 0;
         public static int CurrentDisplayIndex { get; set; } = 0;
         private static readonly MemoryStream _sharedMs = new MemoryStream(1024 * 1024 * 4);
@@ -52,10 +52,9 @@ namespace BigLineconnect
                 {
                     if (_originalWallpaper == null)
                     {
-                        string wallpaper = new string('\0', 260);
-                        SystemParametersInfo(SPI_GETDESKWALLPAPER, wallpaper.Length, wallpaper, 0);
-                        int nullIdx = wallpaper.IndexOf('\0');
-                        _originalWallpaper = nullIdx >= 0 ? wallpaper.Substring(0, nullIdx) : wallpaper;
+                        var sb = new System.Text.StringBuilder(260);
+                        SystemParametersInfo(SPI_GETDESKWALLPAPER, sb.Capacity, sb.ToString(), 0);
+                        _originalWallpaper = sb.ToString();
                     }
                     SystemParametersInfo(SPI_SETDESKWALLPAPER, 0, "", SPIF_SENDCHANGE);
                 }
@@ -107,6 +106,7 @@ namespace BigLineconnect
                         LogHelper($"DXGI CaptureFrame failed: {ex.Message}\r\n{ex.StackTrace}");
                         try { _dxgiCapturer.Dispose(); } catch { }
                         _dxgiCapturer = null;
+                        _useDxgi = false;
                     }
 
                     if (bmp != null)
@@ -115,22 +115,15 @@ namespace BigLineconnect
                         {
                             if (IsBitmapBlack(bmp))
                             {
-                                _consecutiveBlackFrames++;
-                                if (_consecutiveBlackFrames >= 5)
-                                {
-                                    LogHelper("DXGI: 5 consecutive black frames detected, falling back to GDI+.");
-                                    _useDxgi = false;
-                                    try { _dxgiCapturer?.Dispose(); } catch { }
-                                    _dxgiCapturer = null;
-                                    try { MainWindow.Instance.AppendLog("[DXGI]: Siyah ekran kısıtı tespit edildi, GDI+ moduna geçiliyor..."); } catch { }
-                                }
+                                LogHelper("DXGI: Black frame detected, disabling DXGI and falling back to GDI+.");
+                                _useDxgi = false;
+                                try { _dxgiCapturer?.Dispose(); } catch { }
+                                _dxgiCapturer = null;
                             }
                             else
                             {
-                                _consecutiveBlackFrames = 0;
+                                return ProcessAndCompress(bmp, quality, maxDimension);
                             }
-
-                            return ProcessAndCompress(bmp, quality, maxDimension);
                         }
                     }
                 }
