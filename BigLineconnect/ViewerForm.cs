@@ -359,7 +359,41 @@ namespace BigLineconnect
             {
                 Dock = DockStyle.Fill,
                 SizeMode = PictureBoxSizeMode.StretchImage,
-                BackColor = Color.Black
+                BackColor = Color.FromArgb(12, 14, 20)
+            };
+
+            // Custom Paint event when image is null to render modern status overlay instead of pitch black box
+            _pictureBox.Paint += (s, pe) =>
+            {
+                if (_pictureBox.Image == null)
+                {
+                    var g = pe.Graphics;
+                    g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+                    g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
+
+                    using (var bgBrush = new System.Drawing.Drawing2D.LinearGradientBrush(_pictureBox.ClientRectangle, Color.FromArgb(18, 22, 34), Color.FromArgb(8, 10, 16), 45f))
+                    {
+                        g.FillRectangle(bgBrush, _pictureBox.ClientRectangle);
+                    }
+
+                    int cx = _pictureBox.Width / 2;
+                    int cy = _pictureBox.Height / 2;
+
+                    using (var titleFont = new Font("Segoe UI", 16f, FontStyle.Bold))
+                    using (var subFont = new Font("Segoe UI", 10.5f, FontStyle.Regular))
+                    using (var titleBrush = new SolidBrush(Color.FromArgb(0, 229, 255)))
+                    using (var subBrush = new SolidBrush(Color.FromArgb(180, 205, 230)))
+                    {
+                        string titleText = "🚀 BigLineconnect Uzaktan Masaüstü";
+                        string subText = "🔒 Uzak bilgisayara bağlanılıyor, canlı masaüstü aktarımı başlatılıyor...\r\nLütfen bekleyiniz.";
+
+                        var titleSize = g.MeasureString(titleText, titleFont);
+                        var subSize = g.MeasureString(subText, subFont);
+
+                        g.DrawString(titleText, titleFont, titleBrush, cx - (titleSize.Width / 2), cy - 35);
+                        g.DrawString(subText, subFont, subBrush, cx - (subSize.Width / 2), cy + 15);
+                    }
+                }
             };
 
             // Bind mouse events on picture box

@@ -834,6 +834,7 @@ namespace BigLineconnect
                 _lastSentFrameTime = DateTime.MinValue;
                 _isSendingFrame = false;
                 int initialFrameCount = 0;
+                Interlocked.Exchange(ref _forceSendUntilTicks, DateTime.Now.AddMilliseconds(2000).Ticks);
 
                 while (!token.IsCancellationRequested && _isStreaming && ws.State == WebSocketState.Open)
                 {
