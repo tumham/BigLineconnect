@@ -586,17 +586,9 @@ namespace BigLineconnect
                         try
                         {
                             using (var ms = new MemoryStream(isolatedFrame, 0, totalReceived))
-                            using (var tempImg = Image.FromStream(ms, false, false))
+                            using (var tempImg = Image.FromStream(ms))
                             {
-                                var bmpCopy = new Bitmap(tempImg.Width, tempImg.Height, PixelFormat.Format32bppArgb);
-                                using (var g = Graphics.FromImage(bmpCopy))
-                                {
-                                    g.CompositingMode = CompositingMode.SourceCopy;
-                                    g.CompositingQuality = CompositingQuality.HighSpeed;
-                                    g.InterpolationMode = InterpolationMode.Low;
-                                    g.DrawImage(tempImg, 0, 0, tempImg.Width, tempImg.Height);
-                                }
-                                newImg = bmpCopy;
+                                newImg = new Bitmap(tempImg);
                             }
                         }
                         catch { }
