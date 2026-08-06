@@ -898,6 +898,25 @@ namespace BigLineconnect
             }
         }
 
+        private static double _pendingMouseX = -1;
+        private static double _pendingMouseY = -1;
+        private static int _hasPendingMouseMove = 0;
+        private static DateTime _lastMouseMoveSimulated = DateTime.MinValue;
+
+        public static void FlushPendingMouseMove()
+        {
+            if (Interlocked.Exchange(ref _hasPendingMouseMove, 0) == 1)
+            {
+                double x = _pendingMouseX;
+                double y = _pendingMouseY;
+                if (x >= 0 && y >= 0)
+                {
+                    _lastMouseMoveSimulated = DateTime.Now;
+                    InputSimulator.SimulateMouseMove(x, y, _activeDisplayIndex);
+                }
+            }
+        }
+
         public static void ProcessBinaryRemoteInput(byte[] pkt)
         {
             if (pkt == null || pkt.Length < 5) return;
@@ -907,7 +926,15 @@ namespace BigLineconnect
                 ushort uy = BitConverter.ToUInt16(pkt, 3);
                 double x = (double)ux / 65535.0;
                 double y = (double)uy / 65535.0;
-                InputSimulator.SimulateMouseMove(x, y);
+
+                _pendingMouseX = x;
+                _pendingMouseY = y;
+                Interlocked.Exchange(ref _hasPendingMouseMove, 1);
+
+                if (DateTime.Now - _lastMouseMoveSimulated > TimeSpan.FromMilliseconds(16))
+                {
+                    FlushPendingMouseMove();
+                }
             }
         }
 
@@ -927,6 +954,7 @@ namespace BigLineconnect
 
                 if (type == "click" || type == "key" || type == "scroll" || type == "double_click")
                 {
+                    FlushPendingMouseMove();
                     Interlocked.Exchange(ref _forceSendUntilTicks, DateTime.Now.AddMilliseconds(250).Ticks);
                     _lastSentFrameBytes = null;
                 }

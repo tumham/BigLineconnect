@@ -166,7 +166,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v2.6.0 (DXGI Full-Frame 60FPS)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v2.6.1 (Instant Mouse Jump)";
             this.Size = new Size(1024, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
