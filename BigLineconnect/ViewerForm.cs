@@ -465,7 +465,10 @@ namespace BigLineconnect
                 await _ws.ConnectAsync(new Uri(_wsUrl), CancellationToken.None);
                 
                 // Start receiving remote screen stream
-                _ = Task.Run(() => ReceiveScreenLoop(_ws, _cts.Token));
+                _ = Task.Run(async () => {
+                    await ReceiveScreenLoop(_ws, _cts.Token);
+                    await ReceiveLoop(_ws, _cts.Token);
+                });
             }
             catch (Exception ex)
             {
