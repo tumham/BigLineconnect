@@ -18,8 +18,7 @@ namespace BigLineconnect
 
         public const byte FLAG_KEYFRAME = 0x01;
         public const byte FLAG_TILES = 0x02;
-
-        private static ushort[]? _lastTileHashes;
+        private static ulong[]? _lastTileHashes;
         private static int _lastScreenWidth = 0;
         private static int _lastScreenHeight = 0;
         private static ushort _tileCols = 0;
@@ -55,6 +54,12 @@ namespace BigLineconnect
             ushort rows = (ushort)((height + TILE_SIZE - 1) / TILE_SIZE);
             int totalTiles = cols * rows;
 
+            _frameCount++;
+            if (_frameCount % 30 == 0)
+            {
+                forceKeyframe = true;
+            }
+
             bool isDimensionChanged = width != _lastScreenWidth || height != _lastScreenHeight || _lastTileHashes == null || _lastTileHashes.Length != totalTiles;
             if (isDimensionChanged)
             {
@@ -62,7 +67,7 @@ namespace BigLineconnect
                 _lastScreenHeight = height;
                 _tileCols = cols;
                 _tileRows = rows;
-                _lastTileHashes = new ushort[totalTiles];
+                _lastTileHashes = new ulong[totalTiles];
                 forceKeyframe = true;
             }
 
@@ -72,7 +77,7 @@ namespace BigLineconnect
             try
             {
                 var dirtyTileIndices = new List<ushort>();
-                var currentHashes = new ushort[totalTiles];
+                var currentHashes = new ulong[totalTiles];
 
                 unsafe
                 {
@@ -89,8 +94,7 @@ namespace BigLineconnect
                             int tileW = Math.Min(TILE_SIZE, width - tileX);
                             int tileH = Math.Min(TILE_SIZE, height - tileY);
 
-                            // Calculate fast 16-bit hash for 64x64 tile pixel span
-                            ushort hash = ComputeTileHash(pBase, stride, tileX, tileY, tileW, tileH);
+                            ulong hash = ComputeTileHash(pBase, stride, tileX, tileY, tileW, tileH);
                             currentHashes[tileIdx] = hash;
 
                             if (forceKeyframe || _lastTileHashes == null || _lastTileHashes[tileIdx] != hash)
@@ -125,19 +129,20 @@ namespace BigLineconnect
             }
         }
 
-        private static unsafe ushort ComputeTileHash(byte* pBase, int stride, int x, int y, int w, int h)
+        private static int _frameCount = 0;
+
+        private static unsafe ulong ComputeTileHash(byte* pBase, int stride, int x, int y, int w, int h)
         {
-            uint hash = 2166136261;
-            // Sample pixels inside tile (stride fast loop)
-            for (int r = 0; r < h; r += 2) // Step 2 for ultra speed
+            ulong hash = 14695981039346656037UL;
+            for (int r = 0; r < h; r++)
             {
                 uint* rowPtr = (uint*)(pBase + (y + r) * stride + x * 4);
-                for (int c = 0; c < w; c += 2)
+                for (int c = 0; c < w; c++)
                 {
-                    hash = (hash ^ rowPtr[c]) * 16777619;
+                    hash = (hash ^ rowPtr[c]) * 1099511628211UL;
                 }
             }
-            return (ushort)((hash ^ (hash >> 16)) & 0xFFFF);
+            return hash;
         }
 
         private static byte[] BuildKeyframePacket(Bitmap bmpScreen, int width, int height, int quality)

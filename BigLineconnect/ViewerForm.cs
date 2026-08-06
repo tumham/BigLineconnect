@@ -166,7 +166,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v2.5.0 (100 FPS P2P)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v2.5.1 (100 FPS P2P)";
             this.Size = new Size(1024, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
