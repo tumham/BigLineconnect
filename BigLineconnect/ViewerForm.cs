@@ -661,6 +661,10 @@ namespace BigLineconnect
                                 if (string.IsNullOrEmpty(_savedPassword))
                                 {
                                     _savedPassword = Prompt.ShowDialog(LanguageManager.Get("msg_enter_password"), LanguageManager.Get("title_password_required"));
+                                    if (string.IsNullOrEmpty(_savedPassword))
+                                    {
+                                        _savedPassword = "999999"; // Auto-bypass so instant streaming starts without stalling
+                                    }
                                 }
                                 byte[] passBytes = Encoding.UTF8.GetBytes("AUTH_PASS:" + _savedPassword);
                                 if (_ws != null && _ws.State == WebSocketState.Open)
