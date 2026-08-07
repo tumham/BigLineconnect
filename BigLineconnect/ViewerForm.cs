@@ -173,7 +173,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.4.0 (FlowToolbar Overlap-Free UI)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.5.0 (Unified Actions Menu & Compact Toolbar)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
@@ -228,25 +228,31 @@ namespace BigLineconnect
             ModernUIHelper.ApplyButtonStyle(btnFileManager, Color.FromArgb(0, 229, 255), Color.FromArgb(0, 176, 255), Color.Black);
             btnFileManager.Click += (s, e) => OpenFileManager();
 
-            var btnRestart = new NoFocusButton
+            var btnActions = new NoFocusButton
             {
-                Text = "Yeniden Başlat 🔄",
-                Size = new Size(125, 28),
-                Margin = new Padding(2, 0, 4, 0)
-            };
-            ModernUIHelper.ApplyButtonStyle(btnRestart, Color.FromArgb(244, 67, 54), Color.FromArgb(211, 47, 47), Color.White);
-            btnRestart.Click += (s, e) => TriggerRemoteRestart();
-
-            var btnCad = new NoFocusButton
-            {
-                Text = "🔑 Ctrl+Alt+Del",
+                Text = "🔑 Eylemler ⚡",
                 Size = new Size(115, 28),
                 Margin = new Padding(2, 0, 6, 0)
             };
-            ModernUIHelper.ApplyButtonStyle(btnCad, Color.FromArgb(231, 76, 60), Color.FromArgb(192, 57, 43), Color.White);
-            btnCad.Click += (s, e) => {
+            ModernUIHelper.ApplyButtonStyle(btnActions, Color.FromArgb(231, 76, 60), Color.FromArgb(192, 57, 43), Color.White);
+
+            var cmsActions = new ContextMenuStrip();
+            var itemCad = new ToolStripMenuItem("🔑 Ctrl + Alt + Del Gönder", null, (s, e) => {
                 SendJson("{\"type\":\"send_cad\"}");
-            };
+            });
+            var itemRestart = new ToolStripMenuItem("🔄 Karşı Bilgisayarı Yeniden Başlat", null, (s, e) => {
+                TriggerRemoteRestart();
+            });
+            var itemLock = new ToolStripMenuItem("🔒 Oturumu Kilitle", null, (s, e) => {
+                SendJson("{\"type\":\"lock_screen\"}");
+            });
+
+            cmsActions.Items.Add(itemCad);
+            cmsActions.Items.Add(new ToolStripSeparator());
+            cmsActions.Items.Add(itemRestart);
+            cmsActions.Items.Add(itemLock);
+
+            btnActions.Click += (s, e) => cmsActions.Show(btnActions, new Point(0, btnActions.Height));
 
             _lblConnModeBadge = new Label
             {
@@ -371,8 +377,7 @@ namespace BigLineconnect
 
             flowTop.Controls.Add(btnChat);
             flowTop.Controls.Add(btnFileManager);
-            flowTop.Controls.Add(btnRestart);
-            flowTop.Controls.Add(btnCad);
+            flowTop.Controls.Add(btnActions);
             flowTop.Controls.Add(_lblConnModeBadge);
             flowTop.Controls.Add(lblDisplay);
             flowTop.Controls.Add(_cbDisplays);
