@@ -173,7 +173,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.2.0 (LAN Direct 0.5ms Engine)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.3.0 (Zero Socket Backlog Engine)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
@@ -353,30 +353,29 @@ namespace BigLineconnect
             panelTop.Controls.Add(btnWallpaper);
             panelTop.Controls.Add(btnDisplayMode);
 
-            _lblFpsStats = new Label
-            {
-                Text = "⚡ -- FPS | -- ms",
-                Location = new Point(965, 10),
-                Size = new Size(130, 22),
-                ForeColor = Color.FromArgb(0, 229, 255),
-                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
-                TextAlign = ContentAlignment.MiddleRight,
-                Anchor = AnchorStyles.Top | AnchorStyles.Right
-            };
-            panelTop.Controls.Add(_lblFpsStats);
-
             _lblConnModeBadge = new Label
             {
                 Text = " ☁️ BULUT TÜNELİ ",
-                Location = new Point(1105, 8),
-                Size = new Size(160, 24),
-                Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
+                Location = new Point(455, 6),
+                Size = new Size(185, 28),
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
                 ForeColor = Color.Black,
                 BackColor = Color.FromArgb(255, 193, 7),
-                TextAlign = ContentAlignment.MiddleCenter,
-                Anchor = AnchorStyles.Top | AnchorStyles.Right
+                TextAlign = ContentAlignment.MiddleCenter
             };
             panelTop.Controls.Add(_lblConnModeBadge);
+            _lblConnModeBadge.BringToFront();
+
+            _lblFpsStats = new Label
+            {
+                Text = "⚡ -- FPS | -- ms",
+                Location = new Point(650, 9),
+                Size = new Size(160, 22),
+                ForeColor = Color.FromArgb(0, 229, 255),
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                TextAlign = ContentAlignment.MiddleLeft
+            };
+            panelTop.Controls.Add(_lblFpsStats);
 
             _pictureBox = new DoubleBufferedPictureBox
             {

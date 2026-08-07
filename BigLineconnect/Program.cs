@@ -973,36 +973,40 @@ namespace BigLineconnect
                     if (frameToSend != null && frameToSend.Length > 0)
                     {
                         bool isDuplicate = AreByteArraysEqual(frameToSend, _lastSentFrameBytes);
-                        bool isPostClickBurst = DateTime.Now.Ticks < Interlocked.Read(ref _forceSendUntilTicks);
-                        bool forceSend = isPostClickBurst || initialFrameCount < 10 || (DateTime.Now - _lastSentFrameTime).TotalMilliseconds >= 16;
+                        bool isHeartbeatKeepalive = (DateTime.Now - _lastSentFrameTime).TotalMilliseconds >= 2500;
+                        bool isInitialBurst = initialFrameCount < 3;
 
-                        if (!isDuplicate || forceSend)
+                        // CRITICAL PERF FIX: NEVER send duplicate frames if nothing on screen changed!
+                        if (!isDuplicate || isHeartbeatKeepalive || isInitialBurst)
                         {
-                            _isSendingFrame = true;
-                            try
+                            // Enforce minimum frame spacing to prevent socket buffer congestion
+                            int minIntervalMs = CurrentMaxDimension > 1280 ? 33 : 20; // 30 FPS for High Quality, 50 FPS for Low Quality
+                            if (isInitialBurst || (DateTime.Now - _lastSentFrameTime).TotalMilliseconds >= minIntervalMs)
                             {
-                                await SafeSendAsync(
-                                    ws,
-                                    new ArraySegment<byte>(frameToSend),
-                                    WebSocketMessageType.Binary,
-                                    true,
-                                    token
-                                ).ConfigureAwait(false);
+                                _isSendingFrame = true;
+                                try
+                                {
+                                    await SafeSendAsync(
+                                        ws,
+                                        new ArraySegment<byte>(frameToSend),
+                                        WebSocketMessageType.Binary,
+                                        true,
+                                        token
+                                    ).ConfigureAwait(false);
 
-                                _lastSentFrameBytes = frameToSend;
-                                _lastSentFrameTime = DateTime.Now;
-                                initialFrameCount++;
-                            }
-                            finally
-                            {
-                                _isSendingFrame = false;
+                                    _lastSentFrameBytes = frameToSend;
+                                    _lastSentFrameTime = DateTime.Now;
+                                    initialFrameCount++;
+                                }
+                                finally
+                                {
+                                    _isSendingFrame = false;
+                                }
                             }
                         }
                     }
 
-                    bool activeMotion = DateTime.Now.Ticks < Interlocked.Read(ref _forceSendUntilTicks);
-                    int loopDelay = activeMotion ? 2 : 15;
-                    await Task.Delay(loopDelay, token).ConfigureAwait(false);
+                    await Task.Delay(10, token).ConfigureAwait(false);
                 }
                 Log("Görüntü gönderim döngüsü sonlandı.");
             }
