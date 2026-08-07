@@ -17,10 +17,10 @@
     <AssemblyVersion>3.5.0.0</AssemblyVersion>
     <FileVersion>3.5.0.0</FileVersion>
     <ProductVersion>v3.5.0</ProductVersion>
-    <Authors>BigUS Yazilim Sanayi ve Ticaret A.S.</Authors>
-    <Company>BigUS Yazilim Sanayi ve Ticaret A.S.</Company>
-    <Product>BigLineconnect Remote Desktop Client</Product>
-    <Copyright>Copyright (c) 2026 BigUS Yazilim. Tum Haklari Saklidir.</Copyright>
+    <Authors>BIGUS BILISIM GELISTIRME VE UYGULAMA SISTEMLERI LIMITED SIRKETI</Authors>
+    <Company>BIGUS BILISIM GELISTIRME VE UYGULAMA SISTEMLERI LIMITED SIRKETI</Company>
+    <Product>BigLineconnect Kurumsal Uzaktan Masaustu ve Destek Yazilimi</Product>
+    <Copyright>Copyright (c) 2026 BIGUS BILISIM GELISTIRME VE UYGULAMA SISTEMLERI LIMITED SIRKETI. Tum Haklari Saklidir.</Copyright>
     <Description>BigLineconnect Kurumsal Uzaktan Masaustu Baglantisi ve Destek Yazilimi</Description>
     <ApplicationIcon>icon.ico</ApplicationIcon>
   </PropertyGroup>
