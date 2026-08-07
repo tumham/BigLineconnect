@@ -178,7 +178,7 @@ namespace BigLineconnect
         private void InitializeComponent()
         {
             Program.LoadSecuritySettings();
-            this.Text = "BigLineconnect v3.11.0 - Uzaktan Kontrol (Support Priority Triage & Automatic Priority Sorting)";
+            this.Text = "BigLineconnect v3.12.0 - Uzaktan Kontrol (Tab Dark Styling & Single Browser Help Launcher)";
             this.Size = new Size(880, 750);
             this.MinimumSize = new Size(880, 750);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -208,7 +208,7 @@ namespace BigLineconnect
 
             _titleLabel = new Label
             {
-                Text = "BigLineconnect v3.11.0 🚀",
+                Text = "BigLineconnect v3.12.0 🚀",
                 Location = new Point(105, 15),
                 Size = new Size(330, 42),
                 Font = new Font("Segoe UI", 20F, FontStyle.Bold),
@@ -219,7 +219,7 @@ namespace BigLineconnect
 
             var subtitleLabel = new Label
             {
-                Text = "REMOTE DESKTOP CLIENT • v3.11.0 (Support Priority Triage & Priority Sorting Engine)",
+                Text = "REMOTE DESKTOP CLIENT • v3.12.0 (Tab Dark Styling & Single Browser Help Launcher)",
                 Location = new Point(108, 58),
                 Size = new Size(450, 20),
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
@@ -256,7 +256,6 @@ namespace BigLineconnect
                 Anchor = AnchorStyles.Top | AnchorStyles.Right,
                 Cursor = Cursors.Hand
             };
-            _btnHelp.Click += (s, e) => ShowHelpManual();
             _btnHelp.LinkClicked += (s, e) => ShowHelpManual();
             _titleLabel.MouseDoubleClick += (s, e) => ToggleSpecialistMode();
             _logoBox.MouseDoubleClick += (s, e) => ToggleSpecialistMode();
@@ -1663,13 +1662,13 @@ namespace BigLineconnect
                                      if (_tabDestekButton != null)
                                      {
                                          _tabDestekButton.Text = $"🆘 Talepler ({tickets.Count})";
-                                         if (hasNewTicket)
+                                         if (hasNewTicket || _currentTabMode == 1)
                                          {
-                                             _tabDestekButton.BackColor = Color.FromArgb(231, 76, 60);
+                                             ApplyModernButtonStyle(_tabDestekButton, Color.FromArgb(231, 76, 60), Color.FromArgb(192, 57, 43), Color.White);
                                          }
                                          else
                                          {
-                                             _tabDestekButton.BackColor = SystemColors.Control;
+                                             ApplyModernButtonStyle(_tabDestekButton, Color.FromArgb(30, 35, 45), Color.FromArgb(40, 45, 55), Color.White);
                                          }
                                      }
 

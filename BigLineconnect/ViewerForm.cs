@@ -174,7 +174,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.11.0 (Support Priority Triage & Automatic Priority Sorting)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.12.0 (Tab Dark Styling & Single Browser Help Launcher)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
