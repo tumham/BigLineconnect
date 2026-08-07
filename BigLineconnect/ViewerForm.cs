@@ -173,7 +173,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.5.0 (Unified Actions Menu & Compact Toolbar)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.6.0 (Interactive Tunnel Badge & Clean Toolbar)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
@@ -262,22 +262,30 @@ namespace BigLineconnect
                 ForeColor = Color.Black,
                 BackColor = Color.FromArgb(255, 193, 7),
                 TextAlign = ContentAlignment.MiddleCenter,
-                Margin = new Padding(2, 0, 6, 0)
+                Margin = new Padding(2, 0, 6, 0),
+                Cursor = Cursors.Hand
             };
-
-            var lblDisplay = new Label
+            _lblConnModeBadge.Click += (s, e) =>
             {
-                Text = "Ekran:",
-                Size = new Size(42, 28),
-                ForeColor = Color.White,
-                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
-                TextAlign = ContentAlignment.MiddleRight,
-                Margin = new Padding(2, 0, 2, 0)
+                string infoText = P2pDirectEngine.IsP2pConnected ?
+                    "🌐 BAĞLANTI DURUMU: P2P DOĞRUDAN (UDP TÜNELİ)\n\n" +
+                    "• Veri iki bilgisayar arasında doğrudan internet P2P tünelinden akmaktadır.\n" +
+                    "• Bulut sunucusu aradan çıkmıştır, hız ve güvenlik maksimum seviyededir." :
+                    (_wsUrl.Contains(":18888") || _wsUrl.Contains("192.168.") || _wsUrl.Contains("10.") || _wsUrl.Contains("172.")) ?
+                    "⚡ BAĞLANTI DURUMU: YEREL AĞ (LAN DIRECT 0.5ms)\n\n" +
+                    "• İki bilgisayar aynı lokal ağ üzerindedir.\n" +
+                    "• Veri 0.5 ms kablo hızında doğrudan yerel ağdan akar." :
+                    "☁️ BAĞLANTI DURUMU: BULUT TÜNELİ (RELAY SERVER)\n\n" +
+                    "• İki bilgisayar farklı ağlardadır.\n" +
+                    "• Görüntü ve komutlar güvenli bulut sunucumuz üzerinden aktarılmaktadır.\n" +
+                    "• Arka planda doğrudan P2P tüneli açma denemesi devam eder. Tünel açıldığında otomatik yeşil renge (P2P DOĞRUDAN) dönecektir.";
+
+                MessageBox.Show(infoText, "BigLineconnect - Tünel ve Bağlantı Bilgisi", MessageBoxButtons.OK, MessageBoxIcon.Information);
             };
 
             _cbDisplays = new ComboBox
             {
-                Size = new Size(115, 28),
+                Size = new Size(125, 28),
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 BackColor = Color.FromArgb(15, 16, 22),
                 ForeColor = Color.White,
@@ -379,7 +387,6 @@ namespace BigLineconnect
             flowTop.Controls.Add(btnFileManager);
             flowTop.Controls.Add(btnActions);
             flowTop.Controls.Add(_lblConnModeBadge);
-            flowTop.Controls.Add(lblDisplay);
             flowTop.Controls.Add(_cbDisplays);
             flowTop.Controls.Add(btnQuality);
             flowTop.Controls.Add(btnWallpaper);
