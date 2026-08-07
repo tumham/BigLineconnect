@@ -173,7 +173,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.6.0 (Interactive Tunnel Badge & Clean Toolbar)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.7.0 (Winlogon Instant Input & Zero Slowness Engine)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;

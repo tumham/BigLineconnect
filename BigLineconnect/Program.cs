@@ -891,10 +891,26 @@ namespace BigLineconnect
         public static bool SuppressWallpaperEnabled { get; set; } = true;
 
         private static long _forceSendUntilTicks = 0;
+        private static Mutex? _singleStreamerMutex = null;
         private static volatile bool _isSendingFrame = false;
 
         private static void CaptureLoop(CancellationToken token)
         {
+            bool acquiredMutex = false;
+            try
+            {
+                _singleStreamerMutex = new Mutex(true, "Global\\BigLineconnectSingleStreamerMutex", out acquiredMutex);
+                if (!acquiredMutex)
+                {
+                    Log("UYARI: Başka bir BigLineconnect süreci ekranı yakalıyor. Çift çalışma önlendi.");
+                    return;
+                }
+            }
+            catch
+            {
+                acquiredMutex = true;
+            }
+
             try
             {
                 Log("Ekran yakalama döngüsü başladı.");
@@ -905,6 +921,8 @@ namespace BigLineconnect
 
                 while (!token.IsCancellationRequested && _isStreaming)
                 {
+                    DesktopHelper.AttachToInputDesktop();
+
                     bool isMouseActivelyMoving = (DateTime.Now - _lastMouseMoveTime) < TimeSpan.FromMilliseconds(250);
 
                     if (isMouseActivelyMoving)
@@ -933,6 +951,15 @@ namespace BigLineconnect
             {
                 ScreenCapturer.SuppressWallpaper(false);
                 Log($"Yakalama döngüsü hatası: {ex.Message}");
+            }
+            finally
+            {
+                if (acquiredMutex && _singleStreamerMutex != null)
+                {
+                    try { _singleStreamerMutex.ReleaseMutex(); } catch { }
+                    try { _singleStreamerMutex.Dispose(); } catch { }
+                    _singleStreamerMutex = null;
+                }
             }
         }
 
@@ -1039,6 +1066,8 @@ namespace BigLineconnect
         public static void ProcessBinaryRemoteInput(byte[] pkt)
         {
             if (pkt == null || pkt.Length < 5) return;
+            DesktopHelper.AttachToInputDesktop();
+
             if (pkt[0] == 0x4D) // 'M' for fast mouse move
             {
                 _lastMouseMoveTime = DateTime.Now;
@@ -1062,6 +1091,7 @@ namespace BigLineconnect
         {
             try
             {
+                DesktopHelper.AttachToInputDesktop();
                 using var doc = JsonDocument.Parse(json);
                 var root = doc.RootElement;
                 if (!root.TryGetProperty("type", out var typeProp)) return;
