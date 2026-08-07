@@ -179,7 +179,7 @@ namespace BigLineconnect
         private void InitializeComponent()
         {
             Program.LoadSecuritySettings();
-            this.Text = "BigLineconnect v3.14.0 - Uzaktan Kontrol (Priority Badges & Ticket Detail Modal)";
+            this.Text = "BigLineconnect v3.15.0 - Uzaktan Kontrol (Support Priority Preservation Engine)";
             this.Size = new Size(880, 750);
             this.MinimumSize = new Size(880, 750);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -209,7 +209,7 @@ namespace BigLineconnect
 
             _titleLabel = new Label
             {
-                Text = "BigLineconnect v3.14.0 🚀",
+                Text = "BigLineconnect v3.15.0 🚀",
                 Location = new Point(105, 15),
                 Size = new Size(330, 42),
                 Font = new Font("Segoe UI", 20F, FontStyle.Bold),
@@ -220,7 +220,7 @@ namespace BigLineconnect
 
             var subtitleLabel = new Label
             {
-                Text = "REMOTE DESKTOP CLIENT • v3.14.0 (Priority Badges, Sorting & Ticket Detail Modal)",
+                Text = "REMOTE DESKTOP CLIENT • v3.15.0 (Support Priority Preservation Engine)",
                 Location = new Point(108, 58),
                 Size = new Size(450, 20),
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
@@ -2264,7 +2264,7 @@ namespace BigLineconnect
                 {
                     using (var client = new System.Net.Http.HttpClient())
                     {
-                        var json = $"{{\"id\":\"{Program.EscapeJson(ticket.Id)}\",\"token\":\"{Program.EscapeJson(ticket.Token)}\",\"name\":\"{Program.EscapeJson(ticket.Name)}\",\"issue\":\"{Program.EscapeJson(ticket.Issue)}\",\"status\":\"{Program.EscapeJson(status)}\",\"notes\":\"Destek işlemi tamamlandı: {Program.EscapeJson(status)}\",\"tenantId\":\"{Program.EscapeJson(LicenseSystem.CompanyCode)}\",\"resolvedAt\":\"{Program.EscapeJson(timeNow)}\"}}";
+                        var json = $"{{\"id\":\"{Program.EscapeJson(ticket.Id)}\",\"token\":\"{Program.EscapeJson(ticket.Token)}\",\"name\":\"{Program.EscapeJson(ticket.Name)}\",\"issue\":\"{Program.EscapeJson(ticket.Issue)}\",\"priority\":\"{Program.EscapeJson(ticket.Priority)}\",\"status\":\"{Program.EscapeJson(status)}\",\"notes\":\"Destek işlemi tamamlandı: {Program.EscapeJson(status)}\",\"tenantId\":\"{Program.EscapeJson(LicenseSystem.CompanyCode)}\",\"resolvedAt\":\"{Program.EscapeJson(timeNow)}\"}}";
                         var content = new System.Net.Http.StringContent(json, Encoding.UTF8, "application/json");
                         await client.PostAsync(resolveUrl, content);
                     }
