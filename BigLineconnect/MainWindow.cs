@@ -180,7 +180,7 @@ namespace BigLineconnect
         private void InitializeComponent()
         {
             Program.LoadSecuritySettings();
-            this.Text = "BigLineconnect v3.15.0 - Uzaktan Kontrol (Support Priority Preservation Engine)";
+            this.Text = "BigLineconnect v3.16.0 - Uzaktan Kontrol (Root Priority ComboBox State Fix)";
             this.Size = new Size(880, 750);
             this.MinimumSize = new Size(880, 750);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -210,7 +210,7 @@ namespace BigLineconnect
 
             _titleLabel = new Label
             {
-                Text = "BigLineconnect v3.15.0 🚀",
+                Text = "BigLineconnect v3.16.0 🚀",
                 Location = new Point(105, 15),
                 Size = new Size(330, 42),
                 Font = new Font("Segoe UI", 20F, FontStyle.Bold),
@@ -221,7 +221,7 @@ namespace BigLineconnect
 
             var subtitleLabel = new Label
             {
-                Text = "REMOTE DESKTOP CLIENT • v3.15.0 (Support Priority Preservation Engine)",
+                Text = "REMOTE DESKTOP CLIENT • v3.16.0 (Root Priority ComboBox Selection State Fix)",
                 Location = new Point(108, 58),
                 Size = new Size(450, 20),
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
@@ -4129,12 +4129,12 @@ namespace BigLineconnect
             private CheckBox chkRequiresConfirmation;
             private Button btnSubmit;
             private Button btnCancel;
-            
+            private string _selectedPriority = "🟡 Orta";
+
             public string CustomerName => txtName.Text.Trim();
             public string CompanyCodeInput => txtCompanyCode.Text.Trim();
             public string IssueDescription => txtIssue.Text.Trim();
-            public string Priority => cmbPriority.SelectedItem?.ToString()?.Contains("Yüksek") == true ? "Yüksek" :
-                                      (cmbPriority.SelectedItem?.ToString()?.Contains("Düşük") == true ? "Düşük" : "Orta");
+            public string Priority => _selectedPriority;
             public bool RequiresConfirmation => chkRequiresConfirmation.Checked;
 
             public SupportRequestDialog()
@@ -4274,6 +4274,12 @@ namespace BigLineconnect
                         MessageBox.Show("Lütfen yaşadığınız sorunu kısaca açıklayın.", "Uyarı", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                         return;
                     }
+
+                    string sel = cmbPriority.SelectedItem?.ToString() ?? "";
+                    if (sel.Contains("Yüksek")) _selectedPriority = "🔴 Yüksek";
+                    else if (sel.Contains("Düşük")) _selectedPriority = "🟢 Düşük";
+                    else _selectedPriority = "🟡 Orta";
+
                     this.DialogResult = DialogResult.OK;
                     this.Close();
                 };

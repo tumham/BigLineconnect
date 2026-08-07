@@ -174,7 +174,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.15.0 (Support Priority Preservation Engine)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.16.0 (Root Priority ComboBox State Fix)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
