@@ -217,18 +217,6 @@ namespace BigLineconnect
             };
             this.Controls.Add(_titleLabel);
 
-            var versionBadge = new Label
-            {
-                Text = " SÜRÜM: v3.6.0 ",
-                Location = new Point(440, 22),
-                Size = new Size(130, 28),
-                Font = new Font("Segoe UI", 10F, FontStyle.Bold),
-                ForeColor = Color.White,
-                BackColor = Color.FromArgb(156, 39, 176),
-                TextAlign = ContentAlignment.MiddleCenter
-            };
-            this.Controls.Add(versionBadge);
-
             var subtitleLabel = new Label
             {
                 Text = "REMOTE DESKTOP CLIENT • v3.6.0 (Interactive Tunnel Badge & Clean Display Bar)",
