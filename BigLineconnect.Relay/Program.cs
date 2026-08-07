@@ -224,6 +224,7 @@ namespace BigLineconnect.Relay
             public string Id { get; set; } = "";
             public string Name { get; set; } = "";
             public string Issue { get; set; } = "";
+            public string Priority { get; set; } = "Orta";
             public string Token { get; set; } = "";
             public string TenantId { get; set; } = "BIGLINE";
             public bool RequiresConfirmation { get; set; } = false;
@@ -235,6 +236,7 @@ namespace BigLineconnect.Relay
             public string? Id { get; set; }
             public string? Name { get; set; }
             public string? Issue { get; set; }
+            public string? Priority { get; set; }
             public string? Token { get; set; }
             public string? TenantId { get; set; }
             public bool RequiresConfirmation { get; set; }
@@ -247,6 +249,7 @@ namespace BigLineconnect.Relay
             public string Token { get; set; } = "";
             public string Name { get; set; } = "";
             public string Issue { get; set; } = "";
+            public string Priority { get; set; } = "Orta";
             public string TenantId { get; set; } = "BIGLINE";
             public string CreatedAt { get; set; } = "";
             public string ResolvedAt { get; set; } = "";
@@ -993,11 +996,13 @@ namespace BigLineconnect.Relay
                 if (dto != null && !string.IsNullOrEmpty(dto.Id))
                 {
                     string tenantId = string.IsNullOrEmpty(dto.TenantId) ? "BIGLINE" : dto.TenantId;
+                    string priority = string.IsNullOrEmpty(dto.Priority) ? "Orta" : dto.Priority;
                     var req = new SupportRequest
                     {
                         Id = dto.Id,
                         Name = dto.Name ?? "",
                         Issue = dto.Issue ?? "",
+                        Priority = priority,
                         Token = dto.Token ?? "",
                         TenantId = tenantId,
                         RequiresConfirmation = dto.RequiresConfirmation
@@ -1019,6 +1024,7 @@ namespace BigLineconnect.Relay
                                 Token = dto.Token ?? "",
                                 Name = string.IsNullOrEmpty(dto.Name) ? ("Müşteri (" + dto.Id + ")") : dto.Name,
                                 Issue = string.IsNullOrEmpty(dto.Issue) ? "Genel Destek" : dto.Issue,
+                                Priority = priority,
                                 TenantId = tenantId,
                                 CreatedAt = GetTurkeyTimeString(),
                                 ResolvedAt = "—",
@@ -1054,7 +1060,20 @@ namespace BigLineconnect.Relay
                     requests = requests.Where(r => r.TenantId.Equals(tenantId, StringComparison.OrdinalIgnoreCase));
                 }
 
-                var list = requests.OrderByDescending(r => r.CreatedAt).ToList();
+                int GetRank(string p)
+                {
+                    if (string.IsNullOrEmpty(p)) return 1;
+                    if (p.Contains("Yüksek")) return 0;
+                    if (p.Contains("Orta")) return 1;
+                    if (p.Contains("Düşük")) return 2;
+                    return 1;
+                }
+
+                var list = requests
+                    .OrderBy(r => GetRank(r.Priority))
+                    .ThenByDescending(r => r.CreatedAt)
+                    .ToList();
+
                 await context.Response.WriteAsJsonAsync(list);
             });
 

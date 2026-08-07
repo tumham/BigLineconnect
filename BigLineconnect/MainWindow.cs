@@ -178,7 +178,7 @@ namespace BigLineconnect
         private void InitializeComponent()
         {
             Program.LoadSecuritySettings();
-            this.Text = "BigLineconnect v3.10.0 - Uzaktan Kontrol (Multi-Ticket Token Tracking & Accurate CRM Resolution)";
+            this.Text = "BigLineconnect v3.11.0 - Uzaktan Kontrol (Support Priority Triage & Automatic Priority Sorting)";
             this.Size = new Size(880, 750);
             this.MinimumSize = new Size(880, 750);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -208,7 +208,7 @@ namespace BigLineconnect
 
             _titleLabel = new Label
             {
-                Text = "BigLineconnect v3.10.0 🚀",
+                Text = "BigLineconnect v3.11.0 🚀",
                 Location = new Point(105, 15),
                 Size = new Size(330, 42),
                 Font = new Font("Segoe UI", 20F, FontStyle.Bold),
@@ -219,7 +219,7 @@ namespace BigLineconnect
 
             var subtitleLabel = new Label
             {
-                Text = "REMOTE DESKTOP CLIENT • v3.10.0 (Multi-Ticket Token Tracking & Status Engine)",
+                Text = "REMOTE DESKTOP CLIENT • v3.11.0 (Support Priority Triage & Priority Sorting Engine)",
                 Location = new Point(108, 58),
                 Size = new Size(450, 20),
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
@@ -4053,6 +4053,7 @@ namespace BigLineconnect
 
                     string name = dlg.CustomerName;
                     string issue = dlg.IssueDescription;
+                    string priority = dlg.Priority;
                     bool reqConfirm = dlg.RequiresConfirmation;
                     string token = Guid.NewGuid().ToString();
 
@@ -4068,7 +4069,7 @@ namespace BigLineconnect
                             
                             using (var client = new System.Net.Http.HttpClient())
                             {
-                                var json = $"{{\"id\":\"{Program.EscapeJson(hostId)}\",\"name\":\"{Program.EscapeJson(name)}\",\"issue\":\"{Program.EscapeJson(issue)}\",\"token\":\"{Program.EscapeJson(token)}\",\"tenantId\":\"{Program.EscapeJson(LicenseSystem.CompanyCode)}\",\"requiresConfirmation\":{(reqConfirm ? "true" : "false")}}}";
+                                var json = $"{{\"id\":\"{Program.EscapeJson(hostId)}\",\"name\":\"{Program.EscapeJson(name)}\",\"issue\":\"{Program.EscapeJson(issue)}\",\"priority\":\"{Program.EscapeJson(priority)}\",\"token\":\"{Program.EscapeJson(token)}\",\"tenantId\":\"{Program.EscapeJson(LicenseSystem.CompanyCode)}\",\"requiresConfirmation\":{(reqConfirm ? "true" : "false")}}}";
                                 var content = new System.Net.Http.StringContent(json, Encoding.UTF8, "application/json");
                                 var response = await client.PostAsync(httpUrl, content);
                                 string responseBody = await response.Content.ReadAsStringAsync();
@@ -4084,9 +4085,9 @@ namespace BigLineconnect
                                             ApplyModernButtonStyle(_btnSupport, Color.FromArgb(231, 76, 60), Color.FromArgb(192, 57, 43), Color.White);
                                         }
 
-                                        SaveLocalSubmittedTicket(new LocalSubmittedTicket { Token = token, HostId = hostId, Name = name, Issue = issue, TenantId = LicenseSystem.CompanyCode, CreatedAt = DateTime.Now, Status = "⏳ Sırada Bekliyor", Notes = "Destek uzmanının bağlanması bekleniyor..." });
+                                        SaveLocalSubmittedTicket(new LocalSubmittedTicket { Token = token, HostId = hostId, Name = name, Issue = issue, Priority = priority, TenantId = LicenseSystem.CompanyCode, CreatedAt = DateTime.Now, Status = "⏳ Sırada Bekliyor", Notes = "Destek uzmanının bağlanması bekleniyor..." });
                                         MessageBox.Show($"Destek talebiniz başarıyla '{LicenseSystem.CompanyCode}' kanalına iletildi.\n\nAçtığınız talepleri '📋 Taleplerim' butonundan takip edebilirsiniz.", "Başarılı", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                                        AppendLog($"[Destek] Destek talebi oluşturuldu: {name} ({LicenseSystem.CompanyCode}) - {issue}");
+                                        AppendLog($"[Destek] Destek talebi oluşturuldu: {name} ({LicenseSystem.CompanyCode}) - Öncelik: {priority} - {issue}");
                                     }
                                     else
                                     {
@@ -4112,6 +4113,7 @@ namespace BigLineconnect
             private TextBox txtName;
             private TextBox txtCompanyCode;
             private TextBox txtIssue;
+            private ComboBox cmbPriority;
             private CheckBox chkRequiresConfirmation;
             private Button btnSubmit;
             private Button btnCancel;
@@ -4119,12 +4121,14 @@ namespace BigLineconnect
             public string CustomerName => txtName.Text.Trim();
             public string CompanyCodeInput => txtCompanyCode.Text.Trim();
             public string IssueDescription => txtIssue.Text.Trim();
+            public string Priority => cmbPriority.SelectedItem?.ToString()?.Contains("Yüksek") == true ? "Yüksek" :
+                                      (cmbPriority.SelectedItem?.ToString()?.Contains("Düşük") == true ? "Düşük" : "Orta");
             public bool RequiresConfirmation => chkRequiresConfirmation.Checked;
 
             public SupportRequestDialog()
             {
                 this.Text = "Destek Talebi Oluştur";
-                this.Size = new Size(420, 395);
+                this.Size = new Size(420, 440);
                 this.FormBorderStyle = FormBorderStyle.FixedDialog;
                 this.MaximizeBox = false;
                 this.MinimizeBox = false;
@@ -4189,7 +4193,7 @@ namespace BigLineconnect
                 txtIssue = new TextBox
                 {
                     Location = new Point(25, 144),
-                    Size = new Size(355, 65),
+                    Size = new Size(355, 60),
                     Multiline = true,
                     BackColor = Color.FromArgb(20, 22, 30),
                     ForeColor = Color.White,
@@ -4198,10 +4202,35 @@ namespace BigLineconnect
                 };
                 this.Controls.Add(txtIssue);
 
+                var lblPriority = new Label
+                {
+                    Text = "Talep Önceliği / Aciliyet Seviyesi:",
+                    Location = new Point(25, 212),
+                    Size = new Size(355, 20),
+                    Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
+                    ForeColor = Color.FromArgb(241, 196, 15)
+                };
+                this.Controls.Add(lblPriority);
+
+                cmbPriority = new ComboBox
+                {
+                    Location = new Point(25, 234),
+                    Size = new Size(355, 28),
+                    DropDownStyle = ComboBoxStyle.DropDownList,
+                    BackColor = Color.FromArgb(20, 22, 30),
+                    ForeColor = Color.White,
+                    Font = new Font("Segoe UI", 9.5F, FontStyle.Bold)
+                };
+                cmbPriority.Items.Add("🔴 Yüksek (Acil / Fatura-Kasa Kilitlendi)");
+                cmbPriority.Items.Add("🟡 Orta (Normal Destek)");
+                cmbPriority.Items.Add("🟢 Düşük (Bilgi / Rutin İşlem)");
+                cmbPriority.SelectedIndex = 1;
+                this.Controls.Add(cmbPriority);
+
                 chkRequiresConfirmation = new CheckBox
                 {
                     Text = "🛡️ Onaylı Bağlantı (Uzman bağlandığında onay iste)",
-                    Location = new Point(25, 218),
+                    Location = new Point(25, 275),
                     Size = new Size(355, 26),
                     Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
                     ForeColor = Color.FromArgb(0, 229, 255),
@@ -4213,7 +4242,7 @@ namespace BigLineconnect
                 btnSubmit = new Button
                 {
                     Text = "Talebi Gönder",
-                    Location = new Point(55, 256),
+                    Location = new Point(55, 315),
                     Size = new Size(140, 38),
                     BackColor = Color.FromArgb(0, 229, 255),
                     ForeColor = Color.Black,
@@ -4296,6 +4325,7 @@ namespace BigLineconnect
             public string HostId { get; set; } = "";
             public string Name { get; set; } = "";
             public string Issue { get; set; } = "";
+            public string Priority { get; set; } = "Orta";
             public string TenantId { get; set; } = "";
             public DateTime CreatedAt { get; set; } = DateTime.Now;
             public string Status { get; set; } = "⏳ Sırada Bekliyor";
@@ -4386,10 +4416,11 @@ namespace BigLineconnect
                     BorderStyle = BorderStyle.FixedSingle,
                     OwnerDraw = true
                 };
-                lstTickets.Columns.Add("Tarih / Saat", 130);
-                lstTickets.Columns.Add("Sorun / Açıklama", 210);
-                lstTickets.Columns.Add("Durum", 130);
-                lstTickets.Columns.Add("Uzman Çözüm Notu", 140);
+                lstTickets.Columns.Add("Tarih / Saat", 115);
+                lstTickets.Columns.Add("Öncelik", 85);
+                lstTickets.Columns.Add("Sorun / Açıklama", 185);
+                lstTickets.Columns.Add("Durum", 115);
+                lstTickets.Columns.Add("Uzman Çözüm Notu", 125);
 
                 // Eye-pleasing soft-dark custom drawing (Zero stark white lines, soft zebra rows)
                 lstTickets.DrawColumnHeader += (s, e) =>
@@ -4423,8 +4454,21 @@ namespace BigLineconnect
                     e.Graphics.DrawLine(dividerPen, e.Bounds.Left, e.Bounds.Bottom - 1, e.Bounds.Right, e.Bounds.Bottom - 1);
                     e.Graphics.DrawLine(dividerPen, e.Bounds.Right - 1, e.Bounds.Top, e.Bounds.Right - 1, e.Bounds.Bottom - 1);
 
-                    Color textColor = isSelected ? Color.White :
-                                      (e.ColumnIndex == 2 ? e.Item?.ForeColor ?? Color.FromArgb(220, 225, 235) : Color.FromArgb(220, 225, 235));
+                    Color textColor = isSelected ? Color.White : Color.FromArgb(220, 225, 235);
+                    if (!isSelected)
+                    {
+                        if (e.ColumnIndex == 1) // Priority Column
+                        {
+                            string pText = e.SubItem?.Text ?? "";
+                            if (pText.Contains("Yüksek")) textColor = Color.FromArgb(255, 77, 77);
+                            else if (pText.Contains("Orta")) textColor = Color.FromArgb(241, 196, 15);
+                            else textColor = Color.FromArgb(46, 204, 113);
+                        }
+                        else if (e.ColumnIndex == 3) // Status Column
+                        {
+                            textColor = e.Item?.ForeColor ?? Color.FromArgb(220, 225, 235);
+                        }
+                    }
 
                     TextRenderer.DrawText(e.Graphics, e.SubItem?.Text ?? "", e.Item?.Font ?? lstTickets.Font,
                         new Rectangle(e.Bounds.X + 6, e.Bounds.Y, e.Bounds.Width - 10, e.Bounds.Height),
@@ -4519,6 +4563,7 @@ namespace BigLineconnect
                             {
                                 string token = elem.TryGetProperty("token", out var pTok) ? pTok.GetString() ?? "" : "";
                                 string issue = elem.TryGetProperty("issue", out var p1) ? p1.GetString() ?? "" : (elem.TryGetProperty("Issue", out var p1b) ? p1b.GetString() ?? "" : "");
+                                string priority = elem.TryGetProperty("priority", out var pPri) ? pPri.GetString() ?? "Orta" : (elem.TryGetProperty("Priority", out var pPrib) ? pPrib.GetString() ?? "Orta" : "Orta");
                                 string status = elem.TryGetProperty("status", out var p2) ? p2.GetString() ?? "" : (elem.TryGetProperty("Status", out var p2b) ? p2b.GetString() ?? "" : "");
                                 string notes = elem.TryGetProperty("notes", out var p3) ? p3.GetString() ?? "" : (elem.TryGetProperty("Notes", out var p3b) ? p3b.GetString() ?? "" : "");
                                 string createdAtStr = elem.TryGetProperty("createdAt", out var p4a) ? p4a.GetString() ?? "" : "";
@@ -4529,6 +4574,7 @@ namespace BigLineconnect
                                 {
                                     Token = token,
                                     Issue = issue,
+                                    Priority = priority,
                                     Status = status,
                                     Notes = notes,
                                     CreatedAt = dt
@@ -4553,6 +4599,7 @@ namespace BigLineconnect
                             {
                                 existing.Status = sh.Status;
                                 existing.Notes = sh.Notes;
+                                if (!string.IsNullOrEmpty(sh.Priority)) existing.Priority = sh.Priority;
                                 if (!string.IsNullOrEmpty(sh.Token)) existing.Token = sh.Token;
                             }
                             else
@@ -4568,10 +4615,30 @@ namespace BigLineconnect
                         }
                         catch { }
 
-                        foreach (var t in combinedList.OrderByDescending(x => x.CreatedAt))
+                        int GetRank(string p)
+                        {
+                            if (string.IsNullOrEmpty(p)) return 1;
+                            if (p.Contains("Yüksek")) return 0;
+                            if (p.Contains("Orta")) return 1;
+                            if (p.Contains("Düşük")) return 2;
+                            return 1;
+                        }
+
+                        var sortedList = combinedList
+                            .OrderBy(x => GetRank(x.Priority))
+                            .ThenByDescending(x => x.CreatedAt)
+                            .ToList();
+
+                        foreach (var t in sortedList)
                         {
                             string timeStr = t.CreatedAt != default ? t.CreatedAt.ToString("dd.MM.yyyy HH:mm") : "---";
                             var item = new ListViewItem(timeStr);
+                            
+                            string pText = t.Priority ?? "Orta";
+                            if (pText.Contains("Yüksek")) item.SubItems.Add("🔴 Yüksek");
+                            else if (pText.Contains("Düşük")) item.SubItems.Add("🟢 Düşük");
+                            else item.SubItems.Add("🟡 Orta");
+
                             item.SubItems.Add(t.Issue);
 
                             string statusText = t.Status ?? "";
