@@ -126,6 +126,7 @@ namespace BigLineconnect
         private DateTime _lastFpsCalcTime = DateTime.Now;
         private DateTime _lastFrameReceivedTime = DateTime.Now;
         private Label? _lblFpsStats;
+        private Label? _lblConnModeBadge;
         private string _connectionStatusText = "";
 
         private int _isRenderingFrame = 0;
@@ -355,7 +356,7 @@ namespace BigLineconnect
             _lblFpsStats = new Label
             {
                 Text = "⚡ -- FPS | -- ms",
-                Location = new Point(975, 10),
+                Location = new Point(965, 10),
                 Size = new Size(130, 22),
                 ForeColor = Color.FromArgb(0, 229, 255),
                 Font = new Font("Segoe UI", 9f, FontStyle.Bold),
@@ -363,6 +364,19 @@ namespace BigLineconnect
                 Anchor = AnchorStyles.Top | AnchorStyles.Right
             };
             panelTop.Controls.Add(_lblFpsStats);
+
+            _lblConnModeBadge = new Label
+            {
+                Text = " ☁️ BULUT TÜNELİ ",
+                Location = new Point(1105, 8),
+                Size = new Size(160, 24),
+                Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
+                ForeColor = Color.Black,
+                BackColor = Color.FromArgb(255, 193, 7),
+                TextAlign = ContentAlignment.MiddleCenter,
+                Anchor = AnchorStyles.Top | AnchorStyles.Right
+            };
+            panelTop.Controls.Add(_lblConnModeBadge);
 
             _pictureBox = new DoubleBufferedPictureBox
             {
@@ -546,8 +560,33 @@ namespace BigLineconnect
 
                             int displayFps = _currentFps;
                             int displayLatency = (int)Math.Max(5, Math.Min(frameLatency, 999));
+
+                            string connModeText;
+                            Color connModeColor;
+
+                            if (_wsUrl.Contains(":18888") || _wsUrl.Contains("192.168.") || _wsUrl.Contains("10.") || _wsUrl.Contains("172."))
+                            {
+                                connModeText = " ⚡ LAN DIRECT (0.5ms) ";
+                                connModeColor = Color.FromArgb(0, 230, 118); // Bright Green
+                            }
+                            else if (P2pDirectEngine.IsP2pConnected)
+                            {
+                                connModeText = " 🌐 P2P DIRECT (UDP) ";
+                                connModeColor = Color.FromArgb(0, 230, 118); // Bright Green
+                            }
+                            else
+                            {
+                                connModeText = " ☁️ BULUT TÜNELİ ";
+                                connModeColor = Color.FromArgb(255, 193, 7); // Yellow/Gold
+                            }
+
                             this.BeginInvoke(new Action(() =>
                             {
+                                if (_lblConnModeBadge != null && !_lblConnModeBadge.IsDisposed)
+                                {
+                                    _lblConnModeBadge.Text = connModeText;
+                                    _lblConnModeBadge.BackColor = connModeColor;
+                                }
                                 if (_lblFpsStats != null && !_lblFpsStats.IsDisposed)
                                 {
                                     _lblFpsStats.Text = $"⚡ {displayFps} FPS | {displayLatency} ms";
