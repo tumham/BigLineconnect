@@ -178,7 +178,7 @@ namespace BigLineconnect
         private void InitializeComponent()
         {
             Program.LoadSecuritySettings();
-            this.Text = "BigLineconnect v3.8.0 - Uzaktan Kontrol (Animated Glass Splash & Glowing BC Logo)";
+            this.Text = "BigLineconnect v3.9.0 - Uzaktan Kontrol (Eye-Pleasing Soft-Dark Tables & Zero White Lines)";
             this.Size = new Size(880, 750);
             this.MinimumSize = new Size(880, 750);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -208,7 +208,7 @@ namespace BigLineconnect
 
             _titleLabel = new Label
             {
-                Text = "BigLineconnect v3.8.0 🚀",
+                Text = "BigLineconnect v3.9.0 🚀",
                 Location = new Point(105, 15),
                 Size = new Size(330, 42),
                 Font = new Font("Segoe UI", 20F, FontStyle.Bold),
@@ -219,7 +219,7 @@ namespace BigLineconnect
 
             var subtitleLabel = new Label
             {
-                Text = "REMOTE DESKTOP CLIENT • v3.8.0 (Animated Glass Splash Screen & BC Logo)",
+                Text = "REMOTE DESKTOP CLIENT • v3.9.0 (Eye-Pleasing Soft Dark Data Table Design)",
                 Location = new Point(108, 58),
                 Size = new Size(450, 20),
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
@@ -4380,16 +4380,58 @@ namespace BigLineconnect
                     Size = new Size(625, 300),
                     View = View.Details,
                     FullRowSelect = true,
-                    GridLines = true,
-                    BackColor = Color.FromArgb(22, 25, 35),
-                    ForeColor = Color.White,
+                    GridLines = false, // Stark white lines removed!
+                    BackColor = Color.FromArgb(20, 23, 32),
+                    ForeColor = Color.FromArgb(220, 225, 235),
                     Font = new Font("Segoe UI", 9.5F),
-                    BorderStyle = BorderStyle.FixedSingle
+                    BorderStyle = BorderStyle.FixedSingle,
+                    OwnerDraw = true
                 };
                 lstTickets.Columns.Add("Tarih / Saat", 130);
                 lstTickets.Columns.Add("Sorun / Açıklama", 210);
                 lstTickets.Columns.Add("Durum", 130);
                 lstTickets.Columns.Add("Uzman Çözüm Notu", 140);
+
+                // Eye-pleasing soft-dark custom drawing (Zero stark white lines, soft zebra rows)
+                lstTickets.DrawColumnHeader += (s, e) =>
+                {
+                    using var headerBrush = new SolidBrush(Color.FromArgb(28, 32, 44));
+                    e.Graphics.FillRectangle(headerBrush, e.Bounds);
+
+                    using var borderPen = new Pen(Color.FromArgb(45, 50, 65));
+                    e.Graphics.DrawLine(borderPen, e.Bounds.Left, e.Bounds.Bottom - 1, e.Bounds.Right, e.Bounds.Bottom - 1);
+                    if (e.ColumnIndex < lstTickets.Columns.Count - 1)
+                    {
+                        e.Graphics.DrawLine(borderPen, e.Bounds.Right - 1, e.Bounds.Top + 4, e.Bounds.Right - 1, e.Bounds.Bottom - 4);
+                    }
+
+                    TextRenderer.DrawText(e.Graphics, e.Header?.Text ?? "", new Font("Segoe UI", 9F, FontStyle.Bold),
+                        new Rectangle(e.Bounds.X + 6, e.Bounds.Y + 4, e.Bounds.Width - 10, e.Bounds.Height - 8),
+                        Color.FromArgb(0, 229, 255), TextFormatFlags.VerticalCenter | TextFormatFlags.Left | TextFormatFlags.EndEllipsis);
+                };
+
+                lstTickets.DrawSubItem += (s, e) =>
+                {
+                    bool isSelected = e.Item != null && e.Item.Selected;
+                    Color rowBg = isSelected ? Color.FromArgb(10, 53, 80) :
+                                  (e.ItemIndex % 2 == 0 ? Color.FromArgb(20, 23, 32) : Color.FromArgb(27, 30, 42));
+
+                    using var bgBrush = new SolidBrush(rowBg);
+                    e.Graphics.FillRectangle(bgBrush, e.Bounds);
+
+                    // Soft subtle dark grid divider at cell bottom & right
+                    using var dividerPen = new Pen(Color.FromArgb(38, 42, 56));
+                    e.Graphics.DrawLine(dividerPen, e.Bounds.Left, e.Bounds.Bottom - 1, e.Bounds.Right, e.Bounds.Bottom - 1);
+                    e.Graphics.DrawLine(dividerPen, e.Bounds.Right - 1, e.Bounds.Top, e.Bounds.Right - 1, e.Bounds.Bottom - 1);
+
+                    Color textColor = isSelected ? Color.White :
+                                      (e.ColumnIndex == 2 ? e.Item?.ForeColor ?? Color.FromArgb(220, 225, 235) : Color.FromArgb(220, 225, 235));
+
+                    TextRenderer.DrawText(e.Graphics, e.SubItem?.Text ?? "", e.Item?.Font ?? lstTickets.Font,
+                        new Rectangle(e.Bounds.X + 6, e.Bounds.Y, e.Bounds.Width - 10, e.Bounds.Height),
+                        textColor, TextFormatFlags.VerticalCenter | TextFormatFlags.Left | TextFormatFlags.EndEllipsis);
+                };
+
                 this.Controls.Add(lstTickets);
 
                 btnRefresh = new Button
