@@ -173,7 +173,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.3.0 (Zero Socket Backlog Engine)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.4.0 (FlowToolbar Overlap-Free UI)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
@@ -182,7 +182,7 @@ namespace BigLineconnect
             var panelTop = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 40,
+                Height = 42,
                 BackColor = Color.FromArgb(20, 22, 28),
                 ForeColor = Color.White
             };
@@ -199,20 +199,31 @@ namespace BigLineconnect
                 }
             };
 
+            var flowTop = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                FlowDirection = FlowDirection.LeftToRight,
+                WrapContents = false,
+                AutoScroll = true,
+                BackColor = Color.Transparent,
+                Padding = new Padding(6, 6, 6, 6)
+            };
+            panelTop.Controls.Add(flowTop);
+
             var btnChat = new NoFocusButton
             {
                 Text = LanguageManager.Get("btn_chat"),
-                Location = new Point(10, 7),
-                Size = new Size(110, 26)
+                Size = new Size(85, 28),
+                Margin = new Padding(2, 0, 4, 0)
             };
             ModernUIHelper.ApplyButtonStyle(btnChat, Color.FromArgb(0, 229, 255), Color.FromArgb(0, 176, 255), Color.Black);
             btnChat.Click += (s, e) => OpenChat();
 
             var btnFileManager = new NoFocusButton
             {
-                Text = "🗂️ Dosya Yöneticisi",
-                Location = new Point(125, 7),
-                Size = new Size(165, 26)
+                Text = "🗂️ Dosya",
+                Size = new Size(85, 28),
+                Margin = new Padding(2, 0, 4, 0)
             };
             ModernUIHelper.ApplyButtonStyle(btnFileManager, Color.FromArgb(0, 229, 255), Color.FromArgb(0, 176, 255), Color.Black);
             btnFileManager.Click += (s, e) => OpenFileManager();
@@ -220,65 +231,64 @@ namespace BigLineconnect
             var btnRestart = new NoFocusButton
             {
                 Text = "Yeniden Başlat 🔄",
-                Location = new Point(295, 7),
-                Size = new Size(130, 26)
+                Size = new Size(125, 28),
+                Margin = new Padding(2, 0, 4, 0)
             };
-
             ModernUIHelper.ApplyButtonStyle(btnRestart, Color.FromArgb(244, 67, 54), Color.FromArgb(211, 47, 47), Color.White);
             btnRestart.Click += (s, e) => TriggerRemoteRestart();
 
-            var lblDisplay = new Label
-            {
-                Text = "Ekran:",
-                Location = new Point(540, 10),
-                Size = new Size(45, 20),
-                ForeColor = Color.White,
-                Font = new Font("Segoe UI", 9f, FontStyle.Bold)
-            };
-
-            _cbDisplays = new ComboBox
-            {
-                Location = new Point(590, 7),
-                Size = new Size(130, 26),
-                DropDownStyle = ComboBoxStyle.DropDownList,
-                BackColor = Color.FromArgb(15, 16, 22),
-                ForeColor = Color.White,
-                FlatStyle = FlatStyle.Flat,
-                Font = new Font("Segoe UI", 9f, FontStyle.Regular),
-                TabStop = false
-            };
-            _cbDisplays.Items.Add("Ekran 1 (Ana)");
-            _cbDisplays.SelectedIndex = 0;
-            _cbDisplays.SelectedIndexChanged += CbDisplays_SelectedIndexChanged;
-
-            panelTop.Controls.Add(btnChat);
-            panelTop.Controls.Add(btnFileManager);
-            panelTop.Controls.Add(btnRestart);
-            
             var btnCad = new NoFocusButton
             {
                 Text = "🔑 Ctrl+Alt+Del",
-                Location = new Point(415, 7),
-                Size = new Size(115, 26)
+                Size = new Size(115, 28),
+                Margin = new Padding(2, 0, 6, 0)
             };
             ModernUIHelper.ApplyButtonStyle(btnCad, Color.FromArgb(231, 76, 60), Color.FromArgb(192, 57, 43), Color.White);
             btnCad.Click += (s, e) => {
                 SendJson("{\"type\":\"send_cad\"}");
             };
-            panelTop.Controls.Add(btnCad);
 
-            lblDisplay.Location = new Point(535, 10);
-            _cbDisplays.Location = new Point(580, 7);
+            _lblConnModeBadge = new Label
+            {
+                Text = " ☁️ BULUT TÜNELİ ",
+                Size = new Size(165, 28),
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                ForeColor = Color.Black,
+                BackColor = Color.FromArgb(255, 193, 7),
+                TextAlign = ContentAlignment.MiddleCenter,
+                Margin = new Padding(2, 0, 6, 0)
+            };
 
-            panelTop.Controls.Add(lblDisplay);
-            panelTop.Controls.Add(_cbDisplays);
+            var lblDisplay = new Label
+            {
+                Text = "Ekran:",
+                Size = new Size(42, 28),
+                ForeColor = Color.White,
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                TextAlign = ContentAlignment.MiddleRight,
+                Margin = new Padding(2, 0, 2, 0)
+            };
 
+            _cbDisplays = new ComboBox
+            {
+                Size = new Size(115, 28),
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Color.FromArgb(15, 16, 22),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 9f, FontStyle.Regular),
+                TabStop = false,
+                Margin = new Padding(0, 0, 6, 0)
+            };
+            _cbDisplays.Items.Add("Ekran 1 (Ana)");
+            _cbDisplays.SelectedIndex = 0;
+            _cbDisplays.SelectedIndexChanged += CbDisplays_SelectedIndexChanged;
 
             var btnQuality = new NoFocusButton
             {
                 Text = "Kalite: Düşük (1280p) 🎨",
-                Location = new Point(725, 7),
-                Size = new Size(130, 26)
+                Size = new Size(135, 28),
+                Margin = new Padding(2, 0, 4, 0)
             };
             ModernUIHelper.ApplyButtonStyle(btnQuality, Color.FromArgb(156, 39, 176), Color.FromArgb(123, 31, 162), Color.White);
             
@@ -304,8 +314,8 @@ namespace BigLineconnect
             var btnWallpaper = new NoFocusButton
             {
                 Text = "Arka Plan: Siyah ⬛",
-                Location = new Point(860, 7),
-                Size = new Size(120, 26)
+                Size = new Size(130, 28),
+                Margin = new Padding(2, 0, 4, 0)
             };
             ModernUIHelper.ApplyButtonStyle(btnWallpaper, Color.FromArgb(76, 175, 80), Color.FromArgb(56, 142, 60), Color.White);
             btnWallpaper.Click += (s, e) => {
@@ -328,8 +338,8 @@ namespace BigLineconnect
             var btnDisplayMode = new NoFocusButton
             {
                 Text = "Görünüm: Sığdır 📐",
-                Location = new Point(975, 7),
-                Size = new Size(130, 26)
+                Size = new Size(125, 28),
+                Margin = new Padding(2, 0, 6, 0)
             };
             ModernUIHelper.ApplyButtonStyle(btnDisplayMode, Color.FromArgb(0, 188, 212), Color.FromArgb(0, 151, 167), Color.White);
 
@@ -349,33 +359,27 @@ namespace BigLineconnect
                 }
             };
 
-            panelTop.Controls.Add(btnQuality);
-            panelTop.Controls.Add(btnWallpaper);
-            panelTop.Controls.Add(btnDisplayMode);
-
-            _lblConnModeBadge = new Label
-            {
-                Text = " ☁️ BULUT TÜNELİ ",
-                Location = new Point(455, 6),
-                Size = new Size(185, 28),
-                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
-                ForeColor = Color.Black,
-                BackColor = Color.FromArgb(255, 193, 7),
-                TextAlign = ContentAlignment.MiddleCenter
-            };
-            panelTop.Controls.Add(_lblConnModeBadge);
-            _lblConnModeBadge.BringToFront();
-
             _lblFpsStats = new Label
             {
                 Text = "⚡ -- FPS | -- ms",
-                Location = new Point(650, 9),
-                Size = new Size(160, 22),
+                Size = new Size(140, 28),
                 ForeColor = Color.FromArgb(0, 229, 255),
                 Font = new Font("Segoe UI", 9f, FontStyle.Bold),
-                TextAlign = ContentAlignment.MiddleLeft
+                TextAlign = ContentAlignment.MiddleLeft,
+                Margin = new Padding(4, 4, 2, 0)
             };
-            panelTop.Controls.Add(_lblFpsStats);
+
+            flowTop.Controls.Add(btnChat);
+            flowTop.Controls.Add(btnFileManager);
+            flowTop.Controls.Add(btnRestart);
+            flowTop.Controls.Add(btnCad);
+            flowTop.Controls.Add(_lblConnModeBadge);
+            flowTop.Controls.Add(lblDisplay);
+            flowTop.Controls.Add(_cbDisplays);
+            flowTop.Controls.Add(btnQuality);
+            flowTop.Controls.Add(btnWallpaper);
+            flowTop.Controls.Add(btnDisplayMode);
+            flowTop.Controls.Add(_lblFpsStats);
 
             _pictureBox = new DoubleBufferedPictureBox
             {
