@@ -174,7 +174,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.13.0 (Dialog UI Alignment & Zero Shell Focus Leak)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.14.0 (Priority Badges & Ticket Detail Modal)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;

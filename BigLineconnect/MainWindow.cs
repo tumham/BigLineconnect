@@ -179,7 +179,7 @@ namespace BigLineconnect
         private void InitializeComponent()
         {
             Program.LoadSecuritySettings();
-            this.Text = "BigLineconnect v3.13.0 - Uzaktan Kontrol (UI Alignment & Zero Shell Focus Leak)";
+            this.Text = "BigLineconnect v3.14.0 - Uzaktan Kontrol (Priority Badges & Ticket Detail Modal)";
             this.Size = new Size(880, 750);
             this.MinimumSize = new Size(880, 750);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -209,7 +209,7 @@ namespace BigLineconnect
 
             _titleLabel = new Label
             {
-                Text = "BigLineconnect v3.13.0 🚀",
+                Text = "BigLineconnect v3.14.0 🚀",
                 Location = new Point(105, 15),
                 Size = new Size(330, 42),
                 Font = new Font("Segoe UI", 20F, FontStyle.Bold),
@@ -220,7 +220,7 @@ namespace BigLineconnect
 
             var subtitleLabel = new Label
             {
-                Text = "REMOTE DESKTOP CLIENT • v3.13.0 (Dialog UI Alignment & Zero Shell Focus Leak)",
+                Text = "REMOTE DESKTOP CLIENT • v3.14.0 (Priority Badges, Sorting & Ticket Detail Modal)",
                 Location = new Point(108, 58),
                 Size = new Size(450, 20),
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
@@ -1659,12 +1659,21 @@ namespace BigLineconnect
                                      {
                                          PlayNewTicketNotificationSound();
                                          AppendLog("[Gelen Çağrı 🔔] Yeni bir canlı destek talebi düştü! Yüksek sesli uyarı veriliyor.");
+                                         try
+                                         {
+                                             if (this.WindowState == FormWindowState.Minimized)
+                                             {
+                                                 this.WindowState = FormWindowState.Normal;
+                                             }
+                                             this.Activate();
+                                         }
+                                         catch { }
                                      }
 
                                      if (_tabDestekButton != null)
                                      {
                                          _tabDestekButton.Text = $"🆘 Talepler ({tickets.Count})";
-                                         if (hasNewTicket || _currentTabMode == 1)
+                                         if (tickets.Count > 0 || hasNewTicket || _currentTabMode == 1)
                                          {
                                              ApplyModernButtonStyle(_tabDestekButton, Color.FromArgb(231, 76, 60), Color.FromArgb(192, 57, 43), Color.White);
                                          }
@@ -4476,6 +4485,14 @@ namespace BigLineconnect
                         textColor, TextFormatFlags.VerticalCenter | TextFormatFlags.Left | TextFormatFlags.EndEllipsis);
                 };
 
+                lstTickets.MouseDoubleClick += (s, e) =>
+                {
+                    if (lstTickets.SelectedItems.Count > 0 && lstTickets.SelectedItems[0].Tag is LocalSubmittedTicket t)
+                    {
+                        ShowTicketDetailModal(t);
+                    }
+                };
+
                 this.Controls.Add(lstTickets);
 
                 btnRefresh = new Button
@@ -4697,6 +4714,134 @@ namespace BigLineconnect
                         LoadAndRefreshTickets();
                         MessageBox.Show("Talebiniz iptal edildi.", "Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
+                }
+            }
+
+            private void ShowTicketDetailModal(LocalSubmittedTicket ticket)
+            {
+                using (Form dlg = new Form())
+                {
+                    dlg.Text = "📄 Talep ve İşlem Detayları";
+                    dlg.Size = new Size(500, 440);
+                    dlg.StartPosition = FormStartPosition.CenterParent;
+                    dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
+                    dlg.MaximizeBox = false;
+                    dlg.MinimizeBox = false;
+                    dlg.BackColor = Color.FromArgb(18, 20, 28);
+                    dlg.ForeColor = Color.White;
+
+                    Label lblCustomer = new Label
+                    {
+                        Text = $"📋 Ad Soyad / Firma: {(!string.IsNullOrEmpty(ticket.Name) ? ticket.Name : "Bilinmiyor")}",
+                        Location = new Point(20, 15),
+                        Size = new Size(445, 22),
+                        Font = new Font("Segoe UI", 10F, FontStyle.Bold),
+                        ForeColor = Color.FromArgb(0, 229, 255)
+                    };
+                    dlg.Controls.Add(lblCustomer);
+
+                    string timeStr = ticket.CreatedAt != default ? ticket.CreatedAt.ToString("dd.MM.yyyy HH:mm:ss") : "Bilinmiyor";
+                    Label lblDate = new Label
+                    {
+                        Text = $"⏱️ Tarih / Saat: {timeStr}",
+                        Location = new Point(20, 42),
+                        Size = new Size(445, 20),
+                        Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
+                        ForeColor = Color.FromArgb(46, 204, 113)
+                    };
+                    dlg.Controls.Add(lblDate);
+
+                    string pText = ticket.Priority ?? "Orta";
+                    Color pColor = Color.FromArgb(241, 196, 15);
+                    if (pText.Contains("Yüksek")) { pText = "🔴 Yüksek (Acil / Fatura-Kasa)"; pColor = Color.FromArgb(255, 77, 77); }
+                    else if (pText.Contains("Düşük")) { pText = "🟢 Düşük (Rutin İşlem)"; pColor = Color.FromArgb(46, 204, 113); }
+                    else { pText = "🟡 Orta (Normal Destek)"; }
+
+                    Label lblPriority = new Label
+                    {
+                        Text = $"🎯 Öncelik Seviyesi: {pText}",
+                        Location = new Point(20, 67),
+                        Size = new Size(445, 20),
+                        Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
+                        ForeColor = pColor
+                    };
+                    dlg.Controls.Add(lblPriority);
+
+                    Label lblStatus = new Label
+                    {
+                        Text = $"📌 Mevcut Durum: {ticket.Status}",
+                        Location = new Point(20, 92),
+                        Size = new Size(445, 20),
+                        Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
+                        ForeColor = Color.FromArgb(0, 229, 255)
+                    };
+                    dlg.Controls.Add(lblStatus);
+
+                    Label lblIssueHeader = new Label
+                    {
+                        Text = "📝 Bildirilen Sorun / Açıklama:",
+                        Location = new Point(20, 122),
+                        Size = new Size(445, 18),
+                        Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                        ForeColor = Color.FromArgb(200, 210, 225)
+                    };
+                    dlg.Controls.Add(lblIssueHeader);
+
+                    TextBox txtIssue = new TextBox
+                    {
+                        Text = ticket.Issue,
+                        Location = new Point(20, 143),
+                        Size = new Size(445, 75),
+                        Multiline = true,
+                        ReadOnly = true,
+                        ScrollBars = ScrollBars.Vertical,
+                        BackColor = Color.FromArgb(25, 28, 38),
+                        ForeColor = Color.White,
+                        BorderStyle = BorderStyle.FixedSingle,
+                        Font = new Font("Segoe UI", 9.5F)
+                    };
+                    dlg.Controls.Add(txtIssue);
+
+                    Label lblNotesHeader = new Label
+                    {
+                        Text = "📄 Destek Uzmanı Çözüm Notu:",
+                        Location = new Point(20, 228),
+                        Size = new Size(445, 18),
+                        Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                        ForeColor = Color.FromArgb(200, 210, 225)
+                    };
+                    dlg.Controls.Add(lblNotesHeader);
+
+                    TextBox txtNotes = new TextBox
+                    {
+                        Text = string.IsNullOrEmpty(ticket.Notes) ? "Henüz uzman çözüm notu eklenmedi." : ticket.Notes,
+                        Location = new Point(20, 249),
+                        Size = new Size(445, 75),
+                        Multiline = true,
+                        ReadOnly = true,
+                        ScrollBars = ScrollBars.Vertical,
+                        BackColor = Color.FromArgb(25, 28, 38),
+                        ForeColor = Color.FromArgb(0, 229, 255),
+                        BorderStyle = BorderStyle.FixedSingle,
+                        Font = new Font("Segoe UI", 9.5F)
+                    };
+                    dlg.Controls.Add(txtNotes);
+
+                    Button btnClose = new Button
+                    {
+                        Text = "Kapat",
+                        Location = new Point(185, 345),
+                        Size = new Size(130, 36),
+                        BackColor = Color.FromArgb(41, 128, 185),
+                        ForeColor = Color.White,
+                        FlatStyle = FlatStyle.Flat,
+                        Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
+                        Cursor = Cursors.Hand
+                    };
+                    btnClose.Click += (s, e) => dlg.Close();
+                    dlg.Controls.Add(btnClose);
+
+                    dlg.ShowDialog(this);
                 }
             }
         }
