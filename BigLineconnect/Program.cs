@@ -4002,8 +4002,6 @@ namespace BigLineconnect
 
     public class SplashScreenForm : Form
     {
-        public static bool UseBcLogoPath = true; // Toggle for exact BC logo path vs horizontal infinity loop
-
         private Label lblTitle;
         private Label lblSubtitle;
         private Label lblStatus;
@@ -4012,26 +4010,25 @@ namespace BigLineconnect
         private System.Windows.Forms.Timer _fadeTimer;
         private System.Diagnostics.Stopwatch _stopwatch;
         
-        private float _phase = 0F; // For original Lemniscate
-        private float _phaseIndexFloat = 0F; // For BC Path index
+        private float _phase = 0F;
+        private float _phaseIndexFloat = 0F;
         private bool _isClosing = false;
+        private int _dotCount = 0;
         
         private Image? _logoImage;
         private List<PointF> _smoothPath = new();
 
         public SplashScreenForm()
         {
-            this.Width = 520;
-            this.Height = 340;
+            this.Width = 560;
+            this.Height = 370;
             this.FormBorderStyle = FormBorderStyle.None;
             this.StartPosition = FormStartPosition.CenterScreen;
-            this.AllowTransparency = true;
-            this.BackColor = Color.Magenta;
-            this.TransparencyKey = Color.Magenta; // Pure transparent background, zero boxes/borders
+            this.BackColor = Color.FromArgb(16, 18, 26); // Dark Obsidian Glass Card
             this.ForeColor = Color.White;
             this.DoubleBuffered = true;
             this.ShowInTaskbar = false;
-            this.Opacity = 0.0; // Start invisible for fade-in
+            this.Opacity = 0.0; // Start invisible for smooth fade-in
 
             // Load Embedded BC Logo Image
             try
@@ -4047,9 +4044,9 @@ namespace BigLineconnect
             }
             catch { }
 
-            // Initialize Path Coordinates for BC Logo
+            // Initialize Path Coordinates for BC Logo Particle Animation
             float xc = this.Width / 2F;
-            float yc = 185F;
+            float yc = 180F;
             InitBcLogoPath(xc, yc);
 
             this.Paint += SplashScreenForm_Paint;
@@ -4059,12 +4056,23 @@ namespace BigLineconnect
             _fadeTimer.Tick += FadeTimer_Tick;
             _fadeTimer.Enabled = true; // Start fade-in
 
-            // Animation timer for fluid flow
-            _animTimer = new System.Windows.Forms.Timer { Interval = 30 };
+            // Animation timer for fluid flow and breathing logo
+            _animTimer = new System.Windows.Forms.Timer { Interval = 25 };
             _animTimer.Tick += (s, e) =>
             {
-                _phase += 0.12F;
-                _phaseIndexFloat += 2.8F; // Speed of fluid flow in BC logo path (moderate/smooth speed)
+                _phase += 0.08F;
+                _phaseIndexFloat += 3.2F;
+                
+                // Animate loading dots
+                if ((int)(_phase * 4) % 4 != _dotCount)
+                {
+                    _dotCount = (int)(_phase * 4) % 4;
+                    string dots = new string('.', _dotCount + 1);
+                    if (lblStatus != null && !lblStatus.IsDisposed)
+                    {
+                        lblStatus.Text = LanguageManager.Get("status_loading") ?? ("Sistem yükleniyor" + dots);
+                    }
+                }
                 this.Invalidate();
             };
             _animTimer.Start();
@@ -4073,9 +4081,9 @@ namespace BigLineconnect
             lblTitle = new Label
             {
                 Text = "BigLineconnect",
-                Location = new Point(20, 15),
-                Size = new Size(480, 65),
-                Font = new Font("Segoe UI", 26F, FontStyle.Bold),
+                Location = new Point(20, 22),
+                Size = new Size(520, 48),
+                Font = new Font("Segoe UI", 24F, FontStyle.Bold),
                 ForeColor = Color.FromArgb(0, 229, 255),
                 BackColor = Color.Transparent,
                 TextAlign = ContentAlignment.MiddleCenter
@@ -4084,21 +4092,21 @@ namespace BigLineconnect
             lblSubtitle = new Label
             {
                 Text = "REMOTE DESKTOP CLIENT",
-                Location = new Point(20, 80),
-                Size = new Size(480, 20),
-                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
-                ForeColor = Color.FromArgb(150, 255, 255, 255),
+                Location = new Point(20, 72),
+                Size = new Size(520, 20),
+                Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(170, 255, 255, 255),
                 BackColor = Color.Transparent,
                 TextAlign = ContentAlignment.MiddleCenter
             };
 
             lblStatus = new Label
             {
-                Text = "Sistem yukleniyor...",
-                Location = new Point(20, 290),
-                Size = new Size(480, 25),
-                Font = new Font("Segoe UI", 9F, FontStyle.Regular),
-                ForeColor = Color.FromArgb(180, 180, 180),
+                Text = "Sistem yükleniyor...",
+                Location = new Point(20, 315),
+                Size = new Size(520, 25),
+                Font = new Font("Segoe UI", 9.5F, FontStyle.Regular),
+                ForeColor = Color.FromArgb(0, 229, 255),
                 BackColor = Color.Transparent,
                 TextAlign = ContentAlignment.MiddleCenter
             };
@@ -4120,45 +4128,35 @@ namespace BigLineconnect
         {
             var guidePoints = new List<PointF>();
 
-            // Tracing exact path based on b-c letters shape relative to center
-            // Stem of 'b' (going down)
             guidePoints.Add(new PointF(xc - 72, yc - 62));
             guidePoints.Add(new PointF(xc - 72, yc - 30));
             guidePoints.Add(new PointF(xc - 72, yc + 10));
             guidePoints.Add(new PointF(xc - 72, yc + 38));
 
-            // Curve into bottom of 'b' loop
             guidePoints.Add(new PointF(xc - 55, yc + 55));
             guidePoints.Add(new PointF(xc - 35, yc + 58));
             guidePoints.Add(new PointF(xc - 15, yc + 48));
             guidePoints.Add(new PointF(xc - 5, yc + 25));
-            guidePoints.Add(new PointF(xc, yc)); // Center crossover
+            guidePoints.Add(new PointF(xc, yc));
 
-            // Crossover down-right to bottom of 'c' loop
             guidePoints.Add(new PointF(xc + 10, yc + 25));
             guidePoints.Add(new PointF(xc + 22, yc + 48));
             guidePoints.Add(new PointF(xc + 42, yc + 58));
             guidePoints.Add(new PointF(xc + 68, yc + 42));
 
-            // Loop up around right of 'c' loop (to the bottom edge of gap)
             guidePoints.Add(new PointF(xc + 75, yc + 18));
-
-            // Virtual bridge across the 'c' gap (flowing up to the top edge of gap)
             guidePoints.Add(new PointF(xc + 75, yc - 18));
 
-            // Loop up and left around top of 'c'
             guidePoints.Add(new PointF(xc + 68, yc - 42));
             guidePoints.Add(new PointF(xc + 42, yc - 58));
             guidePoints.Add(new PointF(xc + 22, yc - 48));
             guidePoints.Add(new PointF(xc + 10, yc - 25));
-            guidePoints.Add(new PointF(xc, yc)); // Center crossover
+            guidePoints.Add(new PointF(xc, yc));
 
-            // Crossover down-left into bottom-right of 'b'
             guidePoints.Add(new PointF(xc - 10, yc + 25));
             guidePoints.Add(new PointF(xc - 22, yc + 48));
             guidePoints.Add(new PointF(xc - 42, yc + 58));
 
-            // Loop up around left of 'b' loop
             guidePoints.Add(new PointF(xc - 62, yc + 42));
             guidePoints.Add(new PointF(xc - 72, yc + 10));
             guidePoints.Add(new PointF(xc - 72, yc - 15));
@@ -4166,28 +4164,24 @@ namespace BigLineconnect
             guidePoints.Add(new PointF(xc - 35, yc - 48));
             guidePoints.Add(new PointF(xc - 15, yc - 35));
             guidePoints.Add(new PointF(xc - 5, yc - 18));
-            guidePoints.Add(new PointF(xc, yc)); // Center crossover
+            guidePoints.Add(new PointF(xc, yc));
 
-            // Crossover up-right into top-left of 'c' loop
             guidePoints.Add(new PointF(xc + 15, yc - 35));
             guidePoints.Add(new PointF(xc + 35, yc - 48));
             guidePoints.Add(new PointF(xc + 58, yc - 42));
 
-            // Loop down around right of 'c' loop (inside bounds)
             guidePoints.Add(new PointF(xc + 72, yc - 18));
             guidePoints.Add(new PointF(xc + 72, yc + 18));
             guidePoints.Add(new PointF(xc + 58, yc + 42));
             guidePoints.Add(new PointF(xc + 35, yc + 48));
             guidePoints.Add(new PointF(xc + 15, yc + 35));
-            guidePoints.Add(new PointF(xc, yc)); // Center crossover
+            guidePoints.Add(new PointF(xc, yc));
 
-            // Crossover back to top-left of 'b' loop & stem
             guidePoints.Add(new PointF(xc - 15, yc - 35));
             guidePoints.Add(new PointF(xc - 35, yc - 48));
             guidePoints.Add(new PointF(xc - 55, yc - 55));
-            guidePoints.Add(new PointF(xc - 72, yc - 62)); // Connects back to start of stem
+            guidePoints.Add(new PointF(xc - 72, yc - 62));
 
-            // Generate smooth dense path using linear interpolation (30 steps per segment)
             int stepsPerSegment = 30;
             _smoothPath.Clear();
             for (int i = 0; i < guidePoints.Count - 1; i++)
@@ -4218,7 +4212,6 @@ namespace BigLineconnect
         {
             if (!_isClosing)
             {
-                // Fade in
                 if (this.Opacity < 1.0)
                 {
                     this.Opacity += 0.08;
@@ -4231,7 +4224,6 @@ namespace BigLineconnect
             }
             else
             {
-                // Fade out
                 if (this.Opacity > 0.0)
                 {
                     this.Opacity -= 0.08;
@@ -4278,7 +4270,7 @@ namespace BigLineconnect
             {
                 _isClosing = true;
                 _closeCheckTimer.Stop();
-                _fadeTimer.Enabled = true; // Trigger fade-out
+                _fadeTimer.Enabled = true;
             }
         }
 
@@ -4289,71 +4281,46 @@ namespace BigLineconnect
                 var g = e.Graphics;
                 g.SmoothingMode = SmoothingMode.AntiAlias;
                 g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
+                g.InterpolationMode = InterpolationMode.HighQualityBicubic;
 
-            // Pure frameless floating splash animation - zero borders, zero background boxes!
-            float xc = this.Width / 2F;
-            float yc = 185F;
+                float xc = this.Width / 2F;
+                float yc = 185F;
 
-            // Draw crisp dark contrast shadows behind labels so text is 100% sharp on pure white AND black wallpapers
-            if (lblTitle != null && !string.IsNullOrEmpty(lblTitle.Text))
-            {
-                using (var font = lblTitle.Font)
-                using (var shadowBrush = new SolidBrush(Color.FromArgb(220, 0, 0, 0)))
+                // 1. Draw Sleek Modern Dark Glassmorphic Card Container Border & Glow
+                using (var borderPen = new Pen(Color.FromArgb(0, 229, 255), 2F))
                 {
-                    var size = g.MeasureString(lblTitle.Text, font);
-                    float x = xc - size.Width / 2F;
-                    float y = lblTitle.Top;
-
-                    g.DrawString(lblTitle.Text, font, shadowBrush, x + 1.5F, y + 1.5F);
-                    g.DrawString(lblTitle.Text, font, shadowBrush, x - 1F, y + 1.5F);
+                    g.DrawRectangle(borderPen, 1, 1, this.Width - 2, this.Height - 2);
                 }
-            }
-
-            if (lblSubtitle != null && !string.IsNullOrEmpty(lblSubtitle.Text))
-            {
-                using (var font = lblSubtitle.Font)
-                using (var shadowBrush = new SolidBrush(Color.FromArgb(240, 0, 0, 0)))
+                using (var innerGlowPen = new Pen(Color.FromArgb(40, 0, 229, 255), 1F))
                 {
-                    var size = g.MeasureString(lblSubtitle.Text, font);
-                    float x = xc - size.Width / 2F;
-                    float y = lblSubtitle.Top;
-
-                    g.DrawString(lblSubtitle.Text, font, shadowBrush, x + 1F, y + 1F);
-                    g.DrawString(lblSubtitle.Text, font, shadowBrush, x - 1F, y + 1F);
-                    g.DrawString(lblSubtitle.Text, font, shadowBrush, x + 1F, y - 1F);
-                    g.DrawString(lblSubtitle.Text, font, shadowBrush, x - 1F, y - 1F);
-                }
-            }
-
-            if (lblStatus != null && !string.IsNullOrEmpty(lblStatus.Text))
-            {
-                using (var font = lblStatus.Font)
-                using (var shadowBrush = new SolidBrush(Color.FromArgb(200, 0, 0, 0)))
-                {
-                    var size = g.MeasureString(lblStatus.Text, font);
-                    float x = xc - size.Width / 2F;
-                    float y = lblStatus.Top;
-
-                    g.DrawString(lblStatus.Text, font, shadowBrush, x + 1F, y + 1F);
-                }
-            }
-
-            if (UseBcLogoPath && _logoImage != null)
-            {
-                // Render the actual BC Logo Image at the center
-                float lw = 180F;
-                float lh = 135F;
-
-                // Soft ambient dark drop shadow behind the logo for perfect contrast on light/white wallpapers
-                using (var shadowBrush = new SolidBrush(Color.FromArgb(120, 0, 0, 0)))
-                {
-                    g.FillEllipse(shadowBrush, xc - lw / 2F + 3, yc - lh / 2F + 3, lw - 6, lh - 6);
+                    g.DrawRectangle(innerGlowPen, 3, 3, this.Width - 6, this.Height - 6);
                 }
 
-                g.DrawImage(_logoImage, xc - lw / 2F, yc - lh / 2F, lw, lh);
+                // 2. Draw Breathing Neon Ambient Glow Aura Behind Center Logo
+                float pulseFactor = 1.0F + 0.05F * (float)Math.Sin(_phase * 2.5F);
+                float glowW = 200F * pulseFactor;
+                float glowH = 150F * pulseFactor;
+                using (var glowPath = new GraphicsPath())
+                {
+                    glowPath.AddEllipse(xc - glowW / 2F, yc - glowH / 2F, glowW, glowH);
+                    using (var pbr = new PathGradientBrush(glowPath))
+                    {
+                        pbr.CenterColor = Color.FromArgb(60, 0, 229, 255);
+                        pbr.SurroundColors = new Color[] { Color.FromArgb(0, 16, 18, 26) };
+                        g.FillPath(pbr, glowPath);
+                    }
+                }
 
-                // Draw animated fluid particles circulating along the BC path on top of it
-                int numParticles = 20;
+                // 3. Render High-Resolution Embedded BC Logo Image
+                if (_logoImage != null)
+                {
+                    float lw = 180F * pulseFactor;
+                    float lh = 135F * pulseFactor;
+                    g.DrawImage(_logoImage, xc - lw / 2F, yc - lh / 2F, lw, lh);
+                }
+
+                // 4. Draw Animated Fluid Neon Bubbles Circulating Along BC Path
+                int numParticles = 24;
                 int totalPoints = _smoothPath.Count;
                 if (totalPoints > 0)
                 {
@@ -4366,88 +4333,21 @@ namespace BigLineconnect
                         int index = (baseIndex + i * (totalPoints / numParticles)) % totalPoints;
                         PointF p = _smoothPath[index];
 
-                        // Bubble pulses slightly in size
                         float pSize = 6F + 2.5F * (float)Math.Sin(_phase + i);
-
-                        // Dynamic color shift based on x position
                         double ratio = (p.X - (xc - 80)) / 160.0;
                         Color pColor = InterpolateColor(colorCyan, colorPurple, ratio);
 
-                        // Draw glowing semi-transparent fluid bubble
-                        using (var pBrush = new SolidBrush(Color.FromArgb(210, pColor)))
+                        using (var pBrush = new SolidBrush(Color.FromArgb(220, pColor)))
                         {
                             g.FillEllipse(pBrush, p.X - pSize / 2F, p.Y - pSize / 2F, pSize, pSize);
                         }
 
-                        // Tiny highlight for reflection effect
                         using (var lBrush = new SolidBrush(Color.White))
                         {
                             g.FillEllipse(lBrush, p.X - 1.5F, p.Y - 1.5F, 3F, 3F);
                         }
                     }
                 }
-            }
-            else
-            {
-                // Mode 0: Fallback to original horizontal infinity tube & flow
-                float scaleX = 90F;
-                float scaleY = 38F;
-
-                using (var path = new GraphicsPath())
-                {
-                    var points = new System.Collections.Generic.List<PointF>();
-                    for (float t = 0; t <= (float)(2 * Math.PI) + 0.05f; t += 0.05f)
-                    {
-                        float x = xc + scaleX * (float)Math.Cos(t);
-                        float y = yc + scaleY * (float)Math.Sin(2 * t);
-                        points.Add(new PointF(x, y));
-                    }
-                    path.AddLines(points.ToArray());
-
-                    using (var tubeBrush = new LinearGradientBrush(
-                        new RectangleF(xc - scaleX - 10, yc - scaleY - 10, scaleX * 2 + 20, scaleY * 2 + 20),
-                        Color.FromArgb(30, 0, 229, 255),
-                        Color.FromArgb(30, 213, 0, 249),
-                        0F))
-                    using (var tubePen = new Pen(tubeBrush, 18))
-                    {
-                        g.DrawPath(tubePen, path);
-                    }
-
-                    using (var corePen = new Pen(Color.FromArgb(20, 10, 11, 16), 14))
-                    {
-                        g.DrawPath(corePen, path);
-                    }
-                }
-
-                int numParticles = 20;
-                Color colorCyan = Color.FromArgb(0, 229, 255);
-                Color colorPurple = Color.FromArgb(213, 0, 249);
-
-                for (int i = 0; i < numParticles; i++)
-                {
-                    float offset = i * (float)(2 * Math.PI) / numParticles;
-                    float t = _phase + offset;
-
-                    float x = xc + scaleX * (float)Math.Cos(t);
-                    float y = yc + scaleY * (float)Math.Sin(2 * t);
-
-                    float pSize = 7F + 3F * (float)Math.Sin(t * 3);
-
-                    double ratio = (x - (xc - scaleX)) / (scaleX * 2);
-                    Color pColor = InterpolateColor(colorCyan, colorPurple, ratio);
-
-                    using (var particleBrush = new SolidBrush(Color.FromArgb(200, pColor)))
-                    {
-                        g.FillEllipse(particleBrush, x - pSize / 2F, y - pSize / 2F, pSize, pSize);
-                    }
-
-                    using (var lightBrush = new SolidBrush(Color.White))
-                    {
-                        g.FillEllipse(lightBrush, x - 2, y - 2, 4, 4);
-                    }
-                }
-            }
             }
             catch { }
         }

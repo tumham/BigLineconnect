@@ -174,7 +174,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.7.0 (Winlogon Instant Input & Zero Slowness Engine)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.8.0 (Animated Glass Splash & Glowing BC Logo)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
