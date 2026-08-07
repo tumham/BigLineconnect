@@ -180,7 +180,7 @@ namespace BigLineconnect
         private void InitializeComponent()
         {
             Program.LoadSecuritySettings();
-            this.Text = "BigLineconnect v3.16.0 - Uzaktan Kontrol (Root Priority ComboBox State Fix)";
+            this.Text = "BigLineconnect v3.17.0 - Uzaktan Kontrol (Permanent Active Session Overlay Banner)";
             this.Size = new Size(880, 750);
             this.MinimumSize = new Size(880, 750);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -210,7 +210,7 @@ namespace BigLineconnect
 
             _titleLabel = new Label
             {
-                Text = "BigLineconnect v3.16.0 🚀",
+                Text = "BigLineconnect v3.17.0 🚀",
                 Location = new Point(105, 15),
                 Size = new Size(330, 42),
                 Font = new Font("Segoe UI", 20F, FontStyle.Bold),
@@ -221,7 +221,7 @@ namespace BigLineconnect
 
             var subtitleLabel = new Label
             {
-                Text = "REMOTE DESKTOP CLIENT • v3.16.0 (Root Priority ComboBox Selection State Fix)",
+                Text = "REMOTE DESKTOP CLIENT • v3.17.0 (Permanent Active Session Overlay Banner)",
                 Location = new Point(108, 58),
                 Size = new Size(450, 20),
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
@@ -4923,7 +4923,7 @@ namespace BigLineconnect
 
             Label lblSub = new Label
             {
-                Text = "Uzman bilgisayarınıza bağlandı (5 sn sonra gizlenir)",
+                Text = "Uzman bilgisayarınıza bağlandı • Oturum aktif",
                 Font = new Font("Segoe UI", 8f, FontStyle.Regular),
                 ForeColor = Color.FromArgb(0, 229, 255),
                 AutoSize = true,
@@ -4960,17 +4960,6 @@ namespace BigLineconnect
             BindDragEvents(lblIcon);
             BindDragEvents(lblTitle);
             BindDragEvents(lblSub);
-
-            // Auto-dismiss after 5 seconds to prevent bothering the user
-            _autoDismissTimer = new System.Windows.Forms.Timer();
-            _autoDismissTimer.Interval = 5000;
-            _autoDismissTimer.Tick += (s, e) =>
-            {
-                _autoDismissTimer.Stop();
-                MainWindow.IsBannerDismissedByUser = true;
-                try { this.Close(); } catch { }
-            };
-            _autoDismissTimer.Start();
         }
 
         private void BindDragEvents(Control ctrl)
