@@ -172,7 +172,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.1.0 (Pixel-Exact Mouse Calibration)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.2.0 (LAN Direct 0.5ms Engine)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;

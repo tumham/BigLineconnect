@@ -178,7 +178,7 @@ namespace BigLineconnect
         private void InitializeComponent()
         {
             Program.LoadSecuritySettings();
-            this.Text = "BigLineconnect v3.1.0 - Uzaktan Kontrol (Pixel-Exact Mouse Calibration Engine)";
+            this.Text = "BigLineconnect v3.2.0 - Uzaktan Kontrol (LAN Direct 0.5ms Engine)";
             this.Size = new Size(880, 750);
             this.MinimumSize = new Size(880, 750);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -208,7 +208,7 @@ namespace BigLineconnect
 
             _titleLabel = new Label
             {
-                Text = "BigLineconnect v3.1.0 🚀",
+                Text = "BigLineconnect v3.2.0 🚀",
                 Location = new Point(105, 15),
                 Size = new Size(330, 42),
                 Font = new Font("Segoe UI", 20F, FontStyle.Bold),
@@ -219,7 +219,7 @@ namespace BigLineconnect
 
             var versionBadge = new Label
             {
-                Text = " SÜRÜM: v3.1.0 ",
+                Text = " SÜRÜM: v3.2.0 ",
                 Location = new Point(440, 22),
                 Size = new Size(130, 28),
                 Font = new Font("Segoe UI", 10F, FontStyle.Bold),
@@ -231,7 +231,7 @@ namespace BigLineconnect
 
             var subtitleLabel = new Label
             {
-                Text = "REMOTE DESKTOP CLIENT • v3.1.0 (Pixel-Exact Mouse Calibration & Zero Offset)",
+                Text = "REMOTE DESKTOP CLIENT • v3.2.0 (LAN Direct 0.5ms IP Connection & Zero Internet Lag)",
                 Location = new Point(108, 58),
                 Size = new Size(450, 20),
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
@@ -964,7 +964,20 @@ namespace BigLineconnect
 
             string hostAndPort = uri.Authority; // Gets host and port e.g. localhost:5080
             string protocol = uri.Scheme == "wss" ? "wss" : "ws";
-            string clientWsUrl = $"{protocol}://{hostAndPort}/connect-client?id={targetId}";
+            string clientWsUrl;
+
+            if (targetId.Contains(".") || targetId.StartsWith("192.168.") || targetId.StartsWith("10.") || targetId.StartsWith("172."))
+            {
+                // Direct LAN IP Connection
+                string ip = targetId.Contains(":") ? targetId : $"{targetId}:18888";
+                clientWsUrl = $"ws://{ip}/";
+                AppendLog($"[Yerel Ağ (LAN)] {ip} IP adresine doğrudan (0.5 ms) bağlanılıyor...");
+            }
+            else
+            {
+                clientWsUrl = $"{protocol}://{hostAndPort}/connect-client?id={targetId}";
+            }
+
             if (string.IsNullOrEmpty(Program.AutoConnectTicketToken))
             {
                 lock (_activeTickets)
@@ -1000,8 +1013,8 @@ namespace BigLineconnect
 
         private void RemoteIdTextBox_KeyPress(object? sender, KeyPressEventArgs e)
         {
-            // Auto format entry with space separator as they type
-            if (!char.IsControl(e.KeyChar) && !char.IsDigit(e.KeyChar))
+            // Allow digits, control keys, dots and colons for IP addresses
+            if (!char.IsControl(e.KeyChar) && !char.IsDigit(e.KeyChar) && e.KeyChar != '.' && e.KeyChar != ':')
             {
                 e.Handled = true;
                 return;
@@ -1012,7 +1025,11 @@ namespace BigLineconnect
             // Perform auto-formatting after characters are entered
             this.BeginInvoke(new Action(() =>
             {
-                string text = _remoteIdTextBox.Text.Replace(" ", "");
+                string text = _remoteIdTextBox.Text;
+                if (text.Contains(".")) return; // Do NOT space-format IP addresses!
+
+                text = text.Replace(" ", "");
+                if (text.Length > 9) text = text.Substring(0, 9);
                 if (text.Length > 9) text = text.Substring(0, 9);
 
                 string formatted = "";

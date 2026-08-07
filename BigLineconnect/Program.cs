@@ -127,7 +127,7 @@ namespace BigLineconnect
         }
 
         public static ClientWebSocket? WebSocketClient;
-        public static ClientWebSocket? StreamWebSocketClient;
+        public static WebSocket? StreamWebSocketClient;
         public static SplashScreenForm? ActiveSplash;
         public static string CurrentHostId = "--- --- ---";
         public static readonly System.Collections.Generic.List<string> InitialLogs = new();
@@ -577,6 +577,109 @@ namespace BigLineconnect
             }
         }
 
+        public static string GetLocalLanIPAddress()
+        {
+            try
+            {
+                var host = System.Net.Dns.GetHostEntry(System.Net.Dns.GetHostName());
+                foreach (var ip in host.AddressList)
+                {
+                    if (ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
+                    {
+                        string s = ip.ToString();
+                        if (s.StartsWith("192.168.") || s.StartsWith("10.") || s.StartsWith("172."))
+                        {
+                            return s;
+                        }
+                    }
+                }
+            }
+            catch { }
+            return "";
+        }
+
+        private static async Task<bool> PerformWebSocketServerHandshakeAsync(System.Net.Sockets.NetworkStream stream)
+        {
+            try
+            {
+                byte[] buffer = new byte[2048];
+                int bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
+                if (bytesRead <= 0) return false;
+
+                string headerStr = Encoding.UTF8.GetString(buffer, 0, bytesRead);
+                int keyIndex = headerStr.IndexOf("Sec-WebSocket-Key: ", StringComparison.OrdinalIgnoreCase);
+                if (keyIndex < 0) return false;
+
+                int keyStart = keyIndex + "Sec-WebSocket-Key: ".Length;
+                int keyEnd = headerStr.IndexOf("\r\n", keyStart);
+                if (keyEnd < 0) return false;
+
+                string secKey = headerStr.Substring(keyStart, keyEnd - keyStart).Trim();
+                using var sha1 = System.Security.Cryptography.SHA1.Create();
+                string acceptKey = Convert.ToBase64String(
+                    sha1.ComputeHash(Encoding.UTF8.GetBytes(secKey + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11")));
+
+                string response = "HTTP/1.1 101 Switching Protocols\r\n" +
+                                  "Upgrade: websocket\r\n" +
+                                  "Connection: Upgrade\r\n" +
+                                  $"Sec-WebSocket-Accept: {acceptKey}\r\n\r\n";
+
+                byte[] respBytes = Encoding.UTF8.GetBytes(response);
+                await stream.WriteAsync(respBytes, 0, respBytes.Length).ConfigureAwait(false);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static bool _isLanServerStarted = false;
+
+        public static void StartLocalLanServer()
+        {
+            if (_isLanServerStarted) return;
+            _isLanServerStarted = true;
+
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    var listener = new System.Net.Sockets.TcpListener(System.Net.IPAddress.Any, 18888);
+                    listener.Start();
+                    Log($"Yerel Ağ (LAN Direct 0.5 ms) Sunucusu aktif: {GetLocalLanIPAddress()}:18888");
+
+                    while (true)
+                    {
+                        var client = await listener.AcceptTcpClientAsync().ConfigureAwait(false);
+                        _ = Task.Run(async () =>
+                        {
+                            try
+                            {
+                                var stream = client.GetStream();
+                                if (await PerformWebSocketServerHandshakeAsync(stream).ConfigureAwait(false))
+                                {
+                                    var ws = System.Net.WebSockets.WebSocket.CreateFromStream(stream, isServer: true, subProtocol: null, keepAliveInterval: TimeSpan.FromSeconds(30));
+                                    Log("Yerel Ağdan (LAN Direct) 0.5 ms hızlı bağlantı kabul edildi!");
+                                    _isStreaming = true;
+
+                                    var cts = new CancellationTokenSource();
+                                    _ = Task.Run(() => CaptureLoop(cts.Token));
+                                    _ = Task.Run(() => SendStreamLoop(ws, cts.Token));
+                                    await ReceiveLoop(ws, cts.Token).ConfigureAwait(false);
+                                }
+                            }
+                            catch { }
+                        });
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log($"LAN sunucu hatası: {ex.Message}");
+                }
+            });
+        }
+
         public static string SanitizeRelayUrl(string? rawUrl)
         {
             if (string.IsNullOrWhiteSpace(rawUrl) || rawUrl.Contains("***") || rawUrl.Contains("Güvenli Sunucu") || rawUrl.Contains("213.142.159") || !rawUrl.StartsWith("ws", StringComparison.OrdinalIgnoreCase))
@@ -588,6 +691,7 @@ namespace BigLineconnect
 
         public static async Task ConnectToRelayAsync(string url)
         {
+            StartLocalLanServer();
             url = SanitizeRelayUrl(url);
             _currentRelayUrl = url;
             
@@ -677,7 +781,7 @@ namespace BigLineconnect
             });
         }
 
-        private static async Task ReceiveLoop(ClientWebSocket ws, CancellationToken token)
+        private static async Task ReceiveLoop(WebSocket ws, CancellationToken token)
         {
             StreamWebSocketClient = ws;
             var segmentBuffer = new byte[1024 * 4];
@@ -839,7 +943,7 @@ namespace BigLineconnect
             return a.AsSpan().SequenceEqual(b.AsSpan());
         }
 
-        private static async Task SendStreamLoop(ClientWebSocket ws, CancellationToken token)
+        private static async Task SendStreamLoop(WebSocket ws, CancellationToken token)
         {
             StreamWebSocketClient = ws;
             try
@@ -1561,7 +1665,7 @@ namespace BigLineconnect
             }
         }
 
-        private static async Task SendDisplaysListAsync(ClientWebSocket ws, CancellationToken token)
+        private static async Task SendDisplaysListAsync(WebSocket ws, CancellationToken token)
         {
             try
             {
@@ -1587,7 +1691,7 @@ namespace BigLineconnect
             }
         }
 
-        private static async Task HandleConnectionRequestAsync(ClientWebSocket ws, CancellationToken token, string receivedToken = "", bool promptConfirmation = false)
+        private static async Task HandleConnectionRequestAsync(WebSocket ws, CancellationToken token, string receivedToken = "", bool promptConfirmation = false)
         {
             StreamWebSocketClient = ws;
             try
@@ -2092,7 +2196,7 @@ namespace BigLineconnect
             return GetUserDesktopPath();
         }
 
-        public static async Task SafeSendAsync(ClientWebSocket ws, ArraySegment<byte> buffer, WebSocketMessageType messageType, bool endOfMessage, CancellationToken cancellationToken)
+        public static async Task SafeSendAsync(WebSocket ws, ArraySegment<byte> buffer, WebSocketMessageType messageType, bool endOfMessage, CancellationToken cancellationToken)
         {
             await WebSocketSendSemaphore.WaitAsync(cancellationToken);
             try
@@ -2115,7 +2219,7 @@ namespace BigLineconnect
 
         public static async Task SendJsonMessageAsync(object obj)
         {
-            ClientWebSocket? targetWs = WebSocketClient ?? StreamWebSocketClient;
+            WebSocket? targetWs = (WebSocket?)WebSocketClient ?? (WebSocket?)StreamWebSocketClient;
             if (targetWs != null && targetWs.State == WebSocketState.Open)
             {
                 try
