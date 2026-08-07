@@ -92,6 +92,7 @@ namespace BigLineconnect
             public string Id { get; set; } = "";
             public string Name { get; set; } = "";
             public string Issue { get; set; } = "";
+            public string Priority { get; set; } = "Orta";
             public string Token { get; set; } = "";
             public bool RequiresConfirmation { get; set; } = false;
             public DateTime CreatedAt { get; set; }
@@ -1622,6 +1623,7 @@ namespace BigLineconnect
                                          Id = element.TryGetProperty("id", out var p1) ? p1.GetString() ?? "" : (element.TryGetProperty("Id", out var p1b) ? p1b.GetString() ?? "" : ""),
                                          Name = element.TryGetProperty("name", out var p2) ? p2.GetString() ?? "" : (element.TryGetProperty("Name", out var p2b) ? p2b.GetString() ?? "" : ""),
                                          Issue = element.TryGetProperty("issue", out var p3) ? p3.GetString() ?? "" : (element.TryGetProperty("Issue", out var p3b) ? p3b.GetString() ?? "" : ""),
+                                         Priority = element.TryGetProperty("priority", out var pPr) ? pPr.GetString() ?? "Orta" : (element.TryGetProperty("Priority", out var pPrb) ? pPrb.GetString() ?? "Orta" : "Orta"),
                                          Token = element.TryGetProperty("token", out var p4) ? p4.GetString() ?? "" : (element.TryGetProperty("Token", out var p4b) ? p4b.GetString() ?? "" : ""),
                                          RequiresConfirmation = reqConfirmVal,
                                          CreatedAt = createdAtVal
