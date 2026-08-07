@@ -178,7 +178,7 @@ namespace BigLineconnect
         private void InitializeComponent()
         {
             Program.LoadSecuritySettings();
-            this.Text = "BigLineconnect v3.9.0 - Uzaktan Kontrol (Eye-Pleasing Soft-Dark Tables & Zero White Lines)";
+            this.Text = "BigLineconnect v3.10.0 - Uzaktan Kontrol (Multi-Ticket Token Tracking & Accurate CRM Resolution)";
             this.Size = new Size(880, 750);
             this.MinimumSize = new Size(880, 750);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -208,7 +208,7 @@ namespace BigLineconnect
 
             _titleLabel = new Label
             {
-                Text = "BigLineconnect v3.9.0 🚀",
+                Text = "BigLineconnect v3.10.0 🚀",
                 Location = new Point(105, 15),
                 Size = new Size(330, 42),
                 Font = new Font("Segoe UI", 20F, FontStyle.Bold),
@@ -219,7 +219,7 @@ namespace BigLineconnect
 
             var subtitleLabel = new Label
             {
-                Text = "REMOTE DESKTOP CLIENT • v3.9.0 (Eye-Pleasing Soft Dark Data Table Design)",
+                Text = "REMOTE DESKTOP CLIENT • v3.10.0 (Multi-Ticket Token Tracking & Status Engine)",
                 Location = new Point(108, 58),
                 Size = new Size(450, 20),
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
@@ -4315,11 +4315,10 @@ namespace BigLineconnect
             {
                 var tickets = LoadLocalSubmittedTickets();
                 tickets.RemoveAll(t => 
-                    (!string.IsNullOrEmpty(ticket.Token) && !string.IsNullOrEmpty(t.Token) && t.Token.Trim() == ticket.Token.Trim()) ||
-                    (t.HostId == ticket.HostId && t.Issue == ticket.Issue && Math.Abs((t.CreatedAt - ticket.CreatedAt).TotalSeconds) < 5)
+                    !string.IsNullOrEmpty(ticket.Token) && !string.IsNullOrEmpty(t.Token) && t.Token.Trim() == ticket.Token.Trim()
                 );
                 tickets.Insert(0, ticket);
-                if (tickets.Count > 50) tickets = tickets.Take(50).ToList();
+                if (tickets.Count > 100) tickets = tickets.Take(100).ToList();
 
                 string json = System.Text.Json.JsonSerializer.Serialize(tickets, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
                 File.WriteAllText(GetLocalSubmittedTicketsFilePath(), json);
@@ -4518,13 +4517,17 @@ namespace BigLineconnect
                             using var doc = System.Text.Json.JsonDocument.Parse(json);
                             foreach (var elem in doc.RootElement.EnumerateArray())
                             {
+                                string token = elem.TryGetProperty("token", out var pTok) ? pTok.GetString() ?? "" : "";
                                 string issue = elem.TryGetProperty("issue", out var p1) ? p1.GetString() ?? "" : (elem.TryGetProperty("Issue", out var p1b) ? p1b.GetString() ?? "" : "");
                                 string status = elem.TryGetProperty("status", out var p2) ? p2.GetString() ?? "" : (elem.TryGetProperty("Status", out var p2b) ? p2b.GetString() ?? "" : "");
                                 string notes = elem.TryGetProperty("notes", out var p3) ? p3.GetString() ?? "" : (elem.TryGetProperty("Notes", out var p3b) ? p3b.GetString() ?? "" : "");
-                                DateTime dt = elem.TryGetProperty("resolvedAt", out var p4) && DateTime.TryParse(p4.GetString(), out var dtVal) ? dtVal : DateTime.Now;
+                                string createdAtStr = elem.TryGetProperty("createdAt", out var p4a) ? p4a.GetString() ?? "" : "";
+                                DateTime dt = !string.IsNullOrEmpty(createdAtStr) && DateTime.TryParse(createdAtStr, out var dtParsed) ? dtParsed :
+                                              (elem.TryGetProperty("resolvedAt", out var p4) && DateTime.TryParse(p4.GetString(), out var dtVal) ? dtVal : DateTime.Now);
 
                                 serverHistoryList.Add(new LocalSubmittedTicket
                                 {
+                                    Token = token,
                                     Issue = issue,
                                     Status = status,
                                     Notes = notes,
@@ -4542,11 +4545,15 @@ namespace BigLineconnect
 
                         foreach (var sh in serverHistoryList)
                         {
-                            var existing = combinedList.FirstOrDefault(t => t.Issue == sh.Issue || Math.Abs((t.CreatedAt - sh.CreatedAt).TotalMinutes) < 10);
+                            var existing = combinedList.FirstOrDefault(t => 
+                                (!string.IsNullOrEmpty(t.Token) && !string.IsNullOrEmpty(sh.Token) && t.Token.Trim() == sh.Token.Trim()) ||
+                                (!string.IsNullOrEmpty(t.Issue) && t.Issue.Trim() == sh.Issue.Trim() && Math.Abs((t.CreatedAt - sh.CreatedAt).TotalSeconds) < 60)
+                            );
                             if (existing != null)
                             {
                                 existing.Status = sh.Status;
                                 existing.Notes = sh.Notes;
+                                if (!string.IsNullOrEmpty(sh.Token)) existing.Token = sh.Token;
                             }
                             else
                             {
@@ -4554,22 +4561,34 @@ namespace BigLineconnect
                             }
                         }
 
+                        try
+                        {
+                            string updatedJson = System.Text.Json.JsonSerializer.Serialize(combinedList, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+                            File.WriteAllText(GetLocalSubmittedTicketsFilePath(), updatedJson);
+                        }
+                        catch { }
+
                         foreach (var t in combinedList.OrderByDescending(x => x.CreatedAt))
                         {
                             string timeStr = t.CreatedAt != default ? t.CreatedAt.ToString("dd.MM.yyyy HH:mm") : "---";
                             var item = new ListViewItem(timeStr);
                             item.SubItems.Add(t.Issue);
 
-                            string statusText = t.Status;
-                            if (statusText.Contains("Çözüldü"))
+                            string statusText = t.Status ?? "";
+                            if (statusText.Contains("Çözüldü") && !statusText.Contains("Çözülmedi"))
                             {
                                 item.SubItems.Add("✅ Çözüldü");
                                 item.ForeColor = Color.FromArgb(46, 204, 113);
                             }
                             else if (statusText.Contains("Çözülmedi"))
                             {
-                                item.SubItems.Add("❌ Çözülmedi");
+                                item.SubItems.Add("❌ Çözülemedi");
                                 item.ForeColor = Color.FromArgb(231, 76, 60);
+                            }
+                            else if (statusText.Contains("Takip") || statusText.Contains("Takipte"))
+                            {
+                                item.SubItems.Add("📌 Takip Edilecek");
+                                item.ForeColor = Color.FromArgb(243, 156, 18);
                             }
                             else if (statusText.Contains("Bağlandı") || statusText.Contains("İşlemde"))
                             {

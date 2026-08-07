@@ -1004,6 +1004,32 @@ namespace BigLineconnect.Relay
                     };
                     string reqKey = !string.IsNullOrEmpty(dto.Token) ? dto.Token : dto.Id;
                     ActiveSupportRequests[reqKey] = req;
+
+                    // Immediately log new ticket into Support History CRM
+                    try
+                    {
+                        var history = LoadSupportHistory();
+                        var existing = history.FirstOrDefault(h => !string.IsNullOrEmpty(dto.Token) && h.Token == dto.Token);
+                        if (existing == null)
+                        {
+                            history.Add(new SupportHistoryEntry
+                            {
+                                Id = Guid.NewGuid().ToString(),
+                                HostId = dto.Id,
+                                Token = dto.Token ?? "",
+                                Name = string.IsNullOrEmpty(dto.Name) ? ("Müşteri (" + dto.Id + ")") : dto.Name,
+                                Issue = string.IsNullOrEmpty(dto.Issue) ? "Genel Destek" : dto.Issue,
+                                TenantId = tenantId,
+                                CreatedAt = GetTurkeyTimeString(),
+                                ResolvedAt = "—",
+                                Status = "⏳ Sırada Bekliyor",
+                                Notes = "Uzman tarafından incelemeye alınması bekleniyor."
+                            });
+                            SaveSupportHistory(history);
+                        }
+                    }
+                    catch { }
+
                     return Results.Ok("Success");
                 }
                 return Results.BadRequest("Invalid Data");
@@ -1059,10 +1085,14 @@ namespace BigLineconnect.Relay
                     }
 
                     var history = LoadSupportHistory();
-                    var existingEntry = history.LastOrDefault(h => 
+                    var existingEntry = history.FirstOrDefault(h => 
                         (!string.IsNullOrEmpty(token) && h.Token == token) ||
-                        (!string.IsNullOrEmpty(id) && h.HostId == id && (string.IsNullOrEmpty(issue) || h.Issue == issue))
+                        (!string.IsNullOrEmpty(id) && h.HostId == id && !string.IsNullOrEmpty(issue) && h.Issue == issue && h.Status.Contains("Bekliyor"))
                     );
+                    if (existingEntry == null && !string.IsNullOrEmpty(id))
+                    {
+                        existingEntry = history.LastOrDefault(h => h.HostId == id && h.Status.Contains("Bekliyor"));
+                    }
 
                     if (existingEntry != null)
                     {

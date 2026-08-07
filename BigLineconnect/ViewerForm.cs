@@ -174,7 +174,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.9.0 (Eye-Pleasing Soft-Dark Tables & Zero White Lines)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.10.0 (Multi-Ticket Token Tracking & Accurate CRM Resolution)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
