@@ -85,6 +85,7 @@ namespace BigLineconnect
         private Button? _btnMyTickets;
         private bool _hasActiveSubmittedTicket = false;
         private static RemoteOverlayBannerForm? _overlayBannerForm = null;
+        public static bool IsBannerDismissedByUser = false;
 
         public class SupportTicket
         {
@@ -178,7 +179,7 @@ namespace BigLineconnect
         private void InitializeComponent()
         {
             Program.LoadSecuritySettings();
-            this.Text = "BigLineconnect v3.12.0 - Uzaktan Kontrol (Tab Dark Styling & Single Browser Help Launcher)";
+            this.Text = "BigLineconnect v3.13.0 - Uzaktan Kontrol (UI Alignment & Zero Shell Focus Leak)";
             this.Size = new Size(880, 750);
             this.MinimumSize = new Size(880, 750);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -208,7 +209,7 @@ namespace BigLineconnect
 
             _titleLabel = new Label
             {
-                Text = "BigLineconnect v3.12.0 🚀",
+                Text = "BigLineconnect v3.13.0 🚀",
                 Location = new Point(105, 15),
                 Size = new Size(330, 42),
                 Font = new Font("Segoe UI", 20F, FontStyle.Bold),
@@ -219,7 +220,7 @@ namespace BigLineconnect
 
             var subtitleLabel = new Label
             {
-                Text = "REMOTE DESKTOP CLIENT • v3.12.0 (Tab Dark Styling & Single Browser Help Launcher)",
+                Text = "REMOTE DESKTOP CLIENT • v3.13.0 (Dialog UI Alignment & Zero Shell Focus Leak)",
                 Location = new Point(108, 58),
                 Size = new Size(450, 20),
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
@@ -1272,7 +1273,7 @@ namespace BigLineconnect
                 bool isStreamActive = Program._isStreaming || File.Exists(streamFlagPath);
                 if (isStreamActive)
                 {
-                    if (_overlayBannerForm == null || _overlayBannerForm.IsDisposed)
+                    if (!IsBannerDismissedByUser && (_overlayBannerForm == null || _overlayBannerForm.IsDisposed))
                     {
                         _overlayBannerForm = new RemoteOverlayBannerForm();
                         _overlayBannerForm.Show();
@@ -1285,6 +1286,7 @@ namespace BigLineconnect
                 }
                 else
                 {
+                    IsBannerDismissedByUser = false;
                     if (_overlayBannerForm != null && !_overlayBannerForm.IsDisposed)
                     {
                         _overlayBannerForm.Close();
@@ -4240,9 +4242,9 @@ namespace BigLineconnect
 
                 btnSubmit = new Button
                 {
-                    Text = "Talebi Gönder",
-                    Location = new Point(55, 315),
-                    Size = new Size(140, 38),
+                    Text = "🚀 Talebi Gönder",
+                    Location = new Point(25, 296),
+                    Size = new Size(172, 38),
                     BackColor = Color.FromArgb(0, 229, 255),
                     ForeColor = Color.Black,
                     FlatStyle = FlatStyle.Flat,
@@ -4269,8 +4271,8 @@ namespace BigLineconnect
                 btnCancel = new Button
                 {
                     Text = "İptal",
-                    Location = new Point(210, 256),
-                    Size = new Size(140, 38),
+                    Location = new Point(208, 296),
+                    Size = new Size(172, 38),
                     BackColor = Color.FromArgb(40, 45, 55),
                     ForeColor = Color.White,
                     FlatStyle = FlatStyle.Flat,
@@ -4287,9 +4289,9 @@ namespace BigLineconnect
                 var btnHistory = new Button
                 {
                     Text = "📋 Daha Önce Açtığım Taleplerim ve Durumları",
-                    Location = new Point(25, 308),
-                    Size = new Size(355, 32),
-                    BackColor = Color.FromArgb(30, 35, 45),
+                    Location = new Point(25, 344),
+                    Size = new Size(355, 34),
+                    BackColor = Color.FromArgb(24, 28, 38),
                     ForeColor = Color.FromArgb(0, 229, 255),
                     FlatStyle = FlatStyle.Flat,
                     Font = new Font("Segoe UI", 9F, FontStyle.Bold),
@@ -4705,6 +4707,19 @@ namespace BigLineconnect
         private Point _dragCursorPoint;
         private Point _dragFormPoint;
         private bool _isDragging = false;
+        private System.Windows.Forms.Timer? _autoDismissTimer;
+
+        protected override CreateParams CreateParams
+        {
+            get
+            {
+                CreateParams cp = base.CreateParams;
+                cp.ExStyle |= 0x08000000; // WS_EX_NOACTIVATE: Never steal focus from Windows Taskbar or Desktop
+                cp.ExStyle |= 0x00000080; // WS_EX_TOOLWINDOW: Hide from Taskbar / Alt-Tab
+                cp.ExStyle |= 0x00000008; // WS_EX_TOPMOST: Stay on top quietly
+                return cp;
+            }
+        }
 
         public RemoteOverlayBannerForm()
         {
@@ -4755,7 +4770,7 @@ namespace BigLineconnect
 
             Label lblSub = new Label
             {
-                Text = "Uzman bilgisayarınıza bağlandı (Sürükleyebilirsiniz)",
+                Text = "Uzman bilgisayarınıza bağlandı (5 sn sonra gizlenir)",
                 Font = new Font("Segoe UI", 8f, FontStyle.Regular),
                 ForeColor = Color.FromArgb(0, 229, 255),
                 AutoSize = true,
@@ -4763,9 +4778,28 @@ namespace BigLineconnect
                 Cursor = Cursors.SizeAll
             };
 
+            Label lblClose = new Label
+            {
+                Text = "✖",
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(180, 190, 200),
+                Location = new Point(332, 6),
+                Size = new Size(22, 22),
+                TextAlign = ContentAlignment.MiddleCenter,
+                Cursor = Cursors.Hand
+            };
+            lblClose.MouseEnter += (s, e) => { lblClose.ForeColor = Color.FromArgb(231, 76, 60); };
+            lblClose.MouseLeave += (s, e) => { lblClose.ForeColor = Color.FromArgb(180, 190, 200); };
+            lblClose.Click += (s, e) =>
+            {
+                MainWindow.IsBannerDismissedByUser = true;
+                this.Close();
+            };
+
             pnlMain.Controls.Add(lblIcon);
             pnlMain.Controls.Add(lblTitle);
             pnlMain.Controls.Add(lblSub);
+            pnlMain.Controls.Add(lblClose);
             this.Controls.Add(pnlMain);
 
             BindDragEvents(this);
@@ -4773,6 +4807,17 @@ namespace BigLineconnect
             BindDragEvents(lblIcon);
             BindDragEvents(lblTitle);
             BindDragEvents(lblSub);
+
+            // Auto-dismiss after 5 seconds to prevent bothering the user
+            _autoDismissTimer = new System.Windows.Forms.Timer();
+            _autoDismissTimer.Interval = 5000;
+            _autoDismissTimer.Tick += (s, e) =>
+            {
+                _autoDismissTimer.Stop();
+                MainWindow.IsBannerDismissedByUser = true;
+                try { this.Close(); } catch { }
+            };
+            _autoDismissTimer.Start();
         }
 
         private void BindDragEvents(Control ctrl)
