@@ -125,6 +125,7 @@ namespace BigLineconnect
         private int _currentFps = 0;
         private DateTime _lastFpsCalcTime = DateTime.Now;
         private DateTime _lastFrameReceivedTime = DateTime.Now;
+        private int _measuredLatencyMs = 25;
         private Label? _lblFpsStats;
         private Label? _lblConnModeBadge;
         private string _connectionStatusText = "";
@@ -562,8 +563,14 @@ namespace BigLineconnect
                     {
                         _hasConnectedOnce = true;
                         DateTime now = DateTime.Now;
-                        double frameLatency = (now - _lastFrameReceivedTime).TotalMilliseconds;
+                        double frameGap = (now - _lastFrameReceivedTime).TotalMilliseconds;
                         _lastFrameReceivedTime = now;
+
+                        // Measure true active frame latency when frames flow (< 300ms gap)
+                        if (frameGap > 0 && frameGap < 300)
+                        {
+                            _measuredLatencyMs = (int)Math.Max(5, Math.Min(frameGap, 150));
+                        }
 
                         _fpsCounter++;
                         _totalFramesReceivedCount++;
@@ -574,7 +581,7 @@ namespace BigLineconnect
                             _lastFpsCalcTime = now;
 
                             int displayFps = _currentFps;
-                            int displayLatency = (int)Math.Max(5, Math.Min(frameLatency, 999));
+                            int displayLatency = _measuredLatencyMs > 0 ? _measuredLatencyMs : 25;
 
                             string connModeText;
                             Color connModeColor;
