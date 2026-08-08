@@ -3508,7 +3508,7 @@ namespace BigLineconnect
 
                 var txtCompanyCode = new TextBox
                 {
-                    Text = LicenseSystem.CompanyCode,
+                    Text = (string.IsNullOrWhiteSpace(LicenseSystem.CompanyCode) || LicenseSystem.CompanyCode == "BIGLINE" || LicenseSystem.CompanyCode.StartsWith("V1.") || LicenseSystem.CompanyCode.StartsWith("V2.") || LicenseSystem.CompanyCode.StartsWith("V3.") || LicenseSystem.CompanyCode.StartsWith("V4.")) ? "BAYIKODU" : LicenseSystem.CompanyCode,
                     Size = new Size(310, 28),
                     Location = new Point(30, 75),
                     BackColor = Color.FromArgb(20, 22, 30),
@@ -4292,7 +4292,7 @@ namespace BigLineconnect
                     ForeColor = Color.White,
                     BorderStyle = BorderStyle.FixedSingle,
                     Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
-                    Text = LicenseSystem.CompanyCode
+                    Text = (string.IsNullOrWhiteSpace(LicenseSystem.CompanyCode) || LicenseSystem.CompanyCode == "BIGLINE" || LicenseSystem.CompanyCode.StartsWith("V1.") || LicenseSystem.CompanyCode.StartsWith("V2.") || LicenseSystem.CompanyCode.StartsWith("V3.") || LicenseSystem.CompanyCode.StartsWith("V4.")) ? "BAYIKODU" : LicenseSystem.CompanyCode
                 };
                 this.Controls.Add(txtCompanyCode);
 
@@ -5272,7 +5272,7 @@ namespace BigLineconnect
 
             txtCompanyCode = new TextBox
             {
-                Text = LicenseSystem.CompanyCode,
+                Text = (string.IsNullOrWhiteSpace(LicenseSystem.CompanyCode) || LicenseSystem.CompanyCode == "BIGLINE" || LicenseSystem.CompanyCode.StartsWith("V1.") || LicenseSystem.CompanyCode.StartsWith("V2.") || LicenseSystem.CompanyCode.StartsWith("V3.") || LicenseSystem.CompanyCode.StartsWith("V4.")) ? "BAYIKODU" : LicenseSystem.CompanyCode,
                 Location = new Point(12, 60),
                 Size = new Size(405, 30),
                 BackColor = Color.FromArgb(10, 11, 16),

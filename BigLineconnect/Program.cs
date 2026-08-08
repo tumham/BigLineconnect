@@ -4444,7 +4444,7 @@ namespace BigLineconnect
         public static bool IsLicenseActive { get; private set; } = false;
         public static bool TimeRollbackDetected { get; private set; } = false;
         public static int RemainingDays { get; private set; } = 30;
-        public static string CompanyCode { get; set; } = "BIGLINE";
+        public static string CompanyCode { get; set; } = "BAYIKODU";
         public static bool IsSpecialistMode { get; set; } = false;
 
         public static string LicenseFilePath => ConfigHelper.GetConfigPath("license.key");
@@ -4508,13 +4508,18 @@ namespace BigLineconnect
                     if (exeName.Contains("_") && !exeName.Equals("BIGLINECONNECT", StringComparison.OrdinalIgnoreCase) && !exeName.Equals("BIGLINECONNECT_SETUP", StringComparison.OrdinalIgnoreCase))
                     {
                         string sub = exeName.Substring(exeName.IndexOf('_') + 1);
-                        if (!string.IsNullOrWhiteSpace(sub) && !sub.Equals("SETUP", StringComparison.OrdinalIgnoreCase))
+                        if (!string.IsNullOrWhiteSpace(sub) && !sub.Equals("SETUP", StringComparison.OrdinalIgnoreCase) && !sub.StartsWith("V1.") && !sub.StartsWith("V2.") && !sub.StartsWith("V3.") && !sub.StartsWith("V4.") && !sub.StartsWith("V5.") && !sub.Equals("SETUP_V2", StringComparison.OrdinalIgnoreCase))
                         {
                             CompanyCode = NormalizeCompanyCode(sub);
                         }
                     }
                 }
                 catch { }
+
+                if (string.IsNullOrWhiteSpace(CompanyCode) || CompanyCode == "BIGLINE" || CompanyCode.StartsWith("V1.") || CompanyCode.StartsWith("V2.") || CompanyCode.StartsWith("V3.") || CompanyCode.StartsWith("V4.") || CompanyCode.StartsWith("V5."))
+                {
+                    CompanyCode = "BAYIKODU";
+                }
 
                 string[] possibleRoleFiles = new[]
                 {
@@ -4555,10 +4560,14 @@ namespace BigLineconnect
 
         public static string NormalizeCompanyCode(string input)
         {
-            if (string.IsNullOrWhiteSpace(input)) return "BIGLINE";
+            if (string.IsNullOrWhiteSpace(input)) return "BAYIKODU";
             string clean = input.Trim().ToUpperInvariant()
                 .Replace("Ç", "C").Replace("Ğ", "G").Replace("İ", "I").Replace("Ö", "O").Replace("Ş", "S").Replace("Ü", "U")
                 .Replace(" ", "_").Replace("-", "_");
+            if (clean == "BIGLINE" || clean.StartsWith("V1.") || clean.StartsWith("V2.") || clean.StartsWith("V3.") || clean.StartsWith("V4."))
+            {
+                return "BAYIKODU";
+            }
             return clean;
         }
 
