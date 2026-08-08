@@ -451,6 +451,7 @@
     <!-- Toast Notification Element -->
     <div id="toast" class="toast hidden"></div>
 
+    <script src="app.js?v=3390"></script>
     <script>
         // Bulletproof Inline Action Handlers for Direct UI Responsiveness
         function shareViaWhatsApp() {
@@ -506,12 +507,13 @@
             alert('🚀 Masaüstü (' + rawId + ') İle Bağlantı Başlatılıyor!');
             if (typeof window.connectToHost === 'function') {
                 window.connectToHost(rawId);
+            } else if (typeof connectToHost === 'function') {
+                connectToHost(rawId);
             } else {
-                alert('⚠️ Sunucu bağlantı servisi bekleniyor, lütfen 1 saniye sonra tekrar deneyin.');
+                alert('⚠️ Bağlantı kuruluyor...');
             }
         }
     </script>
-    <script src="app.js?v=3380"></script>
     <script>
         // Service Worker & PWA Installation
         if ('serviceWorker' in navigator) {
