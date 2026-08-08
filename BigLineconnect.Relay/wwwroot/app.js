@@ -13,57 +13,41 @@ let startMidY = 0;
 let startPanX = 0;
 let startPanY = 0;
 
-// DOM Elements
-const landingPage = document.getElementById('landing-page');
-const viewerScreen = document.getElementById('viewer-screen');
-const targetIdInput = document.getElementById('target-id');
-const connectBtn = document.getElementById('connect-btn');
-const disconnectBtn = document.getElementById('disconnect-btn');
-const fullscreenBtn = document.getElementById('fullscreen-btn');
-const screenImg = document.getElementById('screen-img');
-const canvasContainer = document.getElementById('canvas-container');
-const connectionStatus = document.getElementById('connection-status');
-const toggleKeyboardBtn = document.getElementById('toggle-keyboard-btn');
-const hiddenKeyboardInput = document.getElementById('hidden-keyboard-input');
-const mouseModeBtn = document.getElementById('mouse-mode-btn');
-const mouseModeText = document.getElementById('mouse-mode-text');
-const toastElement = document.getElementById('toast');
-const passwordModal = document.getElementById('password-modal');
-const accessPasswordInput = document.getElementById('access-password-input');
-const submitPasswordBtn = document.getElementById('submit-password-btn');
-
-// Auto-format ID input (e.g. 123 456 789)
-if (targetIdInput) {
-    targetIdInput.addEventListener('input', (e) => {
-        let value = e.target.value.replace(/\D/g, ''); // Numbers only
-        if (value.length > 9) value = value.substring(0, 9);
-        
-        // Format as XXX XXX XXX
-        let formatted = '';
-        if (value.length > 6) {
-            formatted = `${value.substring(0, 3)} ${value.substring(3, 6)} ${value.substring(6)}`;
-        } else if (value.length > 3) {
-            formatted = `${value.substring(0, 3)} ${value.substring(3)}`;
-        } else {
-            formatted = value;
-        }
-        
-        e.target.value = formatted;
-    });
-}
+// Dynamic Helper to Get Elements Safely
+const getElem = (id) => document.getElementById(id);
 
 // Toast system
 function showToast(message, type = 'info') {
-    if (!toastElement) return;
-    toastElement.textContent = message;
-    toastElement.className = `toast ${type}`;
-    toastElement.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:999999;padding:12px 24px;border-radius:10px;font-weight:700;font-size:14px;box-shadow:0 8px 24px rgba(0,0,0,0.8);background:' + (type === 'error' ? '#e74c3c' : (type === 'success' ? '#2ecc71' : '#00e5ff')) + ';color:' + (type === 'info' ? '#000' : '#fff');
-    toastElement.classList.remove('hidden');
+    const tElem = getElem('toast');
+    if (!tElem) {
+        try { alert(message); } catch(e) {}
+        return;
+    }
+    tElem.textContent = message;
+    tElem.className = `toast ${type}`;
+    tElem.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:999999;padding:12px 24px;border-radius:10px;font-weight:700;font-size:14px;box-shadow:0 8px 24px rgba(0,0,0,0.8);background:' + (type === 'error' ? '#e74c3c' : (type === 'success' ? '#2ecc71' : '#00e5ff')) + ';color:' + (type === 'info' ? '#000' : '#fff');
+    tElem.classList.remove('hidden');
     
     setTimeout(() => {
-        if (toastElement) toastElement.classList.add('hidden');
+        if (tElem) tElem.classList.add('hidden');
     }, 4000);
 }
+
+// Immediately bind all action functions to window object
+window.startConnectionProcess = startConnectionProcess;
+window.connectToHost = connectToHost;
+window.sendPassword = sendPassword;
+window.switchConnectTab = switchConnectTab;
+window.shareViaWhatsApp = shareViaWhatsApp;
+window.copyMagicLink = copyMagicLink;
+window.startWebScreenShare = startWebScreenShare;
+window.shareMyWebIdWhatsApp = shareMyWebIdWhatsApp;
+window.stopWebScreenShare = stopWebScreenShare;
+window.openCheckoutModal = openCheckoutModal;
+window.closeCheckoutModal = closeCheckoutModal;
+window.submitOnlineCheckout = submitOnlineCheckout;
+window.checkoutViaWhatsApp = checkoutViaWhatsApp;
+window.extendFreeSessionTimer = extendFreeSessionTimer;
 
 // Connect Button Event Handler
 function startConnectionProcess() {
