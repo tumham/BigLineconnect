@@ -125,8 +125,13 @@ if (disconnectBtn) {
 
 // Connect to C# Relay WebSockets
 function connectToHost(id) {
+    const cleanId = String(id).replace(/\D/g, '');
+    let hostName = window.location.host;
+    if (hostName.includes('bigus.com.tr')) {
+        hostName = 'relay.biglineconnect.com';
+    }
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.host}/connect-client?id=${id}`;
+    const wsUrl = `${protocol}//${hostName}/connect-client?id=${cleanId}`;
     showToast('Bağlantı kuruluyor...', 'info');
     
     try {
