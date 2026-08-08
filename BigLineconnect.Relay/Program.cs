@@ -1259,6 +1259,25 @@ namespace BigLineconnect.Relay
                 }
 
                 var list = history.OrderByDescending(h => h.ResolvedAt).ToList();
+                foreach (var item in list)
+                {
+                    string p = item.Priority ?? "";
+                    string iss = (item.Issue ?? "").ToLowerInvariant();
+                    if (p.Contains("Yüksek") || p.Contains("Acil") || p.Contains("🔴") ||
+                        iss.Contains("acil") || iss.Contains("yüksek") || iss.Contains("yuksek") || iss.Contains("kilit") || iss.Contains("fatura") || iss.Contains("kasa"))
+                    {
+                        item.Priority = "🔴 Yüksek";
+                    }
+                    else if (p.Contains("Düşük") || p.Contains("Rutin") || p.Contains("🟢") ||
+                             iss.Contains("düşük") || iss.Contains("dusuk") || iss.Contains("rutin") || iss.Contains("bilgi"))
+                    {
+                        item.Priority = "🟢 Düşük";
+                    }
+                    else
+                    {
+                        item.Priority = "🟡 Orta";
+                    }
+                }
                 await context.Response.WriteAsJsonAsync(list);
             });
 

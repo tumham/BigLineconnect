@@ -174,7 +174,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.17.0 (Permanent Active Session Overlay Banner)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.18.0 (Smart Priority Auto-Detection Engine)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;

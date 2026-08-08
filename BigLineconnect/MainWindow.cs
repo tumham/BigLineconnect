@@ -180,7 +180,7 @@ namespace BigLineconnect
         private void InitializeComponent()
         {
             Program.LoadSecuritySettings();
-            this.Text = "BigLineconnect v3.17.0 - Uzaktan Kontrol (Permanent Active Session Overlay Banner)";
+            this.Text = "BigLineconnect v3.18.0 - Uzaktan Kontrol (Smart Priority Auto-Detection Engine)";
             this.Size = new Size(880, 750);
             this.MinimumSize = new Size(880, 750);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -210,7 +210,7 @@ namespace BigLineconnect
 
             _titleLabel = new Label
             {
-                Text = "BigLineconnect v3.17.0 🚀",
+                Text = "BigLineconnect v3.18.0 🚀",
                 Location = new Point(105, 15),
                 Size = new Size(330, 42),
                 Font = new Font("Segoe UI", 20F, FontStyle.Bold),
@@ -221,7 +221,7 @@ namespace BigLineconnect
 
             var subtitleLabel = new Label
             {
-                Text = "REMOTE DESKTOP CLIENT • v3.17.0 (Permanent Active Session Overlay Banner)",
+                Text = "REMOTE DESKTOP CLIENT • v3.18.0 (Smart Priority Auto-Detection Engine)",
                 Location = new Point(108, 58),
                 Size = new Size(450, 20),
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
@@ -4065,7 +4065,7 @@ namespace BigLineconnect
 
                     string name = dlg.CustomerName;
                     string issue = dlg.IssueDescription;
-                    string priority = dlg.Priority;
+                    string priority = GetNormalizedPriority(dlg.Priority, issue);
                     bool reqConfirm = dlg.RequiresConfirmation;
                     string token = Guid.NewGuid().ToString();
 
@@ -4337,6 +4337,26 @@ namespace BigLineconnect
             }
         }
 
+        public static string GetNormalizedPriority(string? priorityText, string? issueText)
+        {
+            string p = priorityText ?? "";
+            string iss = (issueText ?? "").ToLowerInvariant();
+
+            if (p.Contains("Yüksek") || p.Contains("Acil") || p.Contains("🔴") ||
+                iss.Contains("acil") || iss.Contains("yüksek") || iss.Contains("yuksek") || iss.Contains("kilit") || iss.Contains("fatura") || iss.Contains("kasa"))
+            {
+                return "🔴 Yüksek";
+            }
+
+            if (p.Contains("Düşük") || p.Contains("Rutin") || p.Contains("🟢") ||
+                iss.Contains("düşük") || iss.Contains("dusuk") || iss.Contains("rutin") || iss.Contains("bilgi"))
+            {
+                return "🟢 Düşük";
+            }
+
+            return "🟡 Orta";
+        }
+
         public class LocalSubmittedTicket
         {
             public string Token { get; set; } = "";
@@ -4361,6 +4381,7 @@ namespace BigLineconnect
         {
             try
             {
+                ticket.Priority = GetNormalizedPriority(ticket.Priority, ticket.Issue);
                 var tickets = LoadLocalSubmittedTickets();
                 tickets.RemoveAll(t => 
                     !string.IsNullOrEmpty(ticket.Token) && !string.IsNullOrEmpty(t.Token) && t.Token.Trim() == ticket.Token.Trim()
@@ -4383,7 +4404,14 @@ namespace BigLineconnect
                 {
                     string json = File.ReadAllText(path);
                     var list = System.Text.Json.JsonSerializer.Deserialize<List<LocalSubmittedTicket>>(json);
-                    if (list != null) return list;
+                    if (list != null)
+                    {
+                        foreach (var item in list)
+                        {
+                            item.Priority = GetNormalizedPriority(item.Priority, item.Issue);
+                        }
+                        return list;
+                    }
                 }
             }
             catch { }
@@ -4615,8 +4643,14 @@ namespace BigLineconnect
                         if (this.IsDisposed) return;
                         var combinedList = new List<LocalSubmittedTicket>(localTickets);
 
+                        foreach (var item in combinedList)
+                        {
+                            item.Priority = GetNormalizedPriority(item.Priority, item.Issue);
+                        }
+
                         foreach (var sh in serverHistoryList)
                         {
+                            sh.Priority = GetNormalizedPriority(sh.Priority, sh.Issue);
                             var existing = combinedList.FirstOrDefault(t => 
                                 (!string.IsNullOrEmpty(t.Token) && !string.IsNullOrEmpty(sh.Token) && t.Token.Trim() == sh.Token.Trim()) ||
                                 (!string.IsNullOrEmpty(t.Issue) && t.Issue.Trim() == sh.Issue.Trim() && Math.Abs((t.CreatedAt - sh.CreatedAt).TotalSeconds) < 60)
@@ -4625,7 +4659,7 @@ namespace BigLineconnect
                             {
                                 existing.Status = sh.Status;
                                 existing.Notes = sh.Notes;
-                                if (!string.IsNullOrEmpty(sh.Priority)) existing.Priority = sh.Priority;
+                                if (!string.IsNullOrEmpty(sh.Priority) && sh.Priority != "🟡 Orta") existing.Priority = sh.Priority;
                                 if (!string.IsNullOrEmpty(sh.Token)) existing.Token = sh.Token;
                             }
                             else
@@ -4644,9 +4678,8 @@ namespace BigLineconnect
                         int GetRank(string p)
                         {
                             if (string.IsNullOrEmpty(p)) return 1;
-                            if (p.Contains("Yüksek")) return 0;
-                            if (p.Contains("Orta")) return 1;
-                            if (p.Contains("Düşük")) return 2;
+                            if (p.Contains("Yüksek") || p.Contains("🔴")) return 0;
+                            if (p.Contains("Düşük") || p.Contains("🟢")) return 2;
                             return 1;
                         }
 
@@ -4657,10 +4690,11 @@ namespace BigLineconnect
 
                         foreach (var t in sortedList)
                         {
+                            t.Priority = GetNormalizedPriority(t.Priority, t.Issue);
                             string timeStr = t.CreatedAt != default ? t.CreatedAt.ToString("dd.MM.yyyy HH:mm") : "---";
                             var item = new ListViewItem(timeStr);
                             
-                            string pText = t.Priority ?? "Orta";
+                            string pText = t.Priority;
                             if (pText.Contains("Yüksek")) item.SubItems.Add("🔴 Yüksek");
                             else if (pText.Contains("Düşük")) item.SubItems.Add("🟢 Düşük");
                             else item.SubItems.Add("🟡 Orta");
