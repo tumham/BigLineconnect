@@ -4036,8 +4036,8 @@ namespace BigLineconnect
 
         public SplashScreenForm()
         {
-            this.Width = 380;
-            this.Height = 250;
+            this.Width = 320; // Narrowed cleanly from left and right
+            this.Height = 230;
             this.FormBorderStyle = FormBorderStyle.None;
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.FromArgb(16, 18, 26); // Dark Obsidian Glass Card
@@ -4062,7 +4062,7 @@ namespace BigLineconnect
 
             // Initialize Path Coordinates for BC Logo Particle Animation
             float xc = this.Width / 2F;
-            float yc = 135F;
+            float yc = 125F;
             InitBcLogoPath(xc, yc);
 
             this.Paint += SplashScreenForm_Paint;
@@ -4097,9 +4097,9 @@ namespace BigLineconnect
             lblTitle = new Label
             {
                 Text = "BigLineconnect",
-                Location = new Point(0, 16),
-                Size = new Size(380, 32),
-                Font = new Font("Segoe UI", 18F, FontStyle.Bold),
+                Location = new Point(0, 14),
+                Size = new Size(320, 30),
+                Font = new Font("Segoe UI", 16F, FontStyle.Bold),
                 ForeColor = Color.FromArgb(0, 229, 255),
                 BackColor = Color.Transparent,
                 TextAlign = ContentAlignment.MiddleCenter
@@ -4108,8 +4108,8 @@ namespace BigLineconnect
             lblSubtitle = new Label
             {
                 Text = "REMOTE DESKTOP CLIENT",
-                Location = new Point(0, 48),
-                Size = new Size(380, 18),
+                Location = new Point(0, 44),
+                Size = new Size(320, 18),
                 Font = new Font("Segoe UI", 8F, FontStyle.Bold),
                 ForeColor = Color.FromArgb(170, 255, 255, 255),
                 BackColor = Color.Transparent,
@@ -4119,9 +4119,9 @@ namespace BigLineconnect
             lblStatus = new Label
             {
                 Text = "Sistem yükleniyor...",
-                Location = new Point(0, 195),
-                Size = new Size(380, 22),
-                Font = new Font("Segoe UI", 9F, FontStyle.Regular),
+                Location = new Point(0, 182),
+                Size = new Size(320, 22),
+                Font = new Font("Segoe UI", 8.5F, FontStyle.Regular),
                 ForeColor = Color.FromArgb(0, 229, 255),
                 BackColor = Color.Transparent,
                 TextAlign = ContentAlignment.MiddleCenter
@@ -4290,6 +4290,7 @@ namespace BigLineconnect
             }
         }
 
+        // Active Paint Method: Ultra-Clean Narrow Zero-Glow Pure BC Logo
         private void SplashScreenForm_Paint(object? sender, PaintEventArgs e)
         {
             try
@@ -4300,9 +4301,32 @@ namespace BigLineconnect
                 g.InterpolationMode = InterpolationMode.HighQualityBicubic;
 
                 float xc = this.Width / 2F;
-                float yc = 135F; // Centered logo position in compact card
+                float yc = 125F; // Centered logo position in narrow compact card
 
-                // Ambient glow behind logo
+                // Render Pure BC Logo Image (Zero Glow / Zero Borders)
+                if (_logoImage != null)
+                {
+                    float lw = 110F;
+                    float lh = 82F;
+                    g.DrawImage(_logoImage, xc - lw / 2F, yc - lh / 2F, lw, lh);
+                }
+            }
+            catch { }
+        }
+
+        // BACKUP 1: Ambient Glow Logo Paint Method (Saved for instant rollback if needed)
+        private void SplashScreenForm_Paint_Glow(object? sender, PaintEventArgs e)
+        {
+            try
+            {
+                var g = e.Graphics;
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+                g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
+                g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+
+                float xc = this.Width / 2F;
+                float yc = 125F;
+
                 float pulseFactor = 1.0F + 0.04F * (float)Math.Sin(_phase * 2.5F);
                 float glowW = 140F * pulseFactor;
                 float glowH = 100F * pulseFactor;
@@ -4317,18 +4341,17 @@ namespace BigLineconnect
                     }
                 }
 
-                // Render Pure BC Logo Image
                 if (_logoImage != null)
                 {
-                    float lw = 120F * pulseFactor;
-                    float lh = 90F * pulseFactor;
+                    float lw = 110F * pulseFactor;
+                    float lh = 82F * pulseFactor;
                     g.DrawImage(_logoImage, xc - lw / 2F, yc - lh / 2F, lw, lh);
                 }
             }
             catch { }
         }
 
-        // BACKUP: Legacy 560x370 Full-Frame Splash Screen Paint Method (Saved for instant rollback if needed)
+        // BACKUP 2: Legacy 560x370 Full-Frame Splash Screen Paint Method (Saved for instant rollback if needed)
         private void SplashScreenForm_Paint_Legacy(object? sender, PaintEventArgs e)
         {
             try
