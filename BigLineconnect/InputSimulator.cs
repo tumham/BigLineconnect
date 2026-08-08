@@ -117,7 +117,11 @@ namespace BigLineconnect
             { "f9", 0x78 },         // VK_F9
             { "f10", 0x79 },        // VK_F10
             { "f11", 0x7A },        // VK_F11
-            { "f12", 0x7B }         // VK_F12
+            { "f12", 0x7B },        // VK_F12
+            { "meta", 0x5B },       // VK_LWIN
+            { "win", 0x5B },        // VK_LWIN
+            { "cmd", 0x5B },        // VK_LWIN
+            { "capslock", 0x14 }    // VK_CAPITAL
         };
 
         public static void SimulateMouseMove(double xPercent, double yPercent, int displayIndex = 0)
@@ -310,7 +314,14 @@ namespace BigLineconnect
                 }
             }
 
-            if (vkCode == 0) return;
+            if (vkCode == 0)
+            {
+                if (key.Length == 1 && action.Equals("down", StringComparison.OrdinalIgnoreCase))
+                {
+                    SimulateChar(key[0]);
+                }
+                return;
+            }
 
             uint scanCode = MapVirtualKey(vkCode, 0);
             uint flags = action.Equals("up", StringComparison.OrdinalIgnoreCase) ? KEYEVENTF_KEYUP : 0;

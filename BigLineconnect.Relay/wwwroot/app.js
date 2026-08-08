@@ -621,7 +621,8 @@ interactionTargets.forEach(elem => {
                 panY = startPan1Y + (touch.clientY - startTouch1Y);
                 updateTransform();
             } else {
-                const pos = getMousePos(screenImg, touch.clientX, touch.clientY);
+                const canvasElem = document.getElementById('screen-canvas') || activeInteractionElem;
+                const pos = getMousePos(canvasElem, touch.clientX, touch.clientY);
                 sendMove(pos.x, pos.y);
             }
         } else if (e.touches.length === 2) {
@@ -652,7 +653,8 @@ interactionTargets.forEach(elem => {
             const moveDist = Math.sqrt((touch.clientX - touchStartX) ** 2 + (touch.clientY - touchStartY) ** 2);
             
             if (moveDist < 60) {
-                const pos = getMousePos(screenImg, touch.clientX, touch.clientY);
+                const canvasElem = document.getElementById('screen-canvas') || activeInteractionElem;
+                const pos = getMousePos(canvasElem, touch.clientX, touch.clientY);
                 sendMove(pos.x, pos.y);
 
                 if (currentMouseMode === 'double') {

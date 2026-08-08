@@ -174,7 +174,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.28.0 (Automatic Stream Flag Lifecycle Cleanup)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.29.0 (Web & Mobile Remote Viewer Engine)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
