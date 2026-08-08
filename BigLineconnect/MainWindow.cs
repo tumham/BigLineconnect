@@ -181,7 +181,7 @@ namespace BigLineconnect
         private void InitializeComponent()
         {
             Program.LoadSecuritySettings();
-            this.Text = "BigLineconnect v3.23.0 - Uzaktan Kontrol (TitleBar Logo Icon, Strict Priority & Auto-Minimize)";
+            this.Text = "BigLineconnect v3.24.0 - Uzaktan Kontrol (Instant Window Restore & Banner Controls)";
             this.Size = new Size(880, 750);
             this.MinimumSize = new Size(880, 750);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -211,7 +211,7 @@ namespace BigLineconnect
 
             _titleLabel = new Label
             {
-                Text = "BigLineconnect v3.23.0 🚀",
+                Text = "BigLineconnect v3.24.0 🚀",
                 Location = new Point(105, 15),
                 Size = new Size(330, 42),
                 Font = new Font("Segoe UI", 20F, FontStyle.Bold),
@@ -222,7 +222,7 @@ namespace BigLineconnect
 
             var subtitleLabel = new Label
             {
-                Text = "REMOTE DESKTOP CLIENT • v3.23.0 (TitleBar Logo Icon, Strict Priority & Auto-Minimize)",
+                Text = "REMOTE DESKTOP CLIENT • v3.24.0 (Instant Window Restore & Banner Controls)",
                 Location = new Point(108, 58),
                 Size = new Size(450, 20),
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
@@ -837,7 +837,8 @@ namespace BigLineconnect
                 Text = "BigLineconnect",
                 Visible = true
             };
-            _notifyIcon.DoubleClick += NotifyIcon_DoubleClick;
+            _notifyIcon.Click += (s, e) => RestoreAppWindow();
+            _notifyIcon.DoubleClick += (s, e) => RestoreAppWindow();
 
             // Clipboard Monitoring Timer
             _clipboardTimer = new System.Windows.Forms.Timer { Interval = 1000 };
@@ -1774,15 +1775,49 @@ namespace BigLineconnect
             catch { }
         }
 
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        private static extern bool SetForegroundWindow(IntPtr hWnd);
+
+        private const int SW_RESTORE = 9;
+
+        public void RestoreAppWindow()
+        {
+            if (this.InvokeRequired)
+            {
+                this.BeginInvoke(new Action(RestoreAppWindow));
+                return;
+            }
+
+            try
+            {
+                this.Show();
+                if (this.WindowState == FormWindowState.Minimized)
+                {
+                    this.WindowState = FormWindowState.Normal;
+                }
+                ShowWindow(this.Handle, SW_RESTORE);
+                SetForegroundWindow(this.Handle);
+                this.Activate();
+                this.BringToFront();
+            }
+            catch { }
+        }
+
         private void MainWindow_Resize(object? sender, EventArgs e)
         {
-            // Standard minimize behavior: do not call Hide() to keep the app on the taskbar.
+            if (this.WindowState == FormWindowState.Normal)
+            {
+                this.Activate();
+                this.BringToFront();
+            }
         }
 
         private void NotifyIcon_DoubleClick(object? sender, EventArgs e)
         {
-            this.Show();
-            this.WindowState = FormWindowState.Normal;
+            RestoreAppWindow();
         }
 
         private void MainWindow_FormClosing(object? sender, FormClosingEventArgs e)
@@ -5029,6 +5064,24 @@ namespace BigLineconnect
                 Cursor = Cursors.SizeAll
             };
 
+            Label lblOpenApp = new Label
+            {
+                Text = "🖥️ Göster",
+                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+                ForeColor = Color.White,
+                BackColor = Color.FromArgb(0, 150, 255),
+                Location = new Point(272, 11),
+                Size = new Size(54, 25),
+                TextAlign = ContentAlignment.MiddleCenter,
+                Cursor = Cursors.Hand
+            };
+            lblOpenApp.MouseEnter += (s, e) => { lblOpenApp.BackColor = Color.FromArgb(0, 180, 255); };
+            lblOpenApp.MouseLeave += (s, e) => { lblOpenApp.BackColor = Color.FromArgb(0, 150, 255); };
+            lblOpenApp.Click += (s, e) =>
+            {
+                MainWindow.Instance?.RestoreAppWindow();
+            };
+
             Label lblClose = new Label
             {
                 Text = "✖",
@@ -5050,6 +5103,7 @@ namespace BigLineconnect
             pnlMain.Controls.Add(lblIcon);
             pnlMain.Controls.Add(lblTitle);
             pnlMain.Controls.Add(lblSub);
+            pnlMain.Controls.Add(lblOpenApp);
             pnlMain.Controls.Add(lblClose);
             this.Controls.Add(pnlMain);
 
