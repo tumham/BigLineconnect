@@ -4036,8 +4036,8 @@ namespace BigLineconnect
 
         public SplashScreenForm()
         {
-            this.Width = 560;
-            this.Height = 370;
+            this.Width = 380;
+            this.Height = 250;
             this.FormBorderStyle = FormBorderStyle.None;
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.FromArgb(16, 18, 26); // Dark Obsidian Glass Card
@@ -4062,7 +4062,7 @@ namespace BigLineconnect
 
             // Initialize Path Coordinates for BC Logo Particle Animation
             float xc = this.Width / 2F;
-            float yc = 180F;
+            float yc = 135F;
             InitBcLogoPath(xc, yc);
 
             this.Paint += SplashScreenForm_Paint;
@@ -4086,7 +4086,7 @@ namespace BigLineconnect
                     string dots = new string('.', _dotCount + 1);
                     if (lblStatus != null && !lblStatus.IsDisposed)
                     {
-                        lblStatus.Text = LanguageManager.Get("status_loading") ?? ("Sistem yükleniyor" + dots);
+                        lblStatus.Text = "Sistem yükleniyor" + dots;
                     }
                 }
                 this.Invalidate();
@@ -4097,9 +4097,9 @@ namespace BigLineconnect
             lblTitle = new Label
             {
                 Text = "BigLineconnect",
-                Location = new Point(20, 22),
-                Size = new Size(520, 48),
-                Font = new Font("Segoe UI", 24F, FontStyle.Bold),
+                Location = new Point(0, 16),
+                Size = new Size(380, 32),
+                Font = new Font("Segoe UI", 18F, FontStyle.Bold),
                 ForeColor = Color.FromArgb(0, 229, 255),
                 BackColor = Color.Transparent,
                 TextAlign = ContentAlignment.MiddleCenter
@@ -4108,9 +4108,9 @@ namespace BigLineconnect
             lblSubtitle = new Label
             {
                 Text = "REMOTE DESKTOP CLIENT",
-                Location = new Point(20, 72),
-                Size = new Size(520, 20),
-                Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
+                Location = new Point(0, 48),
+                Size = new Size(380, 18),
+                Font = new Font("Segoe UI", 8F, FontStyle.Bold),
                 ForeColor = Color.FromArgb(170, 255, 255, 255),
                 BackColor = Color.Transparent,
                 TextAlign = ContentAlignment.MiddleCenter
@@ -4119,9 +4119,9 @@ namespace BigLineconnect
             lblStatus = new Label
             {
                 Text = "Sistem yükleniyor...",
-                Location = new Point(20, 315),
-                Size = new Size(520, 25),
-                Font = new Font("Segoe UI", 9.5F, FontStyle.Regular),
+                Location = new Point(0, 195),
+                Size = new Size(380, 22),
+                Font = new Font("Segoe UI", 9F, FontStyle.Regular),
                 ForeColor = Color.FromArgb(0, 229, 255),
                 BackColor = Color.Transparent,
                 TextAlign = ContentAlignment.MiddleCenter
@@ -4300,19 +4300,56 @@ namespace BigLineconnect
                 g.InterpolationMode = InterpolationMode.HighQualityBicubic;
 
                 float xc = this.Width / 2F;
+                float yc = 135F; // Centered logo position in compact card
+
+                // Ambient glow behind logo
+                float pulseFactor = 1.0F + 0.04F * (float)Math.Sin(_phase * 2.5F);
+                float glowW = 140F * pulseFactor;
+                float glowH = 100F * pulseFactor;
+                using (var glowPath = new GraphicsPath())
+                {
+                    glowPath.AddEllipse(xc - glowW / 2F, yc - glowH / 2F, glowW, glowH);
+                    using (var pbr = new PathGradientBrush(glowPath))
+                    {
+                        pbr.CenterColor = Color.FromArgb(70, 0, 229, 255);
+                        pbr.SurroundColors = new Color[] { Color.FromArgb(0, 16, 18, 26) };
+                        g.FillPath(pbr, glowPath);
+                    }
+                }
+
+                // Render Pure BC Logo Image
+                if (_logoImage != null)
+                {
+                    float lw = 120F * pulseFactor;
+                    float lh = 90F * pulseFactor;
+                    g.DrawImage(_logoImage, xc - lw / 2F, yc - lh / 2F, lw, lh);
+                }
+            }
+            catch { }
+        }
+
+        // BACKUP: Legacy 560x370 Full-Frame Splash Screen Paint Method (Saved for instant rollback if needed)
+        private void SplashScreenForm_Paint_Legacy(object? sender, PaintEventArgs e)
+        {
+            try
+            {
+                var g = e.Graphics;
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+                g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
+                g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+
+                float xc = 560F / 2F;
                 float yc = 185F;
 
-                // 1. Draw Sleek Modern Dark Glassmorphic Card Container Border & Glow
                 using (var borderPen = new Pen(Color.FromArgb(0, 229, 255), 2F))
                 {
-                    g.DrawRectangle(borderPen, 1, 1, this.Width - 2, this.Height - 2);
+                    g.DrawRectangle(borderPen, 1, 1, 560 - 2, 370 - 2);
                 }
                 using (var innerGlowPen = new Pen(Color.FromArgb(40, 0, 229, 255), 1F))
                 {
-                    g.DrawRectangle(innerGlowPen, 3, 3, this.Width - 6, this.Height - 6);
+                    g.DrawRectangle(innerGlowPen, 3, 3, 560 - 6, 370 - 6);
                 }
 
-                // 2. Draw Breathing Neon Ambient Glow Aura Behind Center Logo
                 float pulseFactor = 1.0F + 0.05F * (float)Math.Sin(_phase * 2.5F);
                 float glowW = 200F * pulseFactor;
                 float glowH = 150F * pulseFactor;
@@ -4327,42 +4364,11 @@ namespace BigLineconnect
                     }
                 }
 
-                // 3. Render High-Resolution Embedded BC Logo Image
                 if (_logoImage != null)
                 {
                     float lw = 180F * pulseFactor;
                     float lh = 135F * pulseFactor;
                     g.DrawImage(_logoImage, xc - lw / 2F, yc - lh / 2F, lw, lh);
-                }
-
-                // 4. Draw Animated Fluid Neon Bubbles Circulating Along BC Path
-                int numParticles = 24;
-                int totalPoints = _smoothPath.Count;
-                if (totalPoints > 0)
-                {
-                    int baseIndex = (int)_phaseIndexFloat % totalPoints;
-                    Color colorCyan = Color.FromArgb(0, 229, 255);
-                    Color colorPurple = Color.FromArgb(213, 0, 249);
-
-                    for (int i = 0; i < numParticles; i++)
-                    {
-                        int index = (baseIndex + i * (totalPoints / numParticles)) % totalPoints;
-                        PointF p = _smoothPath[index];
-
-                        float pSize = 6F + 2.5F * (float)Math.Sin(_phase + i);
-                        double ratio = (p.X - (xc - 80)) / 160.0;
-                        Color pColor = InterpolateColor(colorCyan, colorPurple, ratio);
-
-                        using (var pBrush = new SolidBrush(Color.FromArgb(220, pColor)))
-                        {
-                            g.FillEllipse(pBrush, p.X - pSize / 2F, p.Y - pSize / 2F, pSize, pSize);
-                        }
-
-                        using (var lBrush = new SolidBrush(Color.White))
-                        {
-                            g.FillEllipse(lBrush, p.X - 1.5F, p.Y - 1.5F, 3F, 3F);
-                        }
-                    }
                 }
             }
             catch { }

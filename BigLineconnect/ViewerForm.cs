@@ -174,7 +174,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.19.0 (Zero Ghost Click & Close Protection Guard)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.20.0 (Compact Minimalist Splash Screen)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
