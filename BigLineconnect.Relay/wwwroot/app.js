@@ -281,17 +281,20 @@ function connectToHost(id) {
                     customCloseReason = 'Bu bilgisayar şu an meşgul.';
                     socket.close();
                 } else if (event.data === 'AUTH_REQUIRED') {
-                    if (passwordModal) {
-                        passwordModal.classList.remove('hidden');
-                        passwordModal.style.display = 'flex';
-                        passwordModal.style.pointerEvents = 'auto';
+                    const pm = document.getElementById('password-modal');
+                    if (pm) {
+                        pm.classList.remove('hidden');
+                        pm.style.setProperty('display', 'flex', 'important');
+                        pm.style.setProperty('pointer-events', 'auto', 'important');
+                        pm.style.setProperty('z-index', '999999', 'important');
                     }
                     if (hiddenKeyboardInput) hiddenKeyboardInput.disabled = true;
-                    if (accessPasswordInput) {
-                        accessPasswordInput.disabled = false;
-                        accessPasswordInput.value = '';
+                    const passInput = document.getElementById('access-password-input');
+                    if (passInput) {
+                        passInput.disabled = false;
+                        passInput.value = '';
                         setTimeout(() => {
-                            accessPasswordInput.focus();
+                            passInput.focus();
                         }, 150);
                     }
                     showToast('Karşı bilgisayara bağlanmak için Erişim Şifresi gereklidir.', 'info');
