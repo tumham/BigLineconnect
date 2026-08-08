@@ -180,7 +180,7 @@ namespace BigLineconnect
         private void InitializeComponent()
         {
             Program.LoadSecuritySettings();
-            this.Text = "BigLineconnect v3.18.0 - Uzaktan Kontrol (Smart Priority Auto-Detection Engine)";
+            this.Text = "BigLineconnect v3.19.0 - Uzaktan Kontrol (Zero Ghost Click & Close Protection Guard)";
             this.Size = new Size(880, 750);
             this.MinimumSize = new Size(880, 750);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -210,7 +210,7 @@ namespace BigLineconnect
 
             _titleLabel = new Label
             {
-                Text = "BigLineconnect v3.18.0 🚀",
+                Text = "BigLineconnect v3.19.0 🚀",
                 Location = new Point(105, 15),
                 Size = new Size(330, 42),
                 Font = new Font("Segoe UI", 20F, FontStyle.Bold),
@@ -221,7 +221,7 @@ namespace BigLineconnect
 
             var subtitleLabel = new Label
             {
-                Text = "REMOTE DESKTOP CLIENT • v3.18.0 (Smart Priority Auto-Detection Engine)",
+                Text = "REMOTE DESKTOP CLIENT • v3.19.0 (Zero Ghost Click & Close Protection Guard)",
                 Location = new Point(108, 58),
                 Size = new Size(450, 20),
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
@@ -808,10 +808,10 @@ namespace BigLineconnect
 
             _btnSupport = new Button
             {
-                Text = "🆘 Destek İste",
-                Location = new Point(560, 630),
-                Size = new Size(130, 35),
-                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                Text = "🆘 Destek İste\n/ Sorun Bildir",
+                Location = new Point(560, 627),
+                Size = new Size(130, 38),
+                Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
                 Cursor = Cursors.Hand
             };
             ApplyModernButtonStyle(_btnSupport, Color.FromArgb(230, 126, 34), Color.FromArgb(211, 84, 0), Color.White);
@@ -4045,7 +4045,7 @@ namespace BigLineconnect
                     
                     if (_btnSupport != null)
                     {
-                        _btnSupport.Text = "🆘 Destek İste / Sorun Bildir";
+                        _btnSupport.Text = "🆘 Destek İste\n/ Sorun Bildir";
                         ApplyModernButtonStyle(_btnSupport, Color.FromArgb(230, 126, 34), Color.FromArgb(211, 84, 0), Color.White);
                     }
                     MessageBox.Show("Destek talebiniz başarıyla iptal edildi.", "Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Information);

@@ -1,4 +1,3 @@
 ﻿[
-  {"id":"2807b344-e7fc-43f8-a316-49fab628c99b","hostId":"625174567","token":"2210787d-a2db-496a-9371-b0eadb2733b7","name":"BIGUS","issue":"öncelik","tenantId":"V3.17.0","createdAt":"08.08.2026 00:24:11","resolvedAt":"08.08.2026 00:24:50","status":"Bekliyor / İnceleniyor","notes":"Destek işlemi tamamlandı: Bekliyor / İnceleniyor"},
-  {"id":"7fc3f135-e0e6-4fd1-bf11-73fdf7907ef4","hostId":"263551735","token":"c50b981f-5953-4197-b51e-cd28a4fbec41","name":"DESKTOP-J2DP86T","issue":"çok acil öncelikli","tenantId":"V3.17.0","createdAt":"08.08.2026 00:22:15","resolvedAt":"08.08.2026 00:22:56","status":"Çözüldü","notes":"Destek işlemi tamamlandı: Çözüldü"}
+  {"id":"5cb09395-1ff2-4f5a-a542-3fe9a8b6e5c4","hostId":"625174567","token":"baffb8c8-b840-45b1-80a2-0bbf85c363a1","name":"BIGUS","issue":"Acil destek istiyorum","tenantId":"V3.18.0","createdAt":"08.08.2026 11:10:18","resolvedAt":"08.08.2026 11:10:44","status":"Çözüldü","notes":"Destek işlemi tamamlandı: Çözüldü"}
 ]

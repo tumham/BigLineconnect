@@ -146,23 +146,31 @@ namespace BigLineconnect
             public int Y;
         }
 
+        private static bool _isLeftMouseDown = false;
+        private static bool _isRightMouseDown = false;
+        private static bool _isMiddleMouseDown = false;
+
         public static void SimulateMouseButton(string button, string action, double? xPercent = null, double? yPercent = null, int displayIndex = 0)
         {
             try
             {
                 uint flags = 0;
+                bool isDown = action.Equals("down", StringComparison.OrdinalIgnoreCase);
 
                 if (button.Equals("left", StringComparison.OrdinalIgnoreCase))
                 {
-                    flags = action.Equals("down", StringComparison.OrdinalIgnoreCase) ? MOUSEEVENTF_LEFTDOWN : MOUSEEVENTF_LEFTUP;
+                    flags = isDown ? MOUSEEVENTF_LEFTDOWN : MOUSEEVENTF_LEFTUP;
+                    _isLeftMouseDown = isDown;
                 }
                 else if (button.Equals("right", StringComparison.OrdinalIgnoreCase))
                 {
-                    flags = action.Equals("down", StringComparison.OrdinalIgnoreCase) ? MOUSEEVENTF_RIGHTDOWN : MOUSEEVENTF_RIGHTUP;
+                    flags = isDown ? MOUSEEVENTF_RIGHTDOWN : MOUSEEVENTF_RIGHTUP;
+                    _isRightMouseDown = isDown;
                 }
                 else if (button.Equals("middle", StringComparison.OrdinalIgnoreCase))
                 {
-                    flags = action.Equals("down", StringComparison.OrdinalIgnoreCase) ? MOUSEEVENTF_MIDDLEDOWN : MOUSEEVENTF_MIDDLEUP;
+                    flags = isDown ? MOUSEEVENTF_MIDDLEDOWN : MOUSEEVENTF_MIDDLEUP;
+                    _isMiddleMouseDown = isDown;
                 }
 
                 if (flags == 0) return;
@@ -178,28 +186,7 @@ namespace BigLineconnect
                     SetCursorPos(actualX, actualY);
                 }
 
-                INPUT[] inputs = new INPUT[1];
-                inputs[0] = new INPUT
-                {
-                    type = INPUT_MOUSE,
-                    U = new InputUnion
-                    {
-                        mi = new MOUSEINPUT
-                        {
-                            dx = 0,
-                            dy = 0,
-                            mouseData = 0,
-                            dwFlags = flags,
-                            time = 0,
-                            dwExtraInfo = IntPtr.Zero
-                        }
-                    }
-                };
-
-                if (SendInput(1, inputs, Marshal.SizeOf<INPUT>()) == 0)
-                {
-                    mouse_event(flags, 0, 0, 0, UIntPtr.Zero);
-                }
+                mouse_event(flags, 0, 0, 0, UIntPtr.Zero);
             }
             catch { }
         }
@@ -246,9 +233,21 @@ namespace BigLineconnect
         {
             try
             {
-                SimulateMouseButton("left", "up");
-                SimulateMouseButton("right", "up");
-                SimulateMouseButton("middle", "up");
+                if (_isLeftMouseDown)
+                {
+                    SimulateMouseButton("left", "up");
+                    _isLeftMouseDown = false;
+                }
+                if (_isRightMouseDown)
+                {
+                    SimulateMouseButton("right", "up");
+                    _isRightMouseDown = false;
+                }
+                if (_isMiddleMouseDown)
+                {
+                    SimulateMouseButton("middle", "up");
+                    _isMiddleMouseDown = false;
+                }
             }
             catch { }
 

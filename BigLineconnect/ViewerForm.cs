@@ -174,7 +174,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.18.0 (Smart Priority Auto-Detection Engine)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.19.0 (Zero Ghost Click & Close Protection Guard)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
@@ -1946,6 +1946,27 @@ namespace BigLineconnect
 
         private void ViewerForm_FormClosing(object? sender, FormClosingEventArgs e)
         {
+            if (e.CloseReason == CloseReason.UserClosing && _ws != null && (_ws.State == WebSocketState.Open || _ws.State == WebSocketState.Connecting))
+            {
+                var result = MessageBox.Show(
+                    "Uzaktan masaüstü bağlantısını kapatmak ve oturumu sonlandırmak istediğinizden emin misiniz?\n\n(Ekranı gizlemek / alta almak istiyorsanız 'Hayır'ı seçip '-' (Simge Durumuna Küçült) butonuna basabilirsiniz.)",
+                    "🔌 Bağlantıyı Sonlandır / Kapat",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Question,
+                    MessageBoxDefaultButton.Button2);
+
+                if (result == DialogResult.No)
+                {
+                    e.Cancel = true;
+                    return;
+                }
+
+                try
+                {
+                    MessageBox.Show("⚠️ Uzaktan Masaüstü Bağlantısı Sonlandırıldı / Koparıldı.", "Bağlantı Sonlandı", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                catch { }
+            }
             if (_clipboardTimer != null)
             {
                 _clipboardTimer.Stop();
