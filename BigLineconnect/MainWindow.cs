@@ -182,7 +182,7 @@ namespace BigLineconnect
         private void InitializeComponent()
         {
             Program.LoadSecuritySettings();
-            this.Text = "BigLineconnect v3.29.0 - Uzaktan Kontrol (Web & Mobile Remote Viewer Engine)";
+            this.Text = "BigLineconnect v3.30.0 - Uzaktan Kontrol (Strict Non-Ticket Standard Remote Session & Web Auth Fix)";
             this.Size = new Size(880, 750);
             this.MinimumSize = new Size(880, 750);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -212,7 +212,7 @@ namespace BigLineconnect
 
             _titleLabel = new Label
             {
-                Text = "BigLineconnect v3.29.0 🚀",
+                Text = "BigLineconnect v3.30.0 🚀",
                 Location = new Point(105, 15),
                 Size = new Size(330, 42),
                 Font = new Font("Segoe UI", 20F, FontStyle.Bold),
@@ -223,7 +223,7 @@ namespace BigLineconnect
 
             var subtitleLabel = new Label
             {
-                Text = "REMOTE DESKTOP CLIENT • v3.29.0 (Web & Mobile Remote Viewer Engine)",
+                Text = "REMOTE DESKTOP CLIENT • v3.30.0 (Strict Non-Ticket Standard Remote Session & Web Auth Fix)",
                 Location = new Point(108, 58),
                 Size = new Size(450, 20),
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
@@ -1310,7 +1310,7 @@ namespace BigLineconnect
                         _overlayBannerForm = new RemoteOverlayBannerForm();
                         _overlayBannerForm.Show();
                     }
-                    if (_btnSupport != null && _btnSupport.Text != "🟢 Uzman Bağlandı (İşlem Yapılıyor...)")
+                    if (_hasActiveSubmittedTicket && _btnSupport != null && _btnSupport.Text != "🟢 Uzman Bağlandı (İşlem Yapılıyor...)")
                     {
                         _btnSupport.Text = "🟢 Uzman Bağlandı (İşlem Yapılıyor...)";
                         ApplyModernButtonStyle(_btnSupport, Color.FromArgb(46, 204, 113), Color.FromArgb(39, 174, 96), Color.White);
@@ -1318,7 +1318,12 @@ namespace BigLineconnect
                 }
                 else
                 {
-                    if (_btnSupport != null && _btnSupport.Text == "🟢 Uzman Bağlandı (İşlem Yapılıyor...)")
+                    if (_hasActiveSubmittedTicket && _btnSupport != null && _btnSupport.Text == "🟢 Uzman Bağlandı (İşlem Yapılıyor...)")
+                    {
+                        _btnSupport.Text = "❌ Talebi İptal Et";
+                        ApplyModernButtonStyle(_btnSupport, Color.FromArgb(231, 76, 60), Color.FromArgb(192, 57, 43), Color.White);
+                    }
+                    else if (!_hasActiveSubmittedTicket && _btnSupport != null && _btnSupport.Text == "🟢 Uzman Bağlandı (İşlem Yapılıyor...)")
                     {
                         ResetSupportButton();
                     }

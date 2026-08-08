@@ -843,6 +843,11 @@ namespace BigLineconnect
                                 string enteredPass = message.Substring(10);
                                 _authPasswordTcs?.TrySetResult(enteredPass);
                             }
+                            else if (_authPasswordTcs != null && !_authPasswordTcs.Task.IsCompleted && message.Length >= 4 && message.Length <= 12 && !message.StartsWith("{"))
+                            {
+                                string enteredPass = message.Trim();
+                                _authPasswordTcs?.TrySetResult(enteredPass);
+                            }
                             else if (message == "TICKET_RESOLVED")
                             {
                                 Log("Destek talebi uzman tarafından sonuçlandırıldı/kapatıldı. Buton sıfırlanıyor.");
