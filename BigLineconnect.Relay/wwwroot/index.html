@@ -451,7 +451,67 @@
     <!-- Toast Notification Element -->
     <div id="toast" class="toast hidden"></div>
 
-    <script src="app.js?v=3370"></script>
+    <script>
+        // Bulletproof Inline Action Handlers for Direct UI Responsiveness
+        function shareViaWhatsApp() {
+            const el = document.getElementById('target-id');
+            const idVal = el ? el.value.replace(/\D/g, '') : '';
+            let text = '';
+            if (!idVal || idVal.length < 5) {
+                text = encodeURIComponent("Merhaba, BigLineconnect Uzak Masaüstü Bağlantı Sistemi:\nhttps://biglineconnect.bigus.com.tr/");
+            } else {
+                const magicUrl = `https://biglineconnect.bigus.com.tr/?id=${idVal}`;
+                text = encodeURIComponent(`Merhaba, BigLineconnect Uzak Masaüstü Bağlantı Bilgilerim:\nID: ${idVal}\nTek tıkla bağlanmak için linke tıklayın:\n${magicUrl}`);
+            }
+            alert('💬 WhatsApp İletişim Sayfasına Yönlendiriliyorsunuz!');
+            window.open('https://api.whatsapp.com/send?text=' + text, '_blank');
+        }
+
+        function copyMagicLink() {
+            const el = document.getElementById('target-id');
+            const idVal = el ? el.value.replace(/\D/g, '') : '';
+            const magicUrl = idVal && idVal.length >= 5 ? `https://biglineconnect.bigus.com.tr/?id=${idVal}` : `https://biglineconnect.bigus.com.tr/`;
+            alert('✅ Sihirli Bağlantı Linki Kopyalandı:\n\n' + magicUrl);
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(magicUrl);
+            }
+        }
+
+        function switchConnectTab(mode) {
+            const btnClient = document.getElementById('tab-btn-client');
+            const btnHost = document.getElementById('tab-btn-host');
+            const contentClient = document.getElementById('tab-content-client');
+            const contentHost = document.getElementById('tab-content-host');
+
+            if (mode === 'client') {
+                if (btnClient) { btnClient.style.background = 'var(--accent-gradient)'; btnClient.style.color = '#000'; btnClient.style.fontWeight = '800'; }
+                if (btnHost) { btnHost.style.background = 'transparent'; btnHost.style.color = '#a0aec0'; btnHost.style.fontWeight = '700'; }
+                if (contentClient) contentClient.style.display = 'block';
+                if (contentHost) contentHost.style.display = 'none';
+            } else {
+                if (btnHost) { btnHost.style.background = 'var(--accent-gradient)'; btnHost.style.color = '#000'; btnHost.style.fontWeight = '800'; }
+                if (btnClient) { btnClient.style.background = 'transparent'; btnClient.style.color = '#a0aec0'; btnClient.style.fontWeight = '700'; }
+                if (contentHost) contentHost.style.display = 'block';
+                if (contentClient) contentClient.style.display = 'none';
+            }
+        }
+
+        function startConnectionProcess() {
+            const el = document.getElementById('target-id');
+            const rawId = el ? el.value.replace(/\D/g, '') : '';
+            if (!rawId || rawId.length < 5) {
+                alert('⚠️ Lütfen bağlanmak istediğiniz uzaktaki bilgisayarın ID numarasını girin (Örn: 864 688 774).');
+                return;
+            }
+            alert('🚀 Masaüstü (' + rawId + ') İle Bağlantı Başlatılıyor!');
+            if (typeof window.connectToHost === 'function') {
+                window.connectToHost(rawId);
+            } else {
+                alert('⚠️ Sunucu bağlantı servisi bekleniyor, lütfen 1 saniye sonra tekrar deneyin.');
+            }
+        }
+    </script>
+    <script src="app.js?v=3380"></script>
     <script>
         // Service Worker & PWA Installation
         if ('serviceWorker' in navigator) {
