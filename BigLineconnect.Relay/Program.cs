@@ -392,6 +392,7 @@ namespace BigLineconnect.Relay
                                         CreatedAt = el.TryGetProperty("CreatedAt", out var p6) ? p6.GetString() ?? "" : (el.TryGetProperty("createdAt", out var p6b) ? p6b.GetString() ?? "" : ""),
                                         ResolvedAt = el.TryGetProperty("ResolvedAt", out var p7) ? p7.GetString() ?? "" : (el.TryGetProperty("resolvedAt", out var p7b) ? p7b.GetString() ?? "" : ""),
                                         Status = el.TryGetProperty("Status", out var p8) ? p8.GetString() ?? "Bekliyor" : (el.TryGetProperty("status", out var p8b) ? p8b.GetString() ?? "Bekliyor" : "Bekliyor"),
+                                        Priority = el.TryGetProperty("Priority", out var pP) ? pP.GetString() ?? "Orta" : (el.TryGetProperty("priority", out var pPb) ? pPb.GetString() ?? "Orta" : "Orta"),
                                         Notes = el.TryGetProperty("Notes", out var p9) ? p9.GetString() ?? "" : (el.TryGetProperty("notes", out var p9b) ? p9b.GetString() ?? "" : "")
                                     };
                                     list.Add(entry);
@@ -445,6 +446,7 @@ namespace BigLineconnect.Relay
                         sb.Append($"\"Token\":\"{EscapeJsonString(e.Token)}\",");
                         sb.Append($"\"Name\":\"{EscapeJsonString(e.Name)}\",");
                         sb.Append($"\"Issue\":\"{EscapeJsonString(e.Issue)}\",");
+                        sb.Append($"\"Priority\":\"{EscapeJsonString(e.Priority)}\",");
                         sb.Append($"\"TenantId\":\"{EscapeJsonString(e.TenantId)}\",");
                         sb.Append($"\"CreatedAt\":\"{EscapeJsonString(e.CreatedAt)}\",");
                         sb.Append($"\"ResolvedAt\":\"{EscapeJsonString(e.ResolvedAt)}\",");

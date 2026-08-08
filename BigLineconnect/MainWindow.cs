@@ -181,7 +181,7 @@ namespace BigLineconnect
         private void InitializeComponent()
         {
             Program.LoadSecuritySettings();
-            this.Text = "BigLineconnect v3.25.0 - Uzaktan Kontrol (Strict Priority Sync & CRM Alignment)";
+            this.Text = "BigLineconnect v3.26.0 - Uzaktan Kontrol (Strict Priority Rendering & Server Persistence)";
             this.Size = new Size(880, 750);
             this.MinimumSize = new Size(880, 750);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -211,7 +211,7 @@ namespace BigLineconnect
 
             _titleLabel = new Label
             {
-                Text = "BigLineconnect v3.25.0 🚀",
+                Text = "BigLineconnect v3.26.0 🚀",
                 Location = new Point(105, 15),
                 Size = new Size(330, 42),
                 Font = new Font("Segoe UI", 20F, FontStyle.Bold),
@@ -222,7 +222,7 @@ namespace BigLineconnect
 
             var subtitleLabel = new Label
             {
-                Text = "REMOTE DESKTOP CLIENT • v3.25.0 (Strict Priority Sync & CRM Alignment)",
+                Text = "REMOTE DESKTOP CLIENT • v3.26.0 (Strict Priority Rendering & Server Persistence)",
                 Location = new Point(108, 58),
                 Size = new Size(450, 20),
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
@@ -1959,7 +1959,22 @@ namespace BigLineconnect
                         string displayIssue = ticket.Issue;
                         if (displayIssue.Length > 16) displayIssue = displayIssue.Substring(0, 13) + "...";
                         
-                        string statusTag = ticket.RequiresConfirmation ? "🛡️ " : "⚡ ";
+                        string priorityStr = GetNormalizedPriority(ticket.Priority, ticket.Issue);
+                        string priorityTag = "🟡 ";
+                        Color priorityColor = Color.FromArgb(241, 196, 15); // Yellow default
+
+                        if (priorityStr.Contains("Düşük") || priorityStr.Contains("🟢"))
+                        {
+                            priorityTag = "🟢 ";
+                            priorityColor = Color.FromArgb(46, 204, 113); // Vibrant Green
+                        }
+                        else if (priorityStr.Contains("Yüksek") || priorityStr.Contains("🔴"))
+                        {
+                            priorityTag = "🔴 ";
+                            priorityColor = Color.FromArgb(231, 76, 60); // Vibrant Red
+                        }
+
+                        string statusTag = (ticket.RequiresConfirmation ? "🛡️ " : "") + priorityTag;
                         
                         // Format Time & Days Tag
                         string timeLabel = "";
@@ -1987,8 +2002,8 @@ namespace BigLineconnect
                         item.SubItems.Add(timeLabel);
                         item.SubItems.Add(ticket.Id);
                         item.Tag = ticket; // Store SupportTicket object
-                        item.ToolTipText = $"Talep Zamanı: {(ticket.CreatedAt != default(DateTime) ? ticket.CreatedAt.ToString("dd.MM.yyyy HH:mm:ss") : "Bilinmiyor")}\nGün Sayısı: {daysAgo} gün önce\nSorun: {ticket.Issue}";
-                        item.ForeColor = ticket.RequiresConfirmation ? Color.FromArgb(241, 196, 15) : Color.FromArgb(231, 76, 60);
+                        item.ToolTipText = $"Talep Önceliği: {priorityStr}\nTalep Zamanı: {(ticket.CreatedAt != default(DateTime) ? ticket.CreatedAt.ToString("dd.MM.yyyy HH:mm:ss") : "Bilinmiyor")}\nGün Sayısı: {daysAgo} gün önce\nSorun: {ticket.Issue}";
+                        item.ForeColor = priorityColor;
                         _addressBookListView.Items.Add(item);
                     }
                 }
