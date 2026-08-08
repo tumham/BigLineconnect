@@ -950,29 +950,39 @@ function checkMagicLink() {
 
 // 2. WhatsApp Share Generator
 function shareViaWhatsApp() {
-    const idVal = targetIdInput ? targetIdInput.value.replace(/\D/g, '') : '';
-    if (!idVal || idVal.length < 6) {
-        alert('Lütfen öncelikle 9 haneli Uzak Masaüstü ID girin!');
-        return;
+    const inputElem = document.getElementById('target-id');
+    const idVal = inputElem ? inputElem.value.replace(/\D/g, '') : '';
+    let text = '';
+    if (!idVal || idVal.length < 5) {
+        text = encodeURIComponent(`Merhaba, BigLineconnect Uzak Masaüstü Bağlantı Sistemi:\nhttps://biglineconnect.bigus.com.tr/`);
+    } else {
+        const magicUrl = `https://biglineconnect.bigus.com.tr/?id=${idVal}`;
+        text = encodeURIComponent(`Merhaba, BigLineconnect Uzak Masaüstü Bağlantı Bilgilerim:\nID: ${idVal}\nTek tıkla bağlanmak için linke tıklayın:\n${magicUrl}`);
     }
-    const magicUrl = `https://biglineconnect.bigus.com.tr/?id=${idVal}`;
-    const text = encodeURIComponent(`Merhaba, BigLineconnect Uzak Masaüstü Bağlantı Bilgilerim:\nID: ${idVal}\nTek tıkla bağlanmak için linke tıklayın:\n${magicUrl}`);
-    window.open(`https://wa.me/?text=${text}`, '_blank');
+    const waUrl = `https://api.whatsapp.com/send?text=${text}`;
+    try {
+        window.open(waUrl, '_blank');
+    } catch(e) {
+        window.location.href = waUrl;
+    }
 }
 
 // 3. One-Click Copy Magic Link
 function copyMagicLink() {
-    const idVal = targetIdInput ? targetIdInput.value.replace(/\D/g, '') : '';
-    if (!idVal || idVal.length < 6) {
-        alert('Lütfen öncelikle 9 haneli Uzak Masaüstü ID girin!');
-        return;
+    const inputElem = document.getElementById('target-id');
+    const idVal = inputElem ? inputElem.value.replace(/\D/g, '') : '';
+    const magicUrl = idVal && idVal.length >= 5 ? `https://biglineconnect.bigus.com.tr/?id=${idVal}` : `https://biglineconnect.bigus.com.tr/`;
+    
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(magicUrl).then(() => {
+            showToast('Sihirli Bağlantı Linki Panoya Kopyalandı!', 'success');
+            alert('✅ Sihirli Bağlantı Linki Kopyalandı:\n\n' + magicUrl);
+        }).catch(() => {
+            alert('📋 Bağlantı Linki:\n\n' + magicUrl);
+        });
+    } else {
+        alert('📋 Bağlantı Linki:\n\n' + magicUrl);
     }
-    const magicUrl = `https://biglineconnect.bigus.com.tr/?id=${idVal}`;
-    navigator.clipboard.writeText(magicUrl).then(() => {
-        showToast('Sihirli Bağlantı Linki Kopyalandı! (WhatsApp veya Mail ile gönderebilirsiniz)', 'success');
-    }).catch(() => {
-        showToast('Kopyalandı: ' + magicUrl, 'success');
-    });
 }
 
 document.addEventListener('DOMContentLoaded', () => {
