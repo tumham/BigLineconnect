@@ -662,6 +662,7 @@ namespace BigLineconnect
                                     var ws = System.Net.WebSockets.WebSocket.CreateFromStream(stream, isServer: true, subProtocol: null, keepAliveInterval: TimeSpan.FromSeconds(30));
                                     Log("Yerel Ağdan (LAN Direct) 0.5 ms hızlı bağlantı kabul edildi!");
                                     _isStreaming = true;
+                                    try { File.WriteAllText(GetSharedStreamActivePath(), "1"); } catch { }
 
                                     var cts = new CancellationTokenSource();
                                     _ = Task.Run(() => CaptureLoop(cts.Token));
@@ -1855,6 +1856,7 @@ namespace BigLineconnect
                                 await SendDisplaysListAsync(ws, token).ConfigureAwait(false);
 
                                 _isStreaming = true;
+                                try { File.WriteAllText(GetSharedStreamActivePath(), "1"); } catch { }
 
                                 var captureThread = new Thread(() => CaptureLoop(token))
                                 {
@@ -1899,6 +1901,7 @@ namespace BigLineconnect
                     await SendDisplaysListAsync(ws, token).ConfigureAwait(false);
 
                     _isStreaming = true;
+                    try { File.WriteAllText(GetSharedStreamActivePath(), "1"); } catch { }
                     
                     var captureThread = new Thread(() => CaptureLoop(token))
                     {

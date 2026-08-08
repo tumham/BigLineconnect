@@ -181,7 +181,7 @@ namespace BigLineconnect
         private void InitializeComponent()
         {
             Program.LoadSecuritySettings();
-            this.Text = "BigLineconnect v3.26.0 - Uzaktan Kontrol (Strict Priority Rendering & Server Persistence)";
+            this.Text = "BigLineconnect v3.27.0 - Uzaktan Kontrol (Active Operator Stream Status & Green Indicator)";
             this.Size = new Size(880, 750);
             this.MinimumSize = new Size(880, 750);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -211,7 +211,7 @@ namespace BigLineconnect
 
             _titleLabel = new Label
             {
-                Text = "BigLineconnect v3.26.0 🚀",
+                Text = "BigLineconnect v3.27.0 🚀",
                 Location = new Point(105, 15),
                 Size = new Size(330, 42),
                 Font = new Font("Segoe UI", 20F, FontStyle.Bold),
@@ -222,7 +222,7 @@ namespace BigLineconnect
 
             var subtitleLabel = new Label
             {
-                Text = "REMOTE DESKTOP CLIENT • v3.26.0 (Strict Priority Rendering & Server Persistence)",
+                Text = "REMOTE DESKTOP CLIENT • v3.27.0 (Active Operator Stream Status & Green Indicator)",
                 Location = new Point(108, 58),
                 Size = new Size(450, 20),
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
@@ -1309,7 +1309,7 @@ namespace BigLineconnect
                         _overlayBannerForm = new RemoteOverlayBannerForm();
                         _overlayBannerForm.Show();
                     }
-                    if (_hasActiveSubmittedTicket && _btnSupport != null && _btnSupport.Text != "🟢 Uzman Bağlandı (İşlem Yapılıyor...)")
+                    if (_btnSupport != null && _btnSupport.Text != "🟢 Uzman Bağlandı (İşlem Yapılıyor...)")
                     {
                         _btnSupport.Text = "🟢 Uzman Bağlandı (İşlem Yapılıyor...)";
                         ApplyModernButtonStyle(_btnSupport, Color.FromArgb(46, 204, 113), Color.FromArgb(39, 174, 96), Color.White);
@@ -1317,6 +1317,10 @@ namespace BigLineconnect
                 }
                 else
                 {
+                    if (_btnSupport != null && _btnSupport.Text == "🟢 Uzman Bağlandı (İşlem Yapılıyor...)")
+                    {
+                        ResetSupportButton();
+                    }
                     _hasAutoMinimizedForRemoteSession = false;
                     IsBannerDismissedByUser = false;
                     if (_overlayBannerForm != null && !_overlayBannerForm.IsDisposed)
@@ -4764,6 +4768,14 @@ namespace BigLineconnect
                     this.Invoke((System.Windows.Forms.MethodInvoker)delegate
                     {
                         if (this.IsDisposed) return;
+                        string streamFlagPath = Program.GetSharedStreamActivePath();
+                        bool isStreamActive = Program._isStreaming || File.Exists(streamFlagPath);
+                        if (isStreamActive && btnCancelTicket != null)
+                        {
+                            btnCancelTicket.Text = "🟢 Uzman Bağlı";
+                            btnCancelTicket.BackColor = Color.FromArgb(46, 204, 113);
+                            btnCancelTicket.Enabled = false;
+                        }
                         var combinedList = new List<LocalSubmittedTicket>(localTickets);
 
                         foreach (var item in combinedList)
@@ -4842,6 +4854,7 @@ namespace BigLineconnect
                             item.SubItems.Add(t.Issue);
 
                             string statusText = t.Status ?? "";
+
                             if (statusText.Contains("Çözüldü") && !statusText.Contains("Çözülmedi"))
                             {
                                 item.SubItems.Add("✅ Çözüldü");
@@ -4857,10 +4870,14 @@ namespace BigLineconnect
                                 item.SubItems.Add("📌 Takip Edilecek");
                                 item.ForeColor = Color.FromArgb(243, 156, 18);
                             }
-                            else if (statusText.Contains("Bağlandı") || statusText.Contains("İşlemde"))
+                            else if (isStreamActive || statusText.Contains("Bağlandı") || statusText.Contains("İşlemde"))
                             {
-                                item.SubItems.Add("⚡ Uzman İşlemde");
-                                item.ForeColor = Color.FromArgb(0, 229, 255);
+                                item.SubItems.Add("🟢 Uzman Bağlandı (İşlem Yapılıyor...)");
+                                item.ForeColor = Color.FromArgb(46, 204, 113);
+                                if (string.IsNullOrEmpty(t.Notes) || t.Notes == "—")
+                                {
+                                    t.Notes = "Uzman bilgisayarınıza bağlı, işlem gerçekleştiriliyor...";
+                                }
                             }
                             else
                             {

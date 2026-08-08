@@ -174,7 +174,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.26.0 (Strict Priority Rendering & Server Persistence)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.27.0 (Active Operator Stream Status & Green Indicator)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
