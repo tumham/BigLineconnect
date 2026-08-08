@@ -275,12 +275,15 @@ function connectToHost(id) {
                 img.src = url;
             } else if (typeof event.data === 'string') {
                 if (event.data === 'ERROR:ID_NOT_FOUND') {
+                    alert('⚠️ UYARI: (' + cleanId + ') numaralı Masaüstü ID\'si sunucuda bulunamadı!\n\nLütfen bilgisayarınızdaki BigLineconnect.exe uygulamasının AÇIK olduğundan ve "BU CİHAZIN ID\'Sİ" bölümünde yazan 9 haneli kodu doğru girdiğinizden emin olun.');
                     customCloseReason = 'Bağlantı ID\'si bulunamadı veya bilgisayar kapalı.';
                     socket.close();
                 } else if (event.data === 'ERROR:BUSY') {
+                    alert('⚠️ UYARI: Bu bilgisayara şu an başka bir operatör bağlı.');
                     customCloseReason = 'Bu bilgisayar şu an meşgul.';
                     socket.close();
                 } else if (event.data === 'AUTH_REQUIRED') {
+                    alert('🔐 HEDEF BİLGİSAYAR BULUNDU!\n\nLütfen 6 haneli Erişim Şifresini girin.');
                     const pm = document.getElementById('password-modal');
                     if (pm) {
                         pm.classList.remove('hidden');
