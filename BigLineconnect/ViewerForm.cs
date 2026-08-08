@@ -174,7 +174,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.27.0 (Active Operator Stream Status & Green Indicator)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.28.0 (Automatic Stream Flag Lifecycle Cleanup)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;

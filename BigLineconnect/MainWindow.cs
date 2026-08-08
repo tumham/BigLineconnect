@@ -124,6 +124,7 @@ namespace BigLineconnect
         public MainWindow()
         {
             _instance = this;
+            try { Program.SetStreamActive(false); } catch { }
             InitializeComponent();
             LoadLogoAndIcon();
 
@@ -181,7 +182,7 @@ namespace BigLineconnect
         private void InitializeComponent()
         {
             Program.LoadSecuritySettings();
-            this.Text = "BigLineconnect v3.27.0 - Uzaktan Kontrol (Active Operator Stream Status & Green Indicator)";
+            this.Text = "BigLineconnect v3.28.0 - Uzaktan Kontrol (Automatic Stream Flag Lifecycle Cleanup)";
             this.Size = new Size(880, 750);
             this.MinimumSize = new Size(880, 750);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -211,7 +212,7 @@ namespace BigLineconnect
 
             _titleLabel = new Label
             {
-                Text = "BigLineconnect v3.27.0 🚀",
+                Text = "BigLineconnect v3.28.0 🚀",
                 Location = new Point(105, 15),
                 Size = new Size(330, 42),
                 Font = new Font("Segoe UI", 20F, FontStyle.Bold),
@@ -222,7 +223,7 @@ namespace BigLineconnect
 
             var subtitleLabel = new Label
             {
-                Text = "REMOTE DESKTOP CLIENT • v3.27.0 (Active Operator Stream Status & Green Indicator)",
+                Text = "REMOTE DESKTOP CLIENT • v3.28.0 (Automatic Stream Flag Lifecycle Cleanup)",
                 Location = new Point(108, 58),
                 Size = new Size(450, 20),
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),

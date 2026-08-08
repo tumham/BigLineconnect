@@ -661,8 +661,7 @@ namespace BigLineconnect
                                 {
                                     var ws = System.Net.WebSockets.WebSocket.CreateFromStream(stream, isServer: true, subProtocol: null, keepAliveInterval: TimeSpan.FromSeconds(30));
                                     Log("Yerel Ağdan (LAN Direct) 0.5 ms hızlı bağlantı kabul edildi!");
-                                    _isStreaming = true;
-                                    try { File.WriteAllText(GetSharedStreamActivePath(), "1"); } catch { }
+                                    SetStreamActive(true);
 
                                     var cts = new CancellationTokenSource();
                                     _ = Task.Run(() => CaptureLoop(cts.Token));
@@ -854,6 +853,7 @@ namespace BigLineconnect
                             else if (message == "STOP_STREAM")
                             {
                                 Log("İstemci ayrıldı. Ekran paylaşımı durduruldu.");
+                                SetStreamActive(false);
                                 _isStreaming = false;
                             }
                             else
@@ -955,6 +955,7 @@ namespace BigLineconnect
             }
             finally
             {
+                SetStreamActive(false);
                 if (acquiredMutex && _singleStreamerMutex != null)
                 {
                     try { _singleStreamerMutex.ReleaseMutex(); } catch { }
@@ -1776,7 +1777,7 @@ namespace BigLineconnect
                     await SafeSendAsync(ws, new ArraySegment<byte>(okMsg), WebSocketMessageType.Text, true, token).ConfigureAwait(false);
                     await SendDisplaysListAsync(ws, token).ConfigureAwait(false);
                     
-                    _isStreaming = true;
+                    SetStreamActive(true);
                     
                     // Start capture thread (dedicated)
                     var captureThread = new Thread(() => CaptureLoop(token))
@@ -1855,8 +1856,7 @@ namespace BigLineconnect
                                 await SafeSendAsync(ws, new ArraySegment<byte>(okMsg), WebSocketMessageType.Text, true, token).ConfigureAwait(false);
                                 await SendDisplaysListAsync(ws, token).ConfigureAwait(false);
 
-                                _isStreaming = true;
-                                try { File.WriteAllText(GetSharedStreamActivePath(), "1"); } catch { }
+                                SetStreamActive(true);
 
                                 var captureThread = new Thread(() => CaptureLoop(token))
                                 {
@@ -1901,7 +1901,7 @@ namespace BigLineconnect
                     await SendDisplaysListAsync(ws, token).ConfigureAwait(false);
 
                     _isStreaming = true;
-                    try { File.WriteAllText(GetSharedStreamActivePath(), "1"); } catch { }
+                    SetStreamActive(true);
                     
                     var captureThread = new Thread(() => CaptureLoop(token))
                     {
@@ -1930,8 +1930,29 @@ namespace BigLineconnect
             return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "BigLineconnect", "active_stream.flag");
         }
 
+        public static void SetStreamActive(bool active)
+        {
+            _isStreaming = active;
+            try
+            {
+                string path = GetSharedStreamActivePath();
+                if (active)
+                {
+                    string dir = Path.GetDirectoryName(path) ?? "";
+                    if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
+                    File.WriteAllText(path, "1");
+                }
+                else
+                {
+                    if (File.Exists(path)) File.Delete(path);
+                }
+            }
+            catch { }
+        }
+
         public static void Shutdown()
         {
+            SetStreamActive(false);
             _cts.Cancel();
             if (WebSocketClient != null)
             {
