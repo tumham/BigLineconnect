@@ -1262,20 +1262,34 @@ namespace BigLineconnect.Relay
                 foreach (var item in list)
                 {
                     string p = (item.Priority ?? "").ToLowerInvariant();
-                    string iss = (item.Issue ?? "").ToLowerInvariant();
-                    if (p.Contains("yüksek") || p.Contains("yuksek") || p.Contains("acil") || p.Contains("high") || p.Contains("🔴") || p.Contains("red") ||
-                        iss.Contains("acil") || iss.Contains("yüksek") || iss.Contains("yuksek") || iss.Contains("kilit") || iss.Contains("fatura") || iss.Contains("kasa"))
+
+                    if (p.Contains("yüksek") || p.Contains("yuksek") || p.Contains("high") || p.Contains("🔴"))
                     {
                         item.Priority = "🔴 Yüksek";
                     }
-                    else if (p.Contains("düşük") || p.Contains("dusuk") || p.Contains("rutin") || p.Contains("low") || p.Contains("🟢") || p.Contains("green") ||
-                             iss.Contains("düşük") || iss.Contains("dusuk") || iss.Contains("rutin") || iss.Contains("bilgi"))
+                    else if (p.Contains("düşük") || p.Contains("dusuk") || p.Contains("low") || p.Contains("🟢"))
                     {
                         item.Priority = "🟢 Düşük";
                     }
-                    else
+                    else if (p.Contains("orta") || p.Contains("medium") || p.Contains("🟡"))
                     {
                         item.Priority = "🟡 Orta";
+                    }
+                    else
+                    {
+                        string iss = (item.Issue ?? "").ToLowerInvariant();
+                        if (iss.Contains("çok acil") || iss.Contains("kilitlendi") || iss.Contains("fatura kesemiyoruz") || iss.Contains("kasa kilit"))
+                        {
+                            item.Priority = "🔴 Yüksek";
+                        }
+                        else if (iss.Contains("rutin") || iss.Contains("bilgi almak"))
+                        {
+                            item.Priority = "🟢 Düşük";
+                        }
+                        else
+                        {
+                            item.Priority = "🟡 Orta";
+                        }
                     }
                 }
                 await context.Response.WriteAsJsonAsync(list);

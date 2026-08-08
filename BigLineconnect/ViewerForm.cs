@@ -174,7 +174,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.22.0 (Expanded Support Button & Priority Fix)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.23.0 (TitleBar Logo Icon, Strict Priority & Auto-Minimize)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;

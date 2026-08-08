@@ -84,6 +84,7 @@ namespace BigLineconnect
         private Button? _btnSupport;
         private Button? _btnMyTickets;
         private bool _hasActiveSubmittedTicket = false;
+        private bool _hasAutoMinimizedForRemoteSession = false;
         private static RemoteOverlayBannerForm? _overlayBannerForm = null;
         public static bool IsBannerDismissedByUser = false;
 
@@ -180,7 +181,7 @@ namespace BigLineconnect
         private void InitializeComponent()
         {
             Program.LoadSecuritySettings();
-            this.Text = "BigLineconnect v3.22.0 - Uzaktan Kontrol (Expanded Support Button & Priority Fix)";
+            this.Text = "BigLineconnect v3.23.0 - Uzaktan Kontrol (TitleBar Logo Icon, Strict Priority & Auto-Minimize)";
             this.Size = new Size(880, 750);
             this.MinimumSize = new Size(880, 750);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -210,7 +211,7 @@ namespace BigLineconnect
 
             _titleLabel = new Label
             {
-                Text = "BigLineconnect v3.22.0 🚀",
+                Text = "BigLineconnect v3.23.0 🚀",
                 Location = new Point(105, 15),
                 Size = new Size(330, 42),
                 Font = new Font("Segoe UI", 20F, FontStyle.Bold),
@@ -221,7 +222,7 @@ namespace BigLineconnect
 
             var subtitleLabel = new Label
             {
-                Text = "REMOTE DESKTOP CLIENT • v3.22.0 (Expanded Support Button & Priority Fix)",
+                Text = "REMOTE DESKTOP CLIENT • v3.23.0 (TitleBar Logo Icon, Strict Priority & Auto-Minimize)",
                 Location = new Point(108, 58),
                 Size = new Size(450, 20),
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
@@ -857,14 +858,45 @@ namespace BigLineconnect
         {
             try
             {
+                Icon? loadedIcon = null;
+
                 string iconPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "icon.ico");
                 if (File.Exists(iconPath))
                 {
-                    var customIcon = new Icon(iconPath);
-                    this.Icon = customIcon;
+                    try { loadedIcon = new Icon(iconPath); } catch { }
+                }
+
+                var assembly = Assembly.GetExecutingAssembly();
+                using (Stream? stream = assembly.GetManifestResourceStream("BigLineconnect.wwwroot.logo_bc.png"))
+                {
+                    if (stream != null)
+                    {
+                        using (var bmp = new Bitmap(stream))
+                        {
+                            if (_logoBox != null)
+                            {
+                                _logoBox.Image = new Bitmap(bmp);
+                            }
+
+                            if (loadedIcon == null)
+                            {
+                                try
+                                {
+                                    IntPtr hIcon = bmp.GetHicon();
+                                    loadedIcon = Icon.FromHandle(hIcon);
+                                }
+                                catch { }
+                            }
+                        }
+                    }
+                }
+
+                if (loadedIcon != null)
+                {
+                    this.Icon = loadedIcon;
                     if (_notifyIcon != null)
                     {
-                        _notifyIcon.Icon = customIcon;
+                        _notifyIcon.Icon = loadedIcon;
                     }
                 }
                 else
@@ -873,18 +905,6 @@ namespace BigLineconnect
                     if (_notifyIcon != null)
                     {
                         _notifyIcon.Icon = SystemIcons.Shield;
-                    }
-                }
-
-                var assembly = Assembly.GetExecutingAssembly();
-                using (Stream? stream = assembly.GetManifestResourceStream("BigLineconnect.wwwroot.logo_bc.png"))
-                {
-                    if (stream != null)
-                    {
-                        if (_logoBox != null)
-                        {
-                            _logoBox.Image = Image.FromStream(stream);
-                        }
                     }
                 }
             }
@@ -1274,6 +1294,15 @@ namespace BigLineconnect
                 bool isStreamActive = Program._isStreaming || File.Exists(streamFlagPath);
                 if (isStreamActive)
                 {
+                    if (!_hasAutoMinimizedForRemoteSession)
+                    {
+                        _hasAutoMinimizedForRemoteSession = true;
+                        if (this.WindowState != FormWindowState.Minimized)
+                        {
+                            this.WindowState = FormWindowState.Minimized;
+                        }
+                    }
+
                     if (!IsBannerDismissedByUser && (_overlayBannerForm == null || _overlayBannerForm.IsDisposed))
                     {
                         _overlayBannerForm = new RemoteOverlayBannerForm();
@@ -1287,6 +1316,7 @@ namespace BigLineconnect
                 }
                 else
                 {
+                    _hasAutoMinimizedForRemoteSession = false;
                     IsBannerDismissedByUser = false;
                     if (_overlayBannerForm != null && !_overlayBannerForm.IsDisposed)
                     {
@@ -4362,16 +4392,28 @@ namespace BigLineconnect
         public static string GetNormalizedPriority(string? priorityText, string? issueText)
         {
             string p = (priorityText ?? "").ToLowerInvariant();
-            string iss = (issueText ?? "").ToLowerInvariant();
 
-            if (p.Contains("yüksek") || p.Contains("yuksek") || p.Contains("acil") || p.Contains("high") || p.Contains("🔴") || p.Contains("red") ||
-                iss.Contains("acil") || iss.Contains("yüksek") || iss.Contains("yuksek") || iss.Contains("kilit") || iss.Contains("fatura") || iss.Contains("kasa"))
+            // 1. Explicit Dropdown Selection Priority Check (Always Respect User Choice)
+            if (p.Contains("yüksek") || p.Contains("yuksek") || p.Contains("high") || p.Contains("🔴"))
             {
                 return "🔴 Yüksek";
             }
+            if (p.Contains("düşük") || p.Contains("dusuk") || p.Contains("low") || p.Contains("🟢"))
+            {
+                return "🟢 Düşük";
+            }
+            if (p.Contains("orta") || p.Contains("medium") || p.Contains("🟡"))
+            {
+                return "🟡 Orta";
+            }
 
-            if (p.Contains("düşük") || p.Contains("dusuk") || p.Contains("rutin") || p.Contains("low") || p.Contains("🟢") || p.Contains("green") ||
-                iss.Contains("düşük") || iss.Contains("dusuk") || iss.Contains("rutin") || iss.Contains("bilgi"))
+            // 2. Fallback: Auto-Detect from Issue Description ONLY if priority was not explicitly specified
+            string iss = (issueText ?? "").ToLowerInvariant();
+            if (iss.Contains("çok acil") || iss.Contains("kilitlendi") || iss.Contains("fatura kesemiyoruz") || iss.Contains("kasa kilit"))
+            {
+                return "🔴 Yüksek";
+            }
+            if (iss.Contains("rutin") || iss.Contains("bilgi almak"))
             {
                 return "🟢 Düşük";
             }

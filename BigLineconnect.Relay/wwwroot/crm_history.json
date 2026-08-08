@@ -1,4 +1,4 @@
 ﻿[
-  {"id":"9b033bcc-3ce1-430e-b3a4-65d5d36c339d","hostId":"263551735","token":"fdd321d3-7238-4ea1-acd2-9c5d7316dccf","name":"DESKTOP-J2DP86T","issue":"frfrfqwwfqwfqewrferferf","tenantId":"V3.21.0","createdAt":"08.08.2026 12:28:36","resolvedAt":"08.08.2026 12:28:56","status":"Çözüldü","notes":"Destek işlemi tamamlandı: Çözüldü"},
-  {"id":"24382ffc-bb85-4d10-83b1-2546ec1633ee","hostId":"263551735","token":"a2d0eabb-c7f9-4b47-b510-b549d5650619","name":"DESKTOP-J2DP86T","issue":"destek iste","tenantId":"V3.21.0","createdAt":"08.08.2026 12:26:19","resolvedAt":"08.08.2026 12:27:24","status":"Çözüldü","notes":"Destek işlemi tamamlandı: Çözüldü"}
+  {"id":"f3bd864f-f4e5-4cf7-9acd-b00f1c0b12fd","hostId":"263551735","token":"5218c017-e732-4ccf-bf99-51223c4a97df","name":"DESKTOP-J2DP86T","issue":"abi destek ortad aciliyet","tenantId":"V3.22.0","createdAt":"08.08.2026 15:08:59","resolvedAt":"08.08.2026 15:10:03","status":"Çözüldü","notes":"Destek işlemi tamamlandı: Çözüldü"},
+  {"id":"a8cb9e19-f42a-40ee-a960-284c712baeda","hostId":"263551735","token":"33c86efe-9652-43b4-ac4b-8b7572376553","name":"DESKTOP-J2DP86T","issue":"detek acildir","tenantId":"V3.22.0","createdAt":"08.08.2026 12:57:55","resolvedAt":"08.08.2026 12:58:15","status":"Çözüldü","notes":"Destek işlemi tamamlandı: Çözüldü"}
 ]
