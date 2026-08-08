@@ -180,7 +180,7 @@ namespace BigLineconnect
         private void InitializeComponent()
         {
             Program.LoadSecuritySettings();
-            this.Text = "BigLineconnect v3.21.0 - Uzaktan Kontrol (Ultra-Clean Zero-Glow Splash Screen)";
+            this.Text = "BigLineconnect v3.22.0 - Uzaktan Kontrol (Expanded Support Button & Priority Fix)";
             this.Size = new Size(880, 750);
             this.MinimumSize = new Size(880, 750);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -210,7 +210,7 @@ namespace BigLineconnect
 
             _titleLabel = new Label
             {
-                Text = "BigLineconnect v3.21.0 🚀",
+                Text = "BigLineconnect v3.22.0 🚀",
                 Location = new Point(105, 15),
                 Size = new Size(330, 42),
                 Font = new Font("Segoe UI", 20F, FontStyle.Bold),
@@ -221,7 +221,7 @@ namespace BigLineconnect
 
             var subtitleLabel = new Label
             {
-                Text = "REMOTE DESKTOP CLIENT • v3.21.0 (Ultra-Clean Zero-Glow Splash Screen)",
+                Text = "REMOTE DESKTOP CLIENT • v3.22.0 (Expanded Support Button & Priority Fix)",
                 Location = new Point(108, 58),
                 Size = new Size(450, 20),
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
@@ -600,7 +600,7 @@ namespace BigLineconnect
             {
                 Text = "Bağlantı Günlüğü (Log) ve Sistem Teşhisi (WebSocket / TCP):",
                 Location = new Point(20, 575),
-                Size = new Size(520, 20),
+                Size = new Size(410, 20),
                 ForeColor = Color.FromArgb(0, 229, 255),
                 Font = new Font("Segoe UI", 9.5F, FontStyle.Bold)
             };
@@ -609,7 +609,7 @@ namespace BigLineconnect
             _logTextBox = new TextBox
             {
                 Location = new Point(20, 595),
-                Size = new Size(520, 100),
+                Size = new Size(410, 100),
                 Multiline = true,
                 ReadOnly = true,
                 ScrollBars = ScrollBars.Vertical,
@@ -808,10 +808,10 @@ namespace BigLineconnect
 
             _btnSupport = new Button
             {
-                Text = "🆘 Destek İste\n/ Sorun Bildir",
-                Location = new Point(560, 627),
-                Size = new Size(130, 38),
-                Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
+                Text = "🆘 Destek İste / Sorun Bildir",
+                Location = new Point(445, 642),
+                Size = new Size(240, 52),
+                Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
                 Cursor = Cursors.Hand
             };
             ApplyModernButtonStyle(_btnSupport, Color.FromArgb(230, 126, 34), Color.FromArgb(211, 84, 0), Color.White);
@@ -821,9 +821,9 @@ namespace BigLineconnect
             _btnMyTickets = new Button
             {
                 Text = "📋 Taleplerim",
-                Location = new Point(700, 630),
-                Size = new Size(135, 35),
-                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                Location = new Point(695, 642),
+                Size = new Size(150, 52),
+                Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
                 Cursor = Cursors.Hand
             };
             ApplyModernButtonStyle(_btnMyTickets, Color.FromArgb(41, 128, 185), Color.FromArgb(31, 97, 141), Color.White);
@@ -4045,7 +4045,7 @@ namespace BigLineconnect
                     
                     if (_btnSupport != null)
                     {
-                        _btnSupport.Text = "🆘 Destek İste\n/ Sorun Bildir";
+                        _btnSupport.Text = "🆘 Destek İste / Sorun Bildir";
                         ApplyModernButtonStyle(_btnSupport, Color.FromArgb(230, 126, 34), Color.FromArgb(211, 84, 0), Color.White);
                     }
                     MessageBox.Show("Destek talebiniz başarıyla iptal edildi.", "Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -4134,7 +4134,21 @@ namespace BigLineconnect
             public string CustomerName => txtName.Text.Trim();
             public string CompanyCodeInput => txtCompanyCode.Text.Trim();
             public string IssueDescription => txtIssue.Text.Trim();
-            public string Priority => _selectedPriority;
+            public string Priority
+            {
+                get
+                {
+                    if (cmbPriority != null)
+                    {
+                        int idx = cmbPriority.SelectedIndex;
+                        string txt = cmbPriority.SelectedItem?.ToString() ?? cmbPriority.Text ?? "";
+                        if (idx == 0 || txt.Contains("Yüksek") || txt.Contains("Acil")) return "🔴 Yüksek";
+                        if (idx == 2 || txt.Contains("Düşük") || txt.Contains("Rutin")) return "🟢 Düşük";
+                        return "🟡 Orta";
+                    }
+                    return _selectedPriority;
+                }
+            }
             public bool RequiresConfirmation => chkRequiresConfirmation.Checked;
 
             public SupportRequestDialog()
@@ -4237,6 +4251,13 @@ namespace BigLineconnect
                 cmbPriority.Items.Add("🟡 Orta (Normal Destek)");
                 cmbPriority.Items.Add("🟢 Düşük (Bilgi / Rutin İşlem)");
                 cmbPriority.SelectedIndex = 1;
+                cmbPriority.SelectedIndexChanged += (s, e) => {
+                    int idx = cmbPriority.SelectedIndex;
+                    string txt = cmbPriority.SelectedItem?.ToString() ?? cmbPriority.Text ?? "";
+                    if (idx == 0 || txt.Contains("Yüksek") || txt.Contains("Acil")) _selectedPriority = "🔴 Yüksek";
+                    else if (idx == 2 || txt.Contains("Düşük") || txt.Contains("Rutin")) _selectedPriority = "🟢 Düşük";
+                    else _selectedPriority = "🟡 Orta";
+                };
                 this.Controls.Add(cmbPriority);
 
                 chkRequiresConfirmation = new CheckBox
@@ -4275,9 +4296,10 @@ namespace BigLineconnect
                         return;
                     }
 
-                    string sel = cmbPriority.SelectedItem?.ToString() ?? "";
-                    if (sel.Contains("Yüksek")) _selectedPriority = "🔴 Yüksek";
-                    else if (sel.Contains("Düşük")) _selectedPriority = "🟢 Düşük";
+                    int selIdx = cmbPriority.SelectedIndex;
+                    string selStr = cmbPriority.SelectedItem?.ToString() ?? cmbPriority.Text ?? "";
+                    if (selIdx == 0 || selStr.Contains("Yüksek") || selStr.Contains("Acil")) _selectedPriority = "🔴 Yüksek";
+                    else if (selIdx == 2 || selStr.Contains("Düşük") || selStr.Contains("Rutin")) _selectedPriority = "🟢 Düşük";
                     else _selectedPriority = "🟡 Orta";
 
                     this.DialogResult = DialogResult.OK;
@@ -4339,16 +4361,16 @@ namespace BigLineconnect
 
         public static string GetNormalizedPriority(string? priorityText, string? issueText)
         {
-            string p = priorityText ?? "";
+            string p = (priorityText ?? "").ToLowerInvariant();
             string iss = (issueText ?? "").ToLowerInvariant();
 
-            if (p.Contains("Yüksek") || p.Contains("Acil") || p.Contains("🔴") ||
+            if (p.Contains("yüksek") || p.Contains("yuksek") || p.Contains("acil") || p.Contains("high") || p.Contains("🔴") || p.Contains("red") ||
                 iss.Contains("acil") || iss.Contains("yüksek") || iss.Contains("yuksek") || iss.Contains("kilit") || iss.Contains("fatura") || iss.Contains("kasa"))
             {
                 return "🔴 Yüksek";
             }
 
-            if (p.Contains("Düşük") || p.Contains("Rutin") || p.Contains("🟢") ||
+            if (p.Contains("düşük") || p.Contains("dusuk") || p.Contains("rutin") || p.Contains("low") || p.Contains("🟢") || p.Contains("green") ||
                 iss.Contains("düşük") || iss.Contains("dusuk") || iss.Contains("rutin") || iss.Contains("bilgi"))
             {
                 return "🟢 Düşük";
