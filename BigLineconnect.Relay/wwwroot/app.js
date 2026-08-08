@@ -13,6 +13,51 @@ let startMidY = 0;
 let startPanX = 0;
 let startPanY = 0;
 
+// DOM Element References (safely initialized)
+let landingPage = null;
+let viewerScreen = null;
+let targetIdInput = null;
+let connectBtn = null;
+let disconnectBtn = null;
+let fullscreenBtn = null;
+let screenImg = null;
+let canvasContainer = null;
+let connectionStatus = null;
+let toggleKeyboardBtn = null;
+let hiddenKeyboardInput = null;
+let mouseModeBtn = null;
+let mouseModeText = null;
+let toastElement = null;
+let passwordModal = null;
+let accessPasswordInput = null;
+let submitPasswordBtn = null;
+
+function initDOMElements() {
+    landingPage = document.getElementById('landing-page');
+    viewerScreen = document.getElementById('viewer-screen');
+    targetIdInput = document.getElementById('target-id');
+    connectBtn = document.getElementById('connect-btn');
+    disconnectBtn = document.getElementById('disconnect-btn');
+    fullscreenBtn = document.getElementById('fullscreen-btn');
+    screenImg = document.getElementById('screen-img');
+    canvasContainer = document.getElementById('canvas-container');
+    connectionStatus = document.getElementById('connection-status');
+    toggleKeyboardBtn = document.getElementById('toggle-keyboard-btn');
+    hiddenKeyboardInput = document.getElementById('hidden-keyboard-input');
+    mouseModeBtn = document.getElementById('mouse-mode-btn');
+    mouseModeText = document.getElementById('mouse-mode-text');
+    toastElement = document.getElementById('toast');
+    passwordModal = document.getElementById('password-modal');
+    accessPasswordInput = document.getElementById('access-password-input');
+    submitPasswordBtn = document.getElementById('submit-password-btn');
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initDOMElements);
+} else {
+    initDOMElements();
+}
+
 // Dynamic Helper to Get Elements Safely
 const getElem = (id) => document.getElementById(id);
 
