@@ -49,18 +49,29 @@ window.submitOnlineCheckout = submitOnlineCheckout;
 window.checkoutViaWhatsApp = checkoutViaWhatsApp;
 window.extendFreeSessionTimer = extendFreeSessionTimer;
 
+let isConnectingProcess = false;
+
 // Connect Button Event Handler
 function startConnectionProcess() {
+    if (isConnectingProcess) {
+        console.warn('Bağlantı işlemi zaten devam ediyor, çift tıklama engellendi.');
+        return;
+    }
+    isConnectingProcess = true;
+    setTimeout(() => { isConnectingProcess = false; }, 2500);
+
     try {
         const inputElem = document.getElementById('target-id');
         const btnElem = document.getElementById('connect-btn');
         if (!inputElem) {
+            isConnectingProcess = false;
             alert('Hata: ID giriş kutusu bulunamadı.');
             return;
         }
 
         const rawId = inputElem.value.replace(/\D/g, '');
         if (!rawId || rawId.length < 5) {
+            isConnectingProcess = false;
             alert('Lütfen bağlanmak istediğiniz uzaktaki bilgisayarın ID numarasını girin (Örn: 864 688 774).');
             return;
         }
@@ -74,28 +85,23 @@ function startConnectionProcess() {
 
         connectToHost(rawId);
 
-        // Re-enable button if connection times out or closes
+        // Re-enable button if connection times out
         setTimeout(() => {
+            isConnectingProcess = false;
             if (btnElem && !connected) {
                 btnElem.disabled = false;
                 btnElem.innerHTML = '<span>Bağlan</span> <i class="fa-solid fa-arrow-right-to-bracket"></i>';
             }
         }, 5000);
     } catch (err) {
+        isConnectingProcess = false;
         showToast('Bağlantı Başlatma Hatası: ' + err.message, 'error');
+        const btnElem = document.getElementById('connect-btn');
         if (btnElem) {
             btnElem.disabled = false;
             btnElem.innerHTML = '<span>Bağlan</span> <i class="fa-solid fa-arrow-right-to-bracket"></i>';
         }
     }
-}
-
-// Connect Button Event Listener (single click binding)
-if (connectBtn) {
-    connectBtn.addEventListener('click', (e) => {
-        if (e) e.preventDefault();
-        startConnectionProcess();
-    });
 }
 
 // Disconnect Button Event
