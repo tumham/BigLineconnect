@@ -1,4 +1,4 @@
 ﻿[
-  {"id":"f3bd864f-f4e5-4cf7-9acd-b00f1c0b12fd","hostId":"263551735","token":"5218c017-e732-4ccf-bf99-51223c4a97df","name":"DESKTOP-J2DP86T","issue":"abi destek ortad aciliyet","tenantId":"V3.22.0","createdAt":"08.08.2026 15:08:59","resolvedAt":"08.08.2026 15:10:03","status":"Çözüldü","notes":"Destek işlemi tamamlandı: Çözüldü"},
-  {"id":"a8cb9e19-f42a-40ee-a960-284c712baeda","hostId":"263551735","token":"33c86efe-9652-43b4-ac4b-8b7572376553","name":"DESKTOP-J2DP86T","issue":"detek acildir","tenantId":"V3.22.0","createdAt":"08.08.2026 12:57:55","resolvedAt":"08.08.2026 12:58:15","status":"Çözüldü","notes":"Destek işlemi tamamlandı: Çözüldü"}
+  {"id":"b00a6ea2-f594-43ee-940b-d792d65ed838","hostId":"650085140","token":"397d2e52-9d77-4a5d-904f-dc05129e15b1","name":"BIGUS-Ahmet","issue":"Acil değil","tenantId":"V3.24.0","createdAt":"08.08.2026 16:38:15","resolvedAt":"08.08.2026 16:38:45","status":"Çözüldü","notes":"Destek işlemi tamamlandı: Çözüldü"},
+  {"id":"8eabb7e6-80fc-4ef1-8485-758e63d5f431","hostId":"650085140","token":"ec21b9d1-7b4b-40e6-b66d-66cf5ae44edf","name":"BIGUS-Mahmut","issue":"Aktarıcı Çalışmıyor acildir","tenantId":"V3.24.0","createdAt":"08.08.2026 16:35:20","resolvedAt":"08.08.2026 16:35:58","status":"Çözüldü","notes":"Destek işlemi tamamlandı: Çözüldü"}
 ]

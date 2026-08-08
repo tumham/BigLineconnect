@@ -1119,13 +1119,23 @@ namespace BigLineconnect.Relay
                         existingEntry = history.LastOrDefault(h => h.HostId == id && h.Status.Contains("Bekliyor"));
                     }
 
+                    string resolvedPriority = !string.IsNullOrEmpty(priority) ? priority : (ticket != null ? ticket.Priority : "");
+                    if (string.IsNullOrEmpty(resolvedPriority) && existingEntry != null && !string.IsNullOrEmpty(existingEntry.Priority))
+                    {
+                        resolvedPriority = existingEntry.Priority;
+                    }
+                    if (string.IsNullOrEmpty(resolvedPriority))
+                    {
+                        resolvedPriority = "🟡 Orta";
+                    }
+
                     if (existingEntry != null)
                     {
                         existingEntry.Status = status;
                         existingEntry.Notes = notes;
                         existingEntry.ResolvedAt = GetTurkeyTimeString();
                         if (!string.IsNullOrEmpty(name) && existingEntry.Name.StartsWith("Uzak Masaüstü")) existingEntry.Name = name;
-                        if (!string.IsNullOrEmpty(priority)) existingEntry.Priority = priority;
+                        if (!string.IsNullOrEmpty(resolvedPriority)) existingEntry.Priority = resolvedPriority;
                     }
                     else
                     {
@@ -1136,7 +1146,7 @@ namespace BigLineconnect.Relay
                             Token = ticket != null ? ticket.Token : token,
                             Name = !string.IsNullOrEmpty(name) ? name : (ticket != null ? ticket.Name : ("Müşteri (" + id + ")")),
                             Issue = !string.IsNullOrEmpty(issue) ? issue : (ticket != null ? ticket.Issue : "Genel Destek"),
-                            Priority = !string.IsNullOrEmpty(priority) ? priority : (ticket != null ? ticket.Priority : "Orta"),
+                            Priority = resolvedPriority,
                             TenantId = !string.IsNullOrEmpty(tenantId) ? tenantId : (ticket != null ? ticket.TenantId : "BIGLINE"),
                             CreatedAt = ticket != null ? ticket.CreatedAt.ToString("dd.MM.yyyy HH:mm:ss") : GetTurkeyTimeString(),
                             ResolvedAt = GetTurkeyTimeString(),

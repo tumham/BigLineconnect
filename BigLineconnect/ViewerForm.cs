@@ -174,7 +174,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.24.0 (Instant Window Restore & Banner Controls)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.25.0 (Strict Priority Sync & CRM Alignment)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;

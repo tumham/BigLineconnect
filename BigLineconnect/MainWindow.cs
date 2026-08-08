@@ -181,7 +181,7 @@ namespace BigLineconnect
         private void InitializeComponent()
         {
             Program.LoadSecuritySettings();
-            this.Text = "BigLineconnect v3.24.0 - Uzaktan Kontrol (Instant Window Restore & Banner Controls)";
+            this.Text = "BigLineconnect v3.25.0 - Uzaktan Kontrol (Strict Priority Sync & CRM Alignment)";
             this.Size = new Size(880, 750);
             this.MinimumSize = new Size(880, 750);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -211,7 +211,7 @@ namespace BigLineconnect
 
             _titleLabel = new Label
             {
-                Text = "BigLineconnect v3.24.0 🚀",
+                Text = "BigLineconnect v3.25.0 🚀",
                 Location = new Point(105, 15),
                 Size = new Size(330, 42),
                 Font = new Font("Segoe UI", 20F, FontStyle.Bold),
@@ -222,7 +222,7 @@ namespace BigLineconnect
 
             var subtitleLabel = new Label
             {
-                Text = "REMOTE DESKTOP CLIENT • v3.24.0 (Instant Window Restore & Banner Controls)",
+                Text = "REMOTE DESKTOP CLIENT • v3.25.0 (Strict Priority Sync & CRM Alignment)",
                 Location = new Point(108, 58),
                 Size = new Size(450, 20),
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
@@ -4714,14 +4714,23 @@ namespace BigLineconnect
                             using var doc = System.Text.Json.JsonDocument.Parse(json);
                             foreach (var elem in doc.RootElement.EnumerateArray())
                             {
-                                string token = elem.TryGetProperty("token", out var pTok) ? pTok.GetString() ?? "" : "";
-                                string issue = elem.TryGetProperty("issue", out var p1) ? p1.GetString() ?? "" : (elem.TryGetProperty("Issue", out var p1b) ? p1b.GetString() ?? "" : "");
-                                string priority = elem.TryGetProperty("priority", out var pPri) ? pPri.GetString() ?? "Orta" : (elem.TryGetProperty("Priority", out var pPrib) ? pPrib.GetString() ?? "Orta" : "Orta");
-                                string status = elem.TryGetProperty("status", out var p2) ? p2.GetString() ?? "" : (elem.TryGetProperty("Status", out var p2b) ? p2b.GetString() ?? "" : "");
-                                string notes = elem.TryGetProperty("notes", out var p3) ? p3.GetString() ?? "" : (elem.TryGetProperty("Notes", out var p3b) ? p3b.GetString() ?? "" : "");
-                                string createdAtStr = elem.TryGetProperty("createdAt", out var p4a) ? p4a.GetString() ?? "" : "";
+                                string GetProp(JsonElement el, string p1, string p2)
+                                {
+                                    if (el.TryGetProperty(p1, out var val1) && val1.ValueKind == JsonValueKind.String) return val1.GetString() ?? "";
+                                    if (el.TryGetProperty(p2, out var val2) && val2.ValueKind == JsonValueKind.String) return val2.GetString() ?? "";
+                                    return "";
+                                }
+
+                                string token = GetProp(elem, "token", "Token");
+                                string issue = GetProp(elem, "issue", "Issue");
+                                string priority = GetProp(elem, "priority", "Priority");
+                                if (string.IsNullOrEmpty(priority)) priority = "Orta";
+                                string status = GetProp(elem, "status", "Status");
+                                string notes = GetProp(elem, "notes", "Notes");
+                                string createdAtStr = GetProp(elem, "createdAt", "CreatedAt");
                                 DateTime dt = !string.IsNullOrEmpty(createdAtStr) && DateTime.TryParse(createdAtStr, out var dtParsed) ? dtParsed :
-                                              (elem.TryGetProperty("resolvedAt", out var p4) && DateTime.TryParse(p4.GetString(), out var dtVal) ? dtVal : DateTime.Now);
+                                              (elem.TryGetProperty("resolvedAt", out var p4) && DateTime.TryParse(p4.GetString(), out var dtVal) ? dtVal :
+                                              (elem.TryGetProperty("ResolvedAt", out var p4b) && DateTime.TryParse(p4b.GetString(), out var dtValB) ? dtValB : DateTime.Now));
 
                                 serverHistoryList.Add(new LocalSubmittedTicket
                                 {
@@ -4751,15 +4760,32 @@ namespace BigLineconnect
                         {
                             sh.Priority = GetNormalizedPriority(sh.Priority, sh.Issue);
                             var existing = combinedList.FirstOrDefault(t => 
-                                (!string.IsNullOrEmpty(t.Token) && !string.IsNullOrEmpty(sh.Token) && t.Token.Trim() == sh.Token.Trim()) ||
-                                (!string.IsNullOrEmpty(t.Issue) && t.Issue.Trim() == sh.Issue.Trim() && Math.Abs((t.CreatedAt - sh.CreatedAt).TotalSeconds) < 60)
+                                (!string.IsNullOrEmpty(t.Token) && !string.IsNullOrEmpty(sh.Token) && t.Token.Trim().Equals(sh.Token.Trim(), StringComparison.OrdinalIgnoreCase)) ||
+                                (!string.IsNullOrEmpty(t.Issue) && !string.IsNullOrEmpty(sh.Issue) && t.Issue.Trim().Equals(sh.Issue.Trim(), StringComparison.OrdinalIgnoreCase))
                             );
                             if (existing != null)
                             {
                                 existing.Status = sh.Status;
                                 existing.Notes = sh.Notes;
-                                if (!string.IsNullOrEmpty(sh.Priority) && sh.Priority != "🟡 Orta") existing.Priority = sh.Priority;
                                 if (!string.IsNullOrEmpty(sh.Token)) existing.Token = sh.Token;
+
+                                // Respect local user explicit priority if local priority is Yüksek or Düşük
+                                if (existing.Priority.Contains("Yüksek") || existing.Priority.Contains("🔴"))
+                                {
+                                    // Local Yüksek stays Yüksek
+                                }
+                                else if (existing.Priority.Contains("Düşük") || existing.Priority.Contains("🟢"))
+                                {
+                                    // Local Düşük stays Düşük
+                                }
+                                else if (!string.IsNullOrEmpty(sh.Priority) && (sh.Priority.Contains("Yüksek") || sh.Priority.Contains("🔴")))
+                                {
+                                    existing.Priority = "🔴 Yüksek";
+                                }
+                                else if (!string.IsNullOrEmpty(sh.Priority) && (sh.Priority.Contains("Düşük") || sh.Priority.Contains("🟢")))
+                                {
+                                    existing.Priority = "🟢 Düşük";
+                                }
                             }
                             else
                             {
