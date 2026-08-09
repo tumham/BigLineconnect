@@ -128,10 +128,7 @@ function startConnectionProcess() {
         }
     }, 4000);
 }
-window.startConnectionProcess = startConnectionProcess;"></i>';
-        }
-    }, 4000);
-}
+window.startConnectionProcess = startConnectionProcess;
 
 // Disconnect Button Event
 if (disconnectBtn) {
