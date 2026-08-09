@@ -160,6 +160,7 @@ function connectToHost(id) {
 
         socket.onerror = (err) => {
             console.error('WebSocket Hata:', err);
+            resetConnectButton();
             showToast('Sunucu bağlantı hatası! Lütfen tekrar deneyin.', 'error');
         };
 
@@ -181,6 +182,7 @@ function connectToHost(id) {
         
         socket.onclose = () => {
             connected = false;
+            resetConnectButton();
             if (customCloseReason) {
                 showToast(customCloseReason, 'error');
             } else {
