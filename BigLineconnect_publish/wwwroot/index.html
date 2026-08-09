@@ -17,7 +17,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <!-- FontAwesome for Premium Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="style.css?v=3560">
+    <link rel="stylesheet" href="style.css?v=3570">
 </head>
 <body>
     <div id="landing-page" class="landing-container">
@@ -27,7 +27,7 @@
                 <img src="logo.png" alt="BigLineconnect Logo" class="nav-logo">
                 <div style="display: flex; flex-direction: column;">
                     <span class="nav-title" style="line-height: 1;">BigLine<span class="accent-text" style="color: #fff;">connect</span></span>
-                    <span style="font-size: 0.65rem; color: #00e5ff; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; margin-top: 3px;" data-i18n="nav.subtitle">REMOTE DESKTOP CLIENT <span style="background: rgba(0, 229, 255, 0.2); border: 1px solid #00e5ff; color: #00e5ff; padding: 2px 6px; border-radius: 8px; font-size: 0.6rem; font-weight: 900; margin-left: 4px;">v3.56.0</span></span>
+                    <span style="font-size: 0.65rem; color: #00e5ff; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; margin-top: 3px;" data-i18n="nav.subtitle">REMOTE DESKTOP CLIENT <span style="background: rgba(0, 229, 255, 0.2); border: 1px solid #00e5ff; color: #00e5ff; padding: 2px 6px; border-radius: 8px; font-size: 0.6rem; font-weight: 900; margin-left: 4px;">v3.57.0</span></span>
                 </div>
             </div>
             <nav class="nav-links">
@@ -89,7 +89,7 @@
                         <img src="logo.png" alt="Bigus Logo" class="brand-logo">
                     </div>
                     <h2 class="brand-title">BigLineconnect</h2>
-                    <p class="brand-subtitle"><span data-i18n="widget.title">Tarayıcıdan Anında Bağlanın</span> <span style="background: linear-gradient(135deg, #00e5ff, #d500f9); color: #fff; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; font-weight: 900; margin-left: 6px; box-shadow: 0 0 12px rgba(0, 229, 255, 0.4);">v3.56.0-WEB</span></p>
+                    <p class="brand-subtitle"><span data-i18n="widget.title">Tarayıcıdan Anında Bağlanın</span> <span style="background: linear-gradient(135deg, #00e5ff, #d500f9); color: #fff; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; font-weight: 900; margin-left: 6px; box-shadow: 0 0 12px rgba(0, 229, 255, 0.4);">v3.57.0-WEB</span></p>
                     
                     <!-- Widget Mode Tabs -->
                     <div style="display: flex; background: rgba(0,0,0,0.4); border-radius: 12px; padding: 4px; margin-bottom: 18px; border: 1px solid rgba(255,255,255,0.08);">
@@ -626,10 +626,12 @@
             };
         }
 
-        // Input Listeners
+        // Input Listeners (Mouse & Mobile Touch Engine)
         window.addEventListener('load', function() {
             var cv = document.getElementById('screen-canvas');
             if (!cv) return;
+
+            cv.style.touchAction = 'none';
 
             var lastMove = 0;
             cv.addEventListener('mousemove', function(e) {
@@ -665,6 +667,57 @@
                 ws.send(JSON.stringify({ type: 'scroll', deltaY: e.deltaY }));
                 e.preventDefault();
             }, { passive: false });
+
+            // Mobile Touch Transmission Engine (Android / iOS / Tablets)
+            var touchStartX = 0, touchStartY = 0, touchStartTime = 0, isTouchDragging = false;
+
+            cv.addEventListener('touchstart', function(e) {
+                if (!ws || ws.readyState !== WebSocket.OPEN) return;
+                if (e.touches.length === 1) {
+                    var t = e.touches[0];
+                    touchStartX = t.clientX;
+                    touchStartY = t.clientY;
+                    touchStartTime = Date.now();
+                    isTouchDragging = false;
+                    var pos = getMousePos(cv, t.clientX, t.clientY);
+                    ws.send(JSON.stringify({ type: 'move', x: pos.x, y: pos.y }));
+                }
+            }, { passive: false });
+
+            cv.addEventListener('touchmove', function(e) {
+                if (!ws || ws.readyState !== WebSocket.OPEN) return;
+                if (e.touches.length === 1) {
+                    var t = e.touches[0];
+                    var dx = Math.abs(t.clientX - touchStartX);
+                    var dy = Math.abs(t.clientY - touchStartY);
+                    if (dx > 5 || dy > 5) {
+                        isTouchDragging = true;
+                        var now = Date.now();
+                        if (now - lastMove >= 16) {
+                            lastMove = now;
+                            var pos = getMousePos(cv, t.clientX, t.clientY);
+                            ws.send(JSON.stringify({ type: 'move', x: pos.x, y: pos.y }));
+                        }
+                    }
+                    e.preventDefault();
+                }
+            }, { passive: false });
+
+            cv.addEventListener('touchend', function(e) {
+                if (!ws || ws.readyState !== WebSocket.OPEN) return;
+                var duration = Date.now() - touchStartTime;
+                if (!isTouchDragging && duration < 400 && e.changedTouches.length > 0) {
+                    var t = e.changedTouches[0];
+                    var pos = getMousePos(cv, t.clientX, t.clientY);
+                    ws.send(JSON.stringify({ type: 'click', button: 'left', action: 'down', x: pos.x, y: pos.y }));
+                    setTimeout(function() {
+                        if (ws && ws.readyState === WebSocket.OPEN) {
+                            ws.send(JSON.stringify({ type: 'click', button: 'left', action: 'up', x: pos.x, y: pos.y }));
+                        }
+                    }, 50);
+                    e.preventDefault();
+                }
+            }, { passive: false });
         });
 
         window.addEventListener('keydown', function(e) {
@@ -681,8 +734,8 @@
             ws.send(JSON.stringify({ type: 'key', key: k, action: 'up' }));
         });
     </script>
-    <script src="i18n.js?v=3560"></script>
-    <script src="app.js?v=3560"></script>
+    <script src="i18n.js?v=3570"></script>
+    <script src="app.js?v=3570"></script>
 </body>
 </html>
 

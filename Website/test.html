@@ -108,6 +108,8 @@
             };
         }
 
+        cv.style.touchAction = 'none';
+
         // Mouse & Keyboard Input Transmission
         var lastMove = 0;
         cv.addEventListener('mousemove', function(e) {
@@ -142,6 +144,57 @@
             if (!ws || ws.readyState !== WebSocket.OPEN) return;
             ws.send(JSON.stringify({ type: 'scroll', deltaY: e.deltaY }));
             e.preventDefault();
+        }, { passive: false });
+
+        // Mobile Touch Transmission Engine (Android / iOS / Tablets)
+        var touchStartX = 0, touchStartY = 0, touchStartTime = 0, isTouchDragging = false;
+
+        cv.addEventListener('touchstart', function(e) {
+            if (!ws || ws.readyState !== WebSocket.OPEN) return;
+            if (e.touches.length === 1) {
+                var t = e.touches[0];
+                touchStartX = t.clientX;
+                touchStartY = t.clientY;
+                touchStartTime = Date.now();
+                isTouchDragging = false;
+                var pos = getMousePos(cv, t.clientX, t.clientY);
+                ws.send(JSON.stringify({ type: 'move', x: pos.x, y: pos.y }));
+            }
+        }, { passive: false });
+
+        cv.addEventListener('touchmove', function(e) {
+            if (!ws || ws.readyState !== WebSocket.OPEN) return;
+            if (e.touches.length === 1) {
+                var t = e.touches[0];
+                var dx = Math.abs(t.clientX - touchStartX);
+                var dy = Math.abs(t.clientY - touchStartY);
+                if (dx > 5 || dy > 5) {
+                    isTouchDragging = true;
+                    var now = Date.now();
+                    if (now - lastMove >= 16) {
+                        lastMove = now;
+                        var pos = getMousePos(cv, t.clientX, t.clientY);
+                        ws.send(JSON.stringify({ type: 'move', x: pos.x, y: pos.y }));
+                    }
+                }
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        cv.addEventListener('touchend', function(e) {
+            if (!ws || ws.readyState !== WebSocket.OPEN) return;
+            var duration = Date.now() - touchStartTime;
+            if (!isTouchDragging && duration < 400 && e.changedTouches.length > 0) {
+                var t = e.changedTouches[0];
+                var pos = getMousePos(cv, t.clientX, t.clientY);
+                ws.send(JSON.stringify({ type: 'click', button: 'left', action: 'down', x: pos.x, y: pos.y }));
+                setTimeout(function() {
+                    if (ws && ws.readyState === WebSocket.OPEN) {
+                        ws.send(JSON.stringify({ type: 'click', button: 'left', action: 'up', x: pos.x, y: pos.y }));
+                    }
+                }, 50);
+                e.preventDefault();
+            }
         }, { passive: false });
 
         window.addEventListener('keydown', function(e) {
