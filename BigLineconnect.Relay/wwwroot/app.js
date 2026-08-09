@@ -50,6 +50,8 @@ function initDOMElements() {
     passwordModal = document.getElementById('password-modal');
     accessPasswordInput = document.getElementById('access-password-input');
     submitPasswordBtn = document.getElementById('submit-password-btn');
+
+    bindCanvasInteraction();
 }
 
 if (document.readyState === 'loading') {
@@ -544,68 +546,73 @@ window.addEventListener('keyup', (e) => {
 });
 
 let lastMouseMoveTime = 0;
-const interactionTargets = [
-    document.getElementById('screen-canvas'),
-    canvasContainer
-].filter(Boolean);
+let isBoundCanvasInteraction = false;
 
-interactionTargets.forEach(elem => {
-    elem.addEventListener('mousedown', (e) => {
-        if (!connected) return;
-        const targetElem = document.getElementById('screen-canvas') || canvasContainer;
-        const pos = getMousePos(targetElem, e.clientX, e.clientY);
-        
-        let button = 'left';
-        if (e.button === 2) button = 'right';
-        else if (e.button === 1) button = 'middle';
-        
-        sendClick(button, 'down', pos.x, pos.y);
-        e.preventDefault();
+function bindCanvasInteraction() {
+    if (isBoundCanvasInteraction) return;
+    const canvasElem = document.getElementById('screen-canvas');
+    const containerElem = document.getElementById('canvas-container');
+    const targets = [canvasElem, containerElem].filter(Boolean);
+    if (targets.length === 0) return;
+    
+    isBoundCanvasInteraction = true;
+    targets.forEach(elem => {
+        elem.addEventListener('mousedown', (e) => {
+            if (!connected) return;
+            const targetElem = document.getElementById('screen-canvas') || elem;
+            const pos = getMousePos(targetElem, e.clientX, e.clientY);
+            
+            let button = 'left';
+            if (e.button === 2) button = 'right';
+            else if (e.button === 1) button = 'middle';
+            
+            sendClick(button, 'down', pos.x, pos.y);
+            e.preventDefault();
+        });
+
+        elem.addEventListener('mouseup', (e) => {
+            if (!connected) return;
+            const targetElem = document.getElementById('screen-canvas') || elem;
+            const pos = getMousePos(targetElem, e.clientX, e.clientY);
+            let button = 'left';
+            if (e.button === 2) button = 'right';
+            else if (e.button === 1) button = 'middle';
+            
+            sendClick(button, 'up', pos.x, pos.y);
+            e.preventDefault();
+        });
+
+        elem.addEventListener('dblclick', (e) => {
+            if (!connected) return;
+            const targetElem = document.getElementById('screen-canvas') || elem;
+            const pos = getMousePos(targetElem, e.clientX, e.clientY);
+            sendDoubleClick('left', pos.x, pos.y);
+            e.preventDefault();
+        });
+
+        elem.addEventListener('mousemove', (e) => {
+            if (!connected) return;
+            const now = performance.now();
+            if (now - lastMouseMoveTime < 16) return; // 60 FPS max rate limit
+            lastMouseMoveTime = now;
+
+            const targetElem = document.getElementById('screen-canvas') || elem;
+            const pos = getMousePos(targetElem, e.clientX, e.clientY);
+            sendMove(pos.x, pos.y);
+        });
+
+        elem.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+        });
+
+        elem.addEventListener('wheel', (e) => {
+            if (!connected) return;
+            const delta = e.deltaY < 0 ? 120 : -120;
+            sendScroll(delta);
+            e.preventDefault();
+        }, { passive: false });
     });
-
-    elem.addEventListener('mouseup', (e) => {
-        if (!connected) return;
-        const targetElem = document.getElementById('screen-canvas') || canvasContainer;
-        const pos = getMousePos(targetElem, e.clientX, e.clientY);
-        let button = 'left';
-        if (e.button === 2) button = 'right';
-        else if (e.button === 1) button = 'middle';
-        
-        sendClick(button, 'up', pos.x, pos.y);
-        e.preventDefault();
-    });
-
-    elem.addEventListener('dblclick', (e) => {
-        if (!connected) return;
-        const targetElem = document.getElementById('screen-canvas') || canvasContainer;
-        const pos = getMousePos(targetElem, e.clientX, e.clientY);
-        sendDoubleClick('left', pos.x, pos.y);
-        e.preventDefault();
-    });
-
-    elem.addEventListener('mousemove', (e) => {
-        if (!connected) return;
-        const now = performance.now();
-        if (now - lastMouseMoveTime < 16) return; // 60 FPS max rate limit
-        lastMouseMoveTime = now;
-
-        const targetElem = document.getElementById('screen-canvas') || canvasContainer;
-        const pos = getMousePos(targetElem, e.clientX, e.clientY);
-        sendMove(pos.x, pos.y);
-        e.preventDefault();
-    });
-
-    elem.addEventListener('contextmenu', (e) => {
-        e.preventDefault();
-    });
-
-    elem.addEventListener('wheel', (e) => {
-        if (!connected) return;
-        const delta = e.deltaY < 0 ? 120 : -120;
-        sendScroll(delta);
-        e.preventDefault();
-    }, { passive: false });
-});
+}
 
     // Mobile Touch Events & Bulletproof Tap Engine
     let startTouch1X = null, startTouch1Y = null, startPan1X = 0, startPan1Y = 0;
