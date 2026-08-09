@@ -1,2 +1,5 @@
 ﻿[
+  {"id":"741b6e4f-04a6-4e96-9b07-9a15802b8947","hostId":"650085140","token":"a6a8f5a3-d3ec-49db-b99e-55fecf234760","name":"BIGUS","issue":"destek köstek","tenantId":"BAYIKODU","createdAt":"09.08.2026 01:32:02","resolvedAt":"09.08.2026 01:32:18","status":"Çözüldü","notes":"Destek işlemi tamamlandı: Çözüldü"},
+  {"id":"38f2c88f-2ce4-45ce-abfe-35270b09002e","hostId":"650085140","token":"117dee0a-81a8-41f0-87a0-17795823862a","name":"BIGUS","issue":"destekk","tenantId":"BAYIKODU","createdAt":"09.08.2026 01:31:09","resolvedAt":"09.08.2026 01:31:28","status":"Çözüldü","notes":"Destek işlemi tamamlandı: Çözüldü"},
+  {"id":"a84bf32c-777f-43be-8f4c-0965fd6ae214","hostId":"650085140","token":"bdb57be5-1fc3-4bf3-a000-9d9ef9a5678f","name":"BIGUS","issue":"destek istiyorum köstek değil","tenantId":"BAYIKODU","createdAt":"09.08.2026 01:27:29","resolvedAt":"09.08.2026 01:27:55","status":"Çözüldü","notes":"Destek işlemi tamamlandı: Çözüldü"}
 ]

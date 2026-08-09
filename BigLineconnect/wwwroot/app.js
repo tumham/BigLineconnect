@@ -104,7 +104,7 @@ function startConnectionProcess() {
         btnElem.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>BaÄŸlanÄ±yor...</span>';
     }
 
-    showToast(MasaÃ¼stÃ¼ () aranÄ±yor..., 'info');
+    showToast(`Masaüstü (${rawId}) aranıyor...`, 'info');
 
     connectToHost(rawId);
 
