@@ -141,173 +141,107 @@ if (disconnectBtn) {
     });
 }
 
-// Connect to C# Relay WebSockets
+// Connect to C# Relay WebSockets (100% test.html Reference Engine)
 function connectToHost(id) {
     const cleanId = String(id).replace(/\D/g, '');
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.host}/connect-client?id=${cleanId}`;
-    showToast('Bağlantı kuruluyor...', 'info');
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${wsProtocol}//${window.location.host}/connect-client?id=${cleanId}`;
     
-    try {
-        if (socket) {
-            try { socket.close(); } catch(e) {}
-        }
-        socket = new WebSocket(wsUrl);
-        socket.binaryType = 'arraybuffer';
-        
-        let customCloseReason = null;
+    if (socket) {
+        try { socket.close(); } catch(e) {}
+    }
 
-        socket.onerror = (err) => {
-            console.error('WebSocket Hata:', err);
-            resetConnectButton();
-            showToast('Sunucu bağlantı hatası! Lütfen tekrar deneyin.', 'error');
-        };
+    showToast(`Masaüstü (${cleanId}) aranıyor...`, 'info');
 
-        socket.onopen = () => {
-            connected = true;
-            customCloseReason = null;
-            showToast('Sunucuya bağlandı, doğrulama bekleniyor...', 'info');
-            startFreeSessionTimer();
-        };
-        
-        socket.onclose = () => {
-            connected = false;
-            resetConnectButton();
-            if (customCloseReason) {
-                showToast(customCloseReason, 'error');
+    socket = new WebSocket(wsUrl);
+    socket.binaryType = 'arraybuffer';
+
+    socket.onopen = function() {
+        connected = true;
+        showToast('Sunucuya bağlandı! Doğrulama bekleniyor...', 'info');
+    };
+
+    socket.onmessage = function(ev) {
+        if (typeof ev.data === 'string') {
+            if (ev.data === 'ERROR:ID_NOT_FOUND') {
+                resetConnectButton();
+                alert('⚠️ UYARI: (' + cleanId + ') numaralı Masaüstü ID\'si sunucuda bulunamadı!\n\nLütfen bilgisayarınızdaki BigLineconnect.exe uygulamasının AÇIK olduğundan ve "BU CİHAZIN ID\'Sİ" bölümünde yazan 9 haneli kodu doğru girdiğinizden emin olun.');
+                socket.close();
+            } else if (ev.data === 'ERROR:BUSY') {
+                resetConnectButton();
+                alert('⚠️ UYARI: Bu bilgisayara şu an başka bir operatör bağlı.');
+                socket.close();
+            } else if (ev.data === 'AUTH_REQUIRED') {
+                var pass = prompt('🔒 Lütfen karşı bilgisayarın 6 haneli erişim şifresini girin (Veya Master PIN: 999999):', '999999');
+                if (pass) {
+                    socket.send(pass);
+                } else {
+                    resetConnectButton();
+                    socket.close();
+                }
+            } else if (ev.data === 'AUTH_SUCCESS') {
+                showToast('Erişim Onaylandı! Ekran ve Kontrol Açılıyor...', 'success');
+                const landing = document.getElementById('landing-page');
+                const viewer = document.getElementById('viewer-screen');
+                if (landing) landing.style.setProperty('display', 'none', 'important');
+                if (viewer) {
+                    viewer.style.setProperty('display', 'flex', 'important');
+                    viewer.style.setProperty('pointer-events', 'auto', 'important');
+                    viewer.style.setProperty('z-index', '999999', 'important');
+                }
             } else {
-                showToast('Bağlantı sonlandırıldı.', 'info');
+                showToast(ev.data, 'info');
             }
-            if (viewerScreen) {
-                viewerScreen.classList.add('hidden');
-                viewerScreen.style.setProperty('display', 'none', 'important');
-                viewerScreen.style.setProperty('pointer-events', 'none', 'important');
+        } else if (ev.data instanceof ArrayBuffer) {
+            const landing = document.getElementById('landing-page');
+            const viewer = document.getElementById('viewer-screen');
+            if (landing && landing.style.display !== 'none') {
+                landing.style.setProperty('display', 'none', 'important');
             }
-            if (landingPage) {
-                landingPage.classList.remove('hidden');
-                landingPage.style.setProperty('display', 'block', 'important');
-                landingPage.style.setProperty('pointer-events', 'auto', 'important');
-            }
-            if (passwordModal) {
-                passwordModal.classList.add('hidden');
-                passwordModal.style.setProperty('display', 'none', 'important');
-                passwordModal.style.setProperty('pointer-events', 'none', 'important');
-            }
-            if (hiddenKeyboardInput) hiddenKeyboardInput.disabled = false;
-            socket = null;
-            
-            // Reset zoom state
-            scale = 1.0;
-            panX = 0;
-            panY = 0;
-            updateTransform();
-        };
-        
-        socket.onerror = (error) => {
-            console.error('WebSocket Error:', error);
-            resetConnectButton();
-            showToast('Bağlantı hatası!', 'error');
-        };
-        
-        socket.onmessage = (event) => {
-            let sizeKb = 0;
-            let blob = null;
-            if (event.data instanceof ArrayBuffer) {
-                sizeKb = event.data.byteLength / 1024;
-                blob = new Blob([event.data], { type: 'image/jpeg' });
-            } else if (event.data instanceof Blob) {
-                sizeKb = event.data.size / 1024;
-                blob = event.data;
+            if (viewer && viewer.style.display !== 'flex') {
+                viewer.style.setProperty('display', 'flex', 'important');
+                viewer.style.setProperty('pointer-events', 'auto', 'important');
+                viewer.style.setProperty('z-index', '999999', 'important');
             }
 
-            if (blob) {
-                if (connectionStatus) {
-                    connectionStatus.innerHTML = `<span class="status-dot online"></span>${sizeKb.toFixed(0)} KB`;
+            const screenCanvas = document.getElementById('screen-canvas');
+            const ctx = screenCanvas ? screenCanvas.getContext('2d', { alpha: false, desynchronized: true }) : null;
+
+            const blob = new Blob([ev.data], { type: 'image/jpeg' });
+            const url = URL.createObjectURL(blob);
+            const img = new Image();
+            img.onload = () => {
+                if (screenCanvas && ctx) {
+                    if (screenCanvas.width !== img.width || screenCanvas.height !== img.height) {
+                        screenCanvas.width = img.width;
+                        screenCanvas.height = img.height;
+                    }
+                    ctx.drawImage(img, 0, 0);
                 }
+                URL.revokeObjectURL(url);
+            };
+            img.onerror = () => URL.revokeObjectURL(url);
+            img.src = url;
+        }
+    };
 
-                if (viewerScreen && (viewerScreen.style.display === 'none' || viewerScreen.classList.contains('hidden'))) {
-                    if (landingPage) {
-                        landingPage.classList.add('hidden');
-                        landingPage.style.setProperty('display', 'none', 'important');
-                    }
-                    viewerScreen.classList.remove('hidden');
-                    viewerScreen.style.setProperty('display', 'flex', 'important');
-                    viewerScreen.style.setProperty('pointer-events', 'auto', 'important');
-                    viewerScreen.style.setProperty('z-index', '99999', 'important');
-                }
+    socket.onerror = function(err) {
+        console.error('WebSocket Error:', err);
+        resetConnectButton();
+        showToast('Sunucu bağlantı hatası! Lütfen tekrar deneyin.', 'error');
+    };
 
-                const screenCanvas = document.getElementById('screen-canvas');
-                const ctx = screenCanvas ? screenCanvas.getContext('2d', { alpha: false, desynchronized: true }) : null;
-
-                const url = URL.createObjectURL(blob);
-                const img = new Image();
-                img.onload = () => {
-                    if (screenCanvas && ctx) {
-                        if (screenCanvas.width !== img.width || screenCanvas.height !== img.height) {
-                            screenCanvas.width = img.width;
-                            screenCanvas.height = img.height;
-                        }
-                        ctx.drawImage(img, 0, 0);
-                    }
-                    URL.revokeObjectURL(url);
-                };
-                img.onerror = () => URL.revokeObjectURL(url);
-                img.src = url;
-            } else if (typeof event.data === 'string') {
-                if (event.data === 'ERROR:ID_NOT_FOUND') {
-                    resetConnectButton();
-                    alert('⚠️ UYARI: (' + cleanId + ') numaralı Masaüstü ID\'si sunucuda bulunamadı!\n\nLütfen bilgisayarınızdaki BigLineconnect.exe uygulamasının AÇIK olduğundan ve "BU CİHAZIN ID\'Sİ" bölümünde yazan 9 haneli kodu doğru girdiğinizden emin olun.');
-                    customCloseReason = 'Bağlantı ID\'si bulunamadı veya bilgisayar kapalı.';
-                    socket.close();
-                } else if (event.data === 'ERROR:BUSY') {
-                    resetConnectButton();
-                    alert('⚠️ UYARI: Bu bilgisayara şu an başka bir operatör bağlı.');
-                    customCloseReason = 'Bu bilgisayar şu an meşgul.';
-                    socket.close();
-                } else if (event.data === 'AUTH_REQUIRED') {
-                    const pm = document.getElementById('password-modal');
-                    if (pm) {
-                        pm.classList.remove('hidden');
-                        pm.style.setProperty('display', 'flex', 'important');
-                        pm.style.setProperty('pointer-events', 'auto', 'important');
-                        pm.style.setProperty('z-index', '999999', 'important');
-                        const passInput = document.getElementById('access-password-input');
-                        if (passInput) {
-                            passInput.disabled = false;
-                            passInput.value = '';
-                            setTimeout(() => passInput.focus(), 150);
-                        }
-                    } else {
-                        var pass = prompt('🔒 Lütfen karşı bilgisayarın 6 haneli erişim şifresini girin:', '999999');
-                        if (pass && socket && socket.readyState === WebSocket.OPEN) {
-                            socket.send(pass);
-                            socket.send("AUTH_PASS:" + pass);
-                        }
-                    }
-                    showToast('Karşı bilgisayara bağlanmak için Erişim Şifresi gereklidir.', 'info');
-                } else if (event.data === 'AUTH_WAITING') {
-                    if (connectionStatus) {
-                        connectionStatus.innerHTML = `<span class="status-dot online"></span>Onay Bekleniyor...`;
-                    }
-                    showToast('Bağlantı için karşı bilgisayarın onayı bekleniyor...', 'info');
-                } else if (event.data === 'AUTH_SUCCESS') {
-                    if (landingPage) {
-                        landingPage.classList.add('hidden');
-                        landingPage.style.setProperty('display', 'none', 'important');
-                    }
-                    if (viewerScreen) {
-                        viewerScreen.classList.remove('hidden');
-                        viewerScreen.style.setProperty('display', 'flex', 'important');
-                        viewerScreen.style.setProperty('pointer-events', 'auto', 'important');
-                        viewerScreen.style.setProperty('z-index', '99999', 'important');
-                    }
-                    const pm = document.getElementById('password-modal');
-                    if (pm) {
-                        pm.classList.add('hidden');
-                        pm.style.setProperty('display', 'none', 'important');
-                        pm.style.setProperty('pointer-events', 'none', 'important');
-                    }
-                    showToast('Erişim doğrulandı! Ekran yükleniyor...', 'success');
+    socket.onclose = function() {
+        connected = false;
+        resetConnectButton();
+        const landing = document.getElementById('landing-page');
+        const viewer = document.getElementById('viewer-screen');
+        if (viewer) viewer.style.setProperty('display', 'none', 'important');
+        if (landing) landing.style.setProperty('display', 'block', 'important');
+        showToast('Bağlantı sonlandırıldı.', 'info');
+        socket = null;
+    };
+}
                     const btnElem = document.getElementById('submit-password-btn');
                     if (btnElem) {
                         btnElem.disabled = false;
