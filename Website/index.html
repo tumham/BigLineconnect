@@ -17,9 +17,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <!-- FontAwesome for Premium Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="style.css?v=3300">
-    <script src="i18n.js?v=3300"></script>
-    <script src="app.js?v=3530"></script>
+    <link rel="stylesheet" href="style.css?v=3540">
 </head>
 <body>
     <div id="landing-page" class="landing-container">
@@ -29,7 +27,7 @@
                 <img src="logo.png" alt="BigLineconnect Logo" class="nav-logo">
                 <div style="display: flex; flex-direction: column;">
                     <span class="nav-title" style="line-height: 1;">BigLine<span class="accent-text" style="color: #fff;">connect</span></span>
-                    <span style="font-size: 0.65rem; color: #00e5ff; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; margin-top: 3px;" data-i18n="nav.subtitle">REMOTE DESKTOP CLIENT <span style="background: rgba(0, 229, 255, 0.2); border: 1px solid #00e5ff; color: #00e5ff; padding: 2px 6px; border-radius: 8px; font-size: 0.6rem; font-weight: 900; margin-left: 4px;">v3.53.0</span></span>
+                    <span style="font-size: 0.65rem; color: #00e5ff; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; margin-top: 3px;" data-i18n="nav.subtitle">REMOTE DESKTOP CLIENT <span style="background: rgba(0, 229, 255, 0.2); border: 1px solid #00e5ff; color: #00e5ff; padding: 2px 6px; border-radius: 8px; font-size: 0.6rem; font-weight: 900; margin-left: 4px;">v3.54.0</span></span>
                 </div>
             </div>
             <nav class="nav-links">
@@ -91,7 +89,7 @@
                         <img src="logo.png" alt="Bigus Logo" class="brand-logo">
                     </div>
                     <h2 class="brand-title">BigLineconnect</h2>
-                    <p class="brand-subtitle"><span data-i18n="widget.title">Tarayıcıdan Anında Bağlanın</span> <span style="background: linear-gradient(135deg, #00e5ff, #d500f9); color: #fff; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; font-weight: 900; margin-left: 6px; box-shadow: 0 0 12px rgba(0, 229, 255, 0.4);">v3.53.0-WEB</span></p>
+                    <p class="brand-subtitle"><span data-i18n="widget.title">Tarayıcıdan Anında Bağlanın</span> <span style="background: linear-gradient(135deg, #00e5ff, #d500f9); color: #fff; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; font-weight: 900; margin-left: 6px; box-shadow: 0 0 12px rgba(0, 229, 255, 0.4);">v3.54.0-WEB</span></p>
                     
                     <!-- Widget Mode Tabs -->
                     <div style="display: flex; background: rgba(0,0,0,0.4); border-radius: 12px; padding: 4px; margin-bottom: 18px; border: 1px solid rgba(255,255,255,0.08);">
@@ -453,7 +451,7 @@
             });
         }
 
-        // Direct Mobile Action: Auto Jump & Focus to "Tarayıcıdan Anında Ba�Ylanın" Widget
+        // Direct Mobile Action: Auto Jump & Focus to "Tarayıcıdan Anında BaYlanın" Widget
         const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         if (isMobileDevice) {
             window.addEventListener('DOMContentLoaded', () => {
@@ -469,34 +467,9 @@
         const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
         const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
 
-        if (isIOS && !isStandalone) {
-            window.addEventListener('load', showIosPwaBanner);
-        }
-
-        function showIosPwaBanner() {
-            if (document.getElementById('ios-pwa-banner')) return;
-            const banner = document.createElement('div');
-            banner.id = 'ios-pwa-banner';
-            banner.style.cssText = 'position:fixed;bottom:16px;left:16px;right:16px;background:linear-gradient(135deg, #161b26, #1f283d);border:1.5px solid #00e5ff;border-radius:14px;padding:16px;box-shadow:0 10px 35px rgba(0,0,0,0.9);z-index:99999;color:#fff;font-family:Outfit,sans-serif;';
-            banner.innerHTML = `
-                <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
-                    <div style="display:flex;align-items:center;gap:12px;">
-                        <img src="/logo.png" style="width:40px;height:40px;border-radius:10px;border:1px solid rgba(0,229,255,0.4);">
-                        <div>
-                            <div style="font-weight:700;font-size:15px;color:#00e5ff;">gY"� iPhone Ana Ekrana Ekle</div>
-                            <div style="font-size:12px;color:#cbd5e1;margin-top:2px;">Sitemizi uygulama olarak eklemek için:</div>
-                        </div>
-                    </div>
-                    <button onclick="document.getElementById('ios-pwa-banner').remove()" style="background:transparent;color:#94a3b8;border:none;font-size:18px;cursor:pointer;padding:4px;">�o.</button>
-                </div>
-                <div style="margin-top:12px;padding:10px;background:rgba(0,229,255,0.08);border-radius:8px;font-size:13px;color:#e2e8f0;line-height:1.5;">
-                    1. Safari'nin altındaki <b>Payla�Y (<i class="fa-solid fa-arrow-up-from-bracket" style="color:#00e5ff;"></i>)</b> butonuna basın.<br>
-                    2. Açılan menüden <b>"Ana Ekrana Ekle" (+)</b> seçene�Yini seçin.
-                </div>
-            `;
-            document.body.appendChild(banner);
-        }
     </script>
+    <script src="i18n.js?v=3540"></script>
+    <script src="app.js?v=3540"></script>
 </body>
 </html>
 

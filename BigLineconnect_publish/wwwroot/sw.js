@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bigline-pwa-v3530';
+const CACHE_NAME = 'bigline-pwa-v3540';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
