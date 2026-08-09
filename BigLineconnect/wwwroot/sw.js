@@ -1,4 +1,4 @@
-﻿const CACHE_NAME = 'bigline-pwa-v3460';
+﻿const CACHE_NAME = 'bigline-pwa-v3470';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
@@ -19,3 +19,4 @@ self.addEventListener('fetch', (event) => {
     fetch(event.request).catch(() => caches.match(event.request))
   );
 });
+

@@ -251,7 +251,6 @@ function connectToHost(id) {
                     customCloseReason = 'Bu bilgisayar şu an meşgul.';
                     socket.close();
                 } else if (event.data === 'AUTH_REQUIRED') {
-                    alert('🔐 HEDEF BİLGİSAYAR BULUNDU!\n\nLütfen 6 haneli Erişim Şifresini girin.');
                     const pm = document.getElementById('password-modal');
                     if (pm) {
                         pm.classList.remove('hidden');
