@@ -13,70 +13,110 @@ let startMidY = 0;
 let startPanX = 0;
 let startPanY = 0;
 
-// DOM Elements
-const landingPage = document.getElementById('landing-page');
-const viewerScreen = document.getElementById('viewer-screen');
-const targetIdInput = document.getElementById('target-id');
-const connectBtn = document.getElementById('connect-btn');
-const disconnectBtn = document.getElementById('disconnect-btn');
-const fullscreenBtn = document.getElementById('fullscreen-btn');
-const screenImg = document.getElementById('screen-img');
-const canvasContainer = document.getElementById('canvas-container');
-const connectionStatus = document.getElementById('connection-status');
-const toggleKeyboardBtn = document.getElementById('toggle-keyboard-btn');
-const hiddenKeyboardInput = document.getElementById('hidden-keyboard-input');
-const mouseModeBtn = document.getElementById('mouse-mode-btn');
-const mouseModeText = document.getElementById('mouse-mode-text');
-const toastElement = document.getElementById('toast');
-const passwordModal = document.getElementById('password-modal');
-const accessPasswordInput = document.getElementById('access-password-input');
-const submitPasswordBtn = document.getElementById('submit-password-btn');
+// DOM Element References (safely initialized)
+let landingPage = null;
+let viewerScreen = null;
+let targetIdInput = null;
+let connectBtn = null;
+let disconnectBtn = null;
+let fullscreenBtn = null;
+let screenImg = null;
+let canvasContainer = null;
+let connectionStatus = null;
+let toggleKeyboardBtn = null;
+let hiddenKeyboardInput = null;
+let mouseModeBtn = null;
+let mouseModeText = null;
+let toastElement = null;
+let passwordModal = null;
+let accessPasswordInput = null;
+let submitPasswordBtn = null;
 
-// Auto-format ID input (e.g. 123 456 789)
-if (targetIdInput) {
-    targetIdInput.addEventListener('input', (e) => {
-        let value = e.target.value.replace(/\D/g, ''); // Numbers only
-        if (value.length > 9) value = value.substring(0, 9);
-        
-        // Format as XXX XXX XXX
-        let formatted = '';
-        if (value.length > 6) {
-            formatted = `${value.substring(0, 3)} ${value.substring(3, 6)} ${value.substring(6)}`;
-        } else if (value.length > 3) {
-            formatted = `${value.substring(0, 3)} ${value.substring(3)}`;
-        } else {
-            formatted = value;
-        }
-        
-        e.target.value = formatted;
-    });
+function initDOMElements() {
+    landingPage = document.getElementById('landing-page');
+    viewerScreen = document.getElementById('viewer-screen');
+    targetIdInput = document.getElementById('target-id');
+    connectBtn = document.getElementById('connect-btn');
+    disconnectBtn = document.getElementById('disconnect-btn');
+    fullscreenBtn = document.getElementById('fullscreen-btn');
+    screenImg = document.getElementById('screen-img');
+    canvasContainer = document.getElementById('canvas-container');
+    connectionStatus = document.getElementById('connection-status');
+    toggleKeyboardBtn = document.getElementById('toggle-keyboard-btn');
+    hiddenKeyboardInput = document.getElementById('hidden-keyboard-input');
+    mouseModeBtn = document.getElementById('mouse-mode-btn');
+    mouseModeText = document.getElementById('mouse-mode-text');
+    toastElement = document.getElementById('toast');
+    passwordModal = document.getElementById('password-modal');
+    accessPasswordInput = document.getElementById('access-password-input');
+    submitPasswordBtn = document.getElementById('submit-password-btn');
 }
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initDOMElements);
+} else {
+    initDOMElements();
+}
+
+// Dynamic Helper to Get Elements Safely
+const getElem = (id) => document.getElementById(id);
 
 // Toast system
 function showToast(message, type = 'info') {
-    if (!toastElement) return;
-    toastElement.textContent = message;
-    toastElement.className = `toast ${type}`;
-    toastElement.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:999999;padding:12px 24px;border-radius:10px;font-weight:700;font-size:14px;box-shadow:0 8px 24px rgba(0,0,0,0.8);background:' + (type === 'error' ? '#e74c3c' : (type === 'success' ? '#2ecc71' : '#00e5ff')) + ';color:' + (type === 'info' ? '#000' : '#fff');
-    toastElement.classList.remove('hidden');
+    const tElem = getElem('toast');
+    if (!tElem) {
+        try { alert(message); } catch(e) {}
+        return;
+    }
+    tElem.textContent = message;
+    tElem.className = `toast ${type}`;
+    tElem.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:999999;padding:12px 24px;border-radius:10px;font-weight:700;font-size:14px;box-shadow:0 8px 24px rgba(0,0,0,0.8);background:' + (type === 'error' ? '#e74c3c' : (type === 'success' ? '#2ecc71' : '#00e5ff')) + ';color:' + (type === 'info' ? '#000' : '#fff');
+    tElem.classList.remove('hidden');
     
     setTimeout(() => {
-        if (toastElement) toastElement.classList.add('hidden');
+        if (tElem) tElem.classList.add('hidden');
     }, 4000);
 }
 
+// Immediately bind all action functions to window object
+window.startConnectionProcess = startConnectionProcess;
+window.connectToHost = connectToHost;
+window.sendPassword = sendPassword;
+window.switchConnectTab = switchConnectTab;
+window.shareViaWhatsApp = shareViaWhatsApp;
+window.copyMagicLink = copyMagicLink;
+window.startWebScreenShare = startWebScreenShare;
+window.shareMyWebIdWhatsApp = shareMyWebIdWhatsApp;
+window.stopWebScreenShare = stopWebScreenShare;
+window.openCheckoutModal = openCheckoutModal;
+window.closeCheckoutModal = closeCheckoutModal;
+window.submitOnlineCheckout = submitOnlineCheckout;
+window.checkoutViaWhatsApp = checkoutViaWhatsApp;
+window.extendFreeSessionTimer = extendFreeSessionTimer;
+
+let isConnectingProcess = false;
+
 // Connect Button Event Handler
 function startConnectionProcess() {
+    if (isConnectingProcess) {
+        console.warn('Bağlantı işlemi zaten devam ediyor, çift tıklama engellendi.');
+        return;
+    }
+    isConnectingProcess = true;
+    setTimeout(() => { isConnectingProcess = false; }, 2500);
+
     try {
         const inputElem = document.getElementById('target-id');
         const btnElem = document.getElementById('connect-btn');
         if (!inputElem) {
+            isConnectingProcess = false;
             alert('Hata: ID giriş kutusu bulunamadı.');
             return;
         }
 
         const rawId = inputElem.value.replace(/\D/g, '');
         if (!rawId || rawId.length < 5) {
+            isConnectingProcess = false;
             alert('Lütfen bağlanmak istediğiniz uzaktaki bilgisayarın ID numarasını girin (Örn: 864 688 774).');
             return;
         }
@@ -90,28 +130,23 @@ function startConnectionProcess() {
 
         connectToHost(rawId);
 
-        // Re-enable button if connection times out or closes
+        // Re-enable button if connection times out
         setTimeout(() => {
+            isConnectingProcess = false;
             if (btnElem && !connected) {
                 btnElem.disabled = false;
                 btnElem.innerHTML = '<span>Bağlan</span> <i class="fa-solid fa-arrow-right-to-bracket"></i>';
             }
         }, 5000);
     } catch (err) {
+        isConnectingProcess = false;
         showToast('Bağlantı Başlatma Hatası: ' + err.message, 'error');
+        const btnElem = document.getElementById('connect-btn');
         if (btnElem) {
             btnElem.disabled = false;
             btnElem.innerHTML = '<span>Bağlan</span> <i class="fa-solid fa-arrow-right-to-bracket"></i>';
         }
     }
-}
-
-// Connect Button Event Listener (single click binding)
-if (connectBtn) {
-    connectBtn.addEventListener('click', (e) => {
-        if (e) e.preventDefault();
-        startConnectionProcess();
-    });
 }
 
 // Disconnect Button Event
@@ -125,15 +160,24 @@ if (disconnectBtn) {
 
 // Connect to C# Relay WebSockets
 function connectToHost(id) {
+    const cleanId = String(id).replace(/\D/g, '');
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.host}/connect-client?id=${id}`;
+    const wsUrl = `${protocol}//${window.location.host}/connect-client?id=${cleanId}`;
     showToast('Bağlantı kuruluyor...', 'info');
     
     try {
+        if (socket) {
+            try { socket.close(); } catch(e) {}
+        }
         socket = new WebSocket(wsUrl);
         socket.binaryType = 'arraybuffer';
         
         let customCloseReason = null;
+
+        socket.onerror = (err) => {
+            console.error('WebSocket Hata:', err);
+            showToast('Sunucu bağlantı hatası! Lütfen tekrar deneyin.', 'error');
+        };
 
         socket.onopen = () => {
             connected = true;
@@ -231,23 +275,29 @@ function connectToHost(id) {
                 img.src = url;
             } else if (typeof event.data === 'string') {
                 if (event.data === 'ERROR:ID_NOT_FOUND') {
+                    alert('⚠️ UYARI: (' + cleanId + ') numaralı Masaüstü ID\'si sunucuda bulunamadı!\n\nLütfen bilgisayarınızdaki BigLineconnect.exe uygulamasının AÇIK olduğundan ve "BU CİHAZIN ID\'Sİ" bölümünde yazan 9 haneli kodu doğru girdiğinizden emin olun.');
                     customCloseReason = 'Bağlantı ID\'si bulunamadı veya bilgisayar kapalı.';
                     socket.close();
                 } else if (event.data === 'ERROR:BUSY') {
+                    alert('⚠️ UYARI: Bu bilgisayara şu an başka bir operatör bağlı.');
                     customCloseReason = 'Bu bilgisayar şu an meşgul.';
                     socket.close();
                 } else if (event.data === 'AUTH_REQUIRED') {
-                    if (passwordModal) {
-                        passwordModal.classList.remove('hidden');
-                        passwordModal.style.display = 'flex';
-                        passwordModal.style.pointerEvents = 'auto';
+                    alert('🔐 HEDEF BİLGİSAYAR BULUNDU!\n\nLütfen 6 haneli Erişim Şifresini girin.');
+                    const pm = document.getElementById('password-modal');
+                    if (pm) {
+                        pm.classList.remove('hidden');
+                        pm.style.setProperty('display', 'flex', 'important');
+                        pm.style.setProperty('pointer-events', 'auto', 'important');
+                        pm.style.setProperty('z-index', '999999', 'important');
                     }
                     if (hiddenKeyboardInput) hiddenKeyboardInput.disabled = true;
-                    if (accessPasswordInput) {
-                        accessPasswordInput.disabled = false;
-                        accessPasswordInput.value = '';
+                    const passInput = document.getElementById('access-password-input');
+                    if (passInput) {
+                        passInput.disabled = false;
+                        passInput.value = '';
                         setTimeout(() => {
-                            accessPasswordInput.focus();
+                            passInput.focus();
                         }, 150);
                     }
                     showToast('Karşı bilgisayara bağlanmak için Erişim Şifresi gereklidir.', 'info');
@@ -621,7 +671,8 @@ interactionTargets.forEach(elem => {
                 panY = startPan1Y + (touch.clientY - startTouch1Y);
                 updateTransform();
             } else {
-                const pos = getMousePos(screenImg, touch.clientX, touch.clientY);
+                const canvasElem = document.getElementById('screen-canvas') || activeInteractionElem;
+                const pos = getMousePos(canvasElem, touch.clientX, touch.clientY);
                 sendMove(pos.x, pos.y);
             }
         } else if (e.touches.length === 2) {
@@ -652,7 +703,8 @@ interactionTargets.forEach(elem => {
             const moveDist = Math.sqrt((touch.clientX - touchStartX) ** 2 + (touch.clientY - touchStartY) ** 2);
             
             if (moveDist < 60) {
-                const pos = getMousePos(screenImg, touch.clientX, touch.clientY);
+                const canvasElem = document.getElementById('screen-canvas') || activeInteractionElem;
+                const pos = getMousePos(canvasElem, touch.clientX, touch.clientY);
                 sendMove(pos.x, pos.y);
 
                 if (currentMouseMode === 'double') {
@@ -901,29 +953,39 @@ function checkMagicLink() {
 
 // 2. WhatsApp Share Generator
 function shareViaWhatsApp() {
-    const idVal = targetIdInput ? targetIdInput.value.replace(/\D/g, '') : '';
-    if (!idVal || idVal.length < 6) {
-        alert('Lütfen öncelikle 9 haneli Uzak Masaüstü ID girin!');
-        return;
+    const inputElem = document.getElementById('target-id');
+    const idVal = inputElem ? inputElem.value.replace(/\D/g, '') : '';
+    let text = '';
+    if (!idVal || idVal.length < 5) {
+        text = encodeURIComponent(`Merhaba, BigLineconnect Uzak Masaüstü Bağlantı Sistemi:\nhttps://biglineconnect.bigus.com.tr/`);
+    } else {
+        const magicUrl = `https://biglineconnect.bigus.com.tr/?id=${idVal}`;
+        text = encodeURIComponent(`Merhaba, BigLineconnect Uzak Masaüstü Bağlantı Bilgilerim:\nID: ${idVal}\nTek tıkla bağlanmak için linke tıklayın:\n${magicUrl}`);
     }
-    const magicUrl = `https://biglineconnect.bigus.com.tr/?id=${idVal}`;
-    const text = encodeURIComponent(`Merhaba, BigLineconnect Uzak Masaüstü Bağlantı Bilgilerim:\nID: ${idVal}\nTek tıkla bağlanmak için linke tıklayın:\n${magicUrl}`);
-    window.open(`https://wa.me/?text=${text}`, '_blank');
+    const waUrl = `https://api.whatsapp.com/send?text=${text}`;
+    try {
+        window.open(waUrl, '_blank');
+    } catch(e) {
+        window.location.href = waUrl;
+    }
 }
 
 // 3. One-Click Copy Magic Link
 function copyMagicLink() {
-    const idVal = targetIdInput ? targetIdInput.value.replace(/\D/g, '') : '';
-    if (!idVal || idVal.length < 6) {
-        alert('Lütfen öncelikle 9 haneli Uzak Masaüstü ID girin!');
-        return;
+    const inputElem = document.getElementById('target-id');
+    const idVal = inputElem ? inputElem.value.replace(/\D/g, '') : '';
+    const magicUrl = idVal && idVal.length >= 5 ? `https://biglineconnect.bigus.com.tr/?id=${idVal}` : `https://biglineconnect.bigus.com.tr/`;
+    
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(magicUrl).then(() => {
+            showToast('Sihirli Bağlantı Linki Panoya Kopyalandı!', 'success');
+            alert('✅ Sihirli Bağlantı Linki Kopyalandı:\n\n' + magicUrl);
+        }).catch(() => {
+            alert('📋 Bağlantı Linki:\n\n' + magicUrl);
+        });
+    } else {
+        alert('📋 Bağlantı Linki:\n\n' + magicUrl);
     }
-    const magicUrl = `https://biglineconnect.bigus.com.tr/?id=${idVal}`;
-    navigator.clipboard.writeText(magicUrl).then(() => {
-        showToast('Sihirli Bağlantı Linki Kopyalandı! (WhatsApp veya Mail ile gönderebilirsiniz)', 'success');
-    }).catch(() => {
-        showToast('Kopyalandı: ' + magicUrl, 'success');
-    });
 }
 
 document.addEventListener('DOMContentLoaded', () => {

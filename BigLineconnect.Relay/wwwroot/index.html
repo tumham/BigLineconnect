@@ -432,88 +432,14 @@
 
                 <div style="display:flex; flex-direction:column; gap:8px;">
                     <button type="submit" class="primary-btn" style="width:100%; padding:12px; font-size:0.85rem; background:linear-gradient(135deg, #2ecc71, #00e5ff); color:#000; border:none; border-radius:10px; font-weight:800; cursor:pointer;">
-                        <i class="fa-solid fa-paper-plane"></i> Ödeme Bildirimi Yap (Havale / EFT)
-                    </button>
-                    <button type="button" onclick="checkoutViaWhatsApp()" style="width:100%; padding:10px; background:rgba(37, 211, 102, 0.2); border:1px solid #25D366; border-radius:10px; color:#25D366; font-weight:800; font-size:0.85rem; cursor:pointer;">
-                        <i class="fa-brands fa-whatsapp"></i> WhatsApp'tan İletişime Geç & Anında Al
-                    </button>
-                </div>
-            </form>
-
-            <div id="checkout-success-box" style="display:none; background:rgba(241,196,15,0.15); border:1px solid #f1c40f; border-radius:12px; padding:15px; margin-top:15px;">
-                <i class="fa-solid fa-clock" style="color:#f1c40f; font-size:2rem; margin-bottom:8px;"></i>
-                <h4 style="color:#fff; margin:0 0 6px;">Ödeme Bildiriminiz Alındı!</h4>
-                <p style="font-size:0.85rem; color:#cbd5e1; margin-bottom:10px; line-height:1.4;">
-                    Havale / EFT ödemeniz kontrol edildikten sonra (ortalama 5-10 dk) Lisans Anahtarınız e-postanıza ve WhatsApp hattınıza gönderilecektir.
+                        <i class="fa-solid fa-paper-plane"></i> Ödeme Bildirimi Yap (Havale / EFT Ã¶demeniz kontrol edildikten sonra (ortalama 5-10 dk) Lisans AnahtarÄ±nÄ±z e-postanÄ±za ve WhatsApp hattÄ±nÄ±za gÃ¶nderilecektir.
                 </p>
-                <button type="button" onclick="checkoutViaWhatsApp()" style="padding:8px 16px; background:#25D366; border:none; border-radius:6px; color:#000; font-weight:800; cursor:pointer;"><i class="fa-brands fa-whatsapp"></i> WhatsApp Destek İletişim</button>
             </div>
-    <!-- Toast Notification Element -->
-    <div id="toast" class="toast hidden"></div>
+        </div>
+    </div>
 
-    <script src="app.js?v=3400"></script>
-    <script>
-        // Bulletproof Inline Action Handlers for Direct UI Responsiveness
-        function shareViaWhatsApp() {
-            const el = document.getElementById('target-id');
-            const idVal = el ? el.value.replace(/\D/g, '') : '';
-            let text = '';
-            if (!idVal || idVal.length < 5) {
-                text = encodeURIComponent("Merhaba, BigLineconnect Uzak Masaüstü Bağlantı Sistemi:\nhttps://biglineconnect.bigus.com.tr/");
-            } else {
-                const magicUrl = `https://biglineconnect.bigus.com.tr/?id=${idVal}`;
-                text = encodeURIComponent(`Merhaba, BigLineconnect Uzak Masaüstü Bağlantı Bilgilerim:\nID: ${idVal}\nTek tıkla bağlanmak için linke tıklayın:\n${magicUrl}`);
-            }
-            alert('💬 WhatsApp İletişim Sayfasına Yönlendiriliyorsunuz!');
-            window.open('https://api.whatsapp.com/send?text=' + text, '_blank');
-        }
-
-        function copyMagicLink() {
-            const el = document.getElementById('target-id');
-            const idVal = el ? el.value.replace(/\D/g, '') : '';
-            const magicUrl = idVal && idVal.length >= 5 ? `https://biglineconnect.bigus.com.tr/?id=${idVal}` : `https://biglineconnect.bigus.com.tr/`;
-            alert('✅ Sihirli Bağlantı Linki Kopyalandı:\n\n' + magicUrl);
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(magicUrl);
-            }
-        }
-
-        function switchConnectTab(mode) {
-            const btnClient = document.getElementById('tab-btn-client');
-            const btnHost = document.getElementById('tab-btn-host');
-            const contentClient = document.getElementById('tab-content-client');
-            const contentHost = document.getElementById('tab-content-host');
-
-            if (mode === 'client') {
-                if (btnClient) { btnClient.style.background = 'var(--accent-gradient)'; btnClient.style.color = '#000'; btnClient.style.fontWeight = '800'; }
-                if (btnHost) { btnHost.style.background = 'transparent'; btnHost.style.color = '#a0aec0'; btnHost.style.fontWeight = '700'; }
-                if (contentClient) contentClient.style.display = 'block';
-                if (contentHost) contentHost.style.display = 'none';
-            } else {
-                if (btnHost) { btnHost.style.background = 'var(--accent-gradient)'; btnHost.style.color = '#000'; btnHost.style.fontWeight = '800'; }
-                if (btnClient) { btnClient.style.background = 'transparent'; btnClient.style.color = '#a0aec0'; btnClient.style.fontWeight = '700'; }
-                if (contentHost) contentHost.style.display = 'block';
-                if (contentClient) contentClient.style.display = 'none';
-            }
-        }
-
-        function startConnectionProcess() {
-            const el = document.getElementById('target-id');
-            const rawId = el ? el.value.replace(/\D/g, '') : '';
-            if (!rawId || rawId.length < 5) {
-                alert('⚠️ Lütfen bağlanmak istediğiniz uzaktaki bilgisayarın ID numarasını girin (Örn: 864 688 774).');
-                return;
-            }
-            alert('🚀 Masaüstü (' + rawId + ') İle Bağlantı Başlatılıyor!');
-            if (typeof window.connectToHost === 'function') {
-                window.connectToHost(rawId);
-            } else if (typeof connectToHost === 'function') {
-                connectToHost(rawId);
-            } else {
-                alert('⚠️ Bağlantı kuruluyor...');
-            }
-        }
-    </script>
+    <!-- App JS Engine -->
+    <script src="app.js?v=3420"></script>
     <script>
         // Service Worker & PWA Installation
         if ('serviceWorker' in navigator) {
