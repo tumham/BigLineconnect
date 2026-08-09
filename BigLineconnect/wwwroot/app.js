@@ -84,55 +84,37 @@ let isConnectingProcess = false;
 
 // Connect Button Event Handler
 function startConnectionProcess() {
-    if (isConnectingProcess) {
-        console.warn('Bağlantı işlemi zaten devam ediyor, çift tıklama engellendi.');
+    console.log('[BigLineconnect] startConnectionProcess triggered');
+    const inputElem = document.getElementById('target-id');
+    const btnElem = document.getElementById('connect-btn');
+    
+    if (!inputElem) {
+        alert('Hata: ID giriÅŸ kutusu bulunamadÄ±.');
         return;
     }
-    isConnectingProcess = true;
-    setTimeout(() => { isConnectingProcess = false; }, 2500);
 
-    try {
-        const inputElem = document.getElementById('target-id');
-        const btnElem = document.getElementById('connect-btn');
-        if (!inputElem) {
-            isConnectingProcess = false;
-            alert('Hata: ID giriş kutusu bulunamadı.');
-            return;
-        }
-
-        const rawId = inputElem.value.replace(/\D/g, '');
-        if (!rawId || rawId.length < 5) {
-            isConnectingProcess = false;
-            alert('Lütfen bağlanmak istediğiniz uzaktaki bilgisayarın ID numarasını girin (Örn: 864 688 774).');
-            return;
-        }
-
-        if (btnElem) {
-            btnElem.disabled = true;
-            btnElem.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Bağlanıyor...</span>';
-        }
-
-        showToast(`Masaüstü (${rawId}) aranıyor...`, 'info');
-
-        connectToHost(rawId);
-
-        // Re-enable button if connection times out
-        setTimeout(() => {
-            isConnectingProcess = false;
-            if (btnElem && !connected) {
-                btnElem.disabled = false;
-                btnElem.innerHTML = '<span>Bağlan</span> <i class="fa-solid fa-arrow-right-to-bracket"></i>';
-            }
-        }, 5000);
-    } catch (err) {
-        isConnectingProcess = false;
-        showToast('Bağlantı Başlatma Hatası: ' + err.message, 'error');
-        const btnElem = document.getElementById('connect-btn');
-        if (btnElem) {
-            btnElem.disabled = false;
-            btnElem.innerHTML = '<span>Bağlan</span> <i class="fa-solid fa-arrow-right-to-bracket"></i>';
-        }
+    const rawId = inputElem.value.replace(/\D/g, '');
+    if (!rawId || rawId.length < 5) {
+        alert('âš ï¸ LÃ¼tfen baÄŸlanmak istediÄŸiniz uzaktaki bilgisayarÄ±n 9 haneli ID numarasÄ±nÄ± girin (Ã–rn: 864 688 774).');
+        return;
     }
+
+    if (btnElem) {
+        btnElem.disabled = true;
+        btnElem.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>BaÄŸlanÄ±yor...</span>';
+    }
+
+    showToast(MasaÃ¼stÃ¼ () aranÄ±yor..., 'info');
+
+    connectToHost(rawId);
+
+    // Re-enable button after 4 seconds safety timeout
+    setTimeout(() => {
+        if (btnElem && !connected) {
+            btnElem.disabled = false;
+            btnElem.innerHTML = '<span>BaÄŸlan</span> <i class="fa-solid fa-arrow-right-to-bracket"></i>';
+        }
+    }, 4000);
 }
 
 // Disconnect Button Event
