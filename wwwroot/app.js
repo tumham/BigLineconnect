@@ -82,6 +82,18 @@ function showToast(message, type = 'info') {
 
 let isConnectingProcess = false;
 
+function resetConnectButton() {
+    const btnElem = document.getElementById('connect-btn');
+    if (btnElem) {
+        btnElem.disabled = false;
+        btnElem.style.pointerEvents = 'auto';
+        btnElem.style.opacity = '1';
+        btnElem.style.cursor = 'pointer';
+        btnElem.innerHTML = '<span>Bağlan</span> <i class="fa-solid fa-arrow-right-to-bracket"></i>';
+    }
+}
+window.resetConnectButton = resetConnectButton;
+
 // Connect Button Event Handler
 function startConnectionProcess() {
     console.log('[BigLineconnect] startConnectionProcess triggered');
@@ -89,19 +101,20 @@ function startConnectionProcess() {
     const btnElem = document.getElementById('connect-btn');
     
     if (!inputElem) {
-        alert('Hata: ID giriÅŸ kutusu bulunamadÄ±.');
+        alert('Hata: ID giriş kutusu bulunamadı.');
         return;
     }
 
     const rawId = inputElem.value.replace(/\D/g, '');
     if (!rawId || rawId.length < 5) {
-        alert('âš ï¸ LÃ¼tfen baÄŸlanmak istediÄŸiniz uzaktaki bilgisayarÄ±n 9 haneli ID numarasÄ±nÄ± girin (Ã–rn: 864 688 774).');
+        alert('⚠️ Lütfen bağlanmak istediğiniz uzaktaki bilgisayarın 9 haneli ID numarasını girin (Örn: 219 675 629).');
+        resetConnectButton();
         return;
     }
 
     if (btnElem) {
         btnElem.disabled = true;
-        btnElem.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>BaÄŸlanÄ±yor...</span>';
+        btnElem.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Bağlanıyor...</span>';
     }
 
     showToast(`Masaüstü (${rawId}) aranıyor...`, 'info');
@@ -110,9 +123,12 @@ function startConnectionProcess() {
 
     // Re-enable button after 4 seconds safety timeout
     setTimeout(() => {
-        if (btnElem && !connected) {
-            btnElem.disabled = false;
-            btnElem.innerHTML = '<span>BaÄŸlan</span> <i class="fa-solid fa-arrow-right-to-bracket"></i>';
+        if (!connected) {
+            resetConnectButton();
+        }
+    }, 4000);
+}
+window.startConnectionProcess = startConnectionProcess;"></i>';
         }
     }, 4000);
 }
