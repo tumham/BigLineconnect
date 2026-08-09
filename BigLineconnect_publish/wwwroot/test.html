@@ -72,6 +72,42 @@
             ws.onclose = function() { st.innerText = 'Bağlantı kapandı.'; };
         }
 
+        // 100% Pixel-Perfect Mouse Calibration with Aspect Ratio & Letterbox Compensation
+        function getMousePos(cv, clientX, clientY) {
+            var rect = cv.getBoundingClientRect();
+            if (rect.width <= 0 || rect.height <= 0) return { x: 0, y: 0 };
+
+            var naturalWidth = (cv.width && cv.width > 300) ? cv.width : 1920;
+            var naturalHeight = (cv.height && cv.height > 150) ? cv.height : 1080;
+
+            var imageAspect = naturalWidth / naturalHeight;
+            var containerAspect = rect.width / rect.height;
+
+            var renderedWidth, renderedHeight, offsetX, offsetY;
+
+            if (containerAspect > imageAspect) {
+                // Black bars on left & right
+                renderedHeight = rect.height;
+                renderedWidth = rect.height * imageAspect;
+                offsetX = (rect.width - renderedWidth) / 2;
+                offsetY = 0;
+            } else {
+                // Black bars on top & bottom
+                renderedWidth = rect.width;
+                renderedHeight = rect.width / imageAspect;
+                offsetX = 0;
+                offsetY = (rect.height - renderedHeight) / 2;
+            }
+
+            var mouseX = clientX - rect.left - offsetX;
+            var mouseY = clientY - rect.top - offsetY;
+
+            return {
+                x: Math.max(0, Math.min(1, mouseX / renderedWidth)),
+                y: Math.max(0, Math.min(1, mouseY / renderedHeight))
+            };
+        }
+
         // Mouse & Keyboard Input Transmission
         var lastMove = 0;
         cv.addEventListener('mousemove', function(e) {
@@ -80,29 +116,23 @@
             if (now - lastMove < 16) return;
             lastMove = now;
 
-            var rect = cv.getBoundingClientRect();
-            var x = (e.clientX - rect.left) / rect.width;
-            var y = (e.clientY - rect.top) / rect.height;
-            ws.send(JSON.stringify({ type: 'move', x: Math.max(0, Math.min(1, x)), y: Math.max(0, Math.min(1, y)) }));
+            var pos = getMousePos(cv, e.clientX, e.clientY);
+            ws.send(JSON.stringify({ type: 'move', x: pos.x, y: pos.y }));
         });
 
         cv.addEventListener('mousedown', function(e) {
             if (!ws || ws.readyState !== WebSocket.OPEN) return;
-            var rect = cv.getBoundingClientRect();
-            var x = (e.clientX - rect.left) / rect.width;
-            var y = (e.clientY - rect.top) / rect.height;
+            var pos = getMousePos(cv, e.clientX, e.clientY);
             var btn = e.button === 2 ? 'right' : (e.button === 1 ? 'middle' : 'left');
-            ws.send(JSON.stringify({ type: 'click', button: btn, action: 'down', x: Math.max(0, Math.min(1, x)), y: Math.max(0, Math.min(1, y)) }));
+            ws.send(JSON.stringify({ type: 'click', button: btn, action: 'down', x: pos.x, y: pos.y }));
             e.preventDefault();
         });
 
         cv.addEventListener('mouseup', function(e) {
             if (!ws || ws.readyState !== WebSocket.OPEN) return;
-            var rect = cv.getBoundingClientRect();
-            var x = (e.clientX - rect.left) / rect.width;
-            var y = (e.clientY - rect.top) / rect.height;
+            var pos = getMousePos(cv, e.clientX, e.clientY);
             var btn = e.button === 2 ? 'right' : (e.button === 1 ? 'middle' : 'left');
-            ws.send(JSON.stringify({ type: 'click', button: btn, action: 'up', x: Math.max(0, Math.min(1, x)), y: Math.max(0, Math.min(1, y)) }));
+            ws.send(JSON.stringify({ type: 'click', button: btn, action: 'up', x: pos.x, y: pos.y }));
             e.preventDefault();
         });
 
