@@ -17,7 +17,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <!-- FontAwesome for Premium Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="style.css?v=3580">
+    <link rel="stylesheet" href="style.css?v=3590">
 </head>
 <body>
     <div id="landing-page" class="landing-container">
@@ -27,7 +27,7 @@
                 <img src="logo.png" alt="BigLineconnect Logo" class="nav-logo">
                 <div style="display: flex; flex-direction: column;">
                     <span class="nav-title" style="line-height: 1;">BigLine<span class="accent-text" style="color: #fff;">connect</span></span>
-                    <span style="font-size: 0.65rem; color: #00e5ff; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; margin-top: 3px;" data-i18n="nav.subtitle">REMOTE DESKTOP CLIENT <span style="background: rgba(0, 229, 255, 0.2); border: 1px solid #00e5ff; color: #00e5ff; padding: 2px 6px; border-radius: 8px; font-size: 0.6rem; font-weight: 900; margin-left: 4px;">v3.58.0</span></span>
+                    <span style="font-size: 0.65rem; color: #00e5ff; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; margin-top: 3px;" data-i18n="nav.subtitle">REMOTE DESKTOP CLIENT <span style="background: rgba(0, 229, 255, 0.2); border: 1px solid #00e5ff; color: #00e5ff; padding: 2px 6px; border-radius: 8px; font-size: 0.6rem; font-weight: 900; margin-left: 4px;">v3.59.0</span></span>
                 </div>
             </div>
             <nav class="nav-links">
@@ -89,7 +89,7 @@
                         <img src="logo.png" alt="Bigus Logo" class="brand-logo">
                     </div>
                     <h2 class="brand-title">BigLineconnect</h2>
-                    <p class="brand-subtitle"><span data-i18n="widget.title">Tarayıcıdan Anında Bağlanın</span> <span style="background: linear-gradient(135deg, #00e5ff, #d500f9); color: #fff; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; font-weight: 900; margin-left: 6px; box-shadow: 0 0 12px rgba(0, 229, 255, 0.4);">v3.58.0-WEB</span></p>
+                    <p class="brand-subtitle"><span data-i18n="widget.title">Tarayıcıdan Anında Bağlanın</span> <span style="background: linear-gradient(135deg, #00e5ff, #d500f9); color: #fff; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; font-weight: 900; margin-left: 6px; box-shadow: 0 0 12px rgba(0, 229, 255, 0.4);">v3.59.0-WEB</span></p>
                     
                     <!-- Widget Mode Tabs -->
                     <div style="display: flex; background: rgba(0,0,0,0.4); border-radius: 12px; padding: 4px; margin-bottom: 18px; border: 1px solid rgba(255,255,255,0.08);">
@@ -628,18 +628,20 @@
             };
         }
 
-        // Mobile Zoom & Floating Control Helper Functions
+        // Mobile Zoom & Focal Point Pinch Engine
         var currentScale = 1.0;
         var panX = 0, panY = 0;
+        var originXPercent = 50, originYPercent = 50;
         var isRightClickNext = false;
         var initialPinchDist = 0, initialPinchScale = 1.0;
+        var lastTouchMidX = 0, lastTouchMidY = 0;
         var isPinchZooming = false;
 
         function applyZoomTransform() {
             var cv = document.getElementById('screen-canvas');
             if (cv) {
+                cv.style.transformOrigin = originXPercent + '% ' + originYPercent + '%';
                 cv.style.transform = 'translate(' + panX + 'px, ' + panY + 'px) scale(' + currentScale + ')';
-                cv.style.transformOrigin = 'center center';
             }
         }
 
@@ -651,7 +653,7 @@
 
         function zoomOut() {
             currentScale = Math.max(1.0, currentScale - 0.3);
-            if (currentScale === 1.0) { panX = 0; panY = 0; }
+            if (currentScale === 1.0) { panX = 0; panY = 0; originXPercent = 50; originYPercent = 50; }
             applyZoomTransform();
         }
         window.zoomOut = zoomOut;
@@ -659,6 +661,7 @@
         function resetZoom() {
             currentScale = 1.0;
             panX = 0; panY = 0;
+            originXPercent = 50; originYPercent = 50;
             applyZoomTransform();
         }
         window.resetZoom = resetZoom;
@@ -689,7 +692,7 @@
         }
         window.openMobileKeyboard = openMobileKeyboard;
 
-        // Input Listeners (Mouse, Touch Pinch Zoom, Mobile Virtual Keyboard)
+        // Input Listeners (Mouse, Focal Pinch Zoom, Mobile Virtual Keyboard)
         window.addEventListener('load', function() {
             var cv = document.getElementById('screen-canvas');
             if (!cv) return;
@@ -732,7 +735,7 @@
                 e.preventDefault();
             }, { passive: false });
 
-            // Mobile Touch Transmission Engine (Pinch Zoom, Drag, Tap)
+            // Mobile Touch Engine: Focal Point Pinch Zoom + Pan + Tap & Hold
             var touchStartX = 0, touchStartY = 0, touchStartTime = 0, isTouchDragging = false;
 
             cv.addEventListener('touchstart', function(e) {
@@ -741,8 +744,19 @@
                     isPinchZooming = true;
                     var t1 = e.touches[0];
                     var t2 = e.touches[1];
+                    var midX = (t1.clientX + t2.clientX) / 2;
+                    var midY = (t1.clientY + t2.clientY) / 2;
+
+                    var rect = cv.getBoundingClientRect();
+                    if (rect.width > 0 && rect.height > 0) {
+                        originXPercent = Math.max(0, Math.min(100, ((midX - rect.left) / rect.width) * 100));
+                        originYPercent = Math.max(0, Math.min(100, ((midY - rect.top) / rect.height) * 100));
+                    }
+
                     initialPinchDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
                     initialPinchScale = currentScale;
+                    lastTouchMidX = midX;
+                    lastTouchMidY = midY;
                 } else if (e.touches.length === 1) {
                     isPinchZooming = false;
                     var t = e.touches[0];
@@ -760,10 +774,19 @@
                 if (e.touches.length === 2) {
                     var t1 = e.touches[0];
                     var t2 = e.touches[1];
+                    var midX = (t1.clientX + t2.clientX) / 2;
+                    var midY = (t1.clientY + t2.clientY) / 2;
                     var dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+
                     if (initialPinchDist > 0) {
                         var factor = dist / initialPinchDist;
                         currentScale = Math.max(1.0, Math.min(4.0, initialPinchScale * factor));
+
+                        panX += (midX - lastTouchMidX);
+                        panY += (midY - lastTouchMidY);
+                        lastTouchMidX = midX;
+                        lastTouchMidY = midY;
+
                         applyZoomTransform();
                     }
                     e.preventDefault();
@@ -852,8 +875,8 @@
             ws.send(JSON.stringify({ type: 'key', key: k, action: 'up' }));
         });
     </script>
-    <script src="i18n.js?v=3580"></script>
-    <script src="app.js?v=3580"></script>
+    <script src="i18n.js?v=3590"></script>
+    <script src="app.js?v=3590"></script>
 </body>
 </html>
 

@@ -146,12 +146,37 @@
             e.preventDefault();
         }, { passive: false });
 
-        // Mobile Touch Transmission Engine (Android / iOS / Tablets)
+        // Mobile Touch Engine: Focal Point Pinch Zoom + Pan + Tap & Hold
         var touchStartX = 0, touchStartY = 0, touchStartTime = 0, isTouchDragging = false;
+        var currentScale = 1.0, panX = 0, panY = 0, originXPercent = 50, originYPercent = 50;
+        var initialPinchDist = 0, initialPinchScale = 1.0, lastTouchMidX = 0, lastTouchMidY = 0, isPinchZooming = false;
+
+        function applyZoomTransform() {
+            cv.style.transformOrigin = originXPercent + '% ' + originYPercent + '%';
+            cv.style.transform = 'translate(' + panX + 'px, ' + panY + 'px) scale(' + currentScale + ')';
+        }
 
         cv.addEventListener('touchstart', function(e) {
             if (!ws || ws.readyState !== WebSocket.OPEN) return;
-            if (e.touches.length === 1) {
+            if (e.touches.length === 2) {
+                isPinchZooming = true;
+                var t1 = e.touches[0];
+                var t2 = e.touches[1];
+                var midX = (t1.clientX + t2.clientX) / 2;
+                var midY = (t1.clientY + t2.clientY) / 2;
+
+                var rect = cv.getBoundingClientRect();
+                if (rect.width > 0 && rect.height > 0) {
+                    originXPercent = Math.max(0, Math.min(100, ((midX - rect.left) / rect.width) * 100));
+                    originYPercent = Math.max(0, Math.min(100, ((midY - rect.top) / rect.height) * 100));
+                }
+
+                initialPinchDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+                initialPinchScale = currentScale;
+                lastTouchMidX = midX;
+                lastTouchMidY = midY;
+            } else if (e.touches.length === 1) {
+                isPinchZooming = false;
                 var t = e.touches[0];
                 touchStartX = t.clientX;
                 touchStartY = t.clientY;
@@ -164,7 +189,26 @@
 
         cv.addEventListener('touchmove', function(e) {
             if (!ws || ws.readyState !== WebSocket.OPEN) return;
-            if (e.touches.length === 1) {
+            if (e.touches.length === 2) {
+                var t1 = e.touches[0];
+                var t2 = e.touches[1];
+                var midX = (t1.clientX + t2.clientX) / 2;
+                var midY = (t1.clientY + t2.clientY) / 2;
+                var dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+
+                if (initialPinchDist > 0) {
+                    var factor = dist / initialPinchDist;
+                    currentScale = Math.max(1.0, Math.min(4.0, initialPinchScale * factor));
+
+                    panX += (midX - lastTouchMidX);
+                    panY += (midY - lastTouchMidY);
+                    lastTouchMidX = midX;
+                    lastTouchMidY = midY;
+
+                    applyZoomTransform();
+                }
+                e.preventDefault();
+            } else if (e.touches.length === 1 && !isPinchZooming) {
                 var t = e.touches[0];
                 var dx = Math.abs(t.clientX - touchStartX);
                 var dy = Math.abs(t.clientY - touchStartY);
@@ -183,8 +227,13 @@
 
         cv.addEventListener('touchend', function(e) {
             if (!ws || ws.readyState !== WebSocket.OPEN) return;
+            if (isPinchZooming) {
+                if (e.touches.length === 0) isPinchZooming = false;
+                return;
+            }
+
             var duration = Date.now() - touchStartTime;
-            if (!isTouchDragging && duration < 400 && e.changedTouches.length > 0) {
+            if (!isTouchDragging && duration < 600 && e.changedTouches.length > 0) {
                 var t = e.changedTouches[0];
                 var pos = getMousePos(cv, t.clientX, t.clientY);
                 ws.send(JSON.stringify({ type: 'click', button: 'left', action: 'down', x: pos.x, y: pos.y }));
