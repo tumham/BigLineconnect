@@ -78,21 +78,7 @@ function showToast(message, type = 'info') {
     }, 4000);
 }
 
-// Immediately bind all action functions to window object
-window.startConnectionProcess = startConnectionProcess;
-window.connectToHost = connectToHost;
-window.sendPassword = sendPassword;
-window.switchConnectTab = switchConnectTab;
-window.shareViaWhatsApp = shareViaWhatsApp;
-window.copyMagicLink = copyMagicLink;
-window.startWebScreenShare = startWebScreenShare;
-window.shareMyWebIdWhatsApp = shareMyWebIdWhatsApp;
-window.stopWebScreenShare = stopWebScreenShare;
-window.openCheckoutModal = openCheckoutModal;
-window.closeCheckoutModal = closeCheckoutModal;
-window.submitOnlineCheckout = submitOnlineCheckout;
-window.checkoutViaWhatsApp = checkoutViaWhatsApp;
-window.extendFreeSessionTimer = extendFreeSessionTimer;
+// Actions bound at end of file
 
 let isConnectingProcess = false;
 
