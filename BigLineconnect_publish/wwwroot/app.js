@@ -166,16 +166,7 @@ function connectToHost(id) {
         socket.onopen = () => {
             connected = true;
             customCloseReason = null;
-            showToast('Bağlantı kuruldu!', 'success');
-            if (landingPage) {
-                landingPage.classList.add('hidden');
-                landingPage.style.display = 'none';
-            }
-            if (viewerScreen) {
-                viewerScreen.classList.remove('hidden');
-                viewerScreen.style.display = 'flex';
-                viewerScreen.style.zIndex = '99999';
-            }
+            showToast('Sunucuya bağlandı, doğrulama bekleniyor...', 'info');
             startFreeSessionTimer();
         };
         
@@ -189,16 +180,18 @@ function connectToHost(id) {
             }
             if (viewerScreen) {
                 viewerScreen.classList.add('hidden');
-                viewerScreen.style.display = 'none';
+                viewerScreen.style.setProperty('display', 'none', 'important');
+                viewerScreen.style.setProperty('pointer-events', 'none', 'important');
             }
             if (landingPage) {
                 landingPage.classList.remove('hidden');
-                landingPage.style.display = 'block';
+                landingPage.style.setProperty('display', 'block', 'important');
+                landingPage.style.setProperty('pointer-events', 'auto', 'important');
             }
             if (passwordModal) {
                 passwordModal.classList.add('hidden');
-                passwordModal.style.display = 'none';
-                passwordModal.style.pointerEvents = 'none';
+                passwordModal.style.setProperty('display', 'none', 'important');
+                passwordModal.style.setProperty('pointer-events', 'none', 'important');
             }
             if (hiddenKeyboardInput) hiddenKeyboardInput.disabled = false;
             socket = null;
@@ -212,6 +205,7 @@ function connectToHost(id) {
         
         socket.onerror = (error) => {
             console.error('WebSocket Error:', error);
+            resetConnectButton();
             showToast('Bağlantı hatası!', 'error');
         };
         
@@ -231,14 +225,15 @@ function connectToHost(id) {
                     connectionStatus.innerHTML = `<span class="status-dot online"></span>${sizeKb.toFixed(0)} KB`;
                 }
 
-                if (viewerScreen && viewerScreen.style.display === 'none') {
+                if (viewerScreen && (viewerScreen.style.display === 'none' || viewerScreen.classList.contains('hidden'))) {
                     if (landingPage) {
                         landingPage.classList.add('hidden');
-                        landingPage.style.display = 'none';
+                        landingPage.style.setProperty('display', 'none', 'important');
                     }
                     viewerScreen.classList.remove('hidden');
-                    viewerScreen.style.display = 'flex';
-                    viewerScreen.style.zIndex = '99999';
+                    viewerScreen.style.setProperty('display', 'flex', 'important');
+                    viewerScreen.style.setProperty('pointer-events', 'auto', 'important');
+                    viewerScreen.style.setProperty('z-index', '99999', 'important');
                 }
 
                 const screenCanvas = document.getElementById('screen-canvas');
@@ -260,10 +255,12 @@ function connectToHost(id) {
                 img.src = url;
             } else if (typeof event.data === 'string') {
                 if (event.data === 'ERROR:ID_NOT_FOUND') {
+                    resetConnectButton();
                     alert('⚠️ UYARI: (' + cleanId + ') numaralı Masaüstü ID\'si sunucuda bulunamadı!\n\nLütfen bilgisayarınızdaki BigLineconnect.exe uygulamasının AÇIK olduğundan ve "BU CİHAZIN ID\'Sİ" bölümünde yazan 9 haneli kodu doğru girdiğinizden emin olun.');
                     customCloseReason = 'Bağlantı ID\'si bulunamadı veya bilgisayar kapalı.';
                     socket.close();
                 } else if (event.data === 'ERROR:BUSY') {
+                    resetConnectButton();
                     alert('⚠️ UYARI: Bu bilgisayara şu an başka bir operatör bağlı.');
                     customCloseReason = 'Bu bilgisayar şu an meşgul.';
                     socket.close();
@@ -274,15 +271,18 @@ function connectToHost(id) {
                         pm.style.setProperty('display', 'flex', 'important');
                         pm.style.setProperty('pointer-events', 'auto', 'important');
                         pm.style.setProperty('z-index', '999999', 'important');
-                    }
-                    if (hiddenKeyboardInput) hiddenKeyboardInput.disabled = true;
-                    const passInput = document.getElementById('access-password-input');
-                    if (passInput) {
-                        passInput.disabled = false;
-                        passInput.value = '';
-                        setTimeout(() => {
-                            passInput.focus();
-                        }, 150);
+                        const passInput = document.getElementById('access-password-input');
+                        if (passInput) {
+                            passInput.disabled = false;
+                            passInput.value = '';
+                            setTimeout(() => passInput.focus(), 150);
+                        }
+                    } else {
+                        var pass = prompt('🔒 Lütfen karşı bilgisayarın 6 haneli erişim şifresini girin:', '999999');
+                        if (pass && socket && socket.readyState === WebSocket.OPEN) {
+                            socket.send(pass);
+                            socket.send("AUTH_PASS:" + pass);
+                        }
                     }
                     showToast('Karşı bilgisayara bağlanmak için Erişim Şifresi gereklidir.', 'info');
                 } else if (event.data === 'AUTH_WAITING') {
@@ -293,13 +293,21 @@ function connectToHost(id) {
                 } else if (event.data === 'AUTH_SUCCESS') {
                     if (landingPage) {
                         landingPage.classList.add('hidden');
-                        landingPage.style.display = 'none';
+                        landingPage.style.setProperty('display', 'none', 'important');
                     }
                     if (viewerScreen) {
                         viewerScreen.classList.remove('hidden');
-                        viewerScreen.style.display = 'flex';
-                        viewerScreen.style.zIndex = '99999';
+                        viewerScreen.style.setProperty('display', 'flex', 'important');
+                        viewerScreen.style.setProperty('pointer-events', 'auto', 'important');
+                        viewerScreen.style.setProperty('z-index', '99999', 'important');
                     }
+                    const pm = document.getElementById('password-modal');
+                    if (pm) {
+                        pm.classList.add('hidden');
+                        pm.style.setProperty('display', 'none', 'important');
+                        pm.style.setProperty('pointer-events', 'none', 'important');
+                    }
+                    showToast('Erişim doğrulandı! Ekran yükleniyor...', 'success');
                     const btnElem = document.getElementById('submit-password-btn');
                     if (btnElem) {
                         btnElem.disabled = false;
