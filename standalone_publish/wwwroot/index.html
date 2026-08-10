@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="theme-color" content="#00e5ff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="BigLine">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/logo.png">
+    <link rel="icon" type="image/png" href="logo.png">
+    <title>BigLineconnect | Güçlü ve Kesintisiz Uzaktan Eri�Yim Sistemi</title>
+    <meta name="description" content="BigLineconnect, yüksek hızlı ekran payla�Yımı, kurumsal kota yönetimi ve güvenli ba�Ylantı altyapısına sahip uzaktan masaüstü ve teknik destek yazılımıdır.">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Premium Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css?v=3610">
+</head>
+<body>
+    <div id="landing-page" class="landing-container">
+        <!-- Navigation Header -->
+        <header class="navbar">
+            <div class="nav-brand">
+                <img src="logo.png" alt="BigLineconnect Logo" class="nav-logo">
+                <div style="display: flex; flex-direction: column;">
+                    <span class="nav-title" style="line-height: 1;">BigLine<span class="accent-text" style="color: #fff;">connect</span></span>
+                    <span style="font-size: 0.65rem; color: #00e5ff; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; margin-top: 3px;" data-i18n="nav.subtitle">REMOTE DESKTOP CLIENT <span style="background: rgba(0, 229, 255, 0.2); border: 1px solid #00e5ff; color: #00e5ff; padding: 2px 6px; border-radius: 8px; font-size: 0.6rem; font-weight: 900; margin-left: 4px;">v3.61.0</span></span>
+                </div>
+            </div>
+            <nav class="nav-links">
+                <a href="#ozellikler"><i class="fa-solid fa-bolt"></i> <span data-i18n="nav.features">�-zellikler</span></a>
+                <a href="#fiyatlandirma"><i class="fa-solid fa-tags"></i> <span data-i18n="nav.pricing">Paketler</span></a>
+                <a href="#indirme"><i class="fa-solid fa-download"></i> <span data-i18n="nav.download">İndir</span></a>
+                <a href="#baglan" class="nav-btn-connect"><i class="fa-solid fa-desktop"></i> <span data-i18n="nav.connect">Hızlı Ba�Ylan</span></a>
+                <a href="bayi.html" class="nav-btn-bayi"><i class="fa-solid fa-store"></i> <span data-i18n="nav.bayi">Bayi Portalı</span></a>
+                <a href="javascript:void(0)" onclick="alert('gYs? BigLineconnect Yardım & Hızlı Ba�Ylangıç Kılavuzu:\n\n1. Masaüstü uygulamasını çalı�Ytırın veya 9 haneli ID girin.\n2. Ba�Ylan butonuna tıklayarak saniyeler içinde eri�Yim sa�Ylayın.\n3. Dosya transferi, sohbet ve yüksek hızlı kontrol menülerini kullanabilirsiniz.')" class="nav-btn-admin" style="background: rgba(0, 229, 255, 0.15); border-color: rgba(0, 229, 255, 0.4); margin-right: 6px;"><i class="fa-solid fa-circle-question"></i> <span data-i18n="nav.help">Yardım / Help</span></a>
+                <a href="admin.html" class="nav-btn-admin"><i class="fa-solid fa-user-shield"></i> <span data-i18n="nav.admin">Yönetici Giri�Yi</span></a>
+                <button type="button" onclick="toggleLanguage()" class="lang-switch-btn" style="background: rgba(0, 229, 255, 0.12); border: 1px solid rgba(0, 229, 255, 0.3); color: #fff; padding: 6px 12px; border-radius: 8px; font-weight: 700; cursor: pointer; margin-left: 6px;"><span class="lang-btn-text">gY?�gY?� TR</span></button>
+            </nav>
+        </header>
+
+        <!-- Hero Section -->
+        <section class="hero-section">
+            <div class="hero-content">
+                <div style="background: linear-gradient(90deg, rgba(0, 229, 255, 0.2) 0%, rgba(213, 0, 249, 0.2) 100%); border: 1px solid rgba(0, 229, 255, 0.4); border-radius: 30px; padding: 8px 18px; font-weight: 700; font-size: 0.9rem; color: #fff; margin-bottom: 16px; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 0 20px rgba(0, 229, 255, 0.2);" data-i18n="promo.banner">
+                    gY�� 30 G�oN �oCRETSİZ FULL KULLANIM: Kredi kartı gerekmez, hemen indirin ve sınırsız deneyin!
+                </div>
+                <div class="badge-tag" data-i18n="hero.badge">
+                    <i class="fa-solid fa-shield-halved"></i> Güvenli & Yerli Uzaktan Destek Altyapısı
+                </div>
+                <h1 class="hero-title" data-i18n="hero.title">Güçlü, Hızlı ve Kesintisiz <br><span class="gradient-text">Uzaktan Eri�Yim Sistemi</span></h1>
+                <p class="hero-desc" data-i18n="hero.desc">
+                    BigLineconnect ile mü�Yterilerinize ve uzak cihazlarınıza saniyeler içinde ba�Ylanın. Port açma gerektirmeyen tak-çalı�Ytır mimarisi, 60 FPS akıcı görüntü transferi ve kurumsal kota yönetimi ile kesintisiz teknik destek sa�Ylayın.
+                </p>
+                <div class="hero-actions">
+                    <a href="BigLineconnect_setup.zip" class="hero-btn primary">
+                        <i class="fa-solid fa-download"></i> <span data-i18n="hero.btn.download">Windows İçin İndir (.exe)</span>
+                    </a>
+                    <a href="#baglan" class="hero-btn secondary">
+                        <i class="fa-solid fa-globe"></i> <span data-i18n="hero.btn.browser">Tarayıcıdan Hızlı Ba�Ylan</span>
+                    </a>
+                </div>
+                <div style="margin-top: 14px; font-size: 0.88rem; font-weight: 700; color: #a0aec0;" data-i18n="hero.nocard">
+                    <i class="fa-solid fa-circle-check" style="color:#2ecc71"></i> Kredi Kartı Gerekmez �?� İlk 1 Ay �ocretsiz Full Kullanım
+                </div>
+                <div class="hero-stats">
+                    <div class="stat-item">
+                        <i class="fa-solid fa-gauge-high"></i>
+                        <span data-i18n="hero.stat1">60 FPS Akıcı Görüntü</span>
+                    </div>
+                    <div class="stat-item">
+                        <i class="fa-solid fa-lock"></i>
+                        <span data-i18n="hero.stat2">TLS 1.3 Şifreleme</span>
+                    </div>
+                    <div class="stat-item">
+                        <i class="fa-solid fa-server"></i>
+                        <span data-i18n="hero.stat3">Yüksek Bulut Kapasitesi</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Instant Connect Card (Web Client Widget) -->
+            <div id="baglan" class="hero-widget">
+                <div class="glass-card connection-card">
+                    <div class="logo-wrapper">
+                        <img src="logo.png" alt="Bigus Logo" class="brand-logo">
+                    </div>
+                    <h2 class="brand-title">BigLineconnect</h2>
+                    <p class="brand-subtitle"><span data-i18n="widget.title">Tarayıcıdan Anında Bağlanın</span> <span style="background: linear-gradient(135deg, #00e5ff, #d500f9); color: #fff; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; font-weight: 900; margin-left: 6px; box-shadow: 0 0 12px rgba(0, 229, 255, 0.4);">v3.61.0-WEB</span></p>
+                    
+                    <!-- Widget Mode Tabs -->
+                    <div style="display: flex; background: rgba(0,0,0,0.4); border-radius: 12px; padding: 4px; margin-bottom: 18px; border: 1px solid rgba(255,255,255,0.08);">
+                        <button type="button" id="tab-btn-client" onclick="switchConnectTab('client')" style="flex: 1; padding: 8px 10px; border-radius: 8px; border: none; background: var(--accent-gradient); color: #000; font-weight: 800; font-size: 0.8rem; cursor: pointer; transition: all 0.3s ease;">
+                            <i class="fa-solid fa-arrow-right-to-bracket"></i> <span data-i18n="widget.tab_connect">Bağlan (Destek Ver)</span>
+                        </button>
+                        <button type="button" id="tab-btn-host" onclick="switchConnectTab('host')" style="flex: 1; padding: 8px 10px; border-radius: 8px; border: none; background: transparent; color: #a0aec0; font-weight: 700; font-size: 0.8rem; cursor: pointer; transition: all 0.3s ease;">
+                            <i class="fa-solid fa-tower-broadcast"></i> <span data-i18n="widget.tab_share">Ekranımı Paylaş</span>
+                        </button>
+                    </div>
+
+                    <!-- TAB 1: CONNECT TO REMOTE -->
+                    <div id="tab-content-client">
+                        <div class="input-group">
+                            <label for="target-id" data-i18n="widget.label"><i class="fa-solid fa-desktop"></i> UZAKTAKİ MASA ID'Sİ (REMOTE ID)</label>
+                            <input type="text" id="target-id" placeholder="Örn: 219 675 629" data-i18n-ph="widget.placeholder" onkeydown="if(event.key==='Enter') doConnect()" style="text-align: center; letter-spacing: 2px; font-weight: 800; font-size: 1.3rem;">
+                        </div>
+                        
+                        <button id="connect-btn" type="button" onclick="doConnect()" class="primary-btn" style="position: relative; z-index: 99999; pointer-events: auto !important; cursor: pointer;">
+                            <span data-i18n="widget.connect">Bağlan</span> <i class="fa-solid fa-arrow-right-to-bracket"></i>
+                        </button>
+                        
+                        <div style="display: flex; gap: 8px; margin-top: 10px;">
+                            <button type="button" onclick="shareViaWhatsApp()" style="flex: 1; padding: 10px; background: rgba(37, 211, 102, 0.15); border: 1px solid #25D366; border-radius: 8px; color: #25D366; font-weight: 700; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                                <i class="fa-brands fa-whatsapp" style="font-size: 1.1rem;"></i> <span>WhatsApp'la Gönder</span>
+                            </button>
+                            <button type="button" onclick="copyMagicLink()" style="flex: 1; padding: 10px; background: rgba(0, 229, 255, 0.15); border: 1px solid #00e5ff; border-radius: 8px; color: #00e5ff; font-weight: 700; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                                <i class="fa-solid fa-link" style="font-size: 0.9rem;"></i> <span>Link Kopyala</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- TAB 2: SHARE MY SCREEN (WEB HOST) -->
+                    <div id="tab-content-host" style="display: none;">
+                        <p style="font-size: 0.85rem; color: #a0aec0; margin-bottom: 14px;">Program yüklemeden ekranınızı destek ekibimizle canlı olarak payla�Yın:</p>
+                        <div id="web-host-idle-box">
+                            <button type="button" id="start-web-share-btn" onclick="startWebScreenShare()" class="primary-btn" style="background: linear-gradient(135deg, #2ecc71, #00e5ff); color: #000;">
+                                <i class="fa-solid fa-satellite-dish"></i> <span>Ekranımı Payla�Y ve ID �oret</span>
+                            </button>
+                        </div>
+                        <div id="web-host-active-box" style="display: none; background: rgba(0, 229, 255, 0.1); border: 1px solid #00e5ff; border-radius: 12px; padding: 15px; margin-top: 10px;">
+                            <span style="font-size: 0.8rem; color: #00e5ff; font-weight: 700; text-transform: uppercase;">WEB DESTEK ID'NİZ:</span>
+                            <div id="my-web-id-display" style="font-size: 1.8rem; font-weight: 900; color: #fff; letter-spacing: 3px; margin: 6px 0;">--- --- ---</div>
+                            <span style="font-size: 0.8rem; color: #a0aec0;">Eri�Yim Şifresi: <strong id="my-web-pass-display" style="color:#00e5ff;">----</strong></span>
+                            <div style="display: flex; gap: 8px; margin-top: 12px;">
+                                <button type="button" onclick="shareMyWebIdWhatsApp()" style="flex: 1; padding: 8px; background: rgba(37, 211, 102, 0.2); border: 1px solid #25D366; border-radius: 8px; color: #25D366; font-weight: 700; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;">
+                                    <i class="fa-brands fa-whatsapp"></i> <span>WhatsApp'la At</span>
+                                </button>
+                                <button type="button" onclick="stopWebScreenShare()" style="flex: 1; padding: 8px; background: rgba(231, 76, 60, 0.2); border: 1px solid #e74c3c; border-radius: 8px; color: #e74c3c; font-weight: 700; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;">
+                                    <i class="fa-solid fa-stop"></i> <span>Durdur</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card-footer">
+                        <p><i class="fa-solid fa-shield-halved"></i> <span data-i18n="widget.footer">Güvenli yerel a�Y ba�Ylantısı</span></p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Features Section -->
+        <section id="ozellikler" class="features-section">
+            <div class="section-header">
+                <h2 data-i18n="features.title">Neden BigLineconnect?</h2>
+                <p data-i18n="features.desc">Rakipsiz hız, uçtan uca güvenlik ve esnek lisanslama seçenekleri ile i�Yinizi büyütün.</p>
+            </div>
+
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fa-solid fa-bolt"></i></div>
+                    <h3 data-i18n="feat1.title">60 FPS Akıcı Ekran Transferi</h3>
+                    <p data-i18n="feat1.desc">Dü�Yük gecikme süreli grafik motoru sayesinde uzak bilgisayarları sanki ba�Yındaymı�Y gibi yönetin.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fa-solid fa-shield-cat"></i></div>
+                    <h3 data-i18n="feat2.title">Uçtan Uca 256-bit Şifreleme</h3>
+                    <p data-i18n="feat2.desc">TLS 1.3 ve SHA-256 kriptografik koruma ile tüm veri akı�Yınız güvence altındadır.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fa-solid fa-plug-circle-check"></i></div>
+                    <h3 data-i18n="feat3.title">Port Açma Gerektirmez</h3>
+                    <p data-i18n="feat3.desc">Modem veya güvenlik duvarı ayarı gerekmez. Kurulumsuz çalı�Ytırın, do�Yrudan ba�Ylanın.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fa-solid fa-users-gear"></i></div>
+                    <h3 data-i18n="feat4.title">�?oklu Operatör & Kanal Yönetimi</h3>
+                    <p data-i18n="feat4.desc">Ekibinizdeki teknik destek personelini gruplayın, e�Yzamanlı kanal ve kota kullanımını izleyin.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fa-solid fa-laptop-code"></i></div>
+                    <h3 data-i18n="feat5.title">Unattended (Arka Plan) Cihaz Kaydı</h3>
+                    <p data-i18n="feat5.desc">Mü�Yteri bilgisayarlarına �Yifreli servis kurarak 7/24 kesintisiz eri�Yim ve yönetim imkanı.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fa-solid fa-mobile-screen-button"></i></div>
+                    <h3 data-i18n="feat6.title">Mobil & Web Tam Uyumlu</h3>
+                    <p data-i18n="feat6.desc">Masaüstü uygulamasına ek olarak web tarayıcılarından ve mobil cihazlardan sorunsuz ba�Ylanın.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Pricing Section -->
+        <section id="fiyatlandirma" class="pricing-section">
+            <div class="section-header">
+                <h2 data-i18n="pricing.title">Abonelik ve Paketler</h2>
+                <p data-i18n="pricing.desc">İhtiyacınıza en uygun paketi seçin, anında kullanmaya ba�Ylayın.</p>
+                <div style="background: linear-gradient(135deg, rgba(213,0,249,0.15), rgba(0,229,255,0.15)); border: 1px solid #00e5ff; padding: 10px 22px; border-radius: 30px; display: inline-block; margin-top: 14px; font-weight: 800; font-size: 0.95rem; color: #fff; box-shadow: 0 0 15px rgba(0,229,255,0.2);" data-i18n="pricing.promo">
+                    gY"� T�oM PAKETLERDE İLK 1 AY %100 �oCRETSİZ FULL KULLANIM HEDİYE!
+                </div>
+            </div>
+
+            <div class="pricing-grid">
+                <div class="pricing-card">
+                    <div class="package-header">
+                        <h3 data-i18n="pkg1.name">Ba�Ylangıç</h3>
+                        <div class="price"><span data-i18n="pkg1.price">�,�1.490</span> <span data-i18n="pkg1.period">/ yıl</span></div>
+                    </div>
+                    <ul class="package-features">
+                        <li><i class="fa-solid fa-check"></i> <span data-i18n="pkg1.f1"><strong>1 Operatör</strong> Lisansı</span></li>
+                        <li><i class="fa-solid fa-check"></i> <span data-i18n="pkg1.f2"><strong>5 E�Yzamanlı Kanal</strong></span></li>
+                        <li><i class="fa-solid fa-check"></i> <span data-i18n="pkg1.f3"><strong>50 Unattended Cihaz</strong> Kaydı</span></li>
+                        <li><i class="fa-solid fa-check"></i> <span data-i18n="pkg1.f4">Tam Web & Masaüstü Deste�Yi</span></li>
+                        <li><i class="fa-solid fa-check"></i> <span data-i18n="pkg1.f5">7/24 Kesintisiz Sunucu Eri�Yimi</span></li>
+                    </ul>
+                    <a href="admin.html" class="price-btn" data-i18n="pkg1.btn">Lisans Tanımla</a>
+                </div>
+
+                <div class="pricing-card featured">
+                    <div class="popular-badge" data-i18n="pkg2.badge">En �?ok Tercih Edilen</div>
+                    <div class="package-header">
+                        <h3 data-i18n="pkg2.name">Pro</h3>
+                        <div class="price"><span data-i18n="pkg2.price">�,�3.990</span> <span data-i18n="pkg2.period">/ yıl</span></div>
+                    </div>
+                    <ul class="package-features">
+                        <li><i class="fa-solid fa-check"></i> <span data-i18n="pkg2.f1"><strong>2 Operatör</strong> Lisansı</span></li>
+                        <li><i class="fa-solid fa-check"></i> <span data-i18n="pkg2.f2"><strong>10 E�Yzamanlı Kanal</strong></span></li>
+                        <li><i class="fa-solid fa-check"></i> <span data-i18n="pkg2.f3"><strong>100 Unattended Cihaz</strong> Kaydı</span></li>
+                        <li><i class="fa-solid fa-check"></i> <span data-i18n="pkg2.f4">Tam Web & Masaüstü Deste�Yi</span></li>
+                        <li><i class="fa-solid fa-check"></i> <span data-i18n="pkg2.f5">�-ncelikli Teknik Destek</span></li>
+                    </ul>
+                    <a href="admin.html" class="price-btn primary" data-i18n="pkg2.btn">Lisans Tanımla</a>
+                </div>
+
+                <div class="pricing-card">
+                    <div class="package-header">
+                        <h3 data-i18n="pkg3.name">Pro+</h3>
+                        <div class="price"><span data-i18n="pkg3.price">�,�4.990</span> <span data-i18n="pkg3.period">/ yıl</span></div>
+                    </div>
+                    <ul class="package-features">
+                        <li><i class="fa-solid fa-check"></i> <span data-i18n="pkg3.f1"><strong>3 Operatör</strong> Lisansı</span></li>
+                        <li><i class="fa-solid fa-check"></i> <span data-i18n="pkg3.f2"><strong>15 E�Yzamanlı Kanal</strong></span></li>
+                        <li><i class="fa-solid fa-check"></i> <span data-i18n="pkg3.f3"><strong>150 Unattended Cihaz</strong> Kaydı</span></li>
+                        <li><i class="fa-solid fa-check"></i> <span data-i18n="pkg3.f4">Tam Web & Masaüstü Deste�Yi</span></li>
+                        <li><i class="fa-solid fa-check"></i> <span data-i18n="pkg3.f5">�-zel Mü�Yteri Temsilcisi</span></li>
+                    </ul>
+                    <a href="admin.html" class="price-btn" data-i18n="pkg3.btn">Lisans Tanımla</a>
+                </div>
+
+                <div class="pricing-card">
+                    <div class="package-header">
+                        <h3 data-i18n="pkg4.name">Kurumsal</h3>
+                        <div class="price"><span data-i18n="pkg4.price">�-zel Teklif</span></div>
+                    </div>
+                    <ul class="package-features">
+                        <li><i class="fa-solid fa-check"></i> <span data-i18n="pkg4.f1"><strong>Sınırsız Operatör</strong></span></li>
+                        <li><i class="fa-solid fa-check"></i> <span data-i18n="pkg4.f2"><strong>Sınırsız / Esnek Kanal</strong></span></li>
+                        <li><i class="fa-solid fa-check"></i> <span data-i18n="pkg4.f3"><strong>Sınırsız Cihaz Kaydı</strong></span></li>
+                        <li><i class="fa-solid fa-check"></i> <span data-i18n="pkg4.f4">�-zel Sunucu Konfigürasyonu</span></li>
+                        <li><i class="fa-solid fa-check"></i> <span data-i18n="pkg4.f5">�-zel Logo & Markalama</span></li>
+                    </ul>
+                    <a href="mailto:info@bigus.com.tr" class="price-btn" data-i18n="pkg4.btn">İleti�Yime Geçin</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Download Section -->
+        <section id="indirme" class="download-section">
+            <div class="download-card">
+                <div class="download-info">
+                    <h2 data-i18n="download.title">Masaüstü Uygulamasını İndirin</h2>
+                    <p data-i18n="download.desc">Windows 10, 11 ve Sunucu i�Yletim sistemleri için optimize edilmi�Y Native AOT exe sürümünü tek tıkla yükleyin.</p>
+                </div>
+                <div class="download-action">
+                    <a href="BigLineconnect_setup.zip" class="download-large-btn">
+                        <i class="fa-solid fa-download"></i> <span data-i18n="download.btn">Windows İstemcisi İndir</span>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <img src="logo.png" alt="Bigus Logo" class="footer-logo">
+                    <span>BigLineconnect</span>
+                    <p>© 2026 Bigus Mobile ERP & Yazılım Teknolojileri. Tüm hakları saklıdır.</p>
+                </div>
+                <div class="footer-links">
+                    <a href="admin.html">Yönetim Paneli</a>
+                    <a href="#ozellikler">�-zellikler</a>
+                    <a href="#fiyatlandirma">Paketler</a>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Viewer Screen Overlay (When Web Client Connects) -->
+    <div id="viewer-screen" class="viewer-screen hidden" style="display: none !important; pointer-events: none !important;">
+        <!-- Header bar -->
+        <header class="viewer-header">
+            <div class="header-left">
+                <img src="logo.png" alt="Bigus Logo" class="header-logo">
+                <span class="header-title">BigLineconnect</span>
+            </div>
+            <div class="header-center">
+                <div class="status-indicator connected">
+                    <span class="pulse-dot"></span>
+                    <span id="connection-status">Ba�Ylı</span>
+                </div>
+            </div>
+            <div class="header-right">
+                <button id="fullscreen-btn" class="icon-btn" title="Tam Ekran"><i class="fa-solid fa-expand"></i></button>
+                <button id="disconnect-btn" class="icon-btn danger" title="Ba�Ylantıyı Kes"><i class="fa-solid fa-power-off"></i></button>
+            </div>
+        </header>
+
+        <!-- Remote screen rendering canvas -->
+        <div class="canvas-container" id="canvas-container">
+            <canvas id="screen-canvas" style="width: 100%; height: 100%; object-fit: contain; cursor: default; display: block; user-select: none;"></canvas>
+            <img id="screen-img" style="display: none;">
+        </div>
+
+        <!-- Floating Controls for Mobile & Actions -->
+        <div class="floating-controls" style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(12px); padding: 8px 14px; border-radius: 30px; border: 1px solid rgba(0, 229, 255, 0.3); box-shadow: 0 10px 30px rgba(0,0,0,0.8); z-index: 999999;">
+            <button id="zoom-in-btn" type="button" onclick="zoomIn()" class="control-btn" title="Yakınlaştır" style="background: rgba(0,229,255,0.15); border: 1px solid #00e5ff; color: #00e5ff; border-radius: 20px; padding: 6px 12px; font-weight: 700; cursor: pointer;">
+                <i class="fa-solid fa-magnifying-glass-plus"></i>
+            </button>
+            <button id="zoom-out-btn" type="button" onclick="zoomOut()" class="control-btn" title="Uzaklaştır" style="background: rgba(0,229,255,0.15); border: 1px solid #00e5ff; color: #00e5ff; border-radius: 20px; padding: 6px 12px; font-weight: 700; cursor: pointer;">
+                <i class="fa-solid fa-magnifying-glass-minus"></i>
+            </button>
+            <button id="zoom-reset-btn" type="button" onclick="resetZoom()" class="control-btn" title="Sıfırla %100" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); color: #fff; border-radius: 20px; padding: 6px 10px; font-size: 0.75rem; font-weight: 700; cursor: pointer;">
+                100%
+            </button>
+            <button id="toggle-keyboard-btn" type="button" onclick="openMobileKeyboard()" class="control-btn" title="Klavyeyi Aç" style="background: rgba(0,229,255,0.2); border: 1px solid #00e5ff; color: #fff; border-radius: 20px; padding: 6px 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                <i class="fa-solid fa-keyboard"></i> <span>Klavye</span>
+            </button>
+            <button id="mouse-mode-btn" type="button" onclick="toggleRightClickMode()" class="control-btn" title="Tıklama Modu" style="background: rgba(168, 85, 247, 0.2); border: 1px solid #a855f7; color: #e9d5ff; border-radius: 20px; padding: 6px 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                <i class="fa-solid fa-computer-mouse"></i> <span id="mouse-mode-text">Sol Tık</span>
+            </button>
+        </div>
+
+        <!-- Hidden input to capture keyboard events on mobile -->
+        <input type="text" id="hidden-keyboard-input" autocomplete="off" autocapitalize="off" spellcheck="false">
+    </div>
+
+    <!-- Password Prompt Dialog -->
+    <div id="password-modal" class="hidden" style="display: none !important; pointer-events: none !important; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(5, 7, 15, 0.92); backdrop-filter: blur(20px); z-index: 10000; justify-content: center; align-items: center; padding: 20px;">
+        <div class="glass-card connection-card" style="max-width: 390px; width: 100%; padding: 28px 22px; text-align: center; border: 1.5px solid rgba(0, 229, 255, 0.3); border-radius: 24px; box-shadow: 0 25px 50px rgba(0, 0, 0, 0.9);">
+            <div style="width: 54px; height: 54px; margin: 0 auto 12px; background: rgba(0, 229, 255, 0.12); border: 1px solid var(--accent-color); border-radius: 50%; display: flex; justify-content: center; align-items: center; color: var(--accent-color); font-size: 1.4rem;">
+                <i class="fa-solid fa-lock"></i>
+            </div>
+            <h3 style="margin-bottom: 6px; color: #ffffff; font-size: 1.4rem; font-weight: 800;">EriYim Şifresi Gerekli</h3>
+            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 18px;">Lütfen hedef bilgisayarın 6 haneli Yifresini girin:</p>
+            
+            <div class="input-group" style="margin-bottom: 20px; position: relative;">
+                <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="6" id="access-password-input" placeholder="�?� �?� �?� �?� �?� �?�" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="text-align: center; width: 100%; padding: 14px; font-size: 26px; letter-spacing: 12px; font-weight: 900; -webkit-text-security: disc; text-security: disc; background: rgba(15, 23, 42, 0.9); border: 2px solid var(--accent-color); border-radius: 16px; color: #00e5ff; box-shadow: inset 0 2px 8px rgba(0,0,0,0.8), 0 0 15px rgba(0, 229, 255, 0.25);">
+            </div>
+
+            <!-- Touch Numpad Grid -->
+            <div class="numpad-grid">
+                <button type="button" class="numpad-btn" data-val="1">1</button>
+                <button type="button" class="numpad-btn" data-val="2">2</button>
+                <button type="button" class="numpad-btn" data-val="3">3</button>
+                <button type="button" class="numpad-btn" data-val="4">4</button>
+                <button type="button" class="numpad-btn" data-val="5">5</button>
+                <button type="button" class="numpad-btn" data-val="6">6</button>
+                <button type="button" class="numpad-btn" data-val="7">7</button>
+                <button type="button" class="numpad-btn" data-val="8">8</button>
+                <button type="button" class="numpad-btn" data-val="9">9</button>
+                <button type="button" class="numpad-btn action" data-val="clear">C</button>
+                <button type="button" class="numpad-btn" data-val="0">0</button>
+                <button type="button" class="numpad-btn action" data-val="backspace"><i class="fa-solid fa-delete-left"></i></button>
+            </div>
+
+            <button id="submit-password-btn" type="button" class="primary-btn" onclick="sendPassword()" style="width: 100%; padding: 16px; font-size: 1.1rem; font-weight: 800; border-radius: 18px;">Do�Yrula & Ba�Ylan <i class="fa-solid fa-arrow-right-to-bracket"></i></button>
+        </div>
+    </div>
+
+    <!-- Free Web Trial Timer Warning & Extension Modal -->
+    <div id="session-timer-modal" class="hidden" style="display: none !important; pointer-events: none !important; position: fixed; top: 20px; right: 20px; z-index: 99999; max-width: 380px; width: 90%; background: rgba(15, 23, 42, 0.95); border: 2px solid #00e5ff; border-radius: 16px; padding: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.8); backdrop-filter: blur(15px);">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+            <i class="fa-solid fa-clock-rotate-left" style="color: #00e5ff; font-size: 1.4rem;"></i>
+            <h4 style="margin: 0; font-size: 1rem; color: #fff; font-weight: 800;">�ocretsiz Web Süresi Doluyor!</h4>
+        </div>
+        <p style="font-size: 0.85rem; color: #cbd5e1; margin-bottom: 15px; line-height: 1.4;">
+            �ocretsiz web deneme sürenizin bitmesine <strong id="session-timer-seconds" style="color: #00e5ff; font-size: 1.1rem;">60</strong> saniye kaldı.
+        </p>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+            <button type="button" onclick="extendFreeSessionTimer()" style="width: 100%; padding: 10px; background: linear-gradient(135deg, #2ecc71, #00e5ff); border: none; border-radius: 8px; color: #000; font-weight: 800; font-size: 0.9rem; cursor: pointer;">
+                <i class="fa-solid fa-gift"></i> +5 Dakika Ek Süre Uzat (�ocretsiz)
+            </button>
+            <button type="button" onclick="openCheckoutModal()" style="width: 100%; padding: 10px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: #fff; text-align: center; font-weight: 700; font-size: 0.85rem; cursor: pointer;">
+                <i class="fa-solid fa-crown" style="color: #ffd700;"></i> Sınırsız Paket (Ayda Sadece �,�125 TL / $4)
+            </button>
+        </div>
+    </div>
+
+    <!-- Instant Checkout & Payment Notification Modal -->
+    <div id="checkout-modal" class="hidden" style="display: none !important; pointer-events: none !important; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(11,14,20,0.92); z-index:999999; justify-content:center; align-items:center; backdrop-filter:blur(15px); padding:20px;">
+        <div style="background:var(--card-bg); border:1px solid var(--accent-cyan); border-radius:20px; padding:25px; max-width:460px; width:100%; text-align:center; box-shadow:0 25px 50px rgba(0,0,0,0.9); position:relative; max-height:90vh; overflow-y:auto;">
+            <button type="button" onclick="closeCheckoutModal()" style="position:absolute; top:15px; right:15px; background:none; border:none; color:#a0aec0; font-size:1.2rem; cursor:pointer;"><i class="fa-solid fa-xmark"></i></button>
+            <img src="logo.png" alt="BigLineconnect" style="height:40px; margin-bottom:10px;">
+            <h3 style="font-weight:800; font-size:1.3rem; color:#fff; margin-bottom:4px;">Lisans Al & �-deme Bildirimi</h3>
+            <p style="color:#00e5ff; font-size:0.85rem; font-weight:700; margin-bottom:16px;">Ayda Sadece �,�125 TL ($4/Ay) �?� Yıllık �,�1.490 TL</p>
+
+            <!-- Bank / IBAN Info Box -->
+            <div style="background:rgba(0, 229, 255, 0.08); border:1px solid rgba(0, 229, 255, 0.3); border-radius:12px; padding:12px; text-align:left; margin-bottom:16px; font-size:0.82rem;">
+                <div style="color:#00e5ff; font-weight:800; margin-bottom:4px;"><i class="fa-solid fa-building-columns"></i> HAVALE / EFT BANKA HESAP BİLGİLERİ:</div>
+                <div style="color:#fff; font-weight:700;">Alıcı: Bigus Mobil Yazılım Teknolojileri</div>
+                <div style="color:#fff; font-weight:700; margin-top:2px;">Banka: Ziraat Bankası</div>
+                <div style="color:#2ecc71; font-family:monospace; font-weight:800; font-size:0.9rem; margin-top:4px; letter-spacing:1px;">IBAN: TR76 0001 0090 1023 4567 8901</div>
+                <div style="color:#a0aec0; font-size:0.75rem; margin-top:4px;">Açıklama: Ad Soyad / Telefon Yazınız</div>
+            </div>
+            
+            <form id="checkout-form" onsubmit="submitOnlineCheckout(event)">
+                <div style="margin-bottom:10px; text-align:left;">
+                    <label style="font-size:0.75rem; color:#a0aec0; font-weight:700;">AD SOYAD / FİRMA ADI</label>
+                    <input type="text" id="checkout-name" required placeholder="Ahmet Yılmaz / Yılmaz Bili�Yim" style="width:100%; padding:10px; background:rgba(0,0,0,0.5); border:1px solid var(--border-color); border-radius:8px; color:#fff; margin-top:3px; outline:none;">
+                </div>
+                <div style="margin-bottom:10px; text-align:left;">
+                    <label style="font-size:0.75rem; color:#a0aec0; font-weight:700;">E-POSTA ADRESİ (Lisans Gönderilecek)</label>
+                    <input type="email" id="checkout-email" required placeholder="ahmet@firma.com" style="width:100%; padding:10px; background:rgba(0,0,0,0.5); border:1px solid var(--border-color); border-radius:8px; color:#fff; margin-top:3px; outline:none;">
+                </div>
+                <div style="margin-bottom:14px; text-align:left;">
+                    <label style="font-size:0.75rem; color:#a0aec0; font-weight:700;">TELEFON</label>
+                    <input type="tel" id="checkout-phone" required placeholder="0555 123 45 67" style="width:100%; padding:10px; background:rgba(0,0,0,0.5); border:1px solid var(--border-color); border-radius:8px; color:#fff; margin-top:3px; outline:none;">
+                </div>
+
+                <div style="display:flex; flex-direction:column; gap:8px;">
+                    <button type="submit" class="primary-btn" style="width:100%; padding:12px; font-size:0.85rem; background:linear-gradient(135deg, #2ecc71, #00e5ff); color:#000; border:none; border-radius:10px; font-weight:800; cursor:pointer;">
+                        <i class="fa-solid fa-paper-plane"></i> �-deme Bildirimi Yap (Havale / EFT �f¶demeniz kontrol edildikten sonra (ortalama 5-10 dk) Lisans Anahtar�"±n�"±z e-postan�"±za ve WhatsApp hatt�"±n�"±za g�f¶nderilecektir.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- App JS Engine -->
+    
+    <script>
+        // Service Worker & PWA Installation
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').then((reg) => {
+                    console.log('PWA Service Worker registered:', reg.scope);
+                }).catch((err) => {
+                    console.warn('PWA Service Worker failed:', err);
+                });
+            });
+        }
+
+        // Direct Mobile Action: Auto Jump & Focus to "Tarayıcıdan Anında BaYlanın" Widget
+        const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        if (isMobileDevice) {
+            window.addEventListener('DOMContentLoaded', () => {
+                setTimeout(() => {
+                    const baglanElem = document.getElementById('baglan');
+                    if (baglanElem) {
+                        baglanElem.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                }, 100);
+            });
+        }
+
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
+
+    </script>
+    <script>
+        var ws = null;
+
+        function resetConnectButton() {
+            var btn = document.getElementById('connect-btn');
+            if (btn) {
+                btn.disabled = false;
+                btn.style.pointerEvents = 'auto';
+                btn.style.opacity = '1';
+                btn.style.cursor = 'pointer';
+                btn.innerHTML = '<span>Bağlan</span> <i class="fa-solid fa-arrow-right-to-bracket"></i>';
+            }
+        }
+        window.resetConnectButton = resetConnectButton;
+
+        function doConnect() {
+            console.log('[BigLine] doConnect triggered');
+            var inputElem = document.getElementById('target-id') || document.getElementById('tid');
+            if (!inputElem) { alert('Hata: ID giriş kutusu bulunamadı.'); return; }
+
+            var id = inputElem.value.replace(/\D/g, '');
+            if (!id || id.length < 5) {
+                alert('⚠️ Lütfen bağlanmak istediğiniz uzaktaki bilgisayarın 9 haneli ID numarasını girin (Örn: 219 675 629).');
+                resetConnectButton();
+                return;
+            }
+
+            var btn = document.getElementById('connect-btn');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Bağlanıyor...</span>';
+            }
+
+            var wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            if (ws) { try { ws.close(); } catch(e) {} }
+
+            ws = new WebSocket(wsProtocol + '//' + location.host + '/connect-client?id=' + id);
+            ws.binaryType = 'arraybuffer';
+
+            ws.onopen = function() {
+                console.log('[BigLine] WS Connected!');
+            };
+
+            ws.onmessage = function(ev) {
+                if (typeof ev.data === 'string') {
+                    if (ev.data === 'ERROR:ID_NOT_FOUND') {
+                        resetConnectButton();
+                        alert('⚠️ UYARI: (' + id + ') numaralı Masaüstü ID\'si bulunamadı!\nLütfen BigLineconnect uygulamasının açık olduğundan emin olun.');
+                        ws.close();
+                    } else if (ev.data === 'ERROR:BUSY') {
+                        resetConnectButton();
+                        alert('⚠️ UYARI: Bu bilgisayara şu an başka bir operatör bağlı.');
+                        ws.close();
+                    } else if (ev.data === 'AUTH_REQUIRED') {
+                        var pass = prompt('🔒 Lütfen karşı bilgisayarın ekranında yazan 6 haneli erişim şifresini girin:', '');
+                        if (pass) {
+                            ws.send(pass);
+                            ws.send("AUTH_PASS:" + pass);
+                        } else {
+                            resetConnectButton();
+                            ws.close();
+                        }
+                    } else if (ev.data === 'AUTH_SUCCESS') {
+                        if (typeof window.startFreeSessionTimer === 'function') window.startFreeSessionTimer();
+                        var landing = document.getElementById('landing-page');
+                        var viewer = document.getElementById('viewer-screen');
+                        if (landing) landing.style.setProperty('display', 'none', 'important');
+                        if (viewer) {
+                            viewer.style.setProperty('display', 'flex', 'important');
+                            viewer.style.setProperty('pointer-events', 'auto', 'important');
+                            viewer.style.setProperty('z-index', '999999', 'important');
+                        }
+                    } else {
+                        try { showToast(ev.data, 'info'); } catch(e) {}
+                    }
+                } else if (ev.data instanceof ArrayBuffer) {
+                    var landing = document.getElementById('landing-page');
+                    var viewer = document.getElementById('viewer-screen');
+                    if (landing && landing.style.display !== 'none') {
+                        landing.style.setProperty('display', 'none', 'important');
+                    }
+                    if (viewer && viewer.style.display !== 'flex') {
+                        viewer.style.setProperty('display', 'flex', 'important');
+                        viewer.style.setProperty('pointer-events', 'auto', 'important');
+                        viewer.style.setProperty('z-index', '999999', 'important');
+                    }
+
+                    var blob = new Blob([ev.data], {type: 'image/jpeg'});
+                    var url = URL.createObjectURL(blob);
+                    var img = new Image();
+                    var cv = document.getElementById('screen-canvas');
+                    var ctx = cv ? cv.getContext('2d', { alpha: false, desynchronized: true }) : null;
+                    img.onload = function() {
+                        if (cv && ctx) {
+                            if (cv.width !== img.width || cv.height !== img.height) {
+                                cv.width = img.width;
+                                cv.height = img.height;
+                            }
+                            ctx.drawImage(img, 0, 0);
+                        }
+                        URL.revokeObjectURL(url);
+                    };
+                    img.src = url;
+                }
+            };
+
+            ws.onerror = function(err) {
+                console.error('WS Error:', err);
+                resetConnectButton();
+                alert('Sunucu bağlantı hatası!');
+            };
+
+            ws.onclose = function() {
+                resetConnectButton();
+                var viewer = document.getElementById('viewer-screen');
+                var landing = document.getElementById('landing-page');
+                if (viewer) viewer.style.setProperty('display', 'none', 'important');
+                if (landing) landing.style.setProperty('display', 'block', 'important');
+            };
+        }
+        window.doConnect = doConnect;
+        window.startConnectionProcess = doConnect;
+
+        // 100% Pixel-Perfect Mouse Calibration with Aspect Ratio & Letterbox Compensation
+        function getMousePos(cv, clientX, clientY) {
+            var rect = cv.getBoundingClientRect();
+            if (rect.width <= 0 || rect.height <= 0) return { x: 0, y: 0 };
+
+            var naturalWidth = (cv.width && cv.width > 300) ? cv.width : 1920;
+            var naturalHeight = (cv.height && cv.height > 150) ? cv.height : 1080;
+
+            var imageAspect = naturalWidth / naturalHeight;
+            var containerAspect = rect.width / rect.height;
+
+            var renderedWidth, renderedHeight, offsetX, offsetY;
+
+            if (containerAspect > imageAspect) {
+                // Black bars on left & right
+                renderedHeight = rect.height;
+                renderedWidth = rect.height * imageAspect;
+                offsetX = (rect.width - renderedWidth) / 2;
+                offsetY = 0;
+            } else {
+                // Black bars on top & bottom
+                renderedWidth = rect.width;
+                renderedHeight = rect.width / imageAspect;
+                offsetX = 0;
+                offsetY = (rect.height - renderedHeight) / 2;
+            }
+
+            var mouseX = clientX - rect.left - offsetX;
+            var mouseY = clientY - rect.top - offsetY;
+
+            return {
+                x: Math.max(0, Math.min(1, mouseX / renderedWidth)),
+                y: Math.max(0, Math.min(1, mouseY / renderedHeight))
+            };
+        }
+
+        // Mobile Zoom & Focal Point Pinch Engine
+        var currentScale = 1.0;
+        var panX = 0, panY = 0;
+        var originXPercent = 50, originYPercent = 50;
+        var isRightClickNext = false;
+        var initialPinchDist = 0, initialPinchScale = 1.0;
+        var lastTouchMidX = 0, lastTouchMidY = 0;
+        var isPinchZooming = false;
+
+        function applyZoomTransform() {
+            var cv = document.getElementById('screen-canvas');
+            if (cv) {
+                cv.style.transformOrigin = originXPercent + '% ' + originYPercent + '%';
+                cv.style.transform = 'translate(' + panX + 'px, ' + panY + 'px) scale(' + currentScale + ')';
+            }
+        }
+
+        function zoomIn() {
+            currentScale = Math.min(4.0, currentScale + 0.3);
+            applyZoomTransform();
+        }
+        window.zoomIn = zoomIn;
+
+        function zoomOut() {
+            currentScale = Math.max(1.0, currentScale - 0.3);
+            if (currentScale === 1.0) { panX = 0; panY = 0; originXPercent = 50; originYPercent = 50; }
+            applyZoomTransform();
+        }
+        window.zoomOut = zoomOut;
+
+        function resetZoom() {
+            currentScale = 1.0;
+            panX = 0; panY = 0;
+            originXPercent = 50; originYPercent = 50;
+            applyZoomTransform();
+        }
+        window.resetZoom = resetZoom;
+
+        function toggleRightClickMode() {
+            isRightClickNext = !isRightClickNext;
+            var btnText = document.getElementById('mouse-mode-text');
+            var btn = document.getElementById('mouse-mode-btn');
+            if (btnText) btnText.innerText = isRightClickNext ? 'Sağ Tık' : 'Sol Tık';
+            if (btn) {
+                if (isRightClickNext) {
+                    btn.style.background = 'rgba(239, 68, 68, 0.3)';
+                    btn.style.borderColor = '#ef4444';
+                } else {
+                    btn.style.background = 'rgba(168, 85, 247, 0.2)';
+                    btn.style.borderColor = '#a855f7';
+                }
+            }
+        }
+        window.toggleRightClickMode = toggleRightClickMode;
+
+        function openMobileKeyboard() {
+            var hiddenInput = document.getElementById('hidden-keyboard-input');
+            if (hiddenInput) {
+                hiddenInput.focus();
+                hiddenInput.click();
+            }
+        }
+        window.openMobileKeyboard = openMobileKeyboard;
+
+        // Input Listeners (Mouse, Focal Pinch Zoom, Mobile Virtual Keyboard)
+        window.addEventListener('load', function() {
+            var cv = document.getElementById('screen-canvas');
+            if (!cv) return;
+
+            cv.style.touchAction = 'none';
+
+            var lastMove = 0;
+            cv.addEventListener('mousemove', function(e) {
+                if (!ws || ws.readyState !== WebSocket.OPEN) return;
+                var now = Date.now();
+                if (now - lastMove < 16) return;
+                lastMove = now;
+
+                var pos = getMousePos(cv, e.clientX, e.clientY);
+                ws.send(JSON.stringify({ type: 'move', x: pos.x, y: pos.y }));
+            });
+
+            cv.addEventListener('mousedown', function(e) {
+                if (!ws || ws.readyState !== WebSocket.OPEN) return;
+                var pos = getMousePos(cv, e.clientX, e.clientY);
+                var btn = isRightClickNext ? 'right' : (e.button === 2 ? 'right' : (e.button === 1 ? 'middle' : 'left'));
+                ws.send(JSON.stringify({ type: 'click', button: btn, action: 'down', x: pos.x, y: pos.y }));
+                if (isRightClickNext) toggleRightClickMode();
+                e.preventDefault();
+            });
+
+            cv.addEventListener('mouseup', function(e) {
+                if (!ws || ws.readyState !== WebSocket.OPEN) return;
+                var pos = getMousePos(cv, e.clientX, e.clientY);
+                var btn = isRightClickNext ? 'right' : (e.button === 2 ? 'right' : (e.button === 1 ? 'middle' : 'left'));
+                ws.send(JSON.stringify({ type: 'click', button: btn, action: 'up', x: pos.x, y: pos.y }));
+                e.preventDefault();
+            });
+
+            cv.addEventListener('contextmenu', function(e) { e.preventDefault(); });
+
+            cv.addEventListener('wheel', function(e) {
+                if (!ws || ws.readyState !== WebSocket.OPEN) return;
+                ws.send(JSON.stringify({ type: 'scroll', deltaY: e.deltaY }));
+                e.preventDefault();
+            }, { passive: false });
+
+            // Mobile Touch Engine: Focal Point Pinch Zoom + Pan + Tap & Hold
+            var touchStartX = 0, touchStartY = 0, touchStartTime = 0, isTouchDragging = false;
+
+            cv.addEventListener('touchstart', function(e) {
+                if (!ws || ws.readyState !== WebSocket.OPEN) return;
+                if (e.touches.length === 2) {
+                    isPinchZooming = true;
+                    var t1 = e.touches[0];
+                    var t2 = e.touches[1];
+                    var midX = (t1.clientX + t2.clientX) / 2;
+                    var midY = (t1.clientY + t2.clientY) / 2;
+
+                    var rect = cv.getBoundingClientRect();
+                    if (rect.width > 0 && rect.height > 0) {
+                        originXPercent = Math.max(0, Math.min(100, ((midX - rect.left) / rect.width) * 100));
+                        originYPercent = Math.max(0, Math.min(100, ((midY - rect.top) / rect.height) * 100));
+                    }
+
+                    initialPinchDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+                    initialPinchScale = currentScale;
+                    lastTouchMidX = midX;
+                    lastTouchMidY = midY;
+                } else if (e.touches.length === 1) {
+                    isPinchZooming = false;
+                    var t = e.touches[0];
+                    touchStartX = t.clientX;
+                    touchStartY = t.clientY;
+                    touchStartTime = Date.now();
+                    isTouchDragging = false;
+                    var pos = getMousePos(cv, t.clientX, t.clientY);
+                    ws.send(JSON.stringify({ type: 'move', x: pos.x, y: pos.y }));
+                }
+            }, { passive: false });
+
+            cv.addEventListener('touchmove', function(e) {
+                if (!ws || ws.readyState !== WebSocket.OPEN) return;
+                if (e.touches.length === 2) {
+                    var t1 = e.touches[0];
+                    var t2 = e.touches[1];
+                    var midX = (t1.clientX + t2.clientX) / 2;
+                    var midY = (t1.clientY + t2.clientY) / 2;
+                    var dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+
+                    if (initialPinchDist > 0) {
+                        var factor = dist / initialPinchDist;
+                        currentScale = Math.max(1.0, Math.min(4.0, initialPinchScale * factor));
+
+                        panX += (midX - lastTouchMidX);
+                        panY += (midY - lastTouchMidY);
+                        lastTouchMidX = midX;
+                        lastTouchMidY = midY;
+
+                        applyZoomTransform();
+                    }
+                    e.preventDefault();
+                } else if (e.touches.length === 1 && !isPinchZooming) {
+                    var t = e.touches[0];
+                    var dx = Math.abs(t.clientX - touchStartX);
+                    var dy = Math.abs(t.clientY - touchStartY);
+                    if (dx > 5 || dy > 5) {
+                        isTouchDragging = true;
+                        var now = Date.now();
+                        if (now - lastMove >= 16) {
+                            lastMove = now;
+                            var pos = getMousePos(cv, t.clientX, t.clientY);
+                            ws.send(JSON.stringify({ type: 'move', x: pos.x, y: pos.y }));
+                        }
+                    }
+                    e.preventDefault();
+                }
+            }, { passive: false });
+
+            cv.addEventListener('touchend', function(e) {
+                if (!ws || ws.readyState !== WebSocket.OPEN) return;
+                if (isPinchZooming) {
+                    if (e.touches.length === 0) isPinchZooming = false;
+                    return;
+                }
+
+                var duration = Date.now() - touchStartTime;
+                var isRightClick = isRightClickNext || (duration >= 400);
+                var clickButton = isRightClick ? 'right' : 'left';
+
+                if (!isTouchDragging && duration < 600 && e.changedTouches.length > 0) {
+                    var t = e.changedTouches[0];
+                    var pos = getMousePos(cv, t.clientX, t.clientY);
+                    ws.send(JSON.stringify({ type: 'click', button: clickButton, action: 'down', x: pos.x, y: pos.y }));
+                    setTimeout(function() {
+                        if (ws && ws.readyState === WebSocket.OPEN) {
+                            ws.send(JSON.stringify({ type: 'click', button: clickButton, action: 'up', x: pos.x, y: pos.y }));
+                        }
+                    }, 50);
+                    if (isRightClickNext) toggleRightClickMode();
+                    e.preventDefault();
+                }
+            }, { passive: false });
+
+            // Virtual Keyboard Touch Input Listener
+            var hiddenInput = document.getElementById('hidden-keyboard-input');
+            if (hiddenInput) {
+                hiddenInput.addEventListener('input', function(e) {
+                    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+                    var val = hiddenInput.value;
+                    if (val && val.length > 0) {
+                        for (var i = 0; i < val.length; i++) {
+                            var ch = val.charAt(i);
+                            ws.send(JSON.stringify({ type: 'key', key: ch, action: 'down' }));
+                            ws.send(JSON.stringify({ type: 'key', key: ch, action: 'up' }));
+                        }
+                        hiddenInput.value = '';
+                    }
+                });
+
+                hiddenInput.addEventListener('keydown', function(e) {
+                    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+                    if (e.key === 'Backspace') {
+                        ws.send(JSON.stringify({ type: 'key', key: 'backspace', action: 'down' }));
+                        ws.send(JSON.stringify({ type: 'key', key: 'backspace', action: 'up' }));
+                    } else if (e.key === 'Enter') {
+                        ws.send(JSON.stringify({ type: 'key', key: 'enter', action: 'down' }));
+                        ws.send(JSON.stringify({ type: 'key', key: 'enter', action: 'up' }));
+                    }
+                });
+            }
+        });
+
+        window.addEventListener('keydown', function(e) {
+            if (!ws || ws.readyState !== WebSocket.OPEN) return;
+            if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+            var k = e.key === ' ' ? 'space' : e.key;
+            ws.send(JSON.stringify({ type: 'key', key: k, action: 'down' }));
+        });
+
+        window.addEventListener('keyup', function(e) {
+            if (!ws || ws.readyState !== WebSocket.OPEN) return;
+            if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+            var k = e.key === ' ' ? 'space' : e.key;
+            ws.send(JSON.stringify({ type: 'key', key: k, action: 'up' }));
+        });
+    </script>
+    <script src="i18n.js?v=3610"></script>
+    <script src="app.js?v=3610"></script>
+</body>
+</html>
+
+
+

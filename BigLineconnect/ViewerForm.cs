@@ -201,7 +201,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.30.0 (Strict Non-Ticket Standard Remote Session & Web Auth Fix)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.61.2 (P2P LAN Direct Engine & Web Session Sync)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;

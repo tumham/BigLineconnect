@@ -182,7 +182,7 @@ namespace BigLineconnect
         private void InitializeComponent()
         {
             Program.LoadSecuritySettings();
-            this.Text = "BigLineconnect v3.30.0 - Uzaktan Kontrol (Strict Non-Ticket Standard Remote Session & Web Auth Fix)";
+            this.Text = "BigLineconnect v3.61.2 - Uzaktan Kontrol (P2P LAN Direct Engine & Web Session Sync)";
             this.Size = new Size(880, 750);
             this.MinimumSize = new Size(880, 750);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -212,7 +212,7 @@ namespace BigLineconnect
 
             _titleLabel = new Label
             {
-                Text = "BigLineconnect v3.30.0 🚀",
+                Text = "BigLineconnect v3.61.2 🚀",
                 Location = new Point(105, 15),
                 Size = new Size(330, 42),
                 Font = new Font("Segoe UI", 20F, FontStyle.Bold),
@@ -223,7 +223,7 @@ namespace BigLineconnect
 
             var subtitleLabel = new Label
             {
-                Text = "REMOTE DESKTOP CLIENT • v3.30.0 (Strict Non-Ticket Standard Remote Session & Web Auth Fix)",
+                Text = "REMOTE DESKTOP CLIENT • v3.61.2 (P2P LAN Direct Engine & Web Session Sync)",
                 Location = new Point(108, 58),
                 Size = new Size(450, 20),
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
@@ -5077,13 +5077,13 @@ namespace BigLineconnect
             this.StartPosition = FormStartPosition.Manual;
             this.TopMost = true;
             this.ShowInTaskbar = false;
-            this.Size = new Size(360, 48);
+            this.Size = new Size(420, 48);
             this.BackColor = Color.FromArgb(15, 23, 42); // Sleek dark slate
             this.Padding = new Padding(1);
 
             // Position in bottom-right corner of primary working area
             var wa = Screen.PrimaryScreen.WorkingArea;
-            this.Location = new Point(wa.Right - 380, wa.Bottom - 65);
+            this.Location = new Point(wa.Right - 440, wa.Bottom - 65);
 
             Panel pnlMain = new Panel
             {
@@ -5101,8 +5101,9 @@ namespace BigLineconnect
 
             Label lblIcon = new Label
             {
-                Text = "🟢",
+                Text = "⚡",
                 Font = new Font("Segoe UI", 11f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(0, 230, 118),
                 AutoSize = true,
                 Location = new Point(10, 13),
                 Cursor = Cursors.SizeAll
@@ -5110,11 +5111,11 @@ namespace BigLineconnect
 
             Label lblTitle = new Label
             {
-                Text = "⚡ BigLineconnect • Uzaktan Bağlantı Aktif",
-                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                Text = "BigLineconnect • Uzaktan Bağlantı Aktif",
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
                 ForeColor = Color.White,
                 AutoSize = true,
-                Location = new Point(36, 6),
+                Location = new Point(32, 6),
                 Cursor = Cursors.SizeAll
             };
 
@@ -5124,23 +5125,23 @@ namespace BigLineconnect
                 Font = new Font("Segoe UI", 8f, FontStyle.Regular),
                 ForeColor = Color.FromArgb(0, 229, 255),
                 AutoSize = true,
-                Location = new Point(36, 26),
+                Location = new Point(32, 26),
                 Cursor = Cursors.SizeAll
             };
 
             Label lblOpenApp = new Label
             {
-                Text = "🖥️ Göster",
+                Text = "Göster",
                 Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
-                ForeColor = Color.White,
-                BackColor = Color.FromArgb(0, 150, 255),
-                Location = new Point(272, 11),
-                Size = new Size(54, 25),
+                ForeColor = Color.FromArgb(0, 229, 255),
+                BackColor = Color.FromArgb(30, 42, 65),
+                Location = new Point(320, 10),
+                Size = new Size(60, 26),
                 TextAlign = ContentAlignment.MiddleCenter,
                 Cursor = Cursors.Hand
             };
-            lblOpenApp.MouseEnter += (s, e) => { lblOpenApp.BackColor = Color.FromArgb(0, 180, 255); };
-            lblOpenApp.MouseLeave += (s, e) => { lblOpenApp.BackColor = Color.FromArgb(0, 150, 255); };
+            lblOpenApp.MouseEnter += (s, e) => { lblOpenApp.BackColor = Color.FromArgb(0, 150, 255); lblOpenApp.ForeColor = Color.White; };
+            lblOpenApp.MouseLeave += (s, e) => { lblOpenApp.BackColor = Color.FromArgb(30, 42, 65); lblOpenApp.ForeColor = Color.FromArgb(0, 229, 255); };
             lblOpenApp.Click += (s, e) =>
             {
                 MainWindow.Instance?.RestoreAppWindow();
@@ -5149,10 +5150,10 @@ namespace BigLineconnect
             Label lblClose = new Label
             {
                 Text = "✖",
-                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(180, 190, 200),
-                Location = new Point(332, 6),
-                Size = new Size(22, 22),
+                Location = new Point(388, 10),
+                Size = new Size(24, 26),
                 TextAlign = ContentAlignment.MiddleCenter,
                 Cursor = Cursors.Hand
             };

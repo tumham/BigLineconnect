@@ -5,18 +5,19 @@
     <OutputType>WinExe</OutputType>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <PublishAot>true</PublishAot>
-    <_SuppressWinFormsTrimError>true</_SuppressWinFormsTrimError>
-    <_AllowWindowsFormsAndWpfTrimming>true</_AllowWindowsFormsAndWpfTrimming>
+    <PublishAot>false</PublishAot>
+    <PublishSingleFile>true</PublishSingleFile>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
     <SelfContained>true</SelfContained>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <UseWindowsForms>true</UseWindowsForms>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <AssemblyName>BigLineconnect</AssemblyName>
-    <Version>3.30.0</Version>
-    <AssemblyVersion>3.30.0.0</AssemblyVersion>
-    <FileVersion>3.30.0.0</FileVersion>
-    <ProductVersion>v3.30.0</ProductVersion>
+    <Version>3.61.2</Version>
+    <AssemblyVersion>3.61.2.0</AssemblyVersion>
+    <FileVersion>3.61.2.0</FileVersion>
+    <ProductVersion>v3.61.2</ProductVersion>
     <Authors>BIGUS BILISIM GELISTIRME VE UYGULAMA SISTEMLERI LIMITED SIRKETI</Authors>
     <Company>BIGUS BILISIM GELISTIRME VE UYGULAMA SISTEMLERI LIMITED SIRKETI</Company>
     <Product>BigLineconnect Kurumsal Uzaktan Masaustu ve Destek Yazilimi</Product>
@@ -36,7 +37,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="wwwroot\**" />
+    <EmbeddedResource Include="wwwroot\**" Exclude="wwwroot\*.exe;wwwroot\*.zip;wwwroot\*.pdb;wwwroot\*.bak" />
     <None Update="icon.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
