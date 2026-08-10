@@ -45,7 +45,7 @@
             ws.onmessage = function(ev) {
                 if (typeof ev.data === 'string') {
                     if (ev.data === 'AUTH_REQUIRED') {
-                        var pass = prompt('Lütfen 6 Haneli Şifreyi Girin (Veya Master PIN: 999999):', '999999');
+                        var pass = prompt('🔒 Lütfen karşı bilgisayarın ekranında yazan 6 haneli erişim şifresini girin:', '');
                         if (pass) ws.send(pass);
                     } else if (ev.data === 'AUTH_SUCCESS') {
                         st.innerText = 'Erişim Onaylandı! Ekran ve Kontrol Açılıyor...';

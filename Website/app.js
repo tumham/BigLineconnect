@@ -172,7 +172,7 @@ function connectToHost(id) {
                 alert('⚠️ UYARI: Bu bilgisayara şu an başka bir operatör bağlı.');
                 socket.close();
             } else if (ev.data === 'AUTH_REQUIRED') {
-                var pass = prompt('🔒 Lütfen karşı bilgisayarın 6 haneli erişim şifresini girin (Veya Master PIN: 999999):', '999999');
+                var pass = prompt('🔒 Lütfen karşı bilgisayarın ekranında yazan 6 haneli erişim şifresini girin:', '');
                 if (pass) {
                     socket.send(pass);
                 } else {
@@ -270,7 +270,7 @@ function connectToHost(id) {
                         if (container) container.appendChild(errLabel);
                     }
                     if (errLabel) {
-                        errLabel.textContent = '❌ Hatalı Şifre! Lütfen karşı bilgisayardaki 6 haneli şifreyi giriniz (Veya Yetkili Şifresi 999999).';
+                        errLabel.textContent = '❌ Hatalı Şifre! Lütfen karşı bilgisayarın ekranındaki 6 haneli şifreyi doğru girdiğinizden emin olun.';
                     }
                     if (accessPasswordInput) {
                         accessPasswordInput.value = '';
