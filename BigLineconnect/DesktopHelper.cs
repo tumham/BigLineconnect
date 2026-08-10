@@ -23,8 +23,8 @@ namespace BigLineconnect
         private const uint MAXIMUM_ALLOWED = 0x02000000;
         private const uint GENERIC_ALL = 0x10000000;
 
-        [ThreadStatic]
-        private static IntPtr _currentThreadDesktop = IntPtr.Zero;
+        private static readonly object _desktopLock = new object();
+        private static DateTime _lastDesktopAttachTime = DateTime.MinValue;
 
         public static void EnableSoftwareSAS()
         {
@@ -51,7 +51,6 @@ namespace BigLineconnect
                 EnableSoftwareSAS();
                 AttachToInputDesktop();
 
-                // 1. Invoke official Windows SAS API (SendSAS)
                 try
                 {
                     SendSAS(false);
@@ -62,7 +61,6 @@ namespace BigLineconnect
                     LogHelper($"SendSAS API exception: {ex.Message}");
                 }
 
-                // 2. Simulate hardware Ctrl+Alt+Del keystrokes
                 InputSimulator.SimulateKey("ctrl", "down");
                 InputSimulator.SimulateKey("alt", "down");
                 InputSimulator.SimulateKey("delete", "down");
@@ -77,48 +75,37 @@ namespace BigLineconnect
             }
         }
 
-        private static DateTime _lastDesktopAttachTime = DateTime.MinValue;
-
         public static void AttachToInputDesktop()
         {
-            if ((DateTime.UtcNow - _lastDesktopAttachTime).TotalMilliseconds < 2000 && _currentThreadDesktop != IntPtr.Zero)
+            if ((DateTime.UtcNow - _lastDesktopAttachTime).TotalMilliseconds < 3000)
             {
                 return;
             }
-            _lastDesktopAttachTime = DateTime.UtcNow;
 
-            try
+            lock (_desktopLock)
             {
-                IntPtr hDesk = OpenInputDesktop(0, true, MAXIMUM_ALLOWED);
-                if (hDesk == IntPtr.Zero)
+                if ((DateTime.UtcNow - _lastDesktopAttachTime).TotalMilliseconds < 3000)
                 {
-                    hDesk = OpenInputDesktop(0, true, DESKTOP_ALL_ACCESS);
+                    return;
                 }
+                _lastDesktopAttachTime = DateTime.UtcNow;
 
-                if (hDesk != IntPtr.Zero)
+                try
                 {
-                    if (hDesk == _currentThreadDesktop)
+                    IntPtr hDesk = OpenInputDesktop(0, true, MAXIMUM_ALLOWED);
+                    if (hDesk == IntPtr.Zero)
                     {
-                        CloseDesktop(hDesk);
-                        return;
+                        hDesk = OpenInputDesktop(0, true, DESKTOP_ALL_ACCESS);
                     }
 
-                    bool success = SetThreadDesktop(hDesk);
-                    if (success)
+                    if (hDesk != IntPtr.Zero)
                     {
-                        if (_currentThreadDesktop != IntPtr.Zero)
-                        {
-                            CloseDesktop(_currentThreadDesktop);
-                        }
-                        _currentThreadDesktop = hDesk;
-                    }
-                    else
-                    {
+                        SetThreadDesktop(hDesk);
                         CloseDesktop(hDesk);
                     }
                 }
+                catch { }
             }
-            catch { }
         }
 
         private static void LogHelper(string message)

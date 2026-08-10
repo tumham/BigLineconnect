@@ -233,7 +233,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.61.3 (P2P LAN Direct Engine & Web Session Sync)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.61.4 (Ultra-Fast Keyboard & P2P LAN Direct Engine)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
@@ -1283,7 +1283,7 @@ namespace BigLineconnect
                 {
                     string json = data is string str ? str : SafeSerialize(data);
                     
-                    if (!json.Contains("\"type\":\"move\"") && !json.Contains("\"chunk\":") && !json.Contains("\"data\":"))
+                    if (!json.Contains("\"type\":\"move\"") && !json.Contains("\"type\":\"key\"") && !json.Contains("\"type\":\"char\"") && !json.Contains("\"chunk\":") && !json.Contains("\"data\":"))
                     {
                         LogClient($"Sending: {json}");
                     }
