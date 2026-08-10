@@ -1,6 +1,6 @@
-# 🖥️ BigLineconnect - Web Remote Desktop Mouse Calibration & Handshake Library Guide
+# 🖥️ BigLineconnect - Web Remote Desktop Mouse Calibration & Mobile Control Library Guide
 
-This document preserves the exact mathematical equations, event pipelines, and implementation rules for the Web-to-Desktop remote desktop engine.
+This document preserves the exact mathematical equations, event pipelines, mobile gesture specs, and implementation rules for the Web-to-Desktop remote desktop engine.
 
 ---
 
@@ -67,6 +67,37 @@ function getMousePos(cv, clientX, clientY) {
 Hidden overlays (`#password-modal`, `#viewer-screen`) must ALWAYS specify:
 `display: none !important; pointer-events: none !important;`
 when hidden, preventing invisible Z-Index elements from blocking mouse clicks on the landing page buttons.
+
+---
+
+## 4. 📱 Mobile Focal Point Pinch Zoom & Gesture Control Engine
+
+For mobile devices (iOS Safari, Android Chrome, Tablets), zooming focuses directly under the user's fingertips rather than hardcoded canvas center.
+
+### A. Dynamic Focal Point Calculation:
+```javascript
+// Calculate midpoint between 2 touch points
+var midX = (t1.clientX + t2.clientX) / 2;
+var midY = (t1.clientY + t2.clientY) / 2;
+
+// Compute percentage origin relative to canvas bounding box
+var rect = cv.getBoundingClientRect();
+if (rect.width > 0 && rect.height > 0) {
+    originXPercent = Math.max(0, Math.min(100, ((midX - rect.left) / rect.width) * 100));
+    originYPercent = Math.max(0, Math.min(100, ((midY - rect.top) / rect.height) * 100));
+}
+
+// Apply transform origin to pinch focal midpoint
+cv.style.transformOrigin = originXPercent + '% ' + originYPercent + '%';
+cv.style.transform = 'translate(' + panX + 'px, ' + panY + 'px) scale(' + currentScale + ')';
+```
+
+### B. Mobile Gesture Specification:
+1. **Single Tap (< 600ms without drag):** Sends Left Click payload at calibrated `(x, y)` location.
+2. **Hold / Long Press (>= 400ms) or Right Click Toggle:** Sends Right Click payload at calibrated `(x, y)` location.
+3. **Single Finger Drag:** Sends 60FPS mouse movement across the remote desktop screen.
+4. **Two Finger Pinch & Pan:** Zooms directly in/out at fingertip focal midpoint and pans `panX, panY` across zoomed view.
+5. **Touch Action Override:** `cv.style.touchAction = 'none'` prevents unwanted browser page scrolling during remote desktop interactions.
 
 ---
 
