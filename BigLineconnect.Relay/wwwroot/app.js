@@ -1196,3 +1196,4 @@ window.closeCheckoutModal = closeCheckoutModal;
 window.submitOnlineCheckout = submitOnlineCheckout;
 window.checkoutViaWhatsApp = checkoutViaWhatsApp;
 window.extendFreeSessionTimer = extendFreeSessionTimer;
+window.startFreeSessionTimer = startFreeSessionTimer;
