@@ -102,6 +102,33 @@ namespace BigLineconnect
         private readonly SemaphoreSlim _sendSemaphore = new SemaphoreSlim(1, 1);
         private ComboBox? _cbDisplays;
         private Form? _activeRestartDialog;
+        private bool _isLanDirectActive = false;
+
+        private void StartP2pAndLanProbe()
+        {
+            Task.Run(async () =>
+            {
+                try
+                {
+                    P2pDirectEngine.Initialize();
+
+                    string candidate = _targetId != null ? _targetId.Trim() : "";
+                    if (candidate.Contains(".") || candidate.StartsWith("192.") || candidate.StartsWith("10.") || candidate.StartsWith("172."))
+                    {
+                        using var tcp = new System.Net.Sockets.TcpClient();
+                        var connectTask = tcp.ConnectAsync(candidate.Split(':')[0], 18888);
+                        if (await Task.WhenAny(connectTask, Task.Delay(400)) == connectTask && tcp.Connected)
+                        {
+                            _isLanDirectActive = true;
+                            return;
+                        }
+                    }
+
+                    await P2pDirectEngine.PunchHoleAndConnectAsync(candidate, 18888);
+                }
+                catch { }
+            });
+        }
 
         // Remote clipboard batch receiving state
         private Button? _btnFloatingClipboard;
@@ -268,14 +295,14 @@ namespace BigLineconnect
             };
             _lblConnModeBadge.Click += (s, e) =>
             {
-                string infoText = P2pDirectEngine.IsP2pConnected ?
-                    "🌐 BAĞLANTI DURUMU: P2P DOĞRUDAN (UDP TÜNELİ)\n\n" +
-                    "• Veri iki bilgisayar arasında doğrudan internet P2P tünelinden akmaktadır.\n" +
-                    "• Bulut sunucusu aradan çıkmıştır, hız ve güvenlik maksimum seviyededir." :
-                    (_wsUrl.Contains(":18888") || _wsUrl.Contains("192.168.") || _wsUrl.Contains("10.") || _wsUrl.Contains("172.")) ?
+                string infoText = (_isLanDirectActive || _wsUrl.Contains(":18888") || _wsUrl.Contains("192.168.") || _wsUrl.Contains("10.") || _wsUrl.Contains("172.")) ?
                     "⚡ BAĞLANTI DURUMU: YEREL AĞ (LAN DIRECT 0.5ms)\n\n" +
                     "• İki bilgisayar aynı lokal ağ üzerindedir.\n" +
                     "• Veri 0.5 ms kablo hızında doğrudan yerel ağdan akar." :
+                    P2pDirectEngine.IsP2pConnected ?
+                    "🌐 BAĞLANTI DURUMU: P2P DOĞRUDAN (UDP TÜNELİ)\n\n" +
+                    "• Veri iki bilgisayar arasında doğrudan internet P2P tünelinden akmaktadır.\n" +
+                    "• Bulut sunucusu aradan çıkmıştır, hız ve güvenlik maksimum seviyededir." :
                     "☁️ BAĞLANTI DURUMU: BULUT TÜNELİ (RELAY SERVER)\n\n" +
                     "• İki bilgisayar farklı ağlardadır.\n" +
                     "• Görüntü ve komutlar güvenli bulut sunucumuz üzerinden aktarılmaktadır.\n" +
@@ -586,7 +613,7 @@ namespace BigLineconnect
                             string connModeText;
                             Color connModeColor;
 
-                            if (_wsUrl.Contains(":18888") || _wsUrl.Contains("192.168.") || _wsUrl.Contains("10.") || _wsUrl.Contains("172."))
+                            if (_isLanDirectActive || _wsUrl.Contains(":18888") || _wsUrl.Contains("192.168.") || _wsUrl.Contains("10.") || _wsUrl.Contains("172."))
                             {
                                 connModeText = " ⚡ LAN DIRECT (0.5ms) ";
                                 connModeColor = Color.FromArgb(0, 230, 118); // Bright Green
@@ -778,6 +805,7 @@ namespace BigLineconnect
                         {
                             _hasConnectedOnce = true;
                             _connectionStatusText = "⚡ Bağlantı doğrulandı, canlı ekran karesi aktarılıyor...";
+                            StartP2pAndLanProbe();
                             this.BeginInvoke(new Action(() => {
                                 _pictureBox?.Invalidate();
                                 this.Text = LanguageManager.Get("title_viewer", _targetId);
