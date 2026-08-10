@@ -110,20 +110,52 @@ namespace BigLineconnect
             {
                 try
                 {
-                    P2pDirectEngine.Initialize();
-
-                    string candidate = _targetId != null ? _targetId.Trim() : "";
+                    // 1. Check if target ID is explicit IP or hostname
+                    string candidate = _targetId != null ? _targetId.Trim().Replace(" ", "") : "";
                     if (candidate.Contains(".") || candidate.StartsWith("192.") || candidate.StartsWith("10.") || candidate.StartsWith("172."))
                     {
                         using var tcp = new System.Net.Sockets.TcpClient();
                         var connectTask = tcp.ConnectAsync(candidate.Split(':')[0], 18888);
-                        if (await Task.WhenAny(connectTask, Task.Delay(400)) == connectTask && tcp.Connected)
+                        if (await Task.WhenAny(connectTask, Task.Delay(500)) == connectTask && tcp.Connected)
                         {
                             _isLanDirectActive = true;
                             return;
                         }
                     }
 
+                    // 2. Parallel scan of local subnet (/24) for target host listening on port 18888
+                    string myLocalIp = Program.GetLocalLanIPAddress();
+                    if (!string.IsNullOrEmpty(myLocalIp) && myLocalIp.Contains("."))
+                    {
+                        string subnetPrefix = myLocalIp.Substring(0, myLocalIp.LastIndexOf('.') + 1);
+                        var scanTasks = new System.Collections.Generic.List<Task>();
+
+                        for (int i = 1; i <= 254; i++)
+                        {
+                            string targetIp = subnetPrefix + i;
+                            if (targetIp == myLocalIp) continue;
+
+                            scanTasks.Add(Task.Run(async () =>
+                            {
+                                try
+                                {
+                                    using var probeTcp = new System.Net.Sockets.TcpClient();
+                                    var cTask = probeTcp.ConnectAsync(targetIp, 18888);
+                                    if (await Task.WhenAny(cTask, Task.Delay(400)) == cTask && probeTcp.Connected)
+                                    {
+                                        _isLanDirectActive = true;
+                                    }
+                                }
+                                catch { }
+                            }));
+                        }
+
+                        await Task.WhenAll(scanTasks);
+                        if (_isLanDirectActive) return;
+                    }
+
+                    // 3. UDP P2P Hole Punching Probe
+                    P2pDirectEngine.Initialize();
                     await P2pDirectEngine.PunchHoleAndConnectAsync(candidate, 18888);
                 }
                 catch { }
@@ -201,7 +233,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.61.2 (P2P LAN Direct Engine & Web Session Sync)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.61.3 (P2P LAN Direct Engine & Web Session Sync)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
