@@ -909,11 +909,13 @@ namespace BigLineconnect
         private static Mutex? _singleStreamerMutex = null;
         private static volatile bool _isSendingFrame = false;
         private static readonly AutoResetEvent _instantCaptureEvent = new AutoResetEvent(false);
+        public static volatile int _forcedRefreshCount = 0;
 
         public static void TriggerInstantCapture()
         {
             try
             {
+                _forcedRefreshCount = 10;
                 _instantCaptureEvent.Set();
             }
             catch { }
@@ -1024,15 +1026,17 @@ namespace BigLineconnect
                     if (frameToSend != null && frameToSend.Length > 0)
                     {
                         bool isDuplicate = AreByteArraysEqual(frameToSend, _lastSentFrameBytes);
-                        bool isHeartbeatKeepalive = (DateTime.Now - _lastSentFrameTime).TotalMilliseconds >= 2500;
+                        bool isHeartbeatKeepalive = (DateTime.Now - _lastSentFrameTime).TotalMilliseconds >= 1500;
                         bool isInitialBurst = initialFrameCount < 3;
+                        bool isForcedBurst = _forcedRefreshCount > 0;
+                        if (isForcedBurst) _forcedRefreshCount--;
 
-                        // CRITICAL PERF FIX: NEVER send duplicate frames if nothing on screen changed!
-                        if (!isDuplicate || isHeartbeatKeepalive || isInitialBurst)
+                        // CRITICAL PERF FIX: Send frames on change, heartbeat, initial burst, or user action burst
+                        if (!isDuplicate || isHeartbeatKeepalive || isInitialBurst || isForcedBurst)
                         {
                             // Enforce minimum frame spacing to prevent socket buffer congestion
                             int minIntervalMs = CurrentMaxDimension > 1280 ? 33 : 20; // 30 FPS for High Quality, 50 FPS for Low Quality
-                            if (isInitialBurst || (DateTime.Now - _lastSentFrameTime).TotalMilliseconds >= minIntervalMs)
+                            if (isInitialBurst || isForcedBurst || (DateTime.Now - _lastSentFrameTime).TotalMilliseconds >= minIntervalMs)
                             {
                                 _isSendingFrame = true;
                                 try
