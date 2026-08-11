@@ -190,7 +190,25 @@ namespace BigLineconnect
                     SetCursorPos(actualX, actualY);
                 }
 
-                mouse_event(flags, 0, 0, 0, UIntPtr.Zero);
+                INPUT[] inputs = new INPUT[1];
+                inputs[0] = new INPUT
+                {
+                    type = INPUT_MOUSE,
+                    U = new InputUnion
+                    {
+                        mi = new MOUSEINPUT
+                        {
+                            dx = 0,
+                            dy = 0,
+                            dwFlags = flags,
+                            mouseData = 0,
+                            time = 0,
+                            dwExtraInfo = (IntPtr)0x42494755 // "BIGU" Signature to bypass Alpemix/hook locks
+                        }
+                    }
+                };
+
+                SendInput(1, inputs, Marshal.SizeOf<INPUT>());
                 Program.TriggerInstantCapture();
             }
             catch { }
@@ -210,7 +228,7 @@ namespace BigLineconnect
                         dwFlags = MOUSEEVENTF_WHEEL,
                         mouseData = (uint)deltaY,
                         time = 0,
-                        dwExtraInfo = IntPtr.Zero
+                        dwExtraInfo = (IntPtr)0x42494755
                     }
                 }
             };
@@ -225,6 +243,7 @@ namespace BigLineconnect
             {
                 SimulateMouseButton(button, "down", xPercent, yPercent, displayIndex);
                 SimulateMouseButton(button, "up", xPercent, yPercent, displayIndex);
+                System.Threading.Thread.Sleep(20);
                 SimulateMouseButton(button, "down", xPercent, yPercent, displayIndex);
                 SimulateMouseButton(button, "up", xPercent, yPercent, displayIndex);
                 Program.TriggerInstantCapture();

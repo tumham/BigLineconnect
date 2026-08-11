@@ -1007,12 +1007,13 @@ namespace BigLineconnect
 
                 while (!token.IsCancellationRequested && _isStreaming && ws.State == WebSocketState.Open)
                 {
-                    if (_isSendingFrame)
+                    if (_isSendingFrame && (DateTime.Now - _lastSentFrameTime).TotalMilliseconds < 500)
                     {
                         // Socket is busy sending previous frame. Drop frame to keep socket queue at EXACTLY 0 bytes!
                         await Task.Delay(10, token).ConfigureAwait(false);
                         continue;
                     }
+                    _isSendingFrame = false;
 
                     byte[]? frameToSend = null;
                     lock (FrameLock)

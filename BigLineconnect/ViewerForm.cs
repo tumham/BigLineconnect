@@ -251,7 +251,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.61.8 (Concurrent Multi-Session Auto-Healing Engine)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.61.9 (Concurrent Mouse Hook & GDI Re-Sync Engine)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
