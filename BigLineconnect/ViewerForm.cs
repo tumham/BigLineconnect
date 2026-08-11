@@ -124,6 +124,7 @@ namespace BigLineconnect
                     }
 
                     // 2. Parallel scan of local subnet (/24) for target host listening on port 18888
+                    string cleanTargetId = _targetId != null ? _targetId.Trim().Replace(" ", "") : "";
                     string myLocalIp = Program.GetLocalLanIPAddress();
                     if (!string.IsNullOrEmpty(myLocalIp) && myLocalIp.Contains("."))
                     {
@@ -143,7 +144,24 @@ namespace BigLineconnect
                                     var cTask = probeTcp.ConnectAsync(targetIp, 18888);
                                     if (await Task.WhenAny(cTask, Task.Delay(400)) == cTask && probeTcp.Connected)
                                     {
-                                        _isLanDirectActive = true;
+                                        var stream = probeTcp.GetStream();
+                                        byte[] reqBytes = Encoding.UTF8.GetBytes("GET /host-id HTTP/1.1\r\nHost: local\r\n\r\n");
+                                        await stream.WriteAsync(reqBytes, 0, reqBytes.Length);
+
+                                        byte[] respBuf = new byte[512];
+                                        var readTask = stream.ReadAsync(respBuf, 0, respBuf.Length);
+                                        if (await Task.WhenAny(readTask, Task.Delay(400)) == readTask)
+                                        {
+                                            int bytesRead = await readTask;
+                                            if (bytesRead > 0)
+                                            {
+                                                string respText = Encoding.UTF8.GetString(respBuf, 0, bytesRead);
+                                                if (!string.IsNullOrEmpty(cleanTargetId) && respText.Contains($"HOST_ID:{cleanTargetId}"))
+                                                {
+                                                    _isLanDirectActive = true;
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                                 catch { }
@@ -233,7 +251,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.61.5 (MS Office & Excel Native Speed Keyboard Engine)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.61.6 (Verified Target Host ID LAN Engine)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;

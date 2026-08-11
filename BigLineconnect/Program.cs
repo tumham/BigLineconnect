@@ -607,6 +607,15 @@ namespace BigLineconnect
                 if (bytesRead <= 0) return false;
 
                 string headerStr = Encoding.UTF8.GetString(buffer, 0, bytesRead);
+                if (headerStr.Contains("GET /host-id") || headerStr.Contains("GET_HOST_ID"))
+                {
+                    string hId = CurrentHostId != null ? CurrentHostId.Trim().Replace(" ", "") : "";
+                    string probeResp = $"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nConnection: close\r\n\r\nHOST_ID:{hId}\r\n";
+                    byte[] pBytes = Encoding.UTF8.GetBytes(probeResp);
+                    await stream.WriteAsync(pBytes, 0, pBytes.Length).ConfigureAwait(false);
+                    return false;
+                }
+
                 int keyIndex = headerStr.IndexOf("Sec-WebSocket-Key: ", StringComparison.OrdinalIgnoreCase);
                 if (keyIndex < 0) return false;
 
