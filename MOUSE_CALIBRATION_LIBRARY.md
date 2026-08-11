@@ -135,6 +135,13 @@ To eliminate typing latency in Microsoft Excel cells and Word documents:
 2. **Atomic Win32 SendInput Array:** KeyDown, Shift/AltGr modifiers, and KeyUp events are bundled into a single atomic Win32 `SendInput` call, triggering native `WM_KEYDOWN` -> `WM_CHAR` -> `WM_KEYUP` hardware events.
 3. **Result:** MS Excel grid editor and MS Word RichEdit process inputs at 0.00ms delay without throttling or queueing lag.
 
+## 8. 🛡️ Concurrent Remote Desktop Coexistence & Alpemix Mouse Hook Bypass Engine
+
+When multiple remote desktop tools (e.g. Alpemix, AnyDesk, TeamViewer) are connected to the same host machine simultaneously:
+1. **Mouse Hook Bypass (`dwExtraInfo = 0x42494755`):** Legacy `mouse_event` is strictly forbidden. Mouse input must be dispatched via `SendInput` with `dwExtraInfo = (IntPtr)0x42494755` ("BIGU" signature). This prevents third-party `WH_MOUSE_LL` hooks (such as Alpemix's mouse hook) from intercepting and locking the GDI/DirectX desktop capture stream upon mouse clicks.
+2. **2-Second DXGI Auto-Healing Cooldown:** If another remote desktop app temporarily locks DirectX (`DXGI_ERROR_ACCESS_LOST`), `ScreenCapturer.cs` gracefully transitions to GDI+ / Direct Primary Screen DC for 2 seconds, and automatically recovers 60 FPS DirectX DXGI duplication as soon as the lock is released.
+3. **500ms Stream Re-Sync Engine:** `Program.cs` automatically unlocks `_isSendingFrame = false` if a socket send or capture thread is stalled for >500ms, guaranteeing zero viewer freeze even during remote PC reboots or multi-client session handovers.
+
 ---
 
 *Saved permanently in BigLineconnect Codebase Library.*
