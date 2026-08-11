@@ -159,18 +159,42 @@ namespace BigLineconnect
         {
             try
             {
-                // Check 5 points: 4 corners and the center
-                Color c1 = bmp.GetPixel(0, 0);
-                Color c2 = bmp.GetPixel(bmp.Width - 1, 0);
-                Color c3 = bmp.GetPixel(0, bmp.Height - 1);
-                Color c4 = bmp.GetPixel(bmp.Width - 1, bmp.Height - 1);
-                Color c5 = bmp.GetPixel(bmp.Width / 2, bmp.Height / 2);
+                int w = bmp.Width;
+                int h = bmp.Height;
+                if (w <= 0 || h <= 0) return true;
 
-                return c1.R == 0 && c1.G == 0 && c1.B == 0 &&
-                       c2.R == 0 && c2.G == 0 && c2.B == 0 &&
-                       c3.R == 0 && c3.G == 0 && c3.B == 0 &&
-                       c4.R == 0 && c4.G == 0 && c4.B == 0 &&
-                       c5.R == 0 && c5.G == 0 && c5.B == 0;
+                BitmapData data = bmp.LockBits(new Rectangle(0, 0, w, h), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
+                try
+                {
+                    unsafe
+                    {
+                        byte* ptr = (byte*)data.Scan0;
+                        int stride = data.Stride;
+
+                        // Check 5 sample points (4 corners + center)
+                        int[] offsets = new int[]
+                        {
+                            0, // Top-Left (0, 0)
+                            (w - 1) * 4, // Top-Right (w-1, 0)
+                            (h - 1) * stride, // Bottom-Left (0, h-1)
+                            (h - 1) * stride + (w - 1) * 4, // Bottom-Right (w-1, h-1)
+                            (h / 2) * stride + (w / 2) * 4 // Center
+                        };
+
+                        foreach (int off in offsets)
+                        {
+                            byte b = ptr[off];
+                            byte g = ptr[off + 1];
+                            byte r = ptr[off + 2];
+                            if (r != 0 || g != 0 || b != 0) return false;
+                        }
+                        return true;
+                    }
+                }
+                finally
+                {
+                    bmp.UnlockBits(data);
+                }
             }
             catch
             {

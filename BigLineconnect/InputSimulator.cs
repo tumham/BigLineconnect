@@ -191,6 +191,7 @@ namespace BigLineconnect
                 }
 
                 mouse_event(flags, 0, 0, 0, UIntPtr.Zero);
+                Program.TriggerInstantCapture();
             }
             catch { }
         }
@@ -215,6 +216,7 @@ namespace BigLineconnect
             };
 
             SendInput(1, inputs, Marshal.SizeOf<INPUT>());
+            Program.TriggerInstantCapture();
         }
 
         public static void SimulateMouseDoubleClick(string button, double? xPercent = null, double? yPercent = null, int displayIndex = 0)
@@ -223,9 +225,9 @@ namespace BigLineconnect
             {
                 SimulateMouseButton(button, "down", xPercent, yPercent, displayIndex);
                 SimulateMouseButton(button, "up", xPercent, yPercent, displayIndex);
-                System.Threading.Thread.Sleep(15);
                 SimulateMouseButton(button, "down", xPercent, yPercent, displayIndex);
                 SimulateMouseButton(button, "up", xPercent, yPercent, displayIndex);
+                Program.TriggerInstantCapture();
             }
             catch { }
         }

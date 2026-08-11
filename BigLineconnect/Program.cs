@@ -908,6 +908,16 @@ namespace BigLineconnect
         private static long _forceSendUntilTicks = 0;
         private static Mutex? _singleStreamerMutex = null;
         private static volatile bool _isSendingFrame = false;
+        private static readonly AutoResetEvent _instantCaptureEvent = new AutoResetEvent(false);
+
+        public static void TriggerInstantCapture()
+        {
+            try
+            {
+                _instantCaptureEvent.Set();
+            }
+            catch { }
+        }
 
         private static void CaptureLoop(CancellationToken token)
         {
@@ -928,7 +938,7 @@ namespace BigLineconnect
 
             try
             {
-                Log("Ekran yakalama döngüsü başladı.");
+                Log("Ekran yakalama döngüsü başladı (Olay Güdümlü AnyDesk Hız Motoru).");
                 if (SuppressWallpaperEnabled)
                 {
                     ScreenCapturer.SuppressWallpaper(true);
@@ -937,14 +947,6 @@ namespace BigLineconnect
                 while (!token.IsCancellationRequested && _isStreaming)
                 {
                     DesktopHelper.AttachToInputDesktop();
-
-                    bool isMouseActivelyMoving = (DateTime.Now - _lastMouseMoveTime) < TimeSpan.FromMilliseconds(250);
-
-                    if (isMouseActivelyMoving)
-                    {
-                        // Give 100% priority to mouse movement. Throttle capture to ~20 FPS during rapid mouse drag
-                        Thread.Sleep(45);
-                    }
 
                     byte[] frame = ScreenCapturer.Capture(quality: CurrentQuality, maxDimension: CurrentMaxDimension);
                     
@@ -956,8 +958,8 @@ namespace BigLineconnect
                         }
                     }
 
-                    int sleepMs = isMouseActivelyMoving ? 45 : 12;
-                    Thread.Sleep(sleepMs);
+                    // Wait up to 16ms (60 FPS max speed) OR wake up INSTANTLY (0ms) on mouse/key click!
+                    _instantCaptureEvent.WaitOne(16);
                 }
                 ScreenCapturer.SuppressWallpaper(false);
                 Log("Ekran yakalama döngüsü sonlandı.");
