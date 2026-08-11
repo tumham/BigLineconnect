@@ -1183,6 +1183,14 @@ namespace BigLineconnect
                     int deltaY = root.GetProperty("deltaY").GetInt32();
                     InputSimulator.SimulateMouseScroll(deltaY);
                 }
+                else if (type == "key_stroke")
+                {
+                    string key = root.GetProperty("key").GetString() ?? "";
+                    bool shift = root.TryGetProperty("shift", out var sProp) && sProp.GetBoolean();
+                    bool ctrl = root.TryGetProperty("ctrl", out var cProp) && cProp.GetBoolean();
+                    bool alt = root.TryGetProperty("alt", out var aProp) && aProp.GetBoolean();
+                    InputSimulator.SimulateKeyStroke(key, shift, ctrl, alt);
+                }
                 else if (type == "key")
                 {
                     string key = root.GetProperty("key").GetString() ?? "";

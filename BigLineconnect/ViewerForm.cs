@@ -251,7 +251,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.61.9 (Concurrent Mouse Hook & GDI Re-Sync Engine)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.62.0 (Mikro ERP & DataGrid Atomic Key Speed Engine)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
@@ -1678,14 +1678,19 @@ namespace BigLineconnect
             bool hasControl = keyData.HasFlag(Keys.Control);
             bool hasShift = keyData.HasFlag(Keys.Shift);
 
-            // 1. Intercept TAB & Shift+TAB (Single clean packet to Host)
-            if (baseKey == Keys.Tab)
+            // 1. Intercept Navigation & Action keys for Mikro ERP / Excel Grid Editing (TAB, ENTER, ARROWS, F1-F12, etc.)
+            if (baseKey == Keys.Tab || baseKey == Keys.Enter || baseKey == Keys.Return ||
+                (baseKey >= Keys.F1 && baseKey <= Keys.F12) ||
+                baseKey == Keys.Escape || baseKey == Keys.Delete || baseKey == Keys.Back || baseKey == Keys.Insert ||
+                baseKey == Keys.Left || baseKey == Keys.Right || baseKey == Keys.Up || baseKey == Keys.Down ||
+                baseKey == Keys.Home || baseKey == Keys.End || baseKey == Keys.PageUp || baseKey == Keys.PageDown)
             {
-                if (hasShift) SendJson("{\"type\":\"key\",\"key\":\"shift\",\"action\":\"down\"}");
-                SendJson("{\"type\":\"key\",\"key\":\"tab\",\"action\":\"down\"}");
-                SendJson("{\"type\":\"key\",\"key\":\"tab\",\"action\":\"up\"}");
-                if (hasShift) SendJson("{\"type\":\"key\",\"key\":\"shift\",\"action\":\"up\"}");
-                return true;
+                string kName = MapKey(baseKey);
+                if (!string.IsNullOrEmpty(kName))
+                {
+                    SendJson($"{{\"type\":\"key_stroke\",\"key\":\"{kName}\",\"shift\":{(hasShift ? "true" : "false")},\"ctrl\":{(hasControl ? "true" : "false")},\"alt\":{(hasAlt ? "true" : "false")}}}");
+                    return true;
+                }
             }
 
             // 2. Intercept ALT shortcuts (like ALT+D, ALT+F4, ALT+ENTER, ALT+A, etc.)
@@ -1694,52 +1699,7 @@ namespace BigLineconnect
                 string kName = MapKey(baseKey);
                 if (!string.IsNullOrEmpty(kName) && kName != "alt")
                 {
-                    SendJson("{\"type\":\"key\",\"key\":\"alt\",\"action\":\"down\"}");
-                    SendJson($"{{\"type\":\"key\",\"key\":\"{kName}\",\"action\":\"down\"}}");
-                    SendJson($"{{\"type\":\"key\",\"key\":\"{kName}\",\"action\":\"up\"}}");
-                    SendJson("{\"type\":\"key\",\"key\":\"alt\",\"action\":\"up\"}");
-                    return true;
-                }
-            }
-
-            // 3. Intercept F1-F12 keys (Mikro ERP F10 Save, F9 Lookup, F1 Help, etc.)
-            if (baseKey >= Keys.F1 && baseKey <= Keys.F12)
-            {
-                string fName = MapKey(baseKey);
-                if (!string.IsNullOrEmpty(fName))
-                {
-                    if (hasControl) SendJson("{\"type\":\"key\",\"key\":\"control\",\"action\":\"down\"}");
-                    if (hasShift) SendJson("{\"type\":\"key\",\"key\":\"shift\",\"action\":\"down\"}");
-                    SendJson($"{{\"type\":\"key\",\"key\":\"{fName}\",\"action\":\"down\"}}");
-                    SendJson($"{{\"type\":\"key\",\"key\":\"{fName}\",\"action\":\"up\"}}");
-                    if (hasShift) SendJson("{\"type\":\"key\",\"key\":\"shift\",\"action\":\"up\"}");
-                    if (hasControl) SendJson("{\"type\":\"key\",\"key\":\"control\",\"action\":\"up\"}");
-                    return true;
-                }
-            }
-
-            // 4. Intercept Enter / Return
-            if (baseKey == Keys.Enter || baseKey == Keys.Return)
-            {
-                SendJson("{\"type\":\"key\",\"key\":\"enter\",\"action\":\"down\"}");
-                SendJson("{\"type\":\"key\",\"key\":\"enter\",\"action\":\"up\"}");
-                return true;
-            }
-
-            // 5. Intercept Escape, Arrows, Delete, Backspace, Home, End, PageUp, PageDown, Insert
-            if (baseKey == Keys.Escape || baseKey == Keys.Delete || baseKey == Keys.Back || baseKey == Keys.Insert ||
-                baseKey == Keys.Left || baseKey == Keys.Right || baseKey == Keys.Up || baseKey == Keys.Down ||
-                baseKey == Keys.Home || baseKey == Keys.End || baseKey == Keys.PageUp || baseKey == Keys.PageDown)
-            {
-                string navKey = MapKey(baseKey);
-                if (!string.IsNullOrEmpty(navKey))
-                {
-                    if (hasControl) SendJson("{\"type\":\"key\",\"key\":\"control\",\"action\":\"down\"}");
-                    if (hasShift) SendJson("{\"type\":\"key\",\"key\":\"shift\",\"action\":\"down\"}");
-                    SendJson($"{{\"type\":\"key\",\"key\":\"{navKey}\",\"action\":\"down\"}}");
-                    SendJson($"{{\"type\":\"key\",\"key\":\"{navKey}\",\"action\":\"up\"}}");
-                    if (hasShift) SendJson("{\"type\":\"key\",\"key\":\"shift\",\"action\":\"up\"}");
-                    if (hasControl) SendJson("{\"type\":\"key\",\"key\":\"control\",\"action\":\"up\"}");
+                    SendJson($"{{\"type\":\"key_stroke\",\"key\":\"{kName}\",\"shift\":{(hasShift ? "true" : "false")},\"ctrl\":{(hasControl ? "true" : "false")},\"alt\":true}}");
                     return true;
                 }
             }
