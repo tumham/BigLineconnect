@@ -957,6 +957,11 @@ namespace BigLineconnect
                             _latestFrame = frame;
                         }
                     }
+                    else
+                    {
+                        // Reset frame cache so next frame is immediately sent upon recovery
+                        _lastSentFrameBytes = null;
+                    }
 
                     // Wait up to 16ms (60 FPS max speed) OR wake up INSTANTLY (0ms) on mouse/key click!
                     _instantCaptureEvent.WaitOne(16);
