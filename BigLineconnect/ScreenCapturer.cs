@@ -117,8 +117,54 @@ namespace BigLineconnect
             _jpegEncoder = GetEncoder(ImageFormat.Jpeg);
         }
 
+        public static bool UseRtTileEngine { get; set; } = true;
+
+        public static Bitmap? CaptureGdiRaw(int quality = 50, int maxDimension = 1366)
+        {
+            try
+            {
+                DesktopHelper.AttachToInputDesktop();
+                int screenWidth = 1920;
+                int screenHeight = 1080;
+                int startX = 0;
+                int startY = 0;
+
+                try
+                {
+                    var screens = System.Windows.Forms.Screen.AllScreens;
+                    int idx = CurrentDisplayIndex;
+                    if (idx < 0 || idx >= screens.Length) idx = 0;
+
+                    var bounds = screens[idx].Bounds;
+                    screenWidth = bounds.Width;
+                    screenHeight = bounds.Height;
+                    startX = bounds.X;
+                    startY = bounds.Y;
+                }
+                catch { }
+
+                if (screenWidth <= 0) screenWidth = GetSystemMetrics(SM_CXSCREEN);
+                if (screenHeight <= 0) screenHeight = GetSystemMetrics(SM_CYSCREEN);
+
+                if (screenWidth <= 0) screenWidth = 1920;
+                if (screenHeight <= 0) screenHeight = 1080;
+
+                Bitmap bmpScreen = new Bitmap(screenWidth, screenHeight, PixelFormat.Format32bppArgb);
+                using (Graphics gScreen = Graphics.FromImage(bmpScreen))
+                {
+                    gScreen.CopyFromScreen(startX, startY, 0, 0, new Size(screenWidth, screenHeight), CopyPixelOperation.SourceCopy);
+                }
+                return bmpScreen;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
         public static byte[] Capture(int quality = 50, int maxDimension = 1366)
         {
+            Bitmap? bmp = null;
             if (_useDxgi)
             {
                 if (_dxgiCapturer == null)
@@ -126,52 +172,58 @@ namespace BigLineconnect
                     try
                     {
                         _dxgiCapturer = new DxgiScreenCapturer(CurrentDisplayIndex);
-                        LogHelper($"DXGI Screen Capturer initialized for display {CurrentDisplayIndex}.");
                     }
-                    catch (Exception ex)
+                    catch
                     {
-                        LogHelper($"Failed to initialize DXGI Screen Capturer: {ex.Message}");
                         _useDxgi = false;
                     }
                 }
 
                 if (_useDxgi && _dxgiCapturer != null)
                 {
-                    Bitmap? bmp = null;
                     try
                     {
-                        bmp = _dxgiCapturer.CaptureFrame();
+                        bmp = _dxgiCapturer.CaptureFrame(10);
                     }
-                    catch (Exception ex)
+                    catch
                     {
-                        LogHelper($"DXGI CaptureFrame failed: {ex.Message}");
-                        try { _dxgiCapturer.Dispose(); } catch { }
-                        _dxgiCapturer = null;
                         _useDxgi = false;
+                        try { _dxgiCapturer?.Dispose(); } catch { }
+                        _dxgiCapturer = null;
                     }
 
-                    if (bmp != null)
+                    if (bmp != null && IsBitmapBlack(bmp))
                     {
-                        using (bmp)
-                        {
-                            if (IsBitmapBlack(bmp))
-                            {
-                                LogHelper("DXGI: Black frame detected, disabling DXGI and falling back to GDI+.");
-                                _useDxgi = false;
-                                try { _dxgiCapturer?.Dispose(); } catch { }
-                                _dxgiCapturer = null;
-                            }
-                            else
-                            {
-                                return ProcessAndCompress(bmp, quality, maxDimension);
-                            }
-                        }
+                        _useDxgi = false;
+                        try { _dxgiCapturer?.Dispose(); } catch { }
+                        _dxgiCapturer = null;
+                        bmp.Dispose();
+                        bmp = null;
                     }
                 }
             }
 
-            // Fallback to GDI+
-            return CaptureGdi(quality, maxDimension);
+            if (bmp == null)
+            {
+                bmp = CaptureGdiRaw(quality, maxDimension);
+            }
+
+            if (bmp != null)
+            {
+                using (bmp)
+                {
+                    if (UseRtTileEngine)
+                    {
+                        return BigLineRtEngine.EncodeFrame(bmp, quality);
+                    }
+                    else
+                    {
+                        return ProcessAndCompress(bmp, quality, maxDimension);
+                    }
+                }
+            }
+
+            return Array.Empty<byte>();
         }
 
         private static bool IsBitmapBlack(Bitmap bmp)

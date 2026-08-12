@@ -251,7 +251,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.66.0 (GDI Hybrid Instant Capture Engine)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.67.0 (BigLine-RT 64x64 Differential Tile Engine)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
