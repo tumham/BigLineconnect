@@ -1044,14 +1044,9 @@ namespace BigLineconnect
                                 _isSendingFrame = true;
                                 try
                                 {
-                                    byte[] payloadWithTs = new byte[frameToSend.Length + 8];
-                                    byte[] tsBytes = BitConverter.GetBytes(DateTime.UtcNow.Ticks);
-                                    Buffer.BlockCopy(tsBytes, 0, payloadWithTs, 0, 8);
-                                    Buffer.BlockCopy(frameToSend, 0, payloadWithTs, 8, frameToSend.Length);
-
                                     await SafeSendAsync(
                                         ws,
-                                        new ArraySegment<byte>(payloadWithTs),
+                                        new ArraySegment<byte>(frameToSend),
                                         WebSocketMessageType.Binary,
                                         true,
                                         token

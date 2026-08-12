@@ -117,7 +117,7 @@ namespace BigLineconnect
             _jpegEncoder = GetEncoder(ImageFormat.Jpeg);
         }
 
-        public static bool UseRtTileEngine { get; set; } = true;
+        public static bool UseRtTileEngine { get; set; } = false;
 
         public static Bitmap? CaptureGdiRaw(int quality = 50, int maxDimension = 1366)
         {

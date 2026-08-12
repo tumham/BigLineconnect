@@ -251,7 +251,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.67.0 (BigLine-RT 64x64 Differential Tile Engine)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.68.0 (Rock-Solid Ultra-Fast Stable Engine)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
@@ -724,38 +724,9 @@ namespace BigLineconnect
                             }
                         }
 
-                        int jpegOffset = 0;
-                        int jpegLength = totalReceived;
-
-                        if (totalReceived > 8)
-                        {
-                            try
-                            {
-                                long frameTs = BitConverter.ToInt64(_receiveBuffer, 0);
-                                if (frameTs > 630000000000000000L && frameTs <= DateTime.UtcNow.Ticks + 10000000L)
-                                {
-                                    double ageMs = (DateTime.UtcNow.Ticks - frameTs) / (double)TimeSpan.TicksPerMillisecond;
-                                    if (ageMs >= 0 && ageMs < 5000)
-                                    {
-                                        _measuredLatencyMs = (int)Math.Max(3, Math.Min(ageMs, 500));
-                                    }
-
-                                    // CRITICAL ZERO-LATENCY DRAIN: Drop stale backlog frames (>120ms) to force instant jump to live!
-                                    if (ageMs > 120 && _totalFramesReceivedCount > 5)
-                                    {
-                                        continue;
-                                    }
-
-                                    jpegOffset = 8;
-                                    jpegLength = totalReceived - 8;
-                                }
-                            }
-                            catch { }
-                        }
-
                         // Thread-safe isolated frame copy for GDI+ JPEG decoding
-                        byte[] isolatedFrame = new byte[jpegLength];
-                        Buffer.BlockCopy(_receiveBuffer, jpegOffset, isolatedFrame, 0, jpegLength);
+                        byte[] isolatedFrame = new byte[totalReceived];
+                        Buffer.BlockCopy(_receiveBuffer, 0, isolatedFrame, 0, totalReceived);
 
                         if (this.WindowState != FormWindowState.Minimized && Interlocked.CompareExchange(ref _isRenderingFrame, 1, 0) == 0)
                         {
