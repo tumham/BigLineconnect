@@ -1171,6 +1171,8 @@ namespace BigLineconnect
                         y = yProp.GetDouble();
                     }
                     InputSimulator.SimulateMouseButton(button, action, x, y, _activeDisplayIndex);
+                    _lastSentFrameBytes = null;
+                    TriggerInstantCapture();
                 }
                 else if (type == "double_click")
                 {
@@ -1185,6 +1187,8 @@ namespace BigLineconnect
                         y = yProp.GetDouble();
                     }
                     InputSimulator.SimulateMouseDoubleClick(button, x, y, _activeDisplayIndex);
+                    _lastSentFrameBytes = null;
+                    TriggerInstantCapture();
                 }
                 else if (type == "release_modifiers")
                 {

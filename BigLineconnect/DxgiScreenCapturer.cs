@@ -71,7 +71,7 @@ namespace BigLineconnect
             _isInitialized = true;
         }
 
-        public Bitmap? CaptureFrame(int timeoutMs = 100)
+        public Bitmap? CaptureFrame(int timeoutMs = 10)
         {
             if (!_isInitialized)
             {
