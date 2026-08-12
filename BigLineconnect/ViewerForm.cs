@@ -251,7 +251,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.68.0 (Rock-Solid Ultra-Fast Stable Engine)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.69.0 (Zero-Drop Unlocked Frame Engine)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
@@ -728,7 +728,7 @@ namespace BigLineconnect
                         byte[] isolatedFrame = new byte[totalReceived];
                         Buffer.BlockCopy(_receiveBuffer, 0, isolatedFrame, 0, totalReceived);
 
-                        if (this.WindowState != FormWindowState.Minimized && Interlocked.CompareExchange(ref _isRenderingFrame, 1, 0) == 0)
+                        if (this.WindowState != FormWindowState.Minimized)
                         {
                             try
                             {
@@ -769,27 +769,16 @@ namespace BigLineconnect
                                                     newImg.Dispose();
                                                 }
                                             }
-                                            finally
-                                            {
-                                                Interlocked.Exchange(ref _isRenderingFrame, 0);
-                                            }
+                                            catch { newImg.Dispose(); }
                                         }));
                                     }
                                     else
                                     {
                                         newImg.Dispose();
-                                        Interlocked.Exchange(ref _isRenderingFrame, 0);
                                     }
                                 }
-                                else
-                                {
-                                    Interlocked.Exchange(ref _isRenderingFrame, 0);
-                                }
                             }
-                            catch
-                            {
-                                Interlocked.Exchange(ref _isRenderingFrame, 0);
-                            }
+                            catch { }
                         }
                     }
                     else if (result.MessageType == WebSocketMessageType.Text)
