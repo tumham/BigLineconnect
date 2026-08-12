@@ -251,7 +251,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.63.1 (<100ms AnyDesk Speed & DXGI Pre-Warm Engine)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.64.0 (Direct GPU Canvas & Zero-Queue Latency Engine)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
@@ -751,27 +751,35 @@ namespace BigLineconnect
 
                                 if (newImg != null)
                                 {
-                                    _pictureBox?.BeginInvoke(new Action(() =>
+                                    if (_pictureBox != null && !_pictureBox.IsDisposed)
                                     {
-                                        try
+                                        _pictureBox.BeginInvoke(new Action(() =>
                                         {
-                                            if (this.WindowState != FormWindowState.Minimized && _pictureBox != null)
+                                            try
                                             {
-                                                var oldImg = _pictureBox.Image;
-                                                _pictureBox.Image = newImg;
-                                                _pictureBox.Invalidate();
-                                                oldImg?.Dispose();
+                                                if (this.WindowState != FormWindowState.Minimized && _pictureBox != null && !_pictureBox.IsDisposed)
+                                                {
+                                                    var oldImg = _pictureBox.Image;
+                                                    _pictureBox.Image = newImg;
+                                                    _pictureBox.Update(); // Instant GPU/DC paint without waiting for WM_PAINT message queue!
+                                                    oldImg?.Dispose();
+                                                }
+                                                else
+                                                {
+                                                    newImg.Dispose();
+                                                }
                                             }
-                                            else
+                                            finally
                                             {
-                                                newImg.Dispose();
+                                                Interlocked.Exchange(ref _isRenderingFrame, 0);
                                             }
-                                        }
-                                        finally
-                                        {
-                                            Interlocked.Exchange(ref _isRenderingFrame, 0);
-                                        }
-                                    }));
+                                        }));
+                                    }
+                                    else
+                                    {
+                                        newImg.Dispose();
+                                        Interlocked.Exchange(ref _isRenderingFrame, 0);
+                                    }
                                 }
                                 else
                                 {
