@@ -290,6 +290,7 @@ namespace BigLineconnect
             catch { }
 
             LicenseSystem.Initialize();
+            ScreenCapturer.WarmupDxgi();
 
             // Parse arguments
             bool isService = false;
@@ -950,7 +951,9 @@ namespace BigLineconnect
                 {
                     DesktopHelper.AttachToInputDesktop();
 
-                    byte[] frame = ScreenCapturer.Capture(quality: CurrentQuality, maxDimension: CurrentMaxDimension);
+                    int q = _latestFrame == null ? 30 : CurrentQuality;
+                    int maxDim = _latestFrame == null ? 800 : CurrentMaxDimension;
+                    byte[] frame = ScreenCapturer.Capture(quality: q, maxDimension: maxDim);
                     
                     if (frame != null && frame.Length > 0)
                     {

@@ -35,6 +35,25 @@ namespace BigLineconnect
         private static readonly MemoryStream _sharedMs = new MemoryStream(1024 * 1024 * 4);
         private static readonly object _compressLock = new object();
 
+        public static void WarmupDxgi()
+        {
+            if (_useDxgi && _dxgiCapturer == null)
+            {
+                System.Threading.Tasks.Task.Run(() =>
+                {
+                    try
+                    {
+                        _dxgiCapturer = new DxgiScreenCapturer(CurrentDisplayIndex);
+                        LogHelper("DXGI Screen Capturer pre-warmed for 0ms cold-start connection speed.");
+                    }
+                    catch
+                    {
+                        _useDxgi = false;
+                    }
+                });
+            }
+        }
+
         [DllImport("user32.dll", CharSet = CharSet.Auto)]
         private static extern int SystemParametersInfo(int uAction, int uParam, string? lpvParam, int fuWinIni);
 
