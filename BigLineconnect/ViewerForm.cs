@@ -251,7 +251,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.62.1 (Zero-Freeze Instant Action Burst Refresh Engine)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.62.2 (0.5s Ultra-Fast Connection Speed Engine)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;

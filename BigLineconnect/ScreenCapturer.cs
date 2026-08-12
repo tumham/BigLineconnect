@@ -98,16 +98,8 @@ namespace BigLineconnect
             _jpegEncoder = GetEncoder(ImageFormat.Jpeg);
         }
 
-        private static DateTime _lastDxgiFailureTime = DateTime.MinValue;
-
         public static byte[] Capture(int quality = 50, int maxDimension = 1366)
         {
-            // Auto-heal DXGI after 2 seconds if it was disabled due to another app (e.g. Alpemix / AnyDesk)
-            if (!_useDxgi && (DateTime.Now - _lastDxgiFailureTime).TotalSeconds >= 2)
-            {
-                _useDxgi = true;
-            }
-
             if (_useDxgi)
             {
                 if (_dxgiCapturer == null)
@@ -121,7 +113,6 @@ namespace BigLineconnect
                     {
                         LogHelper($"Failed to initialize DXGI Screen Capturer: {ex.Message}");
                         _useDxgi = false;
-                        _lastDxgiFailureTime = DateTime.Now;
                     }
                 }
 
@@ -138,7 +129,6 @@ namespace BigLineconnect
                         try { _dxgiCapturer.Dispose(); } catch { }
                         _dxgiCapturer = null;
                         _useDxgi = false;
-                        _lastDxgiFailureTime = DateTime.Now;
                     }
 
                     if (bmp != null)
@@ -149,7 +139,6 @@ namespace BigLineconnect
                             {
                                 LogHelper("DXGI: Black frame detected, disabling DXGI and falling back to GDI+.");
                                 _useDxgi = false;
-                                _lastDxgiFailureTime = DateTime.Now;
                                 try { _dxgiCapturer?.Dispose(); } catch { }
                                 _dxgiCapturer = null;
                             }

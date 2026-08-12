@@ -1812,6 +1812,7 @@ namespace BigLineconnect
                     await SendDisplaysListAsync(ws, token).ConfigureAwait(false);
                     
                     SetStreamActive(true);
+                    TriggerInstantCapture();
                     
                     // Start capture thread (dedicated)
                     var captureThread = new Thread(() => CaptureLoop(token))
@@ -1891,6 +1892,7 @@ namespace BigLineconnect
                                 await SendDisplaysListAsync(ws, token).ConfigureAwait(false);
 
                                 SetStreamActive(true);
+                                TriggerInstantCapture();
 
                                 var captureThread = new Thread(() => CaptureLoop(token))
                                 {
@@ -1936,6 +1938,7 @@ namespace BigLineconnect
 
                     _isStreaming = true;
                     SetStreamActive(true);
+                    TriggerInstantCapture();
                     
                     var captureThread = new Thread(() => CaptureLoop(token))
                     {
