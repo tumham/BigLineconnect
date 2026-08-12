@@ -251,7 +251,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.62.2 (0.5s Ultra-Fast Connection Speed Engine)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.63.0 (0.1s Instant Screen Launch & Parallel Pipeline Engine)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
@@ -855,7 +855,10 @@ namespace BigLineconnect
                         {
                             _hasConnectedOnce = true;
                             _connectionStatusText = "⚡ Bağlantı doğrulandı, canlı ekran karesi aktarılıyor...";
-                            StartP2pAndLanProbe();
+                            _ = Task.Run(async () => {
+                                await Task.Delay(1500);
+                                StartP2pAndLanProbe();
+                            });
                             this.BeginInvoke(new Action(() => {
                                 _pictureBox?.Invalidate();
                                 this.Text = LanguageManager.Get("title_viewer", _targetId);

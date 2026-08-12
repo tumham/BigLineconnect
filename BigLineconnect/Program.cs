@@ -1027,7 +1027,7 @@ namespace BigLineconnect
                     {
                         bool isDuplicate = AreByteArraysEqual(frameToSend, _lastSentFrameBytes);
                         bool isHeartbeatKeepalive = (DateTime.Now - _lastSentFrameTime).TotalMilliseconds >= 1500;
-                        bool isInitialBurst = initialFrameCount < 3;
+                        bool isInitialBurst = initialFrameCount < 5;
                         bool isForcedBurst = _forcedRefreshCount > 0;
                         if (isForcedBurst) _forcedRefreshCount--;
 
@@ -1809,8 +1809,8 @@ namespace BigLineconnect
                 {
                     byte[] okMsg = Encoding.UTF8.GetBytes("AUTH_SUCCESS");
                     await SafeSendAsync(ws, new ArraySegment<byte>(okMsg), WebSocketMessageType.Text, true, token).ConfigureAwait(false);
-                    await SendDisplaysListAsync(ws, token).ConfigureAwait(false);
-                    
+
+                    _isStreaming = true;
                     SetStreamActive(true);
                     TriggerInstantCapture();
                     
@@ -1822,8 +1822,9 @@ namespace BigLineconnect
                     };
                     captureThread.Start();
                     
-                    // Start sender task
+                    // Start sender task & displays list in parallel
                     _ = Task.Run(() => SendStreamLoop(ws, token));
+                    _ = Task.Run(() => SendDisplaysListAsync(ws, token));
 
                     if (MainWindow.Instance != null)
                     {
@@ -1889,8 +1890,8 @@ namespace BigLineconnect
                                 Log($"Şifre doğru (Girilen: {cleanInputPass}). Erişim onaylandı.");
                                 byte[] okMsg = Encoding.UTF8.GetBytes("AUTH_SUCCESS");
                                 await SafeSendAsync(ws, new ArraySegment<byte>(okMsg), WebSocketMessageType.Text, true, token).ConfigureAwait(false);
-                                await SendDisplaysListAsync(ws, token).ConfigureAwait(false);
 
+                                _isStreaming = true;
                                 SetStreamActive(true);
                                 TriggerInstantCapture();
 
@@ -1902,6 +1903,7 @@ namespace BigLineconnect
                                 captureThread.Start();
 
                                 _ = Task.Run(() => SendStreamLoop(ws, token));
+                                _ = Task.Run(() => SendDisplaysListAsync(ws, token));
                                 return;
                             }
                             else
@@ -1934,7 +1936,6 @@ namespace BigLineconnect
                     Log("Şifresiz modda doğrudan bağlantı onaylandı.");
                     byte[] okMsg = Encoding.UTF8.GetBytes("AUTH_SUCCESS");
                     await SafeSendAsync(ws, new ArraySegment<byte>(okMsg), WebSocketMessageType.Text, true, token).ConfigureAwait(false);
-                    await SendDisplaysListAsync(ws, token).ConfigureAwait(false);
 
                     _isStreaming = true;
                     SetStreamActive(true);
@@ -1948,6 +1949,7 @@ namespace BigLineconnect
                     captureThread.Start();
                     
                     _ = Task.Run(() => SendStreamLoop(ws, token));
+                    _ = Task.Run(() => SendDisplaysListAsync(ws, token));
                     return;
                 }
             }
