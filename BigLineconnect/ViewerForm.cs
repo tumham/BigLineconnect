@@ -251,7 +251,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.69.0 (Zero-Drop Unlocked Frame Engine)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.70.0 (15KB Ultra-Light WAN Internet Engine)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;

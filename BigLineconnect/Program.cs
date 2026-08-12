@@ -951,8 +951,8 @@ namespace BigLineconnect
                 {
                     DesktopHelper.AttachToInputDesktop();
 
-                    int q = _latestFrame == null ? 30 : CurrentQuality;
-                    int maxDim = _latestFrame == null ? 800 : CurrentMaxDimension;
+                    int q = _latestFrame == null ? 30 : 38;
+                    int maxDim = _latestFrame == null ? 800 : 1024;
                     byte[] frame = ScreenCapturer.Capture(quality: q, maxDimension: maxDim);
                     
                     if (frame != null && frame.Length > 0)
