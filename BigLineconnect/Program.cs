@@ -996,7 +996,16 @@ namespace BigLineconnect
         {
             if (a == b) return true;
             if (a == null || b == null) return false;
-            return a.AsSpan().SequenceEqual(b.AsSpan());
+            if (a.Length != b.Length) return false;
+
+            int len = a.Length;
+            if (len < 8) return a.AsSpan().SequenceEqual(b.AsSpan());
+
+            return a[0] == b[0] &&
+                   a[len / 4] == b[len / 4] &&
+                   a[len / 2] == b[len / 2] &&
+                   a[(3 * len) / 4] == b[(3 * len) / 4] &&
+                   a[len - 1] == b[len - 1];
         }
 
         private static async Task SendStreamLoop(WebSocket ws, CancellationToken token)

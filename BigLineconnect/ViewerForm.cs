@@ -251,7 +251,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v4.03.0 (Instant Action Frame Pushing Engine)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v4.04.0 (Ultra-Fast 60 FPS Scaling Engine)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
