@@ -159,7 +159,6 @@ namespace BigLineconnect
                                                 if (!string.IsNullOrEmpty(cleanTargetId) && respText.Contains($"HOST_ID:{cleanTargetId}"))
                                                 {
                                                     _isLanDirectActive = true;
-                                                    _ = SwitchToDirectLanSocketAsync(targetIp);
                                                 }
                                             }
                                         }
@@ -179,45 +178,6 @@ namespace BigLineconnect
                 }
                 catch { }
             });
-        }
-
-        private async Task SwitchToDirectLanSocketAsync(string lanIp)
-        {
-            try
-            {
-                string directWsUrl = $"ws://{lanIp}:18888/connect-direct?id={_targetId}";
-                var directWs = new ClientWebSocket();
-                using var cts = new CancellationTokenSource(2500);
-                await directWs.ConnectAsync(new Uri(directWsUrl), cts.Token).ConfigureAwait(false);
-
-                if (directWs.State == WebSocketState.Open)
-                {
-                    _isLanDirectActive = true;
-
-                    // Authenticate on direct socket
-                    if (!string.IsNullOrEmpty(_savedPassword))
-                    {
-                        byte[] passBytes = Encoding.UTF8.GetBytes($"AUTH:{_savedPassword}");
-                        await directWs.SendAsync(new ArraySegment<byte>(passBytes), WebSocketMessageType.Text, true, CancellationToken.None).ConfigureAwait(false);
-                    }
-
-                    var oldWs = _ws;
-                    _ws = directWs;
-
-                    try { await oldWs.CloseAsync(WebSocketCloseStatus.NormalClosure, "Switched to LAN Direct", CancellationToken.None).ConfigureAwait(false); } catch { }
-
-                    _ = Task.Run(async () =>
-                    {
-                        await ReceiveLoop(_ws, _cts.Token).ConfigureAwait(false);
-                    });
-
-                    this.BeginInvoke(new Action(() =>
-                    {
-                        this.Text = $"{LanguageManager.Get("title_viewer", _targetId)} - ⚡ LAN DIRECT (0.5ms)";
-                    }));
-                }
-            }
-            catch { }
         }
 
         // Remote clipboard batch receiving state
@@ -291,7 +251,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v4.01.0 (Instant LAN Direct Socket Auto-Switch Engine)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v4.02.0 (Clean Rock-Solid Ultra-Fast Stable Engine)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
@@ -776,20 +736,9 @@ namespace BigLineconnect
                             try
                             {
                                 Image? newImg = null;
-                                if (BigLineRtEngine.IsBigLineRtPacket(isolatedFrame))
+                                using (var ms = new MemoryStream(isolatedFrame, 0, isolatedFrame.Length))
                                 {
-                                    lock (_rtCanvasLock)
-                                    {
-                                        var updatedBmp = BigLineRtEngine.ProcessRtPacket(isolatedFrame, ref _rtCanvas);
-                                        if (updatedBmp != null) newImg = new Bitmap(updatedBmp);
-                                    }
-                                }
-                                else
-                                {
-                                    using (var ms = new MemoryStream(isolatedFrame, 0, isolatedFrame.Length))
-                                    {
-                                        newImg = Image.FromStream(ms);
-                                    }
+                                    newImg = Image.FromStream(ms);
                                 }
 
                                 if (newImg != null)

@@ -182,7 +182,7 @@ namespace BigLineconnect
         private void InitializeComponent()
         {
             Program.LoadSecuritySettings();
-            this.Text = "BigLineconnect v4.01.0 - Uzaktan Kontrol (Instant LAN Direct Socket Auto-Switch Engine)";
+            this.Text = "BigLineconnect v4.02.0 - Uzaktan Kontrol (Clean Rock-Solid Ultra-Fast Stable Engine)";
             this.Size = new Size(880, 750);
             this.MinimumSize = new Size(880, 750);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -212,7 +212,7 @@ namespace BigLineconnect
 
             _titleLabel = new Label
             {
-                Text = "BigLineconnect v4.01.0 🚀",
+                Text = "BigLineconnect v4.02.0 🚀",
                 Location = new Point(105, 15),
                 Size = new Size(330, 42),
                 Font = new Font("Segoe UI", 20F, FontStyle.Bold),
@@ -223,7 +223,7 @@ namespace BigLineconnect
 
             var subtitleLabel = new Label
             {
-                Text = "REMOTE DESKTOP CLIENT • v4.01.0 (Instant LAN Direct Socket Auto-Switch Engine)",
+                Text = "REMOTE DESKTOP CLIENT • v4.02.0 (Clean Rock-Solid Ultra-Fast Stable Engine)",
                 Location = new Point(108, 58),
                 Size = new Size(450, 20),
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
