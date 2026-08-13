@@ -251,7 +251,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v4.05.0 (Direct Win32 SendInput Native Hardware Engine)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v4.06.0 (Instant Excel & Mikro Grid Engine)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;

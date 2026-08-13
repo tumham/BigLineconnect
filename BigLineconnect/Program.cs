@@ -912,11 +912,11 @@ namespace BigLineconnect
         private static readonly AutoResetEvent _instantCaptureEvent = new AutoResetEvent(false);
         public static volatile int _forcedRefreshCount = 0;
 
-        public static void TriggerInstantCapture()
+        public static void TriggerInstantCapture(int count = 2)
         {
             try
             {
-                _forcedRefreshCount = 25;
+                _forcedRefreshCount = Math.Max(_forcedRefreshCount, count);
                 _lastSentFrameBytes = null;
                 _instantCaptureEvent.Set();
             }
@@ -1203,6 +1203,7 @@ namespace BigLineconnect
                 {
                     int deltaY = root.GetProperty("deltaY").GetInt32();
                     InputSimulator.SimulateMouseScroll(deltaY);
+                    TriggerInstantCapture(2);
                 }
                 else if (type == "key_stroke")
                 {
@@ -1211,6 +1212,7 @@ namespace BigLineconnect
                     bool ctrl = root.TryGetProperty("ctrl", out var cProp) && cProp.GetBoolean();
                     bool alt = root.TryGetProperty("alt", out var aProp) && aProp.GetBoolean();
                     InputSimulator.SimulateKeyStroke(key, shift, ctrl, alt);
+                    TriggerInstantCapture(2);
                 }
                 else if (type == "key")
                 {
@@ -1223,6 +1225,7 @@ namespace BigLineconnect
                     }
 
                     InputSimulator.SimulateKey(key, action);
+                    TriggerInstantCapture(1);
                 }
                 else if (type == "clipboard")
                 {
@@ -1235,6 +1238,7 @@ namespace BigLineconnect
                     if (val.Length > 0)
                     {
                         InputSimulator.SimulateChar(val[0]);
+                        TriggerInstantCapture(1);
                     }
                 }
                 else if (type == "set_quality")
