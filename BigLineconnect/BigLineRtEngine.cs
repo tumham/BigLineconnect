@@ -13,7 +13,6 @@ namespace BigLineconnect
     /// </summary>
     public static class BigLineRtEngine
     {
-        public const ushort MAGIC_HEADER = 0x5452; // 'R', 'T' in little endian (0x52, 0x54)
         public const int TILE_SIZE = 64; // 64x64 pixel tiles for optimal compression & throughput
 
         public const byte FLAG_KEYFRAME = 0x01;
@@ -218,19 +217,15 @@ namespace BigLineconnect
             }
         }
 
-        /// <summary>
-        /// Checks if a binary packet is a BigLine-RT differential packet.
-        /// </summary>
+        public const uint MAGIC_HEADER = 0x45545242; // 'B','R','T','E' in little-endian
+
         public static bool IsBigLineRtPacket(byte[] data)
         {
-            if (data == null || data.Length < 3) return false;
-            ushort header = BitConverter.ToUInt16(data, 0);
+            if (data == null || data.Length < 5) return false;
+            uint header = BitConverter.ToUInt32(data, 0);
             return header == MAGIC_HEADER;
         }
 
-        /// <summary>
-        /// Decodes a BigLine-RT packet and patches the canvas bitmap in place.
-        /// </summary>
         public static Bitmap? ProcessRtPacket(byte[] packet, ref Bitmap? currentCanvas)
         {
             if (!IsBigLineRtPacket(packet)) return null;
@@ -238,7 +233,7 @@ namespace BigLineconnect
             using (var ms = new MemoryStream(packet))
             using (var reader = new BinaryReader(ms))
             {
-                ushort magic = reader.ReadUInt16();
+                uint magic = reader.ReadUInt32();
                 byte flag = reader.ReadByte();
                 ushort width = reader.ReadUInt16();
                 ushort height = reader.ReadUInt16();

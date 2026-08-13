@@ -251,7 +251,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v4.07.0 (100% HD Crystal Clear Resolution Engine)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v4.08.0 (AnyDesk DeskRT Tile Engine - 100% HD + 0ms Speed)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
@@ -736,9 +736,23 @@ namespace BigLineconnect
                             try
                             {
                                 Image? newImg = null;
-                                using (var ms = new MemoryStream(isolatedFrame, 0, isolatedFrame.Length))
+                                if (BigLineRtEngine.IsBigLineRtPacket(isolatedFrame))
                                 {
-                                    newImg = Image.FromStream(ms);
+                                    lock (_rtCanvasLock)
+                                    {
+                                        var patched = BigLineRtEngine.ProcessRtPacket(isolatedFrame, ref _rtCanvas);
+                                        if (patched != null)
+                                        {
+                                            newImg = new Bitmap(patched);
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    using (var ms = new MemoryStream(isolatedFrame, 0, isolatedFrame.Length))
+                                    {
+                                        newImg = Image.FromStream(ms);
+                                    }
                                 }
 
                                 if (newImg != null)
