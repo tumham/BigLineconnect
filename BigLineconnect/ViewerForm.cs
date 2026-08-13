@@ -251,7 +251,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.30.0 (Restored Original Ultra-Stable Engine)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.30.1 (Instant 0ms Screen Stream Display Fix)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;

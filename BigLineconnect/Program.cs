@@ -1834,6 +1834,12 @@ namespace BigLineconnect
 
                     _isStreaming = true;
                     SetStreamActive(true);
+                    _lastSentFrameBytes = null;
+                    byte[] firstFrame = ScreenCapturer.Capture(quality: CurrentQuality, maxDimension: CurrentMaxDimension);
+                    if (firstFrame != null && firstFrame.Length > 0)
+                    {
+                        lock (FrameLock) { _latestFrame = firstFrame; }
+                    }
                     TriggerInstantCapture();
                     
                     // Start capture thread (dedicated)
