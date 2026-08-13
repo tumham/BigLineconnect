@@ -251,7 +251,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v4.10.0 (100% Solid Tear-Free Clean Streaming Engine)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.30.0 (Restored Original Ultra-Stable Engine)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
@@ -736,23 +736,9 @@ namespace BigLineconnect
                             try
                             {
                                 Image? newImg = null;
-                                if (BigLineRtEngine.IsBigLineRtPacket(isolatedFrame))
+                                using (var ms = new MemoryStream(isolatedFrame, 0, isolatedFrame.Length))
                                 {
-                                    lock (_rtCanvasLock)
-                                    {
-                                        var patched = BigLineRtEngine.ProcessRtPacket(isolatedFrame, ref _rtCanvas);
-                                        if (patched != null)
-                                        {
-                                            newImg = new Bitmap(patched);
-                                        }
-                                    }
-                                }
-                                else
-                                {
-                                    using (var ms = new MemoryStream(isolatedFrame, 0, isolatedFrame.Length))
-                                    {
-                                        newImg = Image.FromStream(ms);
-                                    }
+                                    newImg = Image.FromStream(ms);
                                 }
 
                                 if (newImg != null)
