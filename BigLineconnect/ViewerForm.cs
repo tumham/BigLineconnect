@@ -142,7 +142,7 @@ namespace BigLineconnect
                                 {
                                     using var probeTcp = new System.Net.Sockets.TcpClient();
                                     var cTask = probeTcp.ConnectAsync(targetIp, 18888);
-                                    if (await Task.WhenAny(cTask, Task.Delay(400)) == cTask && probeTcp.Connected)
+                                    if (await Task.WhenAny(cTask, Task.Delay(1200)) == cTask && probeTcp.Connected)
                                     {
                                         var stream = probeTcp.GetStream();
                                         byte[] reqBytes = Encoding.UTF8.GetBytes("GET /host-id HTTP/1.1\r\nHost: local\r\n\r\n");
@@ -150,7 +150,7 @@ namespace BigLineconnect
 
                                         byte[] respBuf = new byte[512];
                                         var readTask = stream.ReadAsync(respBuf, 0, respBuf.Length);
-                                        if (await Task.WhenAny(readTask, Task.Delay(400)) == readTask)
+                                        if (await Task.WhenAny(readTask, Task.Delay(1000)) == readTask)
                                         {
                                             int bytesRead = await readTask;
                                             if (bytesRead > 0)
@@ -251,7 +251,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.30.2 (Win32 BitBlt Fail-Safe Desktop Capture Engine)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.30.3 (Unblocked Multi-Session Screen Streaming)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;

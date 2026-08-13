@@ -925,24 +925,9 @@ namespace BigLineconnect
 
         private static void CaptureLoop(CancellationToken token)
         {
-            bool acquiredMutex = false;
             try
             {
-                _singleStreamerMutex = new Mutex(true, "Global\\BigLineconnectSingleStreamerMutex", out acquiredMutex);
-                if (!acquiredMutex)
-                {
-                    Log("UYARI: Başka bir BigLineconnect süreci ekranı yakalıyor. Çift çalışma önlendi.");
-                    return;
-                }
-            }
-            catch
-            {
-                acquiredMutex = true;
-            }
-
-            try
-            {
-                Log("Ekran yakalama döngüsü başladı (Olay Güdümlü AnyDesk Hız Motoru).");
+                Log("Ekran yakalama döngüsü başladı.");
                 if (SuppressWallpaperEnabled)
                 {
                     ScreenCapturer.SuppressWallpaper(true);
@@ -983,12 +968,6 @@ namespace BigLineconnect
             finally
             {
                 SetStreamActive(false);
-                if (acquiredMutex && _singleStreamerMutex != null)
-                {
-                    try { _singleStreamerMutex.ReleaseMutex(); } catch { }
-                    try { _singleStreamerMutex.Dispose(); } catch { }
-                    _singleStreamerMutex = null;
-                }
             }
         }
 
