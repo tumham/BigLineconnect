@@ -1028,7 +1028,7 @@ namespace BigLineconnect
                         if (!isDuplicate || isHeartbeatKeepalive || isInitialBurst || isForcedBurst)
                         {
                             // Enforce minimum frame spacing to prevent socket buffer congestion
-                            int minIntervalMs = CurrentMaxDimension > 1280 ? 33 : 20; // 30 FPS for High Quality, 50 FPS for Low Quality
+                            int minIntervalMs = 16; // 60 FPS zero artificial delay across all quality modes!
                             if (isInitialBurst || isForcedBurst || (DateTime.Now - _lastSentFrameTime).TotalMilliseconds >= minIntervalMs)
                             {
                                 _isSendingFrame = true;

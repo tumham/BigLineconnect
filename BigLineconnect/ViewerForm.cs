@@ -251,7 +251,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.30.4 (GDI+ Stream Memory Copy Fix - 100% Reliable Screen Display)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.30.5 (60 FPS Crystal Clear Fast Quality Preset Engine)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
@@ -385,17 +385,17 @@ namespace BigLineconnect
             ModernUIHelper.ApplyButtonStyle(btnQuality, Color.FromArgb(156, 39, 176), Color.FromArgb(123, 31, 162), Color.White);
             
             var cmsQuality = new ContextMenuStrip();
-            var itemLow = new ToolStripMenuItem("Düşük Mod (Ekonomi Hızlı - 1280p)", null, (s, e) => {
-                btnQuality.Text = "Kalite: Düşük (1280p) 🎨";
-                SendJson("{\"type\":\"set_quality\",\"quality\":40,\"maxDim\":1280}");
+            var itemLow = new ToolStripMenuItem("Düşük Mod (Ekonomi Hızlı - 1366p)", null, (s, e) => {
+                btnQuality.Text = "Kalite: Düşük (1366p) 🎨";
+                SendJson("{\"type\":\"set_quality\",\"quality\":50,\"maxDim\":1366}");
             });
-            var itemMid = new ToolStripMenuItem("Orta Mod (Dengeli - 1080p)", null, (s, e) => {
-                btnQuality.Text = "Kalite: Orta (1080p) 🎨";
-                SendJson("{\"type\":\"set_quality\",\"quality\":75,\"maxDim\":1920}");
+            var itemMid = new ToolStripMenuItem("Orta Mod (Dengeli HD - 1600p)", null, (s, e) => {
+                btnQuality.Text = "Kalite: Orta (1600p) 🎨";
+                SendJson("{\"type\":\"set_quality\",\"quality\":65,\"maxDim\":1600}");
             });
-            var itemHigh = new ToolStripMenuItem("En Yüksek (Pırıl Pırıl Orijinal 4K)", null, (s, e) => {
-                btnQuality.Text = "Kalite: Pırıl Pırıl (4K) 🎨";
-                SendJson("{\"type\":\"set_quality\",\"quality\":90,\"maxDim\":3840}");
+            var itemHigh = new ToolStripMenuItem("Pırıl Pırıl (Jilet Netlik 1080p HD)", null, (s, e) => {
+                btnQuality.Text = "Kalite: Pırıl Pırıl (1080p HD) 🎨";
+                SendJson("{\"type\":\"set_quality\",\"quality\":78,\"maxDim\":1920}");
             });
             cmsQuality.Items.Add(itemLow);
             cmsQuality.Items.Add(itemMid);
