@@ -1015,6 +1015,7 @@ namespace BigLineconnect
             {
                 Log("Görüntü gönderim döngüsü başladı.");
                 _lastSentFrameBytes = null;
+                BigLineRtEngine.Reset();
                 _lastSentFrameTime = DateTime.MinValue;
                 _isSendingFrame = false;
                 int initialFrameCount = 0;

@@ -251,7 +251,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v4.08.0 (AnyDesk DeskRT Tile Engine - 100% HD + 0ms Speed)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v4.09.0 (Guaranteed Keyframe DeskRT Engine)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;

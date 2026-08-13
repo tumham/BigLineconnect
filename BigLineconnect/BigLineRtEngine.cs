@@ -22,12 +22,21 @@ namespace BigLineconnect
         private static int _lastScreenHeight = 0;
         private static ushort _tileCols = 0;
         private static ushort _tileRows = 0;
+        private static int _frameCount = 0;
 
         private static ImageCodecInfo? _jpegEncoder;
 
         static BigLineRtEngine()
         {
             _jpegEncoder = GetEncoder(ImageFormat.Jpeg);
+        }
+
+        public static void Reset()
+        {
+            _lastTileHashes = null;
+            _lastScreenWidth = 0;
+            _lastScreenHeight = 0;
+            _frameCount = 0;
         }
 
         private static ImageCodecInfo? GetEncoder(ImageFormat format)
@@ -54,7 +63,7 @@ namespace BigLineconnect
             int totalTiles = cols * rows;
 
             _frameCount++;
-            if (_frameCount % 30 == 0)
+            if (_frameCount == 1 || _frameCount % 30 == 0 || _lastTileHashes == null)
             {
                 forceKeyframe = true;
             }
@@ -128,7 +137,6 @@ namespace BigLineconnect
             }
         }
 
-        private static int _frameCount = 0;
 
         private static unsafe ulong ComputeTileHash(byte* pBase, int stride, int x, int y, int w, int h)
         {
