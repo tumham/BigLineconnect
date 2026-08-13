@@ -902,8 +902,8 @@ namespace BigLineconnect
             }
         }
 
-        public static int CurrentQuality { get; set; } = 40;
-        public static int CurrentMaxDimension { get; set; } = 1280;
+        public static int CurrentQuality { get; set; } = 75;
+        public static int CurrentMaxDimension { get; set; } = 1920;
         public static bool SuppressWallpaperEnabled { get; set; } = true;
 
         private static long _forceSendUntilTicks = 0;
@@ -952,8 +952,8 @@ namespace BigLineconnect
                 {
                     DesktopHelper.AttachToInputDesktop();
 
-                    int q = _latestFrame == null ? 30 : 38;
-                    int maxDim = _latestFrame == null ? 800 : 1024;
+                    int q = CurrentQuality;
+                    int maxDim = CurrentMaxDimension;
                     byte[] frame = ScreenCapturer.Capture(quality: q, maxDimension: maxDim);
                     
                     if (frame != null && frame.Length > 0)
