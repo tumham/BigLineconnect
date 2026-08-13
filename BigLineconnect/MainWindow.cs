@@ -182,7 +182,7 @@ namespace BigLineconnect
         private void InitializeComponent()
         {
             Program.LoadSecuritySettings();
-            this.Text = "BigLineconnect v3.30.3 - Uzaktan Kontrol (Unblocked Multi-Session Screen Streaming)";
+            this.Text = "BigLineconnect v3.30.4 - Uzaktan Kontrol (GDI+ Stream Memory Copy Fix - 100% Reliable Screen Display)";
             this.Size = new Size(880, 750);
             this.MinimumSize = new Size(880, 750);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -212,7 +212,7 @@ namespace BigLineconnect
 
             _titleLabel = new Label
             {
-                Text = "BigLineconnect v3.30.3 🚀",
+                Text = "BigLineconnect v3.30.4 🚀",
                 Location = new Point(105, 15),
                 Size = new Size(330, 42),
                 Font = new Font("Segoe UI", 20F, FontStyle.Bold),
@@ -223,7 +223,7 @@ namespace BigLineconnect
 
             var subtitleLabel = new Label
             {
-                Text = "REMOTE DESKTOP CLIENT • v3.30.3 (Unblocked Multi-Session Screen Streaming)",
+                Text = "REMOTE DESKTOP CLIENT • v3.30.4 (GDI+ Stream Memory Copy Fix - 100% Reliable Screen Display)",
                 Location = new Point(108, 58),
                 Size = new Size(450, 20),
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),

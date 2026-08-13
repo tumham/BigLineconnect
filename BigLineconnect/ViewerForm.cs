@@ -251,7 +251,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.30.3 (Unblocked Multi-Session Screen Streaming)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.30.4 (GDI+ Stream Memory Copy Fix - 100% Reliable Screen Display)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
@@ -737,8 +737,9 @@ namespace BigLineconnect
                             {
                                 Image? newImg = null;
                                 using (var ms = new MemoryStream(isolatedFrame, 0, isolatedFrame.Length))
+                                using (var tempImg = Image.FromStream(ms))
                                 {
-                                    newImg = Image.FromStream(ms);
+                                    newImg = new Bitmap(tempImg);
                                 }
 
                                 if (newImg != null)
