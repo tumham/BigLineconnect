@@ -916,7 +916,8 @@ namespace BigLineconnect
         {
             try
             {
-                _forcedRefreshCount = 10;
+                _forcedRefreshCount = 25;
+                _lastSentFrameBytes = null;
                 _instantCaptureEvent.Set();
             }
             catch { }
@@ -1193,6 +1194,7 @@ namespace BigLineconnect
                 {
                     int deltaY = root.GetProperty("deltaY").GetInt32();
                     InputSimulator.SimulateMouseScroll(deltaY);
+                    TriggerInstantCapture();
                 }
                 else if (type == "key_stroke")
                 {
@@ -1201,6 +1203,7 @@ namespace BigLineconnect
                     bool ctrl = root.TryGetProperty("ctrl", out var cProp) && cProp.GetBoolean();
                     bool alt = root.TryGetProperty("alt", out var aProp) && aProp.GetBoolean();
                     InputSimulator.SimulateKeyStroke(key, shift, ctrl, alt);
+                    TriggerInstantCapture();
                 }
                 else if (type == "key")
                 {
@@ -1213,6 +1216,7 @@ namespace BigLineconnect
                     }
 
                     InputSimulator.SimulateKey(key, action);
+                    TriggerInstantCapture();
                 }
                 else if (type == "clipboard")
                 {
