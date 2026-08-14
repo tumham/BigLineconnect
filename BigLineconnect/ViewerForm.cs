@@ -251,7 +251,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.30.19 (Final Cyan Border Edition)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.30.20 (Cyan Frame True BC Logo Edition)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
