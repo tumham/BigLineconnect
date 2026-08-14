@@ -182,7 +182,7 @@ namespace BigLineconnect
         private void InitializeComponent()
         {
             Program.LoadSecuritySettings();
-            this.Text = "BigLineconnect v3.30.15 - Uzaktan Kontrol (True 32-bit ARGB Transparent Icon Engine)";
+            this.Text = "BigLineconnect v3.30.16 - Uzaktan Kontrol (Robust Logo & True 32-bit Transparent Icon)";
             this.Size = new Size(880, 750);
             this.MinimumSize = new Size(880, 750);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -212,7 +212,7 @@ namespace BigLineconnect
 
             _titleLabel = new Label
             {
-                Text = "BigLineconnect v3.30.15 🚀",
+                Text = "BigLineconnect v3.30.16 🚀",
                 Location = new Point(105, 15),
                 Size = new Size(330, 42),
                 Font = new Font("Segoe UI", 20F, FontStyle.Bold),
@@ -223,7 +223,7 @@ namespace BigLineconnect
 
             var subtitleLabel = new Label
             {
-                Text = "REMOTE DESKTOP CLIENT • v3.30.15 (True 32-bit ARGB Transparent Icon Engine)",
+                Text = "REMOTE DESKTOP CLIENT • v3.30.16 (Robust Logo & True 32-bit Transparent Icon)",
                 Location = new Point(108, 58),
                 Size = new Size(450, 20),
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
@@ -869,7 +869,7 @@ namespace BigLineconnect
                 }
 
                 var assembly = Assembly.GetExecutingAssembly();
-                using (Stream? stream = assembly.GetManifestResourceStream("BigLineconnect.wwwroot.logo_bc.png"))
+                using (Stream? stream = assembly.GetManifestResourceStream("BigLineconnect.wwwroot.logo_bc.png") ?? assembly.GetManifestResourceStream("BigLineconnect.wwwroot.logo.png"))
                 {
                     if (stream != null)
                     {
@@ -893,12 +893,27 @@ namespace BigLineconnect
                     }
                 }
 
+                // Fallback to disk wwwroot/logo.png if _logoBox.Image is still null
+                if (_logoBox != null && _logoBox.Image == null)
+                {
+                    string localLogoPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "wwwroot", "logo.png");
+                    if (File.Exists(localLogoPath))
+                    {
+                        try { _logoBox.Image = Image.FromFile(localLogoPath); } catch { }
+                    }
+                }
+
+                // Ultimate fallback: Extract bitmap from loadedIcon or SystemIcons.Shield
                 if (loadedIcon != null)
                 {
                     this.Icon = loadedIcon;
                     if (_notifyIcon != null)
                     {
                         _notifyIcon.Icon = loadedIcon;
+                    }
+                    if (_logoBox != null && _logoBox.Image == null)
+                    {
+                        try { _logoBox.Image = loadedIcon.ToBitmap(); } catch { }
                     }
                 }
                 else
@@ -907,6 +922,10 @@ namespace BigLineconnect
                     if (_notifyIcon != null)
                     {
                         _notifyIcon.Icon = SystemIcons.Shield;
+                    }
+                    if (_logoBox != null && _logoBox.Image == null)
+                    {
+                        try { _logoBox.Image = SystemIcons.Shield.ToBitmap(); } catch { }
                     }
                 }
             }
