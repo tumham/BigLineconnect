@@ -136,6 +136,7 @@ namespace BigLineconnect
                 int actualY = bounds.Y + Math.Min(bounds.Height - 1, (int)(yPercent * bounds.Height));
 
                 SetCursorPos(actualX, actualY);
+                mouse_event(MOUSEEVENTF_MOVE, 0, 0, 0, (UIntPtr)0x42494755); // Force Windows mouse subsystem to dispatch input
             }
             catch { }
         }
@@ -209,6 +210,7 @@ namespace BigLineconnect
                 };
 
                 SendInput(1, inputs, Marshal.SizeOf<INPUT>());
+                mouse_event(flags, 0, 0, 0, (UIntPtr)0x42494755); // Dual Fallback to bypass Alpemix/Windows focus blocks
                 Program.TriggerInstantCapture();
             }
             catch { }

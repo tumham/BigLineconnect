@@ -182,7 +182,7 @@ namespace BigLineconnect
         private void InitializeComponent()
         {
             Program.LoadSecuritySettings();
-            this.Text = "BigLineconnect v3.30.8 - Uzaktan Kontrol (Continuous Sleepless Display KeepAlive & Auto Wakeup Engine)";
+            this.Text = "BigLineconnect v3.30.9 - Uzaktan Kontrol (Instant Desktop Focus & Alpemix Dual Input Dispatcher)";
             this.Size = new Size(880, 750);
             this.MinimumSize = new Size(880, 750);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -212,7 +212,7 @@ namespace BigLineconnect
 
             _titleLabel = new Label
             {
-                Text = "BigLineconnect v3.30.8 🚀",
+                Text = "BigLineconnect v3.30.9 🚀",
                 Location = new Point(105, 15),
                 Size = new Size(330, 42),
                 Font = new Font("Segoe UI", 20F, FontStyle.Bold),
@@ -223,7 +223,7 @@ namespace BigLineconnect
 
             var subtitleLabel = new Label
             {
-                Text = "REMOTE DESKTOP CLIENT • v3.30.8 (Continuous Sleepless Display KeepAlive & Auto Wakeup Engine)",
+                Text = "REMOTE DESKTOP CLIENT • v3.30.9 (Instant Desktop Focus & Alpemix Dual Input Dispatcher)",
                 Location = new Point(108, 58),
                 Size = new Size(450, 20),
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),

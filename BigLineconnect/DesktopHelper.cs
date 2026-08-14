@@ -77,14 +77,14 @@ namespace BigLineconnect
 
         public static void AttachToInputDesktop()
         {
-            if ((DateTime.UtcNow - _lastDesktopAttachTime).TotalMilliseconds < 3000)
+            if ((DateTime.UtcNow - _lastDesktopAttachTime).TotalMilliseconds < 50)
             {
                 return;
             }
 
             lock (_desktopLock)
             {
-                if ((DateTime.UtcNow - _lastDesktopAttachTime).TotalMilliseconds < 3000)
+                if ((DateTime.UtcNow - _lastDesktopAttachTime).TotalMilliseconds < 50)
                 {
                     return;
                 }

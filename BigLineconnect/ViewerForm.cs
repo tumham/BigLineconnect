@@ -251,7 +251,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.30.8 (Continuous Sleepless Display KeepAlive & Auto Wakeup Engine)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.30.9 (Instant Desktop Focus & Alpemix Dual Input Dispatcher)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
