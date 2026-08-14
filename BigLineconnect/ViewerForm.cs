@@ -251,7 +251,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.30.14 (Perfect Matching Smooth Border Icon)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.30.15 (True 32-bit ARGB Transparent Icon Engine)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
