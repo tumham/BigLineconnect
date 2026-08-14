@@ -251,7 +251,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.30.17 (Classic Original Logo Restored)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.30.18 (Pristine Original Binary Icon Restored)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
