@@ -182,7 +182,7 @@ namespace BigLineconnect
         private void InitializeComponent()
         {
             Program.LoadSecuritySettings();
-            this.Text = "BigLineconnect v3.30.11 - Uzaktan Kontrol (Refined Variation B Chrome Logo Edition)";
+            this.Text = "BigLineconnect v3.30.12 - Uzaktan Kontrol (Clean Corner Chrome Logo Edition)";
             this.Size = new Size(880, 750);
             this.MinimumSize = new Size(880, 750);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -212,7 +212,7 @@ namespace BigLineconnect
 
             _titleLabel = new Label
             {
-                Text = "BigLineconnect v3.30.11 🚀",
+                Text = "BigLineconnect v3.30.12 🚀",
                 Location = new Point(105, 15),
                 Size = new Size(330, 42),
                 Font = new Font("Segoe UI", 20F, FontStyle.Bold),
@@ -223,7 +223,7 @@ namespace BigLineconnect
 
             var subtitleLabel = new Label
             {
-                Text = "REMOTE DESKTOP CLIENT • v3.30.11 (Refined Variation B Chrome Logo Edition)",
+                Text = "REMOTE DESKTOP CLIENT • v3.30.12 (Clean Corner Chrome Logo Edition)",
                 Location = new Point(108, 58),
                 Size = new Size(450, 20),
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
