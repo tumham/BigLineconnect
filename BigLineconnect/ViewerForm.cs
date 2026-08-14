@@ -251,7 +251,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.30.12 (Clean Corner Chrome Logo Edition)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.30.13 (Exact Chrome Frame Metallic Icon)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
