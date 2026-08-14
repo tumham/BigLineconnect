@@ -940,8 +940,8 @@ namespace BigLineconnect
                 {
                     DesktopHelper.AttachToInputDesktop();
 
-                    // Re-apply sleep prevention every 5 seconds to ensure Windows display never sleeps during remote control
-                    if ((DateTime.Now - lastKeepAliveTime).TotalSeconds >= 5)
+                    // Re-apply sleep prevention every 60 seconds (1 min) - 0% CPU & 0 network bytes!
+                    if ((DateTime.Now - lastKeepAliveTime).TotalSeconds >= 60)
                     {
                         lastKeepAliveTime = DateTime.Now;
                         ApplySleepPrevention(true);
