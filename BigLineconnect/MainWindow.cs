@@ -182,7 +182,7 @@ namespace BigLineconnect
         private void InitializeComponent()
         {
             Program.LoadSecuritySettings();
-            this.Text = "BigLineconnect v3.30.21 - Uzaktan Kontrol (Sleek Pressed BC Logo Edition)";
+            this.Text = "BigLineconnect v3.30.22 - Uzaktan Kontrol (ID Edit & DoubleClick Fix)";
             this.Size = new Size(880, 750);
             this.MinimumSize = new Size(880, 750);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -212,7 +212,7 @@ namespace BigLineconnect
 
             _titleLabel = new Label
             {
-                Text = "BigLineconnect v3.30.21 🚀",
+                Text = "BigLineconnect v3.30.22 🚀",
                 Location = new Point(105, 15),
                 Size = new Size(330, 42),
                 Font = new Font("Segoe UI", 20F, FontStyle.Bold),
@@ -223,7 +223,7 @@ namespace BigLineconnect
 
             var subtitleLabel = new Label
             {
-                Text = "REMOTE DESKTOP CLIENT • v3.30.21 (Sleek Pressed BC Logo Edition)",
+                Text = "REMOTE DESKTOP CLIENT • v3.30.22 (ID Edit & DoubleClick Fix)",
                 Location = new Point(108, 58),
                 Size = new Size(450, 20),
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
@@ -2809,8 +2809,10 @@ namespace BigLineconnect
             var dialogResult = AddConnectionDialog.ShowDialog(currentId);
             if (!dialogResult.Success || string.IsNullOrEmpty(dialogResult.Name)) return;
 
+            string targetId = !string.IsNullOrEmpty(dialogResult.Id) ? dialogResult.Id : currentId;
+
             // Check if already exists
-            var existing = _savedConnections.FirstOrDefault(c => c.Id == currentId);
+            var existing = _savedConnections.FirstOrDefault(c => c.Id == targetId);
             if (existing != null)
             {
                 existing.Name = dialogResult.Name;
@@ -2819,7 +2821,7 @@ namespace BigLineconnect
             }
             else
             {
-                _savedConnections.Add(new SavedConnection { Name = dialogResult.Name, Id = currentId, Password = dialogResult.Password, Group = dialogResult.Group });
+                _savedConnections.Add(new SavedConnection { Name = dialogResult.Name, Id = targetId, Password = dialogResult.Password, Group = dialogResult.Group });
             }
 
             SaveAddressBook();
@@ -2843,6 +2845,8 @@ namespace BigLineconnect
                 var dialogResult = AddConnectionDialog.ShowDialog(id, target.Name, target.Password, target.Group);
                 if (dialogResult.Success && !string.IsNullOrEmpty(dialogResult.Name))
                 {
+                    string newId = !string.IsNullOrEmpty(dialogResult.Id) ? dialogResult.Id : id;
+                    target.Id = newId;
                     target.Name = dialogResult.Name;
                     target.Password = dialogResult.Password;
                     target.Group = dialogResult.Group;
@@ -2871,14 +2875,14 @@ namespace BigLineconnect
 
         public static class AddConnectionDialog
         {
-            public static (bool Success, string Name, string Password, string Group) ShowDialog(string id, string initialName = "", string initialPassword = "", string initialGroup = "Müşteriler & Cariler")
+            public static (bool Success, string Id, string Name, string Password, string Group) ShowDialog(string id, string initialName = "", string initialPassword = "", string initialGroup = "Müşteriler & Cariler")
             {
                 Form prompt = new Form()
                 {
-                    Width = 350,
-                    Height = 290,
+                    Width = 360,
+                    Height = 350,
                     FormBorderStyle = FormBorderStyle.FixedDialog,
-                    Text = string.IsNullOrEmpty(initialName) ? $"Rehbere Ekle - ID: {id}" : $"Kaydı Düzenle - ID: {id}",
+                    Text = string.IsNullOrEmpty(initialName) ? $"Rehbere Kayıt Ekle" : $"Kaydı Düzenle - ID: {id}",
                     StartPosition = FormStartPosition.CenterScreen,
                     MaximizeBox = false,
                     MinimizeBox = false,
@@ -2886,17 +2890,20 @@ namespace BigLineconnect
                     ForeColor = Color.White
                 };
 
-                Label nameLabel = new Label() { Left = 20, Top = 15, Text = "Bağlantı Adı / Firma:", Width = 300, ForeColor = Color.White };
-                TextBox nameTextBox = new TextBox() { Left = 20, Top = 35, Width = 300, Text = initialName, BackColor = Color.FromArgb(15, 16, 22), ForeColor = Color.White, BorderStyle = BorderStyle.FixedSingle };
+                Label idLabel = new Label() { Left = 20, Top = 15, Text = "Uzak Bilgisayar ID (9 Hane):", Width = 300, ForeColor = Color.White };
+                TextBox idTextBox = new TextBox() { Left = 20, Top = 35, Width = 300, Text = id, BackColor = Color.FromArgb(15, 16, 22), ForeColor = Color.FromArgb(0, 229, 255), Font = new Font("Segoe UI", 10F, FontStyle.Bold), BorderStyle = BorderStyle.FixedSingle };
 
-                Label passLabel = new Label() { Left = 20, Top = 70, Text = "Erişim Şifresi (Onaysız Doğrudan Giriş İçin - İsteğe Bağlı):", Width = 300, ForeColor = Color.White };
-                TextBox passTextBox = new TextBox() { Left = 20, Top = 90, Width = 300, Text = initialPassword, PasswordChar = '*', BackColor = Color.FromArgb(15, 16, 22), ForeColor = Color.White, BorderStyle = BorderStyle.FixedSingle };
+                Label nameLabel = new Label() { Left = 20, Top = 70, Text = "Bağlantı Adı / Firma / Müşteri:", Width = 300, ForeColor = Color.White };
+                TextBox nameTextBox = new TextBox() { Left = 20, Top = 90, Width = 300, Text = initialName, BackColor = Color.FromArgb(15, 16, 22), ForeColor = Color.White, BorderStyle = BorderStyle.FixedSingle };
 
-                Label groupLabel = new Label() { Left = 20, Top = 125, Text = "Grup / Kategori:", Width = 300, ForeColor = Color.White };
+                Label passLabel = new Label() { Left = 20, Top = 125, Text = "Erişim Şifresi (Onaysız Giriş İçin - İsteğe Bağlı):", Width = 300, ForeColor = Color.White };
+                TextBox passTextBox = new TextBox() { Left = 20, Top = 145, Width = 300, Text = initialPassword, PasswordChar = '*', BackColor = Color.FromArgb(15, 16, 22), ForeColor = Color.White, BorderStyle = BorderStyle.FixedSingle };
+
+                Label groupLabel = new Label() { Left = 20, Top = 180, Text = "Grup / Kategori:", Width = 300, ForeColor = Color.White };
                 ComboBox groupComboBox = new ComboBox()
                 {
                     Left = 20,
-                    Top = 145,
+                    Top = 200,
                     Width = 300,
                     BackColor = Color.FromArgb(15, 16, 22),
                     ForeColor = Color.White,
@@ -2906,8 +2913,8 @@ namespace BigLineconnect
                 groupComboBox.Items.AddRange(new object[] { "Yöneticiler (Admin)", "Ekip Arkadaşlarım", "Müşteriler & Cariler" });
                 groupComboBox.SelectedItem = string.IsNullOrEmpty(initialGroup) ? "Müşteriler & Cariler" : initialGroup;
 
-                Button okBtn = new Button() { Text = "Kaydet", Left = 100, Width = 100, Top = 195, DialogResult = DialogResult.OK, BackColor = Color.FromArgb(46, 204, 113), ForeColor = Color.Black, FlatStyle = FlatStyle.Flat };
-                Button cancelBtn = new Button() { Text = "İptal", Left = 210, Width = 100, Top = 195, DialogResult = DialogResult.Cancel, BackColor = Color.FromArgb(231, 76, 60), ForeColor = Color.White, FlatStyle = FlatStyle.Flat };
+                Button okBtn = new Button() { Text = "Kaydet", Left = 100, Width = 100, Top = 250, DialogResult = DialogResult.OK, BackColor = Color.FromArgb(46, 204, 113), ForeColor = Color.Black, FlatStyle = FlatStyle.Flat };
+                Button cancelBtn = new Button() { Text = "İptal", Left = 210, Width = 100, Top = 250, DialogResult = DialogResult.Cancel, BackColor = Color.FromArgb(231, 76, 60), ForeColor = Color.White, FlatStyle = FlatStyle.Flat };
 
                 okBtn.FlatAppearance.BorderSize = 0;
                 cancelBtn.FlatAppearance.BorderSize = 0;
@@ -2915,6 +2922,8 @@ namespace BigLineconnect
                 okBtn.Click += (sender, e) => { prompt.Close(); };
                 cancelBtn.Click += (sender, e) => { prompt.Close(); };
 
+                prompt.Controls.Add(idLabel);
+                prompt.Controls.Add(idTextBox);
                 prompt.Controls.Add(nameLabel);
                 prompt.Controls.Add(nameTextBox);
                 prompt.Controls.Add(passLabel);
@@ -2928,9 +2937,10 @@ namespace BigLineconnect
 
                 if (prompt.ShowDialog() == DialogResult.OK)
                 {
-                    return (true, nameTextBox.Text.Trim(), passTextBox.Text.Trim(), groupComboBox.SelectedItem?.ToString() ?? "Müşteriler & Cariler");
+                    string newId = idTextBox.Text.Trim().Replace(" ", "");
+                    return (true, newId, nameTextBox.Text.Trim(), passTextBox.Text.Trim(), groupComboBox.SelectedItem?.ToString() ?? "Müşteriler & Cariler");
                 }
-                return (false, "", "", "");
+                return (false, "", "", "", "");
             }
         }
 
