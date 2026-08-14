@@ -251,7 +251,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.30.10 (Silent Auto Firewall Pre-Approve Engine)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.30.11 (Refined Variation B Chrome Logo Edition)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
