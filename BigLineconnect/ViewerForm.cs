@@ -251,7 +251,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.30.6 (+1 Notch Low Mode Clarity Boost)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.30.7 (Senior Architect Razor Sharp Crisp Text Engine)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
@@ -385,9 +385,9 @@ namespace BigLineconnect
             ModernUIHelper.ApplyButtonStyle(btnQuality, Color.FromArgb(156, 39, 176), Color.FromArgb(123, 31, 162), Color.White);
             
             var cmsQuality = new ContextMenuStrip();
-            var itemLow = new ToolStripMenuItem("Düşük Mod (Hızlı & Net 1440p)", null, (s, e) => {
-                btnQuality.Text = "Kalite: Düşük (1440p) 🎨";
-                SendJson("{\"type\":\"set_quality\",\"quality\":62,\"maxDim\":1440}");
+            var itemLow = new ToolStripMenuItem("Düşük Mod (Hızlı & Net 1536p)", null, (s, e) => {
+                btnQuality.Text = "Kalite: Düşük (1536p) 🎨";
+                SendJson("{\"type\":\"set_quality\",\"quality\":68,\"maxDim\":1536}");
             });
             var itemMid = new ToolStripMenuItem("Orta Mod (Dengeli HD - 1600p)", null, (s, e) => {
                 btnQuality.Text = "Kalite: Orta (1600p) 🎨";

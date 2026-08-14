@@ -386,14 +386,31 @@ namespace BigLineconnect
                     int newW = (int)(originalW * scale);
                     int newH = (int)(originalH * scale);
 
-                    using (Bitmap scaledBmp = new Bitmap(newW, newH, PixelFormat.Format32bppArgb))
+                    using (Bitmap scaledBmp = new Bitmap(newW, newH, PixelFormat.Format32bppRgb))
                     {
                         using (Graphics g = Graphics.FromImage(scaledBmp))
                         {
-                            g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.Low;
+                            g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+                            g.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.Half;
                             g.CompositingQuality = System.Drawing.Drawing2D.CompositingQuality.HighSpeed;
-                            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighSpeed;
-                            g.DrawImage(bmpScreen, 0, 0, newW, newH);
+                            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.None;
+
+                            using (ImageAttributes attributes = new ImageAttributes())
+                            {
+                                float c = 1.10f; // 10% contrast boost for sharp text
+                                float t = (1.0f - c) / 2.0f;
+                                ColorMatrix contrastMatrix = new ColorMatrix(new float[][]
+                                {
+                                    new float[] {c, 0, 0, 0, 0},
+                                    new float[] {0, c, 0, 0, 0},
+                                    new float[] {0, 0, c, 0, 0},
+                                    new float[] {0, 0, 0, 1, 0},
+                                    new float[] {t, t, t, 0, 1}
+                                });
+
+                                attributes.SetColorMatrix(contrastMatrix);
+                                g.DrawImage(bmpScreen, new Rectangle(0, 0, newW, newH), 0, 0, originalW, originalH, GraphicsUnit.Pixel, attributes);
+                            }
                         }
                         return CompressToJpeg(scaledBmp, quality);
                     }
