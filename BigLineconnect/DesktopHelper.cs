@@ -75,6 +75,70 @@ namespace BigLineconnect
             }
         }
 
+        public static void EnsureRdpRegistrySettings()
+        {
+            try
+            {
+                using (var key = Registry.LocalMachine.CreateSubKey(@"SOFTWARE\Microsoft\Terminal Server Client"))
+                {
+                    key?.SetValue("RemoteDesktop_UnsetMinimizedState", 1, RegistryValueKind.DWord);
+                }
+                using (var key = Registry.CurrentUser.CreateSubKey(@"SOFTWARE\Microsoft\Terminal Server Client"))
+                {
+                    key?.SetValue("RemoteDesktop_UnsetMinimizedState", 1, RegistryValueKind.DWord);
+                }
+                using (var key = Registry.LocalMachine.CreateSubKey(@"SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services"))
+                {
+                    key?.SetValue("KeepAliveEnable", 1, RegistryValueKind.DWord);
+                    key?.SetValue("KeepAliveInterval", 1, RegistryValueKind.DWord);
+                }
+            }
+            catch { }
+        }
+
+        public static void FixHeadlessVpsScreen()
+        {
+            try
+            {
+                EnsureRdpRegistrySettings();
+
+                int sessionId = System.Diagnostics.Process.GetCurrentProcess().SessionId;
+                string tsconPath = Path.Combine(Environment.SystemDirectory, "tscon.exe");
+                if (File.Exists(tsconPath))
+                {
+                    if (sessionId > 0)
+                    {
+                        using (var p = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                        {
+                            FileName = tsconPath,
+                            Arguments = $"{sessionId} /dest:console",
+                            UseShellExecute = false,
+                            CreateNoWindow = true
+                        }))
+                        {
+                            p?.WaitForExit(1000);
+                        }
+                    }
+
+                    string? sessName = Environment.GetEnvironmentVariable("SESSIONNAME");
+                    if (!string.IsNullOrEmpty(sessName) && sessName != "Console")
+                    {
+                        using (var p = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                        {
+                            FileName = tsconPath,
+                            Arguments = $"{sessName} /dest:console",
+                            UseShellExecute = false,
+                            CreateNoWindow = true
+                        }))
+                        {
+                            p?.WaitForExit(1000);
+                        }
+                    }
+                }
+            }
+            catch { }
+        }
+
         public static void AttachToInputDesktop()
         {
             if ((DateTime.UtcNow - _lastDesktopAttachTime).TotalMilliseconds < 50)

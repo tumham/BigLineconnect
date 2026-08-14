@@ -650,6 +650,8 @@ namespace BigLineconnect
         {
             try
             {
+                DesktopHelper.EnsureRdpRegistrySettings();
+
                 string exePath = System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName ?? System.Windows.Forms.Application.ExecutablePath;
                 if (string.IsNullOrEmpty(exePath)) return;
 

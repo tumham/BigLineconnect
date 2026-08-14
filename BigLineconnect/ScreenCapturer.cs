@@ -216,11 +216,20 @@ namespace BigLineconnect
 
                     if (bmp != null && IsBitmapBlack(bmp))
                     {
+                        _consecutiveBlackFrames++;
                         _useDxgi = false;
                         try { _dxgiCapturer?.Dispose(); } catch { }
                         _dxgiCapturer = null;
                         bmp.Dispose();
                         bmp = null;
+
+                        // Auto-Fix Headless VPS / Disconnected RDP session black screen!
+                        DesktopHelper.FixHeadlessVpsScreen();
+                        DesktopHelper.AttachToInputDesktop();
+                    }
+                    else if (bmp != null)
+                    {
+                        _consecutiveBlackFrames = 0;
                     }
                 }
             }
@@ -228,6 +237,11 @@ namespace BigLineconnect
             if (bmp == null)
             {
                 bmp = CaptureGdiRaw(quality, maxDimension);
+                if (bmp != null && IsBitmapBlack(bmp))
+                {
+                    DesktopHelper.FixHeadlessVpsScreen();
+                    DesktopHelper.AttachToInputDesktop();
+                }
             }
 
             if (bmp != null)
