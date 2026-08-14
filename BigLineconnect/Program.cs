@@ -927,15 +927,25 @@ namespace BigLineconnect
         {
             try
             {
-                Log("Ekran yakalama döngüsü başladı.");
+                Log("Ekran yakalama döngüsü başladı (Kesintisiz Güç & Uyku Önleyici Aktif).");
+                ApplySleepPrevention(true);
                 if (SuppressWallpaperEnabled)
                 {
                     ScreenCapturer.SuppressWallpaper(true);
                 }
 
+                DateTime lastKeepAliveTime = DateTime.MinValue;
+
                 while (!token.IsCancellationRequested && _isStreaming)
                 {
                     DesktopHelper.AttachToInputDesktop();
+
+                    // Re-apply sleep prevention every 5 seconds to ensure Windows display never sleeps during remote control
+                    if ((DateTime.Now - lastKeepAliveTime).TotalSeconds >= 5)
+                    {
+                        lastKeepAliveTime = DateTime.Now;
+                        ApplySleepPrevention(true);
+                    }
 
                     int q = CurrentQuality;
                     int maxDim = CurrentMaxDimension;
@@ -958,6 +968,7 @@ namespace BigLineconnect
                     _instantCaptureEvent.WaitOne(16);
                 }
                 ScreenCapturer.SuppressWallpaper(false);
+                ApplySleepPrevention(false);
                 Log("Ekran yakalama döngüsü sonlandı.");
             }
             catch (Exception ex)
@@ -1088,6 +1099,7 @@ namespace BigLineconnect
         {
             if (pkt == null || pkt.Length < 5) return;
             DesktopHelper.AttachToInputDesktop();
+            ApplySleepPrevention(true);
 
             if (pkt[0] == 0x4D) // 'M' for fast mouse move
             {
