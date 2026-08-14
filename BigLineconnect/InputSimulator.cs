@@ -209,8 +209,11 @@ namespace BigLineconnect
                     }
                 };
 
-                SendInput(1, inputs, Marshal.SizeOf<INPUT>());
-                mouse_event(flags, 0, 0, 0, (UIntPtr)0x42494755); // Dual Fallback to bypass Alpemix/Windows focus blocks
+                uint res = SendInput(1, inputs, Marshal.SizeOf<INPUT>());
+                if (res == 0)
+                {
+                    mouse_event(flags, 0, 0, 0, (UIntPtr)0x42494755); // Dual Fallback ONLY if SendInput fails
+                }
                 Program.TriggerInstantCapture();
             }
             catch { }
@@ -243,9 +246,8 @@ namespace BigLineconnect
         {
             try
             {
-                SimulateMouseButton(button, "down", xPercent, yPercent, displayIndex);
-                SimulateMouseButton(button, "up", xPercent, yPercent, displayIndex);
-                System.Threading.Thread.Sleep(20);
+                // Click 1 is already handled by MouseDown/MouseUp from viewer, execute Click 2 to complete double click sequence
+                System.Threading.Thread.Sleep(25);
                 SimulateMouseButton(button, "down", xPercent, yPercent, displayIndex);
                 SimulateMouseButton(button, "up", xPercent, yPercent, displayIndex);
                 Program.TriggerInstantCapture();
