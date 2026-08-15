@@ -251,7 +251,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.30.27 (Non-Blocking UI Thread & Instant Typing)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.31.0 (9-Byte Binary Input Protocol & Sub-10ms Agility)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
@@ -1318,6 +1318,29 @@ namespace BigLineconnect
             _ = Task.Run(() => SendJsonAsync(data));
         }
 
+        public void SendBinaryInput(byte[] data)
+        {
+            if (data == null || data.Length == 0) return;
+            if (_ws == null || _ws.State != WebSocketState.Open) return;
+
+            Task.Run(async () =>
+            {
+                await _sendSemaphore.WaitAsync();
+                try
+                {
+                    if (_ws != null && _ws.State == WebSocketState.Open)
+                    {
+                        await _ws.SendAsync(new ArraySegment<byte>(data), WebSocketMessageType.Binary, true, CancellationToken.None);
+                    }
+                }
+                catch { }
+                finally
+                {
+                    _sendSemaphore.Release();
+                }
+            });
+        }
+
         private void ShowFloatingClipboardButton(System.Collections.Generic.List<string> fileList)
         {
             _lastRemoteClipboardFiles = fileList;
@@ -1541,11 +1564,12 @@ namespace BigLineconnect
 
             var (x, y) = GetNormalizedMousePos(e, _pictureBox);
 
-            string button = "left";
-            if (e.Button == MouseButtons.Right) button = "right";
-            else if (e.Button == MouseButtons.Middle) button = "middle";
+            byte button = BinaryInputProtocol.MOUSE_BTN_LEFT;
+            if (e.Button == MouseButtons.Right) button = BinaryInputProtocol.MOUSE_BTN_RIGHT;
+            else if (e.Button == MouseButtons.Middle) button = BinaryInputProtocol.MOUSE_BTN_MIDDLE;
 
-            SendJson($"{{\"type\":\"click\",\"button\":\"{button}\",\"action\":\"down\",\"x\":{x.ToString(System.Globalization.CultureInfo.InvariantCulture)},\"y\":{y.ToString(System.Globalization.CultureInfo.InvariantCulture)}}}");
+            byte[] binPkt = BinaryInputProtocol.EncodeMouseButton(button, BinaryInputProtocol.MOUSE_ACT_DOWN, x, y);
+            SendBinaryInput(binPkt);
         }
 
         private void PictureBox_MouseUp(object? sender, MouseEventArgs e)
@@ -1554,17 +1578,18 @@ namespace BigLineconnect
 
             var (x, y) = GetNormalizedMousePos(e, _pictureBox);
 
-            string button = "left";
-            if (e.Button == MouseButtons.Right) button = "right";
-            else if (e.Button == MouseButtons.Middle) button = "middle";
+            byte button = BinaryInputProtocol.MOUSE_BTN_LEFT;
+            if (e.Button == MouseButtons.Right) button = BinaryInputProtocol.MOUSE_BTN_RIGHT;
+            else if (e.Button == MouseButtons.Middle) button = BinaryInputProtocol.MOUSE_BTN_MIDDLE;
 
-            SendJson($"{{\"type\":\"click\",\"button\":\"{button}\",\"action\":\"up\",\"x\":{x.ToString(System.Globalization.CultureInfo.InvariantCulture)},\"y\":{y.ToString(System.Globalization.CultureInfo.InvariantCulture)}}}");
+            byte[] binPkt = BinaryInputProtocol.EncodeMouseButton(button, BinaryInputProtocol.MOUSE_ACT_UP, x, y);
+            SendBinaryInput(binPkt);
         }
 
         private void PictureBox_MouseWheel(object? sender, MouseEventArgs e)
         {
-            // e.Delta is usually +120 or -120
-            SendJson($"{{\"type\":\"scroll\",\"deltaY\":{e.Delta}}}");
+            byte[] binPkt = BinaryInputProtocol.EncodeMouseScroll((short)e.Delta);
+            SendBinaryInput(binPkt);
         }
 
         private void ViewerForm_KeyDown(object? sender, KeyEventArgs e)
@@ -1654,13 +1679,10 @@ namespace BigLineconnect
 
             if (isSpecial || isShortcut)
             {
-                string keyName = MapKey(e.KeyCode);
-                if (!string.IsNullOrEmpty(keyName))
-                {
-                    SendJson($"{{\"type\":\"key\",\"key\":\"{keyName}\",\"action\":\"down\"}}");
-                    e.Handled = true;
-                    e.SuppressKeyPress = true;
-                }
+                byte[] binPkt = BinaryInputProtocol.EncodeKeyStroke((ushort)e.KeyCode, e.Shift, e.Control, e.Alt, isStroke: false);
+                SendBinaryInput(binPkt);
+                e.Handled = true;
+                e.SuppressKeyPress = true;
             }
         }
 
@@ -1678,12 +1700,9 @@ namespace BigLineconnect
                 baseKey == Keys.Left || baseKey == Keys.Right || baseKey == Keys.Up || baseKey == Keys.Down ||
                 baseKey == Keys.Home || baseKey == Keys.End || baseKey == Keys.PageUp || baseKey == Keys.PageDown)
             {
-                string kName = MapKey(baseKey);
-                if (!string.IsNullOrEmpty(kName))
-                {
-                    SendJson($"{{\"type\":\"key_stroke\",\"key\":\"{kName}\",\"shift\":{(hasShift ? "true" : "false")},\"ctrl\":{(hasControl ? "true" : "false")},\"alt\":{(hasAlt ? "true" : "false")}}}");
-                    return true;
-                }
+                byte[] binPkt = BinaryInputProtocol.EncodeKeyStroke((ushort)baseKey, hasShift, hasControl, hasAlt, isStroke: true);
+                SendBinaryInput(binPkt);
+                return true;
             }
 
             // 2. Intercept ALT shortcuts (like ALT+D, ALT+F4, ALT+ENTER, ALT+A, etc.)
@@ -1692,7 +1711,8 @@ namespace BigLineconnect
                 string kName = MapKey(baseKey);
                 if (!string.IsNullOrEmpty(kName) && kName != "alt")
                 {
-                    SendJson($"{{\"type\":\"key_stroke\",\"key\":\"{kName}\",\"shift\":{(hasShift ? "true" : "false")},\"ctrl\":{(hasControl ? "true" : "false")},\"alt\":true}}");
+                    byte[] binPkt = BinaryInputProtocol.EncodeKeyStroke((ushort)baseKey, hasShift, hasControl, true, isStroke: true);
+                    SendBinaryInput(binPkt);
                     return true;
                 }
             }

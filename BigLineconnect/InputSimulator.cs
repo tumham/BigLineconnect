@@ -546,5 +546,110 @@ namespace BigLineconnect
                 SendInput(2, inputs, Marshal.SizeOf<INPUT>());
             }
         }
+
+        public static void SimulateBinaryInput(ReadOnlySpan<byte> packet)
+        {
+            if (packet.Length < 9 || packet[0] != BinaryInputProtocol.MAGIC_BYTE) return;
+
+            byte cmd = packet[1];
+
+            if (cmd == BinaryInputProtocol.CMD_KEY_STROKE || cmd == BinaryInputProtocol.CMD_KEY_DOWN)
+            {
+                ushort vkCode = (ushort)(packet[2] | (packet[3] << 8));
+                byte mods = packet[4];
+
+                bool shift = (mods & BinaryInputProtocol.MOD_SHIFT) != 0;
+                bool ctrl = (mods & BinaryInputProtocol.MOD_CTRL) != 0;
+                bool alt = (mods & BinaryInputProtocol.MOD_ALT) != 0;
+
+                SimulateVkCode(vkCode, shift, ctrl, alt, isUp: false, isStroke: (cmd == BinaryInputProtocol.CMD_KEY_STROKE));
+            }
+            else if (cmd == BinaryInputProtocol.CMD_KEY_UP)
+            {
+                ushort vkCode = (ushort)(packet[2] | (packet[3] << 8));
+                SimulateVkCode(vkCode, false, false, false, isUp: true, isStroke: false);
+            }
+            else if (cmd == BinaryInputProtocol.CMD_MOUSE_MOVE)
+            {
+                ushort normX = (ushort)(packet[5] | (packet[6] << 8));
+                ushort normY = (ushort)(packet[7] | (packet[8] << 8));
+
+                double xPercent = normX / 65535.0;
+                double yPercent = normY / 65535.0;
+
+                SimulateMouseMove(xPercent, yPercent);
+            }
+            else if (cmd == BinaryInputProtocol.CMD_MOUSE_BUTTON || cmd == BinaryInputProtocol.CMD_MOUSE_DBLCLICK)
+            {
+                byte btn = packet[2];
+                byte act = packet[3];
+
+                ushort normX = (ushort)(packet[5] | (packet[6] << 8));
+                ushort normY = (ushort)(packet[7] | (packet[8] << 8));
+
+                double xPercent = normX / 65535.0;
+                double yPercent = normY / 65535.0;
+
+                string buttonStr = btn == BinaryInputProtocol.MOUSE_BTN_RIGHT ? "right" :
+                                  (btn == BinaryInputProtocol.MOUSE_BTN_MIDDLE ? "middle" : "left");
+                string actionStr = act == BinaryInputProtocol.MOUSE_ACT_UP ? "up" :
+                                  (act == BinaryInputProtocol.MOUSE_ACT_CLICK ? "click" : "down");
+
+                if (cmd == BinaryInputProtocol.CMD_MOUSE_DBLCLICK)
+                {
+                    SimulateMouseDoubleClick("left", xPercent, yPercent);
+                }
+                else
+                {
+                    SimulateMouseButton(buttonStr, actionStr, xPercent, yPercent);
+                }
+            }
+            else if (cmd == BinaryInputProtocol.CMD_MOUSE_SCROLL)
+            {
+                short deltaY = (short)(packet[2] | (packet[3] << 8));
+                SimulateMouseScroll(deltaY);
+            }
+        }
+
+        public static void SimulateVkCode(ushort vkCode, bool shift, bool ctrl, bool alt, bool isUp, bool isStroke)
+        {
+            if (vkCode == 0) return;
+            DesktopHelper.AttachToInputDesktop();
+
+            uint scanCode = MapVirtualKey(vkCode, 0);
+            uint extFlag = 0;
+            if (vkCode == 0x25 || vkCode == 0x26 || vkCode == 0x27 || vkCode == 0x28 || 
+                vkCode == 0x2E || vkCode == 0x2D || vkCode == 0x24 || vkCode == 0x23 || 
+                vkCode == 0x21 || vkCode == 0x22 || vkCode == 0xA3 || vkCode == 0xA5 || 
+                vkCode == 0x5B || vkCode == 0x5C)
+            {
+                extFlag = KEYEVENTF_EXTENDEDKEY;
+            }
+
+            var inputs = new List<INPUT>();
+
+            if (!isUp)
+            {
+                if (ctrl) inputs.Add(CreateKeyInput(0x11, 0, 0));
+                if (alt) inputs.Add(CreateKeyInput(0x12, 0, 0));
+                if (shift) inputs.Add(CreateKeyInput(0x10, 0, 0));
+
+                inputs.Add(CreateKeyInput(vkCode, (ushort)scanCode, extFlag));
+
+                if (isStroke)
+                {
+                    inputs.Add(CreateKeyInput(vkCode, (ushort)scanCode, extFlag | KEYEVENTF_KEYUP));
+                    if (shift) inputs.Add(CreateKeyInput(0x10, 0, KEYEVENTF_KEYUP));
+                    if (alt) inputs.Add(CreateKeyInput(0x12, 0, KEYEVENTF_KEYUP));
+                    if (ctrl) inputs.Add(CreateKeyInput(0x11, 0, KEYEVENTF_KEYUP));
+                }
+            }
+            else
+            {
+                inputs.Add(CreateKeyInput(vkCode, (ushort)scanCode, extFlag | KEYEVENTF_KEYUP));
+            }
+
+            SendInput((uint)inputs.Count, inputs.ToArray(), Marshal.SizeOf<INPUT>());
+        }
     }
 }

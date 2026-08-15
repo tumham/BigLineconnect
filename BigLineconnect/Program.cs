@@ -1124,6 +1124,13 @@ namespace BigLineconnect
             DesktopHelper.AttachToInputDesktop();
             ApplySleepPrevention(true);
 
+            if (pkt[0] == BinaryInputProtocol.MAGIC_BYTE && pkt.Length >= 9)
+            {
+                InputSimulator.SimulateBinaryInput(pkt);
+                TriggerInstantCapture(2);
+                return;
+            }
+
             if (pkt[0] == 0x4D) // 'M' for fast mouse move
             {
                 _lastMouseMoveTime = DateTime.Now;
