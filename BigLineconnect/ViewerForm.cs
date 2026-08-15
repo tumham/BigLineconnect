@@ -251,7 +251,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.30.24 (VPS Headless & RDP BlackScreen Fix)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.30.25 (Tüm Kolonlarda Filtreleme & Sıralama)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;

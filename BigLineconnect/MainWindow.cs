@@ -182,7 +182,7 @@ namespace BigLineconnect
         private void InitializeComponent()
         {
             Program.LoadSecuritySettings();
-            this.Text = "BigLineconnect v3.30.24 - Uzaktan Kontrol (VPS Headless & RDP BlackScreen Fix)";
+            this.Text = "BigLineconnect v3.30.25 - Uzaktan Kontrol (Tüm Kolonlarda Filtreleme & Sıralama)";
             this.Size = new Size(880, 750);
             this.MinimumSize = new Size(880, 750);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -212,7 +212,7 @@ namespace BigLineconnect
 
             _titleLabel = new Label
             {
-                Text = "BigLineconnect v3.30.24 🚀",
+                Text = "BigLineconnect v3.30.25 🚀",
                 Location = new Point(105, 15),
                 Size = new Size(330, 42),
                 Font = new Font("Segoe UI", 20F, FontStyle.Bold),
@@ -223,7 +223,7 @@ namespace BigLineconnect
 
             var subtitleLabel = new Label
             {
-                Text = "REMOTE DESKTOP CLIENT • v3.30.24 (VPS Headless & RDP BlackScreen Fix)",
+                Text = "REMOTE DESKTOP CLIENT • v3.30.25 (Tüm Kolonlarda Filtreleme & Sıralama)",
                 Location = new Point(108, 58),
                 Size = new Size(450, 20),
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
@@ -769,13 +769,14 @@ namespace BigLineconnect
                 BackColor = Color.FromArgb(15, 16, 22),
                 ForeColor = Color.White,
                 BorderStyle = BorderStyle.None,
-                HeaderStyle = ColumnHeaderStyle.Nonclickable,
+                HeaderStyle = ColumnHeaderStyle.Clickable,
                 Font = new Font("Segoe UI", 9.5F, FontStyle.Regular)
             };
             _addressBookListView.Columns.Add("İsim", 140);
             _addressBookListView.Columns.Add("ID", 110);
             _addressBookListView.DoubleClick += AddressBookListView_DoubleClick;
             _addressBookListView.MouseClick += AddressBookListView_MouseClick;
+            _addressBookListView.ColumnClick += AddressBookListView_ColumnClick;
             _addressBookGroup.Controls.Add(_addressBookListView);
 
             _addAddressButton = new Button
@@ -1979,9 +1980,14 @@ namespace BigLineconnect
 
                         if (!string.IsNullOrEmpty(search))
                         {
+                            string pStr = GetNormalizedPriority(ticket.Priority, ticket.Issue).ToLowerInvariant();
+                            string dtStr = ticket.CreatedAt != default ? ticket.CreatedAt.ToString("dd.MM.yyyy HH:mm").ToLowerInvariant() : "";
                             bool matches = ticket.Name.ToLowerInvariant().Contains(search) ||
                                            ticket.Issue.ToLowerInvariant().Contains(search) ||
-                                           ticket.Id.ToLowerInvariant().Contains(search);
+                                           ticket.Id.ToLowerInvariant().Contains(search) ||
+                                           (ticket.Token != null && ticket.Token.ToLowerInvariant().Contains(search)) ||
+                                           pStr.Contains(search) ||
+                                           dtStr.Contains(search);
                             if (!matches) continue;
                         }
 
@@ -2317,6 +2323,54 @@ namespace BigLineconnect
                         cms.Show(_addressBookListView, e.Location);
                     }
                 }
+            }
+        }
+
+        private int _addressBookSortColumn = -1;
+        private bool _addressBookSortAscending = true;
+
+        private void AddressBookListView_ColumnClick(object? sender, ColumnClickEventArgs e)
+        {
+            if (_addressBookListView == null) return;
+            if (_addressBookSortColumn == e.Column)
+            {
+                _addressBookSortAscending = !_addressBookSortAscending;
+            }
+            else
+            {
+                _addressBookSortColumn = e.Column;
+                _addressBookSortAscending = true;
+            }
+
+            _addressBookListView.ListViewItemSorter = new ListViewItemComparer(e.Column, _addressBookSortAscending);
+            _addressBookListView.Sort();
+        }
+
+        public class ListViewItemComparer : System.Collections.IComparer
+        {
+            private int _col;
+            private bool _ascending;
+
+            public ListViewItemComparer(int column, bool ascending)
+            {
+                _col = column;
+                _ascending = ascending;
+            }
+
+            public int Compare(object? x, object? y)
+            {
+                var itemX = x as ListViewItem;
+                var itemY = y as ListViewItem;
+
+                if (itemX == null || itemY == null) return 0;
+                if (itemX.Tag?.ToString() == "HEADER") return -1;
+                if (itemY.Tag?.ToString() == "HEADER") return 1;
+
+                string valX = _col < itemX.SubItems.Count ? itemX.SubItems[_col].Text : "";
+                string valY = _col < itemY.SubItems.Count ? itemY.SubItems[_col].Text : "";
+
+                int result = string.Compare(valX, valY, StringComparison.OrdinalIgnoreCase);
+                return _ascending ? result : -result;
             }
         }
 
@@ -4575,10 +4629,15 @@ namespace BigLineconnect
         {
             private MainWindow _main;
             private ListView lstTickets;
+            private TextBox txtSearchSubmitted;
             private Button btnRefresh;
             private Button btnNewTicket;
             private Button btnCancelTicket;
             private Button btnClose;
+
+            private List<LocalSubmittedTicket> _masterSubmittedList = new();
+            private int _sortColumnIndex = 0;
+            private bool _sortAscending = false;
 
             public MySubmittedTicketsForm(MainWindow main)
             {
@@ -4595,31 +4654,79 @@ namespace BigLineconnect
                 var lblTitle = new Label
                 {
                     Text = "📋 Açtığım Destek Talepleri Geçmişi",
-                    Location = new Point(20, 15),
+                    Location = new Point(20, 12),
                     Size = new Size(620, 28),
-                    Font = new Font("Segoe UI", 13F, FontStyle.Bold),
+                    Font = new Font("Segoe UI", 12F, FontStyle.Bold),
                     ForeColor = Color.FromArgb(0, 229, 255)
                 };
                 this.Controls.Add(lblTitle);
 
+                txtSearchSubmitted = new TextBox
+                {
+                    Location = new Point(20, 44),
+                    Size = new Size(625, 26),
+                    BackColor = Color.FromArgb(20, 23, 32),
+                    ForeColor = Color.FromArgb(0, 229, 255),
+                    Font = new Font("Segoe UI", 9.5F, FontStyle.Italic),
+                    BorderStyle = BorderStyle.FixedSingle,
+                    Text = "🔍 Tüm Kolonlarda Ara (Tarih, Öncelik, Sorun, Durum, Not...)"
+                };
+
+                txtSearchSubmitted.GotFocus += (s, e) => {
+                    if (txtSearchSubmitted.Text.StartsWith("🔍"))
+                    {
+                        txtSearchSubmitted.Text = "";
+                        txtSearchSubmitted.ForeColor = Color.White;
+                        txtSearchSubmitted.Font = new Font("Segoe UI", 9.5F, FontStyle.Regular);
+                    }
+                };
+
+                txtSearchSubmitted.LostFocus += (s, e) => {
+                    if (string.IsNullOrWhiteSpace(txtSearchSubmitted.Text))
+                    {
+                        txtSearchSubmitted.Text = "🔍 Tüm Kolonlarda Ara (Tarih, Öncelik, Sorun, Durum, Not...)";
+                        txtSearchSubmitted.ForeColor = Color.FromArgb(0, 229, 255);
+                        txtSearchSubmitted.Font = new Font("Segoe UI", 9.5F, FontStyle.Italic);
+                    }
+                };
+
+                txtSearchSubmitted.TextChanged += (s, e) => {
+                    FilterAndRenderTickets();
+                };
+                this.Controls.Add(txtSearchSubmitted);
+
                 lstTickets = new ListView
                 {
-                    Location = new Point(20, 50),
-                    Size = new Size(625, 300),
+                    Location = new Point(20, 76),
+                    Size = new Size(625, 274),
                     View = View.Details,
                     FullRowSelect = true,
-                    GridLines = false, // Stark white lines removed!
+                    GridLines = false,
                     BackColor = Color.FromArgb(20, 23, 32),
                     ForeColor = Color.FromArgb(220, 225, 235),
                     Font = new Font("Segoe UI", 9.5F),
                     BorderStyle = BorderStyle.FixedSingle,
                     OwnerDraw = true
                 };
-                lstTickets.Columns.Add("Tarih / Saat", 115);
-                lstTickets.Columns.Add("Öncelik", 85);
-                lstTickets.Columns.Add("Sorun / Açıklama", 185);
-                lstTickets.Columns.Add("Durum", 115);
-                lstTickets.Columns.Add("Uzman Çözüm Notu", 125);
+                lstTickets.Columns.Add("Tarih / Saat ↕", 115);
+                lstTickets.Columns.Add("Öncelik ↕", 85);
+                lstTickets.Columns.Add("Sorun / Açıklama ↕", 185);
+                lstTickets.Columns.Add("Durum ↕", 115);
+                lstTickets.Columns.Add("Uzman Çözüm Notu ↕", 125);
+
+                lstTickets.ColumnClick += (s, e) =>
+                {
+                    if (_sortColumnIndex == e.Column)
+                    {
+                        _sortAscending = !_sortAscending;
+                    }
+                    else
+                    {
+                        _sortColumnIndex = e.Column;
+                        _sortAscending = true;
+                    }
+                    FilterAndRenderTickets();
+                };
 
                 // Eye-pleasing soft-dark custom drawing (Zero stark white lines, soft zebra rows)
                 lstTickets.DrawColumnHeader += (s, e) =>
@@ -4634,9 +4741,13 @@ namespace BigLineconnect
                         e.Graphics.DrawLine(borderPen, e.Bounds.Right - 1, e.Bounds.Top + 4, e.Bounds.Right - 1, e.Bounds.Bottom - 4);
                     }
 
-                    TextRenderer.DrawText(e.Graphics, e.Header?.Text ?? "", new Font("Segoe UI", 9F, FontStyle.Bold),
+                    Color headerColor = (e.ColumnIndex == _sortColumnIndex) ? Color.FromArgb(46, 204, 113) : Color.FromArgb(0, 229, 255);
+                    string sortArrow = (e.ColumnIndex == _sortColumnIndex) ? (_sortAscending ? " ▲" : " ▼") : "";
+                    string headerText = (e.Header?.Text ?? "").Replace(" ↕", "") + sortArrow;
+
+                    TextRenderer.DrawText(e.Graphics, headerText, new Font("Segoe UI", 9F, FontStyle.Bold),
                         new Rectangle(e.Bounds.X + 6, e.Bounds.Y + 4, e.Bounds.Width - 10, e.Bounds.Height - 8),
-                        Color.FromArgb(0, 229, 255), TextFormatFlags.VerticalCenter | TextFormatFlags.Left | TextFormatFlags.EndEllipsis);
+                        headerColor, TextFormatFlags.VerticalCenter | TextFormatFlags.Left | TextFormatFlags.EndEllipsis);
                 };
 
                 lstTickets.DrawSubItem += (s, e) =>
@@ -4648,7 +4759,6 @@ namespace BigLineconnect
                     using var bgBrush = new SolidBrush(rowBg);
                     e.Graphics.FillRectangle(bgBrush, e.Bounds);
 
-                    // Soft subtle dark grid divider at cell bottom & right
                     using var dividerPen = new Pen(Color.FromArgb(38, 42, 56));
                     e.Graphics.DrawLine(dividerPen, e.Bounds.Left, e.Bounds.Bottom - 1, e.Bounds.Right, e.Bounds.Bottom - 1);
                     e.Graphics.DrawLine(dividerPen, e.Bounds.Right - 1, e.Bounds.Top, e.Bounds.Right - 1, e.Bounds.Bottom - 1);
@@ -4747,9 +4857,120 @@ namespace BigLineconnect
                 this.Load += (s, e) => LoadAndRefreshTickets();
             }
 
+            private void FilterAndRenderTickets()
+            {
+                if (lstTickets == null || _masterSubmittedList == null) return;
+                lstTickets.Items.Clear();
+
+                string search = (txtSearchSubmitted != null && !txtSearchSubmitted.Text.StartsWith("🔍")) 
+                    ? txtSearchSubmitted.Text.Trim().ToLowerInvariant() : "";
+
+                var filtered = _masterSubmittedList.Where(t => {
+                    if (string.IsNullOrEmpty(search)) return true;
+                    string timeStr = t.CreatedAt != default ? t.CreatedAt.ToString("dd.MM.yyyy HH:mm").ToLowerInvariant() : "";
+                    string priorityStr = (t.Priority ?? "").ToLowerInvariant();
+                    string issueStr = (t.Issue ?? "").ToLowerInvariant();
+                    string statusStr = (t.Status ?? "").ToLowerInvariant();
+                    string notesStr = (t.Notes ?? "").ToLowerInvariant();
+                    string tokenStr = (t.Token ?? "").ToLowerInvariant();
+                    string hostIdStr = (t.HostId ?? "").ToLowerInvariant();
+
+                    return timeStr.Contains(search) ||
+                           priorityStr.Contains(search) ||
+                           issueStr.Contains(search) ||
+                           statusStr.Contains(search) ||
+                           notesStr.Contains(search) ||
+                           tokenStr.Contains(search) ||
+                           hostIdStr.Contains(search);
+                }).ToList();
+
+                int GetPriorityRank(string p)
+                {
+                    if (string.IsNullOrEmpty(p)) return 1;
+                    if (p.Contains("Yüksek") || p.Contains("🔴")) return 0;
+                    if (p.Contains("Düşük") || p.Contains("🟢")) return 2;
+                    return 1;
+                }
+
+                IEnumerable<LocalSubmittedTicket> sorted = filtered;
+                switch (_sortColumnIndex)
+                {
+                    case 0: // Tarih / Saat
+                        sorted = _sortAscending ? filtered.OrderBy(x => x.CreatedAt) : filtered.OrderByDescending(x => x.CreatedAt);
+                        break;
+                    case 1: // Öncelik
+                        sorted = _sortAscending ? filtered.OrderBy(x => GetPriorityRank(x.Priority)) : filtered.OrderByDescending(x => GetPriorityRank(x.Priority));
+                        break;
+                    case 2: // Sorun / Açıklama
+                        sorted = _sortAscending ? filtered.OrderBy(x => x.Issue) : filtered.OrderByDescending(x => x.Issue);
+                        break;
+                    case 3: // Durum
+                        sorted = _sortAscending ? filtered.OrderBy(x => x.Status) : filtered.OrderByDescending(x => x.Status);
+                        break;
+                    case 4: // Uzman Çözüm Notu
+                        sorted = _sortAscending ? filtered.OrderBy(x => x.Notes) : filtered.OrderByDescending(x => x.Notes);
+                        break;
+                    default:
+                        sorted = filtered;
+                        break;
+                }
+
+                string streamFlagPath = Program.GetSharedStreamActivePath();
+                bool isStreamActive = Program._isStreaming || File.Exists(streamFlagPath);
+
+                foreach (var t in sorted)
+                {
+                    t.Priority = GetNormalizedPriority(t.Priority, t.Issue);
+                    string timeStr = t.CreatedAt != default ? t.CreatedAt.ToString("dd.MM.yyyy HH:mm") : "---";
+                    var item = new ListViewItem(timeStr);
+                    
+                    string pText = t.Priority;
+                    if (pText.Contains("Yüksek")) item.SubItems.Add("🔴 Yüksek");
+                    else if (pText.Contains("Düşük")) item.SubItems.Add("🟢 Düşük");
+                    else item.SubItems.Add("🟡 Orta");
+
+                    item.SubItems.Add(t.Issue);
+
+                    string statusText = t.Status ?? "";
+
+                    if (statusText.Contains("Çözüldü") && !statusText.Contains("Çözülmedi"))
+                    {
+                        item.SubItems.Add("✅ Çözüldü");
+                        item.ForeColor = Color.FromArgb(46, 204, 113);
+                    }
+                    else if (statusText.Contains("Çözülmedi"))
+                    {
+                        item.SubItems.Add("❌ Çözülemedi");
+                        item.ForeColor = Color.FromArgb(231, 76, 60);
+                    }
+                    else if (statusText.Contains("Takip") || statusText.Contains("Takipte"))
+                    {
+                        item.SubItems.Add("📌 Takip Edilecek");
+                        item.ForeColor = Color.FromArgb(243, 156, 18);
+                    }
+                    else if (isStreamActive || statusText.Contains("Bağlandı") || statusText.Contains("İşlemde"))
+                    {
+                        item.SubItems.Add("🟢 Uzman Bağlandı (İşlem Yapılıyor...)");
+                        item.ForeColor = Color.FromArgb(46, 204, 113);
+                        if (string.IsNullOrEmpty(t.Notes) || t.Notes == "—")
+                        {
+                            t.Notes = "Uzman bilgisayarınıza bağlı, işlem gerçekleştiriliyor...";
+                        }
+                    }
+                    else
+                    {
+                        item.SubItems.Add(string.IsNullOrEmpty(statusText) ? "⏳ Sırada Bekliyor" : statusText);
+                        item.ForeColor = Color.FromArgb(241, 196, 15);
+                    }
+
+                    item.SubItems.Add(string.IsNullOrEmpty(t.Notes) ? "—" : t.Notes);
+                    item.Tag = t;
+                    lstTickets.Items.Add(item);
+                }
+            }
+
             private void LoadAndRefreshTickets()
             {
-                lstTickets.Items.Clear();
                 var localTickets = LoadLocalSubmittedTickets();
                 string myHostId = Program.CurrentHostId != null ? Program.CurrentHostId.Replace(" ", "").Trim() : "";
 
@@ -4870,60 +5091,12 @@ namespace BigLineconnect
                             return 1;
                         }
 
-                        var sortedList = combinedList
+                        _masterSubmittedList = combinedList
                             .OrderBy(x => GetRank(x.Priority))
                             .ThenByDescending(x => x.CreatedAt)
                             .ToList();
 
-                        foreach (var t in sortedList)
-                        {
-                            t.Priority = GetNormalizedPriority(t.Priority, t.Issue);
-                            string timeStr = t.CreatedAt != default ? t.CreatedAt.ToString("dd.MM.yyyy HH:mm") : "---";
-                            var item = new ListViewItem(timeStr);
-                            
-                            string pText = t.Priority;
-                            if (pText.Contains("Yüksek")) item.SubItems.Add("🔴 Yüksek");
-                            else if (pText.Contains("Düşük")) item.SubItems.Add("🟢 Düşük");
-                            else item.SubItems.Add("🟡 Orta");
-
-                            item.SubItems.Add(t.Issue);
-
-                            string statusText = t.Status ?? "";
-
-                            if (statusText.Contains("Çözüldü") && !statusText.Contains("Çözülmedi"))
-                            {
-                                item.SubItems.Add("✅ Çözüldü");
-                                item.ForeColor = Color.FromArgb(46, 204, 113);
-                            }
-                            else if (statusText.Contains("Çözülmedi"))
-                            {
-                                item.SubItems.Add("❌ Çözülemedi");
-                                item.ForeColor = Color.FromArgb(231, 76, 60);
-                            }
-                            else if (statusText.Contains("Takip") || statusText.Contains("Takipte"))
-                            {
-                                item.SubItems.Add("📌 Takip Edilecek");
-                                item.ForeColor = Color.FromArgb(243, 156, 18);
-                            }
-                            else if (isStreamActive || statusText.Contains("Bağlandı") || statusText.Contains("İşlemde"))
-                            {
-                                item.SubItems.Add("🟢 Uzman Bağlandı (İşlem Yapılıyor...)");
-                                item.ForeColor = Color.FromArgb(46, 204, 113);
-                                if (string.IsNullOrEmpty(t.Notes) || t.Notes == "—")
-                                {
-                                    t.Notes = "Uzman bilgisayarınıza bağlı, işlem gerçekleştiriliyor...";
-                                }
-                            }
-                            else
-                            {
-                                item.SubItems.Add(string.IsNullOrEmpty(statusText) ? "⏳ Sırada Bekliyor" : statusText);
-                                item.ForeColor = Color.FromArgb(241, 196, 15);
-                            }
-
-                            item.SubItems.Add(string.IsNullOrEmpty(t.Notes) ? "—" : t.Notes);
-                            item.Tag = t;
-                            lstTickets.Items.Add(item);
-                        }
+                        FilterAndRenderTickets();
                     });
                 });
             }
