@@ -1229,6 +1229,16 @@ namespace BigLineconnect
                     InputSimulator.SimulateKeyStroke(key, shift, ctrl, alt);
                     TriggerInstantCapture(2);
                 }
+                else if (type == "key_repeat")
+                {
+                    string key = root.GetProperty("key").GetString() ?? "";
+                    int count = root.TryGetProperty("count", out var cntProp) ? cntProp.GetInt32() : 1;
+                    bool shift = root.TryGetProperty("shift", out var sProp) && sProp.GetBoolean();
+                    bool ctrl = root.TryGetProperty("ctrl", out var cProp) && cProp.GetBoolean();
+                    bool alt = root.TryGetProperty("alt", out var aProp) && aProp.GetBoolean();
+                    InputSimulator.SimulateKeyRepeat(key, count, shift, ctrl, alt);
+                    TriggerInstantCapture(2);
+                }
                 else if (type == "key")
                 {
                     string key = root.GetProperty("key").GetString() ?? "";

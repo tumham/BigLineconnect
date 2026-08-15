@@ -358,6 +358,60 @@ namespace BigLineconnect
             Program.TriggerInstantCapture();
         }
 
+        public static void SimulateKeyRepeat(string key, int count = 1, bool shift = false, bool ctrl = false, bool alt = false)
+        {
+            if (count <= 0) return;
+            if (count == 1)
+            {
+                SimulateKeyStroke(key, shift, ctrl, alt);
+                return;
+            }
+
+            DesktopHelper.AttachToInputDesktop();
+
+            ushort vkCode = 0;
+            if (SpecialKeyMap.TryGetValue(key, out ushort mappedVk))
+            {
+                vkCode = mappedVk;
+            }
+            else if (key.Length == 1)
+            {
+                short scan = VkKeyScan(key[0]);
+                if (scan != -1) vkCode = (ushort)(scan & 0xFF);
+            }
+
+            if (vkCode == 0) return;
+
+            uint scanCode = MapVirtualKey(vkCode, 0);
+            uint extFlag = 0;
+            if (vkCode == 0x25 || vkCode == 0x26 || vkCode == 0x27 || vkCode == 0x28 || 
+                vkCode == 0x2E || vkCode == 0x2D || vkCode == 0x24 || vkCode == 0x23 || 
+                vkCode == 0x21 || vkCode == 0x22 || vkCode == 0xA3 || vkCode == 0xA5 || 
+                vkCode == 0x5B || vkCode == 0x5C)
+            {
+                extFlag = KEYEVENTF_EXTENDEDKEY;
+            }
+
+            var inputs = new List<INPUT>();
+
+            if (ctrl) inputs.Add(CreateKeyInput(0x11, 0, 0));
+            if (alt) inputs.Add(CreateKeyInput(0x12, 0, 0));
+            if (shift) inputs.Add(CreateKeyInput(0x10, 0, 0));
+
+            for (int i = 0; i < count; i++)
+            {
+                inputs.Add(CreateKeyInput(vkCode, (ushort)scanCode, extFlag));
+                inputs.Add(CreateKeyInput(vkCode, (ushort)scanCode, extFlag | KEYEVENTF_KEYUP));
+            }
+
+            if (shift) inputs.Add(CreateKeyInput(0x10, 0, KEYEVENTF_KEYUP));
+            if (alt) inputs.Add(CreateKeyInput(0x12, 0, KEYEVENTF_KEYUP));
+            if (ctrl) inputs.Add(CreateKeyInput(0x11, 0, KEYEVENTF_KEYUP));
+
+            SendInput((uint)inputs.Count, inputs.ToArray(), Marshal.SizeOf<INPUT>());
+            Program.TriggerInstantCapture();
+        }
+
         public static void SimulateKey(string key, string action)
         {
             if (key.Equals("release_all", StringComparison.OrdinalIgnoreCase) || 

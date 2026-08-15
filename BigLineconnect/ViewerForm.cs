@@ -251,7 +251,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.30.25 (Tüm Kolonlarda Filtreleme & Sıralama)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.30.26 (Sıfır Gecikmeli ERP & Excel Yazma/Silme)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
@@ -1665,6 +1665,101 @@ namespace BigLineconnect
             }
         }
 
+        private readonly object _keyBatchLock = new();
+        private string _pendingRepeatKey = "";
+        private int _pendingRepeatCount = 0;
+        private bool _pendingShift = false;
+        private bool _pendingCtrl = false;
+        private bool _pendingAlt = false;
+        private System.Windows.Forms.Timer? _keyBatchTimer;
+
+        private void EnqueueKeyStroke(string key, bool shift, bool ctrl, bool alt)
+        {
+            if (key == "backspace" || key == "delete" || key == "left" || key == "right" || key == "up" || key == "down")
+            {
+                lock (_keyBatchLock)
+                {
+                    if (_pendingRepeatKey == key && _pendingShift == shift && _pendingCtrl == ctrl && _pendingAlt == alt)
+                    {
+                        _pendingRepeatCount++;
+                    }
+                    else
+                    {
+                        FlushPendingKeyStrokes();
+                        _pendingRepeatKey = key;
+                        _pendingRepeatCount = 1;
+                        _pendingShift = shift;
+                        _pendingCtrl = ctrl;
+                        _pendingAlt = alt;
+                    }
+                }
+
+                if (this.InvokeRequired)
+                {
+                    try
+                    {
+                        this.BeginInvoke((MethodInvoker)delegate { EnsureKeyBatchTimer(); });
+                    }
+                    catch { }
+                }
+                else
+                {
+                    EnsureKeyBatchTimer();
+                }
+            }
+            else
+            {
+                FlushPendingKeyStrokes();
+                SendJson($"{{\"type\":\"key_stroke\",\"key\":\"{key}\",\"shift\":{(shift ? "true" : "false")},\"ctrl\":{(ctrl ? "true" : "false")},\"alt\":{(alt ? "true" : "false")}}}");
+            }
+        }
+
+        private void EnsureKeyBatchTimer()
+        {
+            if (_keyBatchTimer == null)
+            {
+                _keyBatchTimer = new System.Windows.Forms.Timer { Interval = 16 };
+                _keyBatchTimer.Tick += (s, e) => FlushPendingKeyStrokes();
+            }
+            _keyBatchTimer.Stop();
+            _keyBatchTimer.Start();
+        }
+
+        private void FlushPendingKeyStrokes()
+        {
+            string key = "";
+            int count = 0;
+            bool shift = false, ctrl = false, alt = false;
+
+            lock (_keyBatchLock)
+            {
+                if (_keyBatchTimer != null)
+                {
+                    _keyBatchTimer.Stop();
+                }
+
+                if (_pendingRepeatCount <= 0 || string.IsNullOrEmpty(_pendingRepeatKey)) return;
+
+                key = _pendingRepeatKey;
+                count = _pendingRepeatCount;
+                shift = _pendingShift;
+                ctrl = _pendingCtrl;
+                alt = _pendingAlt;
+
+                _pendingRepeatKey = "";
+                _pendingRepeatCount = 0;
+            }
+
+            if (count == 1)
+            {
+                SendJson($"{{\"type\":\"key_stroke\",\"key\":\"{key}\",\"shift\":{(shift ? "true" : "false")},\"ctrl\":{(ctrl ? "true" : "false")},\"alt\":{(alt ? "true" : "false")}}}");
+            }
+            else if (count > 1)
+            {
+                SendJson($"{{\"type\":\"key_repeat\",\"key\":\"{key}\",\"count\":{count},\"shift\":{(shift ? "true" : "false")},\"ctrl\":{(ctrl ? "true" : "false")},\"alt\":{(alt ? "true" : "false")}}}");
+            }
+        }
+
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
         {
             Keys baseKey = keyData & Keys.KeyCode;
@@ -1682,7 +1777,7 @@ namespace BigLineconnect
                 string kName = MapKey(baseKey);
                 if (!string.IsNullOrEmpty(kName))
                 {
-                    SendJson($"{{\"type\":\"key_stroke\",\"key\":\"{kName}\",\"shift\":{(hasShift ? "true" : "false")},\"ctrl\":{(hasControl ? "true" : "false")},\"alt\":{(hasAlt ? "true" : "false")}}}");
+                    EnqueueKeyStroke(kName, hasShift, hasControl, hasAlt);
                     return true;
                 }
             }
@@ -1693,7 +1788,7 @@ namespace BigLineconnect
                 string kName = MapKey(baseKey);
                 if (!string.IsNullOrEmpty(kName) && kName != "alt")
                 {
-                    SendJson($"{{\"type\":\"key_stroke\",\"key\":\"{kName}\",\"shift\":{(hasShift ? "true" : "false")},\"ctrl\":{(hasControl ? "true" : "false")},\"alt\":true}}");
+                    EnqueueKeyStroke(kName, hasShift, hasControl, true);
                     return true;
                 }
             }
