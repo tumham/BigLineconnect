@@ -182,7 +182,7 @@ namespace BigLineconnect
         private void InitializeComponent()
         {
             Program.LoadSecuritySettings();
-            this.Text = "BigLineconnect v3.30.26 - Uzaktan Kontrol (Sıfır Gecikmeli ERP & Excel Yazma/Silme)";
+            this.Text = "BigLineconnect v3.30.27 - Uzaktan Kontrol (Non-Blocking UI Thread & Instant Typing)";
             this.Size = new Size(880, 750);
             this.MinimumSize = new Size(880, 750);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -212,7 +212,7 @@ namespace BigLineconnect
 
             _titleLabel = new Label
             {
-                Text = "BigLineconnect v3.30.26 🚀",
+                Text = "BigLineconnect v3.30.27 🚀",
                 Location = new Point(105, 15),
                 Size = new Size(330, 42),
                 Font = new Font("Segoe UI", 20F, FontStyle.Bold),
@@ -223,7 +223,7 @@ namespace BigLineconnect
 
             var subtitleLabel = new Label
             {
-                Text = "REMOTE DESKTOP CLIENT • v3.30.26 (Sıfır Gecikmeli ERP & Excel Yazma/Silme)",
+                Text = "REMOTE DESKTOP CLIENT • v3.30.27 (Non-Blocking UI Thread & Instant Typing)",
                 Location = new Point(108, 58),
                 Size = new Size(450, 20),
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
