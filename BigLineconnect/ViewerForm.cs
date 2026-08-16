@@ -251,7 +251,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.31.0 (9-Byte Binary Input Protocol & Sub-10ms Agility)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.32.0 (Minimalist Light Corporate Theme)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
