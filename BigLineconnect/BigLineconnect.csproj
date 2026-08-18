@@ -14,10 +14,10 @@
     <UseWindowsForms>true</UseWindowsForms>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <AssemblyName>BigLineconnect</AssemblyName>
-    <Version>3.32.0</Version>
-    <AssemblyVersion>3.32.0.0</AssemblyVersion>
-    <FileVersion>3.32.0.0</FileVersion>
-    <ProductVersion>v3.32.0</ProductVersion>
+    <Version>3.33.0</Version>
+    <AssemblyVersion>3.33.0.0</AssemblyVersion>
+    <FileVersion>3.33.0.0</FileVersion>
+    <ProductVersion>v3.33.0</ProductVersion>
     <Authors>BIGUS BILISIM GELISTIRME VE UYGULAMA SISTEMLERI LIMITED SIRKETI</Authors>
     <Company>BIGUS BILISIM GELISTIRME VE UYGULAMA SISTEMLERI LIMITED SIRKETI</Company>
     <Product>BigLineconnect Kurumsal Uzaktan Masaustu ve Destek Yazilimi</Product>

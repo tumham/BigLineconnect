@@ -1,0 +1,326 @@
+﻿<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BigLineconnect | Yardım & Hızlı Başlangıç Kılavuzu 🚀</title>
+    <style>
+        :root {
+            --bg-color: #0b0c10;
+            --card-bg: #1f2833;
+            --text-color: #c5c6c7;
+            --cyan: #00e5ff;
+            --magenta: #d500f9;
+            --white: #ffffff;
+            --border-color: #45a29e;
+        }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            padding: 40px 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background-color: var(--card-bg);
+            border: 1px solid rgba(0, 229, 255, 0.2);
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 8px 32px rgba(0, 229, 255, 0.1);
+        }
+        header {
+            text-align: center;
+            border-bottom: 2px dashed rgba(213, 0, 249, 0.3);
+            padding-bottom: 30px;
+            margin-bottom: 30px;
+        }
+        header h1 {
+            color: var(--white);
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        header h1 span {
+            color: var(--cyan);
+            text-shadow: 0 0 10px rgba(0, 229, 255, 0.5);
+        }
+        .welcome-msg {
+            font-size: 16px;
+            color: var(--border-color);
+            font-style: italic;
+        }
+        .step-section {
+            margin-bottom: 35px;
+            padding: 20px;
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            border-left: 4px solid var(--cyan);
+        }
+        .step-section.step-purple {
+            border-left-color: var(--magenta);
+        }
+        .step-title {
+            font-size: 18px;
+            color: var(--white);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700;
+        }
+        .step-title span {
+            background: linear-gradient(135deg, var(--cyan), var(--magenta));
+            color: var(--white);
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+        ol, ul {
+            padding-left: 20px;
+        }
+        li {
+            margin-bottom: 10px;
+        }
+        strong {
+            color: var(--cyan);
+        }
+        .badge {
+            background-color: rgba(213, 0, 249, 0.2);
+            color: var(--magenta);
+            border: 1px solid var(--magenta);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .badge-cyan {
+            background-color: rgba(0, 229, 255, 0.2);
+            color: var(--cyan);
+            border: 1px solid var(--cyan);
+        }
+        .funny-faq {
+            background-color: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 25px;
+            border-radius: 12px;
+            margin-top: 40px;
+        }
+        .funny-faq h2 {
+            color: var(--white);
+            font-size: 20px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 10px;
+        }
+        .faq-item {
+            margin-bottom: 20px;
+        }
+        .faq-q {
+            font-weight: bold;
+            color: var(--cyan);
+            font-size: 15px;
+            margin-bottom: 5px;
+        }
+        .faq-a {
+            font-size: 14px;
+            color: #a5a6a7;
+        }
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            font-size: 12px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚀 <span>BIGLINE</span>CONNECT Yardım Merkezi</h1>
+            <p class="welcome-msg">Burası uzaktan kontrolün en hızlı, en güvenli ve en pratik köşesi. 🛸</p>
+        </header>
+
+        <div class="step-section">
+            <div class="step-title"><span>1</span> Cihazımı Başkası Yönetecek (Host Modu)</div>
+            <p>Eğer bir arkadaşının veya teknik desteğin senin bilgisayarına bağlanmasını istiyorsan:</p>
+            <ol style="margin-top: 10px;">
+                <li>Uygulamayı açtığında sol tarafta beliren yeşil renkli 9 haneli <span class="badge badge-cyan">Bağlantı ID</span> numarasını kopyala.</li>
+                <li>Bu ID numarasını yönetmesini istediğin kişiye söyle / gönder.</li>
+                <li><strong>Hepsi bu kadar!</strong> Karşı taraf bağlanmak istediğinde ekranına bir güvenlik onayı gelecektir. "Onayla" diyerek masaüstünü paylaşabilirsin.</li>
+            </ol>
+        </div>
+
+        <div class="step-section step-purple">
+            <div class="step-title"><span>2</span> Ben Başkasına Bağlanacağım (Client Modu)</div>
+            <p>Eğer başka bir bilgisayarı kontrol etmek istiyorsan:</p>
+            <ol style="margin-top: 10px;">
+                <li>Arayüzün sağ tarafındaki <strong>"Partner ID"</strong> kutusuna karşı tarafın 9 haneli numarasını yaz.</li>
+                <li>Büyük neon renkli <strong>"BAĞLAN"</strong> tuşuna bas.</li>
+                <li>Eğer karşı taraf bağlantıya şifre koyduysa şifresini yazıp onay alarak uzaktan masaüstü oturumunu başlat!</li>
+            </ol>
+        </div>
+
+        <div class="step-section">
+            <div class="step-title"><span>3</span> Dosya Gönderme / Alma (Işınlama Kapısı) 📁</div>
+            <p>Bağlandığın bilgisayar ile dosya alışverişi yapmak çocuk oyuncağı:</p>
+            <ul>
+                <li>Uzak masaüstü ekranı açıkken üstteki menüden <strong>"Dosya Yöneticisi"</strong> sekmesini aç.</li>
+                <li>Kendi bilgisayarındaki dosyaları doğrudan sürükleyip karşı ekranın üzerine bırakarak dosyaları saniyeler içinde karşıya ışınlayabilirsin!</li>
+            </ul>
+        </div>
+
+        <div class="step-section step-purple">
+            <div class="step-title"><span>4</span> Panoları Eşle: Ctrl+C / Ctrl+V Işınlaması! 📋</div>
+            <p>Bir bilgisayarda kopyaladığın metin veya dosyayı diğer bilgisayara yapıştırmak sihir gibi:</p>
+            <ul>
+                <li>Kendi bilgisayarında bir metni kopyala (Ctrl+C).</li>
+                <li>Uzak masaüstü ekranına git ve yapıştır (Ctrl+V). Metin anında iki makine arasında aktarılır!</li>
+            </ul>
+        </div>
+
+        <div class="step-section">
+            <div class="step-title"><span>5</span> Canlı Sohbet (Chat) Portalı 💬</div>
+            <p>Kontrol ederken karşı tarafla iletişim kurmak çok kolay:</p>
+            <ul>
+                <li>Uzak bağlantı penceresinin üst menüsündeki <strong>Sohbet (Chat)</strong> butonuna bas.</li>
+                <li>Müşterine veya arkadaşına mesaj yazarak anlık olarak ekran üzerinde sohbet etmeye başla.</li>
+            </ul>
+        </div>
+
+        <div class="step-section step-purple">
+            <div class="step-title"><span>6</span> Çoklu Monitör Sihirbazı 🖥️</div>
+            <p>Hedef bilgisayarda birden fazla ekran mı bağlı?</p>
+            <ul>
+                <li>Uzak ekrandaki üst panelde bulunan <strong>Ekran Seçim</strong> kutusundan dilediğin ekranı (Ekran 1, Ekran 2 vb.) seç.</li>
+                <li>Ekranlar arasında anında geçiş yaparak tüm çalışma alanını kontrol et!</li>
+            </ul>
+        </div>
+
+        <div class="step-section">
+            <div class="step-title"><span>7</span> Hızlı Rehber (Sık Bağlanılanlar) 📓</div>
+            <p>Sürekli bağlandığın kurum veya kişilerin ID'lerini aklında tutmana gerek yok:</p>
+            <ul>
+                <li>Bağlantı penceresindeki <strong>"Rehbere Ekle"</strong> butonuna tıkla.</li>
+                <li>Kişiye veya kuruma bir isim verip rehberine kaydet. Sonraki sefer rehberden çift tıklayarak anında bağlan!</li>
+            </ul>
+        </div>
+
+        <div class="step-section step-purple">
+            <div class="step-title"><span>8</span> Şifreli Erişim (Gözüm Arkada Kalmasın) 🔐</div>
+            <p>Bilgisayarını kimsenin izni olmadan (şifreli erişimle) yönetmek istiyorsan:</p>
+            <ul>
+                <li>Arayüzün alt kısmındaki <strong>"Erişim Şifresi Kullan"</strong> seçeneğini aktif et.</li>
+                <li>Kendine güvenli bir şifre belirle. Böylece sen bilgisayarın başında olmasan bile şifreyi girerek güvenle bağlanabilirsin.</li>
+            </ul>
+        </div>
+
+        <div class="step-section">
+            <div class="step-title"><span>9</span> Uzaktan Yeniden Başlat (Restart & Reconnect) 🔄</div>
+            <p>Uzak bilgisayara bakım yaparken yeniden başlatman mı gerekti?</p>
+            <ul>
+                <li>Üst menüdeki <strong>"Yeniden Başlat"</strong> butonuna tıkla.</li>
+                <li>Uzak bilgisayar kapandığında bağlantı kesilir ancak bilgisayar yeniden açıldığında BigLineconnect servisi otomatik olarak çalışacak ve sen şifre girmene gerek kalmadan tekrar otomatik olarak bağlanacaksın!</li>
+            </ul>
+        </div>
+
+        <div class="step-section step-purple">
+            <div class="step-title"><span>10</span> 🆘 Canlı Destek İsteği İletme (Müşteri Modu)</div>
+            <p>Bir sorunla karşılaştığında destek uzmanından hızlıca yardım almak çok kolay:</p>
+            <ul>
+                <li>Sağ alttaki turuncu <strong>"🆘 Destek İste / Sorun Bildir"</strong> butonuna bas.</li>
+                <li>Adını ve yaşadığın sorunu yazıp <strong>"Talebi Gönder"</strong> dediğinde isteğin doğrudan bağlı olduğun Destek Uzmanının ekranına düşer.</li>
+                <li>Uzman talebini onaylayıp bağlandığında hiç şifre vermene gerek kalmadan sorununu halleder!</li>
+            </ul>
+        </div>
+
+        <div class="step-section">
+            <div class="step-title"><span>11</span> 👨‍💻 Destek Uzmanı Modu & 3'lü CRM Sekmesi 📊</div>
+            <p>Teknik destek uzmanları ve bayiler için tam donanımlı çalışma paneli:</p>
+            <ul>
+                <li><strong>Rehber Başlığına Çift Tıkla:</strong> Yönetici şifresini girerek <strong>Destek Uzmanı Modunu</strong> aktifleştir.</li>
+                <li><strong>🆘 Talepler Sekmesi:</strong> Müşterilerinden gelen canlı destek isteklerini kronolojik sıralamayla (en yeni en üstte) gör. Çift tıklayarak müşteriye şifresiz anında bağlan!</li>
+                <li><strong>📊 Geçmiş (CRM) Sekmesi:</strong> Tamamlanan tüm destek oturumlarını, çözülen sorunları, tarihleri ve uzman çözüm notlarını takip et.</li>
+            </ul>
+        </div>
+
+        <div class="step-section step-purple">
+            <div class="step-title"><span>12</span> 🔍 Canlı Arama & Akıllı Filtreleme ⚡</div>
+            <p>Binlerce müşteri veya destek kaydı arasında aradığını 1 salisede bul:</p>
+            <ul>
+                <li>Panelin üstündeki <strong>"🔍 Müşteri / ID / Sorun Ara..."</strong> kutusuna aradığın kelimeyi yaz.</li>
+                <li>Müşteri adı, sorun tanımı, uzak ID veya duruma göre sonuçlar canlı olarak anında süzülür.</li>
+            </ul>
+        </div>
+
+        <div class="step-section">
+            <div class="step-title"><span>13</span> 🖱️ Sağ Tık Hızlı Aksiyon Menüsü & Raporlama 📝</div>
+            <p>Destek sürecini profesyonelce yönet ve notlandır:</p>
+            <ul>
+                <li>Gelen bir talebe <strong>SAĞ TIKLA</strong>: <em>Uzaktan Bağlan, Talebi Çözüldü Yap & Not Ekle</em> veya <em>Talebi İptal Et</em> seçeneklerini kullan.</li>
+                <li>Uzaktan oturum kapandığında otomatik açılan rapor penceresinden durumunu (🟢 Çözüldü, 🟡 Takipte, 🔴 Çözülemedi) seçip çözüm notlarını kaydet!</li>
+            </ul>
+        </div>
+
+        <div class="step-section step-purple">
+            <div class="step-title"><span>14</span> ⚙️ Gelişmiş Özellikler & Oturum Ayarları</div>
+            <p>Arayüzün alt kısmındaki Gelişmiş Ayarlar panelinden dilediğin modu aç/kapat:</p>
+            <ul>
+                <li><strong>🌙 Bilgisayarı Açık Tut (Uyku Modu Engelleme):</strong> Uzun süren veri aktarımlarında veya işlemler sırasında bilgisayarın uykuya/ekran koruyucuya geçmesini engeller.</li>
+                <li><strong>🎥 Oturumları Video Olarak Kaydet (play.html):</strong> Uzaktan yaptığın tüm müdahaleleri video olarak kaydeder. İletilen <code>play.html</code> oynatıcısı ile web tarayıcında tıpkı video izler gibi oturumu baştan sona oynatabilirsin!</li>
+                <li><strong>🗂️ Ağ Sürücülerine (Z:) Erişim İzni:</strong> Uzak bilgisayardaki haritalanmış ağ sürücülerine ve ortak klasörlere (Z:\, Y:\ vb.) dosya yöneticisi üzerinden erişim izni verir.</li>
+            </ul>
+        </div>
+
+        <div class="funny-faq">
+            <h2>🤔 Sık Sorulan Sorular</h2>
+            
+            <div class="faq-item">
+                <div class="faq-q">💬 Mouse imleci kendi kendine hareket ediyor, bilgisayarım ele mi geçirildi?</div>
+                <div class="faq-a">Endişelenmeyin, bilgisayarınızda bir sorun yok! Sadece başarıyla bağlandığınız destek uzmanı fareyi hareket ettiriyor. Bağlantıyı istediğiniz an sağ alttaki simgeden veya uygulamayı kapatarak kesebilirsiniz.</div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-q">🔒 Müşteri yanlışlıkla Destek Uzmanı Moduna geçebilir mi?</div>
+                <div class="faq-a">Hayır! Uzman moduna geçiş yönetici şifresiyle korumalıdır. Ayrıca istendiğinde <strong>"Rehber"</strong> başlığına tekrar çift tıklanarak tek tıkla Müşteri Moduna geri dönülebilir.</div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-q">🔑 Lisans aktivasyonu nedir, neden lisans almalıyım?</div>
+                <div class="faq-a">Lisans sistemi, deneme süreniz bittiğinde veya gelişmiş ek özellikleri kullanmak istediğinizde lisansınızı aktifleştirme yöntemidir. Sağ üstteki "Lisans Gir" bağlantısından lisans anahtarınızı girebilirsiniz.</div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-q">🛡️ Bilgilerim güvende mi? Sunucuda loglar ne aranıyor?</div>
+                <div class="faq-a">Verilerin tamamen güvende! Telemetri veritabanı sadece hangi bilgisayarın ne kadar süreyle sisteme bağlı kaldığını (HWID, makine adı ve bağlantı süresi) loglar. Ekran görüntülerin veya şifrelerin asla sunucuda saklanmaz, tünel üzerinden şifreli akar.</div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-q">⚡ Sunucuya Sıfır Yük & Anında Senkronizasyon Teknolojisi Nedir?</div>
+                <div class="faq-a">BigLineconnect mimarisi arka planda sürekli sunucuyu yoran gereksiz sorgulamalar yapmaz. Destek uzmanınız talebinizi onayladığı veya sonuçlandırdığı an, canlı tünel hattımız üzerinden 1 milisaniyede sıfır gecikmeyle ekranınızdaki destek butonu otomatik olarak sıfırlanır!</div>
+            </div>
+        </div>
+
+        <footer>
+            <p>BigLineconnect Ekibi © 2026 // Keyifli ve güvenli bağlantılar dileriz. 🖖</p>
+            <p style="margin-top: 8px; color: #888;">Destek, Lisans ve Bilgi için: <a href="mailto:my@bigus.com.tr" style="color: #00e5ff; text-decoration: none;">my@bigus.com.tr</a></p>
+        </footer>
+    </div>
+</body>
+</html>

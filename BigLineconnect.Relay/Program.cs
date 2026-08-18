@@ -695,18 +695,47 @@ namespace BigLineconnect.Relay
                                 {
                                     byte[] msgBytes = ms.ToArray();
                                     
-                                    if (session.ClientSocket != null && session.ClientSocket.State == WebSocketState.Open)
+                                    if (result.MessageType == WebSocketMessageType.Binary)
                                     {
-                                        try
+                                        // Non-blocking binary frame push: "Newest frame wins, never block Host receive loop!"
+                                        if (session.ClientSocket != null && session.ClientSocket.State == WebSocketState.Open)
                                         {
-                                            await session.ClientSocket.SendAsync(
-                                                new ArraySegment<byte>(msgBytes),
-                                                result.MessageType,
-                                                true,
-                                                CancellationToken.None
-                                            );
+                                            var targetSoc = session.ClientSocket;
+                                            byte[] frameCopy = msgBytes;
+                                            _ = Task.Run(async () =>
+                                            {
+                                                try
+                                                {
+                                                    if (targetSoc.State == WebSocketState.Open)
+                                                    {
+                                                        await targetSoc.SendAsync(
+                                                            new ArraySegment<byte>(frameCopy),
+                                                            WebSocketMessageType.Binary,
+                                                            true,
+                                                            CancellationToken.None
+                                                        );
+                                                    }
+                                                }
+                                                catch { }
+                                            });
                                         }
-                                        catch { }
+                                    }
+                                    else
+                                    {
+                                        // Text/Control messages MUST remain sequential and reliable
+                                        if (session.ClientSocket != null && session.ClientSocket.State == WebSocketState.Open)
+                                        {
+                                            try
+                                            {
+                                                await session.ClientSocket.SendAsync(
+                                                    new ArraySegment<byte>(msgBytes),
+                                                    result.MessageType,
+                                                    true,
+                                                    CancellationToken.None
+                                                );
+                                            }
+                                            catch { }
+                                        }
                                     }
 
                                     lock (session.ViewOnlyClients)
