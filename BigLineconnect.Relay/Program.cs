@@ -5,6 +5,7 @@ using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Threading.Channels;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,6 +14,70 @@ using System.IO;
 
 namespace BigLineconnect.Relay
 {
+    public class FrameRelayPump
+    {
+        private readonly WebSocket _targetSocket;
+        private readonly Channel<byte[]> _channel;
+        private readonly CancellationTokenSource _cts;
+        private readonly Task _pumpTask;
+
+        public FrameRelayPump(WebSocket targetSocket, CancellationToken cancellationToken)
+        {
+            _targetSocket = targetSocket;
+            _cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            _channel = Channel.CreateBounded<byte[]>(new BoundedChannelOptions(1)
+            {
+                FullMode = BoundedChannelFullMode.DropOldest,
+                SingleReader = true,
+                SingleWriter = false
+            });
+
+            _pumpTask = Task.Run(PumpLoopAsync);
+        }
+
+        public void EnqueueFrame(byte[] frameBytes)
+        {
+            _channel.Writer.TryWrite(frameBytes);
+        }
+
+        public void Stop()
+        {
+            try
+            {
+                _channel.Writer.TryComplete();
+                _cts.Cancel();
+            }
+            catch { }
+        }
+
+        private async Task PumpLoopAsync()
+        {
+            try
+            {
+                var reader = _channel.Reader;
+                while (await reader.WaitToReadAsync(_cts.Token))
+                {
+                    while (reader.TryRead(out var frameBytes))
+                    {
+                        if (_targetSocket.State == WebSocketState.Open && !_cts.Token.IsCancellationRequested)
+                        {
+                            try
+                            {
+                                await _targetSocket.SendAsync(
+                                    new ArraySegment<byte>(frameBytes),
+                                    WebSocketMessageType.Binary,
+                                    true,
+                                    _cts.Token
+                                );
+                            }
+                            catch { }
+                        }
+                    }
+                }
+            }
+            catch { }
+        }
+    }
     public class TelemetryLog
     {
         public string Hwid { get; set; } = "";
@@ -485,6 +550,7 @@ namespace BigLineconnect.Relay
             public string Id { get; set; } = "";
             public WebSocket HostSocket { get; set; } = null!;
             public WebSocket? ClientSocket { get; set; }
+            public FrameRelayPump? FramePump { get; set; }
             public List<WebSocket> ViewOnlyClients { get; set; } = new();
             public CancellationTokenSource Cts { get; set; } = new();
             public CancellationTokenSource? ClientCts { get; set; }
@@ -697,27 +763,15 @@ namespace BigLineconnect.Relay
                                     
                                     if (result.MessageType == WebSocketMessageType.Binary)
                                     {
-                                        // Non-blocking binary frame push: "Newest frame wins, never block Host receive loop!"
+                                        // Newest Frame Wins via FrameRelayPump:
+                                        // Host receive loop NEVER blocks! If viewer is slow, stale frames are dropped in 0ms!
                                         if (session.ClientSocket != null && session.ClientSocket.State == WebSocketState.Open)
                                         {
-                                            var targetSoc = session.ClientSocket;
-                                            byte[] frameCopy = msgBytes;
-                                            _ = Task.Run(async () =>
+                                            if (session.FramePump == null)
                                             {
-                                                try
-                                                {
-                                                    if (targetSoc.State == WebSocketState.Open)
-                                                    {
-                                                        await targetSoc.SendAsync(
-                                                            new ArraySegment<byte>(frameCopy),
-                                                            WebSocketMessageType.Binary,
-                                                            true,
-                                                            CancellationToken.None
-                                                        );
-                                                    }
-                                                }
-                                                catch { }
-                                            });
+                                                session.FramePump = new FrameRelayPump(session.ClientSocket, session.Cts.Token);
+                                            }
+                                            session.FramePump.EnqueueFrame(msgBytes);
                                         }
                                     }
                                     else
@@ -929,12 +983,15 @@ namespace BigLineconnect.Relay
                     {
                         if (session.ClientSocket != null)
                         {
+                            try { session.FramePump?.Stop(); } catch { }
+                            session.FramePump = null;
                             try { session.ClientSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Replaced by new client", CancellationToken.None); } catch { }
                             try { session.ClientCts?.Cancel(); } catch { }
                         }
 
                         session.ClientSocket = clientSocket;
                         session.ClientCts = new CancellationTokenSource();
+                        session.FramePump = new FrameRelayPump(clientSocket, session.Cts.Token);
                         Console.WriteLine($"[Relay] Client connected to Host ID: {targetId}");
                         string clientIp = context.Connection.RemoteIpAddress?.ToString() ?? "Bilinmeyen";
                         TelemetryManager.LogEvent(session.Hwid, session.IpAddress, session.ComputerName, session.Username, session.OsVersion, session.AppVersion, "connect", $"İstemci bağlandı. İstemci IP: {clientIp}, Hedef ID: {targetId}");
@@ -973,6 +1030,8 @@ namespace BigLineconnect.Relay
                         }
                         catch { }
 
+                        try { session.FramePump?.Stop(); } catch { }
+                        session.FramePump = null;
                         try { session.ClientCts?.Cancel(); } catch { }
                         session.ClientSocket = null;
                         session.ClientCts = null;
