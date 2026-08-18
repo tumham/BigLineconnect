@@ -119,6 +119,7 @@ namespace BigLineconnect
 
         public static bool UseRtTileEngine { get; set; } = false;
         public static bool UseH264Mode { get; set; } = true; // Default to Ultra-Fast H.264 Mode for 60 FPS sub-10ms performance
+        public static bool ForceKeyframeRequested { get; set; } = false;
         private static H264Encoder? _h264Encoder;
 
         public static Bitmap? CaptureGdiRaw(int quality = 50, int maxDimension = 1366)
@@ -256,7 +257,9 @@ namespace BigLineconnect
                         {
                             _h264Encoder = new H264Encoder(bmp.Width, bmp.Height);
                         }
-                        return _h264Encoder.EncodeFrame(bmp, quality);
+                        bool forceKey = ForceKeyframeRequested;
+                        ForceKeyframeRequested = false;
+                        return _h264Encoder.EncodeFrame(bmp, quality, forceKeyframe: forceKey);
                     }
                     else if (UseRtTileEngine)
                     {
