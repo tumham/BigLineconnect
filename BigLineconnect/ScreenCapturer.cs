@@ -257,9 +257,7 @@ namespace BigLineconnect
                         {
                             _h264Encoder = new H264Encoder(bmp.Width, bmp.Height);
                         }
-                        bool forceKey = ForceKeyframeRequested;
-                        ForceKeyframeRequested = false;
-                        return _h264Encoder.EncodeFrame(bmp, quality, forceKeyframe: forceKey);
+                        return _h264Encoder.EncodeFrame(bmp, quality);
                     }
                     else if (UseRtTileEngine)
                     {

@@ -252,7 +252,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.37.0 (Zero-Idle Latency Instant 0ms Wakeup Pipeline)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.38.0 (Pure H.264 Ultra-Fast Jet Engine)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;

@@ -935,13 +935,12 @@ namespace BigLineconnect
         private static readonly AutoResetEvent _instantCaptureEvent = new AutoResetEvent(false);
         public static volatile int _forcedRefreshCount = 0;
 
-        public static void TriggerInstantCapture(int count = 5)
+        public static void TriggerInstantCapture(int count = 2)
         {
             try
             {
                 _forcedRefreshCount = Math.Max(_forcedRefreshCount, count);
                 _lastSentFrameBytes = null;
-                ScreenCapturer.ForceKeyframeRequested = true;
                 _instantCaptureEvent.Set();
             }
             catch { }
