@@ -128,6 +128,7 @@ namespace BigLineconnect
         {
             try
             {
+                DesktopHelper.AttachToInputDesktop();
                 var screens = System.Windows.Forms.Screen.AllScreens;
                 if (displayIndex < 0 || displayIndex >= screens.Length) displayIndex = 0;
 
@@ -159,6 +160,7 @@ namespace BigLineconnect
         {
             try
             {
+                DesktopHelper.AttachToInputDesktop();
                 uint flags = 0;
                 bool isDown = action.Equals("down", StringComparison.OrdinalIgnoreCase);
 
@@ -220,26 +222,31 @@ namespace BigLineconnect
         }
         public static void SimulateMouseScroll(int deltaY)
         {
-            INPUT[] inputs = new INPUT[1];
-            inputs[0] = new INPUT
+            try
             {
-                type = INPUT_MOUSE,
-                U = new InputUnion
+                DesktopHelper.AttachToInputDesktop();
+                INPUT[] inputs = new INPUT[1];
+                inputs[0] = new INPUT
                 {
-                    mi = new MOUSEINPUT
+                    type = INPUT_MOUSE,
+                    U = new InputUnion
                     {
-                        dx = 0,
-                        dy = 0,
-                        dwFlags = MOUSEEVENTF_WHEEL,
-                        mouseData = (uint)deltaY,
-                        time = 0,
-                        dwExtraInfo = (IntPtr)0x42494755
+                        mi = new MOUSEINPUT
+                        {
+                            dx = 0,
+                            dy = 0,
+                            dwFlags = MOUSEEVENTF_WHEEL,
+                            mouseData = (uint)deltaY,
+                            time = 0,
+                            dwExtraInfo = (IntPtr)0x42494755
+                        }
                     }
-                }
-            };
+                };
 
-            SendInput(1, inputs, Marshal.SizeOf<INPUT>());
-            Program.TriggerInstantCapture();
+                SendInput(1, inputs, Marshal.SizeOf<INPUT>());
+                Program.TriggerInstantCapture();
+            }
+            catch { }
         }
 
         public static void SimulateMouseDoubleClick(string button, double? xPercent = null, double? yPercent = null, int displayIndex = 0)
