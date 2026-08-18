@@ -251,7 +251,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.34.0 (FrameRelayPump Zero-Backlog Engine)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.35.0 (Ultra-Fast 60FPS Low-Latency Engine)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
@@ -733,45 +733,50 @@ namespace BigLineconnect
 
                         if (this.WindowState != FormWindowState.Minimized)
                         {
-                            try
+                            _ = Task.Run(() =>
                             {
-                                Image? newImg = null;
-                                using (var ms = new MemoryStream(isolatedFrame, 0, isolatedFrame.Length))
-                                using (var tempImg = Image.FromStream(ms))
+                                try
                                 {
-                                    newImg = new Bitmap(tempImg);
-                                }
+                                    if (this.WindowState == FormWindowState.Minimized || _pictureBox == null || _pictureBox.IsDisposed) return;
 
-                                if (newImg != null)
-                                {
-                                    if (_pictureBox != null && !_pictureBox.IsDisposed)
+                                    Image? newImg = null;
+                                    using (var ms = new MemoryStream(isolatedFrame, 0, isolatedFrame.Length))
+                                    using (var tempImg = Image.FromStream(ms))
                                     {
-                                        _pictureBox.BeginInvoke(new Action(() =>
-                                        {
-                                            try
-                                            {
-                                                if (this.WindowState != FormWindowState.Minimized && _pictureBox != null && !_pictureBox.IsDisposed)
-                                                {
-                                                    var oldImg = _pictureBox.Image;
-                                                    _pictureBox.Image = newImg;
-                                                    _pictureBox.Invalidate();
-                                                    oldImg?.Dispose();
-                                                }
-                                                else
-                                                {
-                                                    newImg.Dispose();
-                                                }
-                                            }
-                                            catch { newImg.Dispose(); }
-                                        }));
+                                        newImg = new Bitmap(tempImg);
                                     }
-                                    else
+
+                                    if (newImg != null)
                                     {
-                                        newImg.Dispose();
+                                        if (_pictureBox != null && !_pictureBox.IsDisposed)
+                                        {
+                                            _pictureBox.BeginInvoke(new Action(() =>
+                                            {
+                                                try
+                                                {
+                                                    if (this.WindowState != FormWindowState.Minimized && _pictureBox != null && !_pictureBox.IsDisposed)
+                                                    {
+                                                        var oldImg = _pictureBox.Image;
+                                                        _pictureBox.Image = newImg;
+                                                        _pictureBox.Invalidate();
+                                                        oldImg?.Dispose();
+                                                    }
+                                                    else
+                                                    {
+                                                        newImg.Dispose();
+                                                    }
+                                                }
+                                                catch { newImg.Dispose(); }
+                                            }));
+                                        }
+                                        else
+                                        {
+                                            newImg.Dispose();
+                                        }
                                     }
                                 }
-                            }
-                            catch { }
+                                catch { }
+                            });
                         }
                     }
                     else if (result.MessageType == WebSocketMessageType.Text)
