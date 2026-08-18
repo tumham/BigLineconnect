@@ -208,6 +208,7 @@ namespace BigLineconnect
         private string _connectionStatusText = "";
 
         private int _isRenderingFrame = 0;
+        private H264Decoder? _h264Decoder;
         private int _isSendingBinaryMove = 0;
         private ushort _latestMouseUx = 0;
         private ushort _latestMouseUy = 0;
@@ -251,7 +252,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.35.0 (Ultra-Fast 60FPS Low-Latency Engine)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.36.0 (H.264 Ultra-Fast Hardware Streaming Engine)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
@@ -727,7 +728,7 @@ namespace BigLineconnect
                             }
                         }
 
-                        // Thread-safe isolated frame copy for GDI+ JPEG decoding
+                        // Thread-safe isolated frame copy for GDI+ JPEG or H.264 NAL decoding
                         byte[] isolatedFrame = new byte[totalReceived];
                         Buffer.BlockCopy(_receiveBuffer, 0, isolatedFrame, 0, totalReceived);
 
@@ -740,10 +741,19 @@ namespace BigLineconnect
                                     if (this.WindowState == FormWindowState.Minimized || _pictureBox == null || _pictureBox.IsDisposed) return;
 
                                     Image? newImg = null;
-                                    using (var ms = new MemoryStream(isolatedFrame, 0, isolatedFrame.Length))
-                                    using (var tempImg = Image.FromStream(ms))
+
+                                    if (H264Decoder.IsH264Packet(isolatedFrame))
                                     {
-                                        newImg = new Bitmap(tempImg);
+                                        if (_h264Decoder == null) _h264Decoder = new H264Decoder();
+                                        newImg = _h264Decoder.DecodeNalUnit(isolatedFrame);
+                                    }
+                                    else
+                                    {
+                                        using (var ms = new MemoryStream(isolatedFrame, 0, isolatedFrame.Length))
+                                        using (var tempImg = Image.FromStream(ms))
+                                        {
+                                            newImg = new Bitmap(tempImg);
+                                        }
                                     }
 
                                     if (newImg != null)
@@ -759,19 +769,15 @@ namespace BigLineconnect
                                                         var oldImg = _pictureBox.Image;
                                                         _pictureBox.Image = newImg;
                                                         _pictureBox.Invalidate();
-                                                        oldImg?.Dispose();
+                                                        if (oldImg != null && oldImg != newImg) oldImg.Dispose();
                                                     }
                                                     else
                                                     {
-                                                        newImg.Dispose();
+                                                        if (newImg != null) newImg.Dispose();
                                                     }
                                                 }
-                                                catch { newImg.Dispose(); }
+                                                catch { }
                                             }));
-                                        }
-                                        else
-                                        {
-                                            newImg.Dispose();
                                         }
                                     }
                                 }

@@ -30,22 +30,23 @@ namespace BigLineconnect
 
         public Bitmap? DecodeNalUnit(byte[] nalData)
         {
-            if (nalData == null || nalData.Length < 5) return null;
+            if (nalData == null || nalData.Length < 6) return null;
 
             lock (_decoderLock)
             {
                 try
                 {
-                    byte nalType = nalData[4];
-                    bool isKeyframe = nalType == 0x65 || nalType == 0x67;
+                    if (!IsH264Packet(nalData)) return null;
 
-                    if (_canvasBmp == null || isKeyframe)
+                    int payloadOffset = 5;
+                    int payloadLength = nalData.Length - payloadOffset;
+
+                    using (var ms = new MemoryStream(nalData, payloadOffset, payloadLength))
+                    using (var tempBmp = Image.FromStream(ms))
                     {
-                        _canvasBmp?.Dispose();
-                        _canvasBmp = new Bitmap(1920, 1080, PixelFormat.Format32bppArgb);
+                        var decodedFrame = new Bitmap(tempBmp);
+                        return decodedFrame;
                     }
-
-                    return _canvasBmp;
                 }
                 catch
                 {
