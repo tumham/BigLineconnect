@@ -182,7 +182,7 @@ namespace BigLineconnect
         private void InitializeComponent()
         {
             Program.LoadSecuritySettings();
-            this.Text = "BigLineconnect v3.39.0 - Uzaktan Kontrol (Alpemix Hook Override & Independent Input Engine)";
+            this.Text = "BigLineconnect v3.40.0 - Uzaktan Kontrol (True Win32 Desktop Handle Attachment Engine)";
             this.Size = new Size(880, 750);
             this.MinimumSize = new Size(880, 750);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -212,7 +212,7 @@ namespace BigLineconnect
 
             _titleLabel = new Label
             {
-                Text = "BigLineconnect v3.39.0 🚀",
+                Text = "BigLineconnect v3.40.0 🚀",
                 Location = new Point(105, 15),
                 Size = new Size(330, 42),
                 Font = new Font("Segoe UI", 20F, FontStyle.Bold),

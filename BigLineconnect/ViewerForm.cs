@@ -252,7 +252,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.39.0 (Alpemix Hook Override & Independent Input Engine)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.40.0 (True Win32 Desktop Handle Attachment Engine)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;

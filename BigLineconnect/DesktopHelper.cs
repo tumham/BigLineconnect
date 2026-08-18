@@ -141,35 +141,21 @@ namespace BigLineconnect
 
         public static void AttachToInputDesktop()
         {
-            if ((DateTime.UtcNow - _lastDesktopAttachTime).TotalMilliseconds < 50)
+            try
             {
-                return;
-            }
-
-            lock (_desktopLock)
-            {
-                if ((DateTime.UtcNow - _lastDesktopAttachTime).TotalMilliseconds < 50)
+                IntPtr hDesk = OpenInputDesktop(0, false, MAXIMUM_ALLOWED);
+                if (hDesk == IntPtr.Zero)
                 {
-                    return;
+                    hDesk = OpenInputDesktop(0, false, DESKTOP_ALL_ACCESS);
                 }
-                _lastDesktopAttachTime = DateTime.UtcNow;
 
-                try
+                if (hDesk != IntPtr.Zero)
                 {
-                    IntPtr hDesk = OpenInputDesktop(0, true, MAXIMUM_ALLOWED);
-                    if (hDesk == IntPtr.Zero)
-                    {
-                        hDesk = OpenInputDesktop(0, true, DESKTOP_ALL_ACCESS);
-                    }
-
-                    if (hDesk != IntPtr.Zero)
-                    {
-                        SetThreadDesktop(hDesk);
-                        CloseDesktop(hDesk);
-                    }
+                    SetThreadDesktop(hDesk);
+                    _lastDesktopAttachTime = DateTime.UtcNow;
                 }
-                catch { }
             }
+            catch { }
         }
 
         private static void LogHelper(string message)
