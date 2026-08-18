@@ -621,7 +621,7 @@ namespace BigLineconnect.Relay
             
             app.UseWebSockets(new WebSocketOptions
             {
-                KeepAliveInterval = TimeSpan.FromSeconds(30)
+                KeepAliveInterval = TimeSpan.FromSeconds(3)
             });
 
             app.MapGet("/download", async context =>
