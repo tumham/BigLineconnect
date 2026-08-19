@@ -252,7 +252,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.44.0 (Native UPnP Auto Router Mapping Engine)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.45.0 (Natural DoubleClick Pipeline & Windows Explorer Fix)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
@@ -1757,15 +1757,8 @@ namespace BigLineconnect
 
         private void PictureBox_MouseDoubleClick(object? sender, MouseEventArgs e)
         {
-            if (_pictureBox == null) return;
-
-            var (x, y) = GetNormalizedMousePos(e, _pictureBox);
-
-            string button = "left";
-            if (e.Button == MouseButtons.Right) button = "right";
-            else if (e.Button == MouseButtons.Middle) button = "middle";
-
-            SendJson($"{{\"type\":\"double_click\",\"button\":\"{button}\",\"x\":{x.ToString(System.Globalization.CultureInfo.InvariantCulture)},\"y\":{y.ToString(System.Globalization.CultureInfo.InvariantCulture)}}}");
+            // Do not send duplicate synthetic double_click packets.
+            // PictureBox_MouseDown and PictureBox_MouseUp already stream exact natural double-clicks to Windows Explorer!
         }
 
         private void SendReleaseAllModifiers()
