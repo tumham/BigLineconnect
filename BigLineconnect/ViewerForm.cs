@@ -258,7 +258,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.59.0 (Watchdog Stream Auto-Kill & 0 KB/s Zero Bandwidth Engine)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.60.0 (Multi-Monitor Display 2 Mouse Input Mapping Engine)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;

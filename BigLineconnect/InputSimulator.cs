@@ -557,7 +557,7 @@ namespace BigLineconnect
             }
         }
 
-        public static void SimulateBinaryInput(ReadOnlySpan<byte> packet)
+        public static void SimulateBinaryInput(ReadOnlySpan<byte> packet, int displayIndex = 0)
         {
             if (packet.Length < 9 || packet[0] != BinaryInputProtocol.MAGIC_BYTE) return;
 
@@ -587,7 +587,7 @@ namespace BigLineconnect
                 double xPercent = normX / 65535.0;
                 double yPercent = normY / 65535.0;
 
-                SimulateMouseMove(xPercent, yPercent);
+                SimulateMouseMove(xPercent, yPercent, displayIndex);
             }
             else if (cmd == BinaryInputProtocol.CMD_MOUSE_BUTTON || cmd == BinaryInputProtocol.CMD_MOUSE_DBLCLICK)
             {
@@ -607,11 +607,11 @@ namespace BigLineconnect
 
                 if (cmd == BinaryInputProtocol.CMD_MOUSE_DBLCLICK)
                 {
-                    SimulateMouseDoubleClick("left", xPercent, yPercent);
+                    SimulateMouseDoubleClick("left", xPercent, yPercent, displayIndex);
                 }
                 else
                 {
-                    SimulateMouseButton(buttonStr, actionStr, xPercent, yPercent);
+                    SimulateMouseButton(buttonStr, actionStr, xPercent, yPercent, displayIndex);
                 }
             }
             else if (cmd == BinaryInputProtocol.CMD_MOUSE_SCROLL)
