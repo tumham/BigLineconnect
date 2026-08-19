@@ -692,6 +692,14 @@ namespace BigLineconnect
                     while (true)
                     {
                         var client = await listener.AcceptTcpClientAsync().ConfigureAwait(false);
+                        try
+                        {
+                            client.NoDelay = true;
+                            client.SendBufferSize = 2 * 1024 * 1024;
+                            client.ReceiveBufferSize = 2 * 1024 * 1024;
+                        }
+                        catch { }
+
                         _ = Task.Run(async () =>
                         {
                             try
@@ -700,7 +708,7 @@ namespace BigLineconnect
                                 if (await PerformWebSocketServerHandshakeAsync(stream).ConfigureAwait(false))
                                 {
                                     var ws = System.Net.WebSockets.WebSocket.CreateFromStream(stream, isServer: true, subProtocol: null, keepAliveInterval: TimeSpan.FromSeconds(30));
-                                    Log("Yerel Ağdan (LAN Direct) 0.5 ms hızlı bağlantı kabul edildi!");
+                                    Log("Yerel Ağdan (LAN Direct 0.5ms NoDelay) hızlı bağlantı kabul edildi!");
                                     SetStreamActive(true);
 
                                     var cts = new CancellationTokenSource();

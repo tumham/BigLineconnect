@@ -182,7 +182,7 @@ namespace BigLineconnect
         private void InitializeComponent()
         {
             Program.LoadSecuritySettings();
-            this.Text = "BigLineconnect v3.50.0 - Uzaktan Kontrol (Automatic Self-Updater & Zero-Bombing Process Swap Engine)";
+            this.Text = "BigLineconnect v3.51.0 - Uzaktan Kontrol (Ultra-Fast Zero-Lag NoDelay LAN Direct Transport Engine)";
             this.Size = new Size(880, 750);
             this.MinimumSize = new Size(880, 750);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -215,7 +215,7 @@ namespace BigLineconnect
 
             _titleLabel = new Label
             {
-                Text = "BigLineconnect v3.50.0 🚀",
+                Text = "BigLineconnect v3.51.0 🚀",
                 Location = new Point(105, 15),
                 Size = new Size(330, 42),
                 Font = new Font("Segoe UI", 20F, FontStyle.Bold),
