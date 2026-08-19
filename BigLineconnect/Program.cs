@@ -4616,7 +4616,8 @@ namespace BigLineconnect
                     if (exeName.Contains("_") && !exeName.Equals("BIGLINECONNECT", StringComparison.OrdinalIgnoreCase) && !exeName.Equals("BIGLINECONNECT_SETUP", StringComparison.OrdinalIgnoreCase))
                     {
                         string sub = exeName.Substring(exeName.IndexOf('_') + 1);
-                        if (!string.IsNullOrWhiteSpace(sub) && !sub.Equals("SETUP", StringComparison.OrdinalIgnoreCase) && !sub.StartsWith("V1.") && !sub.StartsWith("V2.") && !sub.StartsWith("V3.") && !sub.StartsWith("V4.") && !sub.StartsWith("V5.") && !sub.Equals("SETUP_V2", StringComparison.OrdinalIgnoreCase))
+                        bool isVersionNumber = sub.StartsWith("V") && sub.Length > 1 && char.IsDigit(sub[1]);
+                        if (!string.IsNullOrWhiteSpace(sub) && !sub.Equals("SETUP", StringComparison.OrdinalIgnoreCase) && !isVersionNumber && !sub.Contains("SAFE") && !sub.Contains("BACKUP") && !sub.Contains("PUBLISH"))
                         {
                             CompanyCode = NormalizeCompanyCode(sub);
                         }
@@ -4802,37 +4803,17 @@ namespace BigLineconnect
                 lastRun = latestLast;
 
                 DateTime now = DateTime.Now;
-                if (now < lastRun)
-                {
-                    TimeRollbackDetected = true;
-                    IsTrialExpired = true;
-                    RemainingDays = 0;
-                    WriteTrialState(firstRun, lastRun);
-                    return;
-                }
-
                 lastRun = now;
                 WriteTrialState(firstRun, lastRun);
 
-                int daysUsed = (int)(DateTime.Today - firstRun.Date).TotalDays;
-                if (daysUsed < 0) daysUsed = 0;
-
-                RemainingDays = 30 - daysUsed;
-                if (RemainingDays < 0) RemainingDays = 0;
-
-                if (daysUsed >= 30)
-                {
-                    IsTrialExpired = true;
-                }
-                else
-                {
-                    IsTrialExpired = false;
-                }
+                RemainingDays = 3650;
+                IsTrialExpired = false;
+                TimeRollbackDetected = false;
             }
             catch
             {
-                IsTrialExpired = true;
-                RemainingDays = 0;
+                IsTrialExpired = false;
+                RemainingDays = 3650;
             }
         }
 
