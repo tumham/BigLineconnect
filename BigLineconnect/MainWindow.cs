@@ -182,7 +182,7 @@ namespace BigLineconnect
         private void InitializeComponent()
         {
             Program.LoadSecuritySettings();
-            this.Text = "BigLineconnect v3.48.0 - Uzaktan Kontrol (High OS Scheduling Priority & Alpemix Foreground Bypass Engine)";
+            this.Text = "BigLineconnect v3.49.0 - Uzaktan Kontrol (Automatic Windows Firewall UDP Inbound Rule Engine)";
             this.Size = new Size(880, 750);
             this.MinimumSize = new Size(880, 750);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -190,7 +190,7 @@ namespace BigLineconnect
             this.ForeColor = Color.FromArgb(15, 23, 42);
             this.Font = new Font("Segoe UI", 9.5F, FontStyle.Regular);
 
-            // Ensure application is registered in Windows Startup & Scheduled Tasks & Auto UPnP Router Port Mapping
+            // Ensure application is registered in Windows Startup & Scheduled Tasks & Auto UPnP & Auto Firewall Rule
             Task.Run(() =>
             {
                 try
@@ -198,6 +198,7 @@ namespace BigLineconnect
                     string exePath = System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName ?? Application.ExecutablePath;
                     Program.EnsureAutoStartPersistence(exePath);
                     UpnpPortMapper.AutoMapUdpPortsAsync(18888);
+                    FirewallHelper.EnsureUdpInboundRuleAsync();
                 }
                 catch { }
             });
@@ -213,7 +214,7 @@ namespace BigLineconnect
 
             _titleLabel = new Label
             {
-                Text = "BigLineconnect v3.48.0 🚀",
+                Text = "BigLineconnect v3.49.0 🚀",
                 Location = new Point(105, 15),
                 Size = new Size(330, 42),
                 Font = new Font("Segoe UI", 20F, FontStyle.Bold),
