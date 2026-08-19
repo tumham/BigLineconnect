@@ -182,7 +182,7 @@ namespace BigLineconnect
         private void InitializeComponent()
         {
             Program.LoadSecuritySettings();
-            this.Text = "BigLineconnect v3.56.0 - Uzaktan Kontrol (Fixed Remote ID Textbox Color & Focus Engine)";
+            this.Text = "BigLineconnect v3.57.0 - Uzaktan Kontrol (Unblocked Native Input & Clean Corporate Info Engine)";
             this.Size = new Size(880, 750);
             this.MinimumSize = new Size(880, 750);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -215,7 +215,7 @@ namespace BigLineconnect
 
             _titleLabel = new Label
             {
-                Text = "BigLineconnect v3.56.0 🚀",
+                Text = "BigLineconnect v3.57.0 🚀",
                 Location = new Point(105, 15),
                 Size = new Size(330, 42),
                 Font = new Font("Segoe UI", 20F, FontStyle.Bold),
@@ -226,7 +226,7 @@ namespace BigLineconnect
 
             var subtitleLabel = new Label
             {
-                Text = "v3.56.0",
+                Text = "v3.57.0",
                 Location = new Point(108, 58),
                 Size = new Size(450, 20),
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
@@ -419,9 +419,9 @@ namespace BigLineconnect
                 ForeColor = Color.FromArgb(15, 23, 42),
                 BorderStyle = BorderStyle.FixedSingle,
                 Font = new Font("Segoe UI", 13F, FontStyle.Bold),
-                TextAlign = HorizontalAlignment.Center
+                TextAlign = HorizontalAlignment.Center,
+                MaxLength = 25
             };
-            _remoteIdTextBox.KeyPress += RemoteIdTextBox_KeyPress;
             _remoteDeskGroup.Controls.Add(_remoteIdTextBox);
 
             _connectButton = new Button
@@ -5848,7 +5848,7 @@ namespace BigLineconnect
 
             var titleLbl = new Label
             {
-                Text = "BigLineconnect Enterprise v3.56.0 🚀",
+                Text = "BigLineconnect Enterprise v3.57.0 🚀",
                 Location = new Point(20, 20),
                 Size = new Size(460, 32),
                 Font = new Font("Segoe UI", 14F, FontStyle.Bold),
@@ -5865,29 +5865,20 @@ namespace BigLineconnect
                 ScrollBars = ScrollBars.Vertical,
                 BackColor = Color.White,
                 ForeColor = Color.FromArgb(38, 40, 45),
-                Font = new Font("Consolas", 9.5F, FontStyle.Regular),
+                Font = new Font("Segoe UI", 10F, FontStyle.Regular),
                 BorderStyle = BorderStyle.FixedSingle,
                 Text = "==================================================\r\n" +
                        " BIGLINECONNECT UZAKTAN KONTROL & DESTEK YAZILIMI  \r\n" +
                        "==================================================\r\n\r\n" +
-                       "Sürüm: v3.56.0 Enterprise Edition (Certum Signed)\r\n" +
-                       "Lisans: DİJİTAL PRO LİSANS (Aktif & Süresiz)\r\n" +
+                       "Sürüm     : v3.57.0 Enterprise Edition\r\n" +
+                       "Lisans    : DİJİTAL PRO LİSANS (Aktif & Süresiz)\r\n" +
                        "Geliştirici: BIGUS BİLİŞİM GELİŞTİRME VE UYGULAMA\r\n" +
                        "            SİSTEMLERİ LİMİTED ŞİRKETİ\r\n\r\n" +
                        "--------------------------------------------------\r\n" +
-                       "TEKNİK SİSTEM & PROTOKOL ALTYAPISI:\r\n" +
+                       "İLETİŞİM & DESTEK:\r\n" +
                        "--------------------------------------------------\r\n" +
-                       "• Ekran Motoru   : H.264 Donanımsal Grafik Kodlayıcı\r\n" +
-                       "• Ağ İletişimi   : 0.5ms Yerel Ağ (LAN Direct Transport)\r\n" +
-                       "• Bulut Tüneli   : WSS WebSocket Relay / UPnP UDP P2P\r\n" +
-                       "• Giriş Motoru   : 9-Byte Binary Input & DirectUI Injector\r\n" +
-                       "• Yönetici Yetki : High Integrity Level (app.manifest)\r\n\r\n" +
-                       "--------------------------------------------------\r\n" +
-                       "İLETİŞİM & TEKNİK DESTEK:\r\n" +
-                       "--------------------------------------------------\r\n" +
-                       "• E-Posta        : my@bigus.com.tr\r\n" +
-                       "• Web Sunucu     : https://relay.biglineconnect.com\r\n" +
-                       "• Sunucu Konumu  : Türkiye / Almanya Yüksek Hızlı Sunucu\r\n\r\n" +
+                       "• E-Posta    : my@bigus.com.tr\r\n" +
+                       "• Web Adresi : https://relay.biglineconnect.com\r\n\r\n" +
                        "Tüm hakları saklıdır. © 2026 Bigus Bilişim A.Ş."
             };
             this.Controls.Add(txtInfo);

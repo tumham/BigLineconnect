@@ -222,7 +222,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.56.0 (Fixed Remote ID Textbox Color & Focus Engine)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.57.0 (Unblocked Native Input & Clean Corporate Info Engine)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
