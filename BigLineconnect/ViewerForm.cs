@@ -258,7 +258,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.58.0 (Concurrent 254-IP Subnet Scanner & Trial Popup Disabler)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.59.0 (Watchdog Stream Auto-Kill & 0 KB/s Zero Bandwidth Engine)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
@@ -2027,9 +2027,24 @@ namespace BigLineconnect
             }
         }
 
+        private int _heartbeatTickCounter = 0;
         private void ClipboardTimer_Tick(object? sender, EventArgs e)
         {
             OnLocalClipboardChanged();
+
+            _heartbeatTickCounter++;
+            if (_heartbeatTickCounter % 2 == 0)
+            {
+                try
+                {
+                    if (_ws != null && _ws.State == WebSocketState.Open)
+                    {
+                        byte[] pingPkt = Encoding.UTF8.GetBytes("PING");
+                        _ws.SendAsync(new ArraySegment<byte>(pingPkt), WebSocketMessageType.Text, true, CancellationToken.None);
+                    }
+                }
+                catch { }
+            }
         }
 
         private void ViewerForm_FormClosing(object? sender, FormClosingEventArgs e)

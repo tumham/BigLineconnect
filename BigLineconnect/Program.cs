@@ -912,12 +912,16 @@ namespace BigLineconnect
                             }
                             else
                             {
-                                // Process JSON remote inputs
-                                ProcessRemoteInput(message);
+                                _lastViewerActivityTime = DateTime.Now;
+                                if (message != "PING")
+                                {
+                                    ProcessRemoteInput(message);
+                                }
                             }
                         }
                         else if (result.MessageType == WebSocketMessageType.Binary && ms.Length >= 5)
                         {
+                            _lastViewerActivityTime = DateTime.Now;
                             byte[] binPkt = ms.ToArray();
                             ProcessBinaryRemoteInput(binPkt);
                         }
@@ -950,6 +954,7 @@ namespace BigLineconnect
         private static volatile bool _isSendingFrame = false;
         private static readonly AutoResetEvent _instantCaptureEvent = new AutoResetEvent(false);
         public static volatile int _forcedRefreshCount = 0;
+        public static DateTime _lastViewerActivityTime = DateTime.Now;
 
         public static void TriggerInstantCapture(int count = 2)
         {
@@ -1049,9 +1054,18 @@ namespace BigLineconnect
                 _isSendingFrame = false;
                 int initialFrameCount = 0;
                 Interlocked.Exchange(ref _forceSendUntilTicks, DateTime.Now.AddMilliseconds(2000).Ticks);
+                _lastViewerActivityTime = DateTime.Now;
 
                 while (!token.IsCancellationRequested && _isStreaming && ws.State == WebSocketState.Open)
                 {
+                    // 1. WATCHDOG KOTA KORUMASI: İzleyiciden 10 saniye boyunca sinyal/heartbeat gelmezse yayını ANINDA KES!
+                    if ((DateTime.Now - _lastViewerActivityTime).TotalSeconds > 10)
+                    {
+                        Log("[Kota Koruma Akıllı Şalteri]: İzleyiciden 10 saniyedir sinyal alınamadı. Arka plan yayını ve internet kullanımı TAMAMEN KESİLDİ!");
+                        SetStreamActive(false);
+                        break;
+                    }
+
                     if (_isSendingFrame && (DateTime.Now - _lastSentFrameTime).TotalMilliseconds < 500)
                     {
                         // Socket is busy sending previous frame. Drop frame to keep socket queue at EXACTLY 0 bytes!
@@ -1069,13 +1083,12 @@ namespace BigLineconnect
                     if (frameToSend != null && frameToSend.Length > 0)
                     {
                         bool isDuplicate = AreByteArraysEqual(frameToSend, _lastSentFrameBytes);
-                        bool isHeartbeatKeepalive = (DateTime.Now - _lastSentFrameTime).TotalMilliseconds >= 1500;
                         bool isInitialBurst = initialFrameCount < 5;
                         bool isForcedBurst = _forcedRefreshCount > 0;
                         if (isForcedBurst) _forcedRefreshCount--;
 
-                        // CRITICAL PERF FIX: Send frames on change, heartbeat, initial burst, or user action burst
-                        if (!isDuplicate || isHeartbeatKeepalive || isInitialBurst || isForcedBurst)
+                        // 2. KOTA KORUMASI: Yalnızca ekran değiştiğinde, ilk açılışta veya tıklamada kare gönder (Statik ekranda 0 KB/sn!)
+                        if (!isDuplicate || isInitialBurst || isForcedBurst)
                         {
                             // Enforce minimum frame spacing to prevent socket buffer congestion
                             int minIntervalMs = 16; // 60 FPS zero artificial delay across all quality modes!
