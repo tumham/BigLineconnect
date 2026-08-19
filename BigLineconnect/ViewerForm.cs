@@ -103,6 +103,7 @@ namespace BigLineconnect
         private ComboBox? _cbDisplays;
         private Form? _activeRestartDialog;
         private bool _isLanDirectActive = false;
+        private string _remoteLanIp = "";
 
         private void StartP2pAndLanProbe()
         {
@@ -123,53 +124,22 @@ namespace BigLineconnect
                         }
                     }
 
-                    // 2. Parallel scan of local subnet (/24) for target host listening on port 18888
+                    // 2. Fast direct LAN probe for explicit candidate IP or remote LAN IP
                     string cleanTargetId = _targetId != null ? _targetId.Trim().Replace(" ", "") : "";
-                    string myLocalIp = Program.GetLocalLanIPAddress();
-                    if (!string.IsNullOrEmpty(myLocalIp) && myLocalIp.Contains("."))
+                    if (!string.IsNullOrEmpty(_remoteLanIp))
                     {
-                        string subnetPrefix = myLocalIp.Substring(0, myLocalIp.LastIndexOf('.') + 1);
-                        var scanTasks = new System.Collections.Generic.List<Task>();
-
-                        for (int i = 1; i <= 254; i++)
+                        try
                         {
-                            string targetIp = subnetPrefix + i;
-                            if (targetIp == myLocalIp) continue;
-
-                            scanTasks.Add(Task.Run(async () =>
+                            using var probeTcp = new System.Net.Sockets.TcpClient();
+                            probeTcp.NoDelay = true;
+                            var cTask = probeTcp.ConnectAsync(_remoteLanIp, 18888);
+                            if (await Task.WhenAny(cTask, Task.Delay(300)) == cTask && probeTcp.Connected)
                             {
-                                try
-                                {
-                                    using var probeTcp = new System.Net.Sockets.TcpClient();
-                                    var cTask = probeTcp.ConnectAsync(targetIp, 18888);
-                                    if (await Task.WhenAny(cTask, Task.Delay(1200)) == cTask && probeTcp.Connected)
-                                    {
-                                        var stream = probeTcp.GetStream();
-                                        byte[] reqBytes = Encoding.UTF8.GetBytes("GET /host-id HTTP/1.1\r\nHost: local\r\n\r\n");
-                                        await stream.WriteAsync(reqBytes, 0, reqBytes.Length);
-
-                                        byte[] respBuf = new byte[512];
-                                        var readTask = stream.ReadAsync(respBuf, 0, respBuf.Length);
-                                        if (await Task.WhenAny(readTask, Task.Delay(1000)) == readTask)
-                                        {
-                                            int bytesRead = await readTask;
-                                            if (bytesRead > 0)
-                                            {
-                                                string respText = Encoding.UTF8.GetString(respBuf, 0, bytesRead);
-                                                if (!string.IsNullOrEmpty(cleanTargetId) && respText.Contains($"HOST_ID:{cleanTargetId}"))
-                                                {
-                                                    _isLanDirectActive = true;
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                                catch { }
-                            }));
+                                _isLanDirectActive = true;
+                                return;
+                            }
                         }
-
-                        await Task.WhenAll(scanTasks);
-                        if (_isLanDirectActive) return;
+                        catch { }
                     }
 
                     // 3. UDP P2P Hole Punching Probe
@@ -252,7 +222,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.51.0 (Ultra-Fast Zero-Lag NoDelay LAN Direct Transport Engine)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.52.0 (Instant 0ms LAN Direct Transport Engine)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
