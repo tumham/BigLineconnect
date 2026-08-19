@@ -186,14 +186,13 @@ namespace BigLineconnect
                 if (displayIndex < 0 || displayIndex >= screens.Length) displayIndex = 0;
                 var bounds = screens[displayIndex].Bounds;
 
-                if (xPercent.HasValue && yPercent.HasValue)
+                if (xPercent.HasValue && yPercent.HasValue && isDown)
                 {
                     int actualX = bounds.X + Math.Min(bounds.Width - 1, (int)(xPercent.Value * bounds.Width));
                     int actualY = bounds.Y + Math.Min(bounds.Height - 1, (int)(yPercent.Value * bounds.Height));
                     SetCursorPos(actualX, actualY);
                 }
 
-                // Dual Hardware Injection: SendInput + mouse_event with UIntPtr.Zero to bypass Alpemix hook filters
                 INPUT[] inputs = new INPUT[1];
                 inputs[0] = new INPUT
                 {
@@ -212,8 +211,11 @@ namespace BigLineconnect
                     }
                 };
 
-                SendInput(1, inputs, Marshal.SizeOf<INPUT>());
-                mouse_event(flags, 0, 0, 0, (UIntPtr)0);
+                uint res = SendInput(1, inputs, Marshal.SizeOf<INPUT>());
+                if (res == 0)
+                {
+                    mouse_event(flags, 0, 0, 0, (UIntPtr)0);
+                }
 
                 Program.TriggerInstantCapture();
             }
@@ -252,8 +254,10 @@ namespace BigLineconnect
         {
             try
             {
-                // Click 1 was sent by MouseDown/MouseUp; execute Click 2 to complete natural double click sequence
-                System.Threading.Thread.Sleep(20);
+                DesktopHelper.AttachToInputDesktop();
+                SimulateMouseButton(button, "down", xPercent, yPercent, displayIndex);
+                SimulateMouseButton(button, "up", xPercent, yPercent, displayIndex);
+                System.Threading.Thread.Sleep(30);
                 SimulateMouseButton(button, "down", xPercent, yPercent, displayIndex);
                 SimulateMouseButton(button, "up", xPercent, yPercent, displayIndex);
                 Program.TriggerInstantCapture();

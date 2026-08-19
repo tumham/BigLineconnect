@@ -252,7 +252,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.46.0 (Admin Privilege Elevation & Perfect 2-Click Sequence Engine)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.47.0 (Windows Explorer Jitterless Sub-Folder Double-Click Engine)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
