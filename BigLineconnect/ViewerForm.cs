@@ -252,7 +252,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.40.0 (True Win32 Desktop Handle Attachment Engine)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.41.0 (Hybrid UDP P2P & Zero-Risk Seamless Fallback Pipeline)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
