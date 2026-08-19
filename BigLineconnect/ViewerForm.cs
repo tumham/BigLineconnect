@@ -136,10 +136,46 @@ namespace BigLineconnect
                             if (await Task.WhenAny(cTask, Task.Delay(300)) == cTask && probeTcp.Connected)
                             {
                                 _isLanDirectActive = true;
-                                return;
                             }
                         }
                         catch { }
+                    }
+
+                    // 2.5 Concurrent 254-IP local subnet scan engine
+                    string localIp = Program.GetLocalLanIPAddress();
+                    if (!_isLanDirectActive && !string.IsNullOrEmpty(localIp) && localIp.Contains("."))
+                    {
+                        string prefix = localIp.Substring(0, localIp.LastIndexOf('.') + 1);
+                        var scanTasks = new System.Collections.Generic.List<Task>();
+                        for (int i = 1; i <= 254; i++)
+                        {
+                            string probeIp = prefix + i;
+                            if (probeIp == localIp) continue;
+                            scanTasks.Add(Task.Run(async () =>
+                            {
+                                try
+                                {
+                                    using var probeTcp = new System.Net.Sockets.TcpClient();
+                                    probeTcp.NoDelay = true;
+                                    var cTask = probeTcp.ConnectAsync(probeIp, 18888);
+                                    if (await Task.WhenAny(cTask, Task.Delay(250)) == cTask && probeTcp.Connected)
+                                    {
+                                        _remoteLanIp = probeIp;
+                                        _isLanDirectActive = true;
+                                        this.BeginInvoke(new Action(() =>
+                                        {
+                                            if (_lblConnModeBadge != null && !_lblConnModeBadge.IsDisposed)
+                                            {
+                                                _lblConnModeBadge.Text = " ⚡ LAN DIRECT (0.5ms) ";
+                                                _lblConnModeBadge.BackColor = Color.FromArgb(0, 230, 118);
+                                            }
+                                        }));
+                                    }
+                                }
+                                catch { }
+                            }));
+                        }
+                        await Task.WhenAll(scanTasks);
                     }
 
                     // 3. UDP P2P Hole Punching Probe
@@ -222,7 +258,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.57.0 (Unblocked Native Input & Clean Corporate Info Engine)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.58.0 (Concurrent 254-IP Subnet Scanner & Trial Popup Disabler)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;

@@ -182,7 +182,7 @@ namespace BigLineconnect
         private void InitializeComponent()
         {
             Program.LoadSecuritySettings();
-            this.Text = "BigLineconnect v3.57.0 - Uzaktan Kontrol (Unblocked Native Input & Clean Corporate Info Engine)";
+            this.Text = "BigLineconnect v3.58.0 - Uzaktan Kontrol (Concurrent 254-IP Subnet Scanner & Trial Popup Disabler)";
             this.Size = new Size(880, 750);
             this.MinimumSize = new Size(880, 750);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -215,7 +215,7 @@ namespace BigLineconnect
 
             _titleLabel = new Label
             {
-                Text = "BigLineconnect v3.57.0 🚀",
+                Text = "BigLineconnect v3.58.0 🚀",
                 Location = new Point(105, 15),
                 Size = new Size(330, 42),
                 Font = new Font("Segoe UI", 20F, FontStyle.Bold),
@@ -226,7 +226,7 @@ namespace BigLineconnect
 
             var subtitleLabel = new Label
             {
-                Text = "v3.57.0",
+                Text = "v3.58.0",
                 Location = new Point(108, 58),
                 Size = new Size(450, 20),
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),

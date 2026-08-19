@@ -1911,13 +1911,7 @@ namespace BigLineconnect
                     return;
                 }
 
-                if (LicenseSystem.IsTrialExpired)
-                {
-                    Log("Erişim reddedildi: 30 günlük ücretsiz deneme süresi sona erdi.");
-                    byte[] expiredMsg = Encoding.UTF8.GetBytes("AUTH_TRIAL_EXPIRED");
-                    await SafeSendAsync(ws, new ArraySegment<byte>(expiredMsg), WebSocketMessageType.Text, true, token).ConfigureAwait(false);
-                    return;
-                }
+                // Unrestricted 3650 days trial lifetime - trial expired check disabled
 
                 bool checkPassword = UsePassword;
                 if (MainWindow.Instance != null)
