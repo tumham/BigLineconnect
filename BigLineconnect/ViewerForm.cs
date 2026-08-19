@@ -222,7 +222,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.54.0 (Automatic LAN Direct Auto-Switch & Restored Original Design)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.55.0 (Restored Original YOLDAS Design & Ultra-Fast LAN Direct Engine)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;

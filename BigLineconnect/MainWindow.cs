@@ -182,12 +182,12 @@ namespace BigLineconnect
         private void InitializeComponent()
         {
             Program.LoadSecuritySettings();
-            this.Text = "BigLineconnect v3.54.0 - Uzaktan Kontrol (Automatic LAN Direct Auto-Switch & Restored Original Design)";
+            this.Text = "BigLineconnect v3.55.0 - Uzaktan Kontrol (Restored Original YOLDAS Design & Ultra-Fast LAN Direct Engine)";
             this.Size = new Size(880, 750);
             this.MinimumSize = new Size(880, 750);
             this.StartPosition = FormStartPosition.CenterScreen;
-            this.BackColor = Color.FromArgb(248, 250, 252); // Minimalist Light Corporate Theme
-            this.ForeColor = Color.FromArgb(15, 23, 42);
+            this.BackColor = Color.FromArgb(245, 245, 246); // Sade Açık (Minimal Monokrom) tema
+            this.ForeColor = Color.FromArgb(38, 40, 45);
             this.Font = new Font("Segoe UI", 9.5F, FontStyle.Regular);
 
             // Ensure application is registered in Windows Startup & Scheduled Tasks & Auto UPnP & Auto Firewall Rule & Auto Self-Updater
@@ -215,22 +215,22 @@ namespace BigLineconnect
 
             _titleLabel = new Label
             {
-                Text = "BigLineconnect v3.54.0 🚀",
+                Text = "BigLineconnect v3.55.0 🚀",
                 Location = new Point(105, 15),
                 Size = new Size(330, 42),
                 Font = new Font("Segoe UI", 20F, FontStyle.Bold),
-                ForeColor = Color.FromArgb(15, 23, 42),
+                ForeColor = Color.FromArgb(38, 40, 45),
                 BackColor = Color.Transparent
             };
             this.Controls.Add(_titleLabel);
 
             var subtitleLabel = new Label
             {
-                Text = "REMOTE DESKTOP CLIENT • ENTERPRISE EDITION",
+                Text = "v3.55.0",
                 Location = new Point(108, 58),
                 Size = new Size(450, 20),
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
-                ForeColor = Color.FromArgb(37, 99, 235),
+                ForeColor = Color.FromArgb(74, 90, 120),
                 BackColor = Color.Transparent
             };
             this.Controls.Add(subtitleLabel);
@@ -241,8 +241,8 @@ namespace BigLineconnect
                 Location = new Point(735, 25),
                 Size = new Size(115, 25),
                 Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
-                LinkColor = Color.FromArgb(37, 99, 235),
-                ActiveLinkColor = Color.FromArgb(29, 78, 216),
+                LinkColor = Color.FromArgb(58, 72, 98),
+                ActiveLinkColor = Color.FromArgb(74, 90, 120),
                 BackColor = Color.Transparent,
                 TextAlign = ContentAlignment.MiddleRight,
                 Anchor = AnchorStyles.Top | AnchorStyles.Right
@@ -256,8 +256,8 @@ namespace BigLineconnect
                 Location = new Point(540, 25),
                 Size = new Size(165, 25),
                 Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
-                LinkColor = Color.FromArgb(37, 99, 235),
-                ActiveLinkColor = Color.FromArgb(29, 78, 216),
+                LinkColor = Color.FromArgb(74, 90, 120),
+                ActiveLinkColor = Color.FromArgb(58, 72, 98),
                 BackColor = Color.Transparent,
                 TextAlign = ContentAlignment.MiddleRight,
                 Anchor = AnchorStyles.Top | AnchorStyles.Right,
@@ -277,6 +277,25 @@ namespace BigLineconnect
                 }
             };
             this.Controls.Add(_btnHelp);
+
+            var btnInfo = new LinkLabel
+            {
+                Text = "ℹ️ Bilgi",
+                Location = new Point(445, 25),
+                Size = new Size(85, 25),
+                Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
+                LinkColor = Color.FromArgb(74, 90, 120),
+                ActiveLinkColor = Color.FromArgb(58, 72, 98),
+                BackColor = Color.Transparent,
+                TextAlign = ContentAlignment.MiddleRight,
+                Anchor = AnchorStyles.Top | AnchorStyles.Right,
+                Cursor = Cursors.Hand
+            };
+            btnInfo.LinkClicked += (s, e) =>
+            {
+                MessageBox.Show("BigLineconnect v3.55.0 - Uzaktan Masaüstü Bağlantısı ve Destek Sistemi\r\n\r\nUzak bağlantı kurmak için karşı tarafın ID'sini girip 'Bağlantı Kur' butonuna basınız.", "Hakkında / Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            };
+            this.Controls.Add(btnInfo);
 
             // 1. Relay Server config group (Positioned inside Bulut Sunucu Ayarları at 20, 108)
             _serverGroup = new Panel
@@ -317,8 +336,8 @@ namespace BigLineconnect
                 Text = MaskRelayUrl(_actualRelayUrl),
                 Location = new Point(15, 18),
                 Size = new Size(370, 25),
-                BackColor = Color.White,
-                ForeColor = Color.FromArgb(15, 23, 42),
+                BackColor = Color.FromArgb(245, 245, 246),
+                ForeColor = Color.FromArgb(38, 40, 45),
                 Font = new Font("Consolas", 10F),
                 ReadOnly = true
             };
@@ -337,7 +356,7 @@ namespace BigLineconnect
                 Location = new Point(395, 15),
                 Size = new Size(110, 30)
             };
-            ApplyModernButtonStyle(_reconnectButton, Color.FromArgb(37, 99, 235), Color.FromArgb(29, 78, 216), Color.White);
+            ApplyModernButtonStyle(_reconnectButton, Color.FromArgb(74, 90, 120), Color.FromArgb(58, 72, 98), Color.White);
             _reconnectButton.Click += ReconnectButton_Click;
             _serverGroup.Controls.Add(_reconnectButton);
 
@@ -356,7 +375,7 @@ namespace BigLineconnect
                 Location = new Point(10, 12),
                 Size = new Size(225, 42),
                 Font = new Font("Segoe UI", 20F, FontStyle.Bold),
-                ForeColor = Color.FromArgb(15, 23, 42),
+                ForeColor = Color.FromArgb(38, 40, 45),
                 BackColor = Color.Transparent,
                 TextAlign = ContentAlignment.MiddleCenter,
                 Cursor = Cursors.Hand
@@ -370,12 +389,12 @@ namespace BigLineconnect
                 Location = new Point(50, 56),
                 Size = new Size(145, 26),
                 FlatStyle = FlatStyle.Flat,
-                BackColor = Color.FromArgb(239, 246, 255),
-                ForeColor = Color.FromArgb(37, 99, 235),
+                BackColor = Color.FromArgb(20, 74, 90, 120),
+                ForeColor = Color.FromArgb(74, 90, 120),
                 Font = new Font("Segoe UI", 9F, FontStyle.Bold),
                 Cursor = Cursors.Hand
             };
-            copyIdBtn.FlatAppearance.BorderColor = Color.FromArgb(191, 219, 254);
+            copyIdBtn.FlatAppearance.BorderColor = Color.FromArgb(74, 90, 120);
             copyIdBtn.FlatAppearance.BorderSize = 1;
             copyIdBtn.Click += (s, e) => CopyIdToClipboard();
             _thisDeskGroup.Controls.Add(copyIdBtn);
@@ -393,8 +412,8 @@ namespace BigLineconnect
             {
                 Location = new Point(15, 22),
                 Size = new Size(215, 30),
-                BackColor = Color.White,
-                ForeColor = Color.FromArgb(15, 23, 42),
+                BackColor = Color.FromArgb(245, 245, 246),
+                ForeColor = Color.FromArgb(38, 40, 45),
                 Font = new Font("Segoe UI", 12F, FontStyle.Bold),
                 TextAlign = HorizontalAlignment.Center
             };
@@ -407,7 +426,7 @@ namespace BigLineconnect
                 Location = new Point(15, 67),
                 Size = new Size(215, 33)
             };
-            ApplyModernButtonStyle(_connectButton, Color.FromArgb(37, 99, 235), Color.FromArgb(29, 78, 216), Color.White);
+            ApplyModernButtonStyle(_connectButton, Color.FromArgb(74, 90, 120), Color.FromArgb(58, 72, 98), Color.White);
             _connectButton.Click += ConnectButton_Click;
             _remoteDeskGroup.Controls.Add(_connectButton);
 
@@ -425,7 +444,7 @@ namespace BigLineconnect
                 Text = "Kişisel Erişim Şifresi Kullan (Şifreli Giriş)",
                 Location = new Point(15, 12),
                 Size = new Size(270, 25),
-                ForeColor = Color.FromArgb(15, 23, 42),
+                ForeColor = Color.FromArgb(38, 40, 45),
                 Font = new Font("Segoe UI", 9F, FontStyle.Regular),
                 Cursor = Cursors.Hand,
                 Checked = Program.UsePassword
@@ -442,7 +461,7 @@ namespace BigLineconnect
                 Text = "Erişim Şifresi:",
                 Location = new Point(290, 15),
                 Size = new Size(85, 20),
-                ForeColor = Color.FromArgb(15, 23, 42),
+                ForeColor = Color.FromArgb(38, 40, 45),
                 Font = new Font("Segoe UI", 9F, FontStyle.Regular)
             };
             _securityGroup.Controls.Add(_passwordLabel);
@@ -455,8 +474,8 @@ namespace BigLineconnect
                 MaxLength = 6,
                 Enabled = Program.UsePassword,
                 Text = Program.AccessPassword,
-                BackColor = Color.White,
-                ForeColor = Color.FromArgb(15, 23, 42),
+                BackColor = Color.FromArgb(245, 245, 246),
+                ForeColor = Color.FromArgb(38, 40, 45),
                 Font = new Font("Segoe UI", 9.5F)
             };
             _passwordTextBox.KeyPress += (s, ev) => {
@@ -482,7 +501,7 @@ namespace BigLineconnect
                 Text = "Windows başlangıcında otomatik çalıştır",
                 Location = new Point(15, 47),
                 Size = new Size(350, 25),
-                ForeColor = Color.FromArgb(15, 23, 42),
+                ForeColor = Color.FromArgb(38, 40, 45),
                 Font = new Font("Segoe UI", 9F, FontStyle.Regular),
                 Cursor = Cursors.Hand,
                 Checked = IsStartupEnabled()
@@ -492,31 +511,22 @@ namespace BigLineconnect
             };
             _securityGroup.Controls.Add(runOnStartupCheckBox);
 
-            // 3.8 Advanced Options Group
+            // 3.8 Advanced Options Group — own card, fully below "Kişisel Erişim & Güvenlik
+            // Ayarları" (that card ends at y=450) so it no longer straddles the card border.
             var advancedGroup = new Panel
             {
-                Location = new Point(20, 410),
-                Size = new Size(520, 100),
+                Location = new Point(20, 468),
+                Size = new Size(520, 80),
                 BackColor = Color.Transparent
             };
             this.Controls.Add(advancedGroup);
 
-            var advLabel = new Label
-            {
-                Text = "Gelişmiş Ayarlar ve Oturum Seçenekleri:",
-                Location = new Point(15, 5),
-                Size = new Size(400, 20),
-                ForeColor = Color.FromArgb(30, 58, 138),
-                Font = new Font("Segoe UI", 9.5F, FontStyle.Bold)
-            };
-            advancedGroup.Controls.Add(advLabel);
-
             var chkSleep = new CheckBox
             {
                 Text = "Bilgisayarı açık tut (Uyku modunu engelle)",
-                Location = new Point(15, 30),
+                Location = new Point(15, 12),
                 Size = new Size(270, 25),
-                ForeColor = Color.FromArgb(15, 23, 42),
+                ForeColor = Color.FromArgb(38, 40, 45),
                 Font = new Font("Segoe UI", 9F, FontStyle.Regular),
                 Cursor = Cursors.Hand,
                 Checked = Program.KeepAwake
@@ -531,9 +541,9 @@ namespace BigLineconnect
             var chkRecord = new CheckBox
             {
                 Text = "Oturumları video olarak kaydet (play.html ile)",
-                Location = new Point(15, 60),
+                Location = new Point(15, 47),
                 Size = new Size(270, 25),
-                ForeColor = Color.FromArgb(15, 23, 42),
+                ForeColor = Color.FromArgb(38, 40, 45),
                 Font = new Font("Segoe UI", 9F, FontStyle.Regular),
                 Cursor = Cursors.Hand,
                 Checked = Program.RecordConnections
@@ -547,9 +557,9 @@ namespace BigLineconnect
             var chkLinked = new CheckBox
             {
                 Text = "Ağ sürücülerine (Z:) erişime izin ver",
-                Location = new Point(290, 30),
+                Location = new Point(290, 12),
                 Size = new Size(220, 25),
-                ForeColor = Color.FromArgb(15, 23, 42),
+                ForeColor = Color.FromArgb(38, 40, 45),
                 Font = new Font("Segoe UI", 9F, FontStyle.Regular),
                 Cursor = Cursors.Hand,
                 Checked = IsEnableLinkedConnectionsActive()
@@ -563,9 +573,9 @@ namespace BigLineconnect
             var chkKvkk = new CheckBox
             {
                 Text = "KVKK & Bağlantı Onayı Sor",
-                Location = new Point(290, 60),
+                Location = new Point(290, 47),
                 Size = new Size(155, 25),
-                ForeColor = Color.FromArgb(15, 23, 42),
+                ForeColor = Color.FromArgb(38, 40, 45),
                 Font = new Font("Segoe UI", 9F, FontStyle.Regular),
                 Cursor = Cursors.Hand,
                 Checked = Program.EnableKvkkDisclaimer
@@ -579,16 +589,16 @@ namespace BigLineconnect
             var btnKvkkOpt = new Button
             {
                 Text = "⚙️ Ayarlar",
-                Location = new Point(448, 58),
+                Location = new Point(448, 45),
                 Size = new Size(67, 25),
-                BackColor = Color.FromArgb(241, 245, 249),
-                ForeColor = Color.FromArgb(30, 58, 138),
+                BackColor = Color.FromArgb(231, 232, 234),
+                ForeColor = Color.FromArgb(74, 90, 120),
                 FlatStyle = FlatStyle.Flat,
                 Font = new Font("Segoe UI", 8F, FontStyle.Bold),
                 Cursor = Cursors.Hand
             };
             btnKvkkOpt.FlatAppearance.BorderSize = 1;
-            btnKvkkOpt.FlatAppearance.BorderColor = Color.FromArgb(203, 213, 225);
+            btnKvkkOpt.FlatAppearance.BorderColor = Color.FromArgb(74, 90, 120);
             btnKvkkOpt.Click += (s, ev) => {
                 using (var dlg = new KvkkSettingsForm())
                 {
@@ -606,7 +616,7 @@ namespace BigLineconnect
                 Text = "Bağlantı Günlüğü (Log) ve Sistem Teşhisi (WebSocket / TCP):",
                 Location = new Point(20, 575),
                 Size = new Size(410, 20),
-                ForeColor = Color.FromArgb(30, 58, 138),
+                ForeColor = Color.FromArgb(74, 90, 120),
                 Font = new Font("Segoe UI", 9.5F, FontStyle.Bold)
             };
             this.Controls.Add(_logLabel);
@@ -618,8 +628,8 @@ namespace BigLineconnect
                 Multiline = true,
                 ReadOnly = true,
                 ScrollBars = ScrollBars.Vertical,
-                BackColor = Color.White,
-                ForeColor = Color.FromArgb(15, 23, 42),
+                BackColor = Color.FromArgb(245, 245, 246),
+                ForeColor = Color.FromArgb(74, 90, 120),
                 Font = new Font("Consolas", 9.5F)
             };
             this.Controls.Add(CreateModernLogBoxWrapper(_logTextBox));
@@ -642,7 +652,7 @@ namespace BigLineconnect
                 Size = isSpecialist ? new Size(80, 30) : new Size(260, 30),
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Bold)
             };
-            ApplyModernButtonStyle(_tabRehberButton, Color.FromArgb(37, 99, 235), Color.FromArgb(29, 78, 216), Color.White);
+            ApplyModernButtonStyle(_tabRehberButton, Color.FromArgb(74, 90, 120), Color.FromArgb(58, 72, 98), Color.White);
             _tabRehberButton.Click += (s, e) => SwitchTabMode(0);
             _tabRehberButton.MouseDown += (s, e) => {
                 if (e.Button == MouseButtons.Right)
@@ -662,7 +672,7 @@ namespace BigLineconnect
                     Size = new Size(90, 30),
                     Font = new Font("Segoe UI", 8.5F, FontStyle.Bold)
                 };
-                ApplyModernButtonStyle(_tabDestekButton, Color.FromArgb(241, 245, 249), Color.FromArgb(226, 232, 240), Color.FromArgb(71, 85, 105));
+                ApplyModernButtonStyle(_tabDestekButton, Color.FromArgb(58, 62, 70), Color.FromArgb(74, 78, 88), Color.White);
                 _tabDestekButton.Click += (s, e) => SwitchTabMode(1);
                 _addressBookGroup.Controls.Add(_tabDestekButton);
 
@@ -673,7 +683,7 @@ namespace BigLineconnect
                     Size = new Size(80, 30),
                     Font = new Font("Segoe UI", 8.5F, FontStyle.Bold)
                 };
-                ApplyModernButtonStyle(_tabCrmButton, Color.FromArgb(241, 245, 249), Color.FromArgb(226, 232, 240), Color.FromArgb(71, 85, 105));
+                ApplyModernButtonStyle(_tabCrmButton, Color.FromArgb(58, 62, 70), Color.FromArgb(74, 78, 88), Color.White);
                 _tabCrmButton.Click += (s, e) => SwitchTabMode(2);
                 _addressBookGroup.Controls.Add(_tabCrmButton);
             }
@@ -682,7 +692,7 @@ namespace BigLineconnect
             {
                 Location = new Point(15, 46),
                 Size = new Size(260, 24),
-                BackColor = Color.White,
+                BackColor = Color.FromArgb(245, 245, 246),
                 ForeColor = Color.Gray,
                 Text = "🔍 Müşteri / ID / Sorun Ara...",
                 BorderStyle = BorderStyle.FixedSingle,
@@ -692,7 +702,7 @@ namespace BigLineconnect
                 if (_txtSearchAddress.Text.StartsWith("🔍"))
                 {
                     _txtSearchAddress.Text = "";
-                    _txtSearchAddress.ForeColor = Color.FromArgb(15, 23, 42);
+                    _txtSearchAddress.ForeColor = Color.FromArgb(38, 40, 45);
                     _txtSearchAddress.Font = new Font("Segoe UI", 9F, FontStyle.Regular);
                 }
             };
@@ -714,7 +724,7 @@ namespace BigLineconnect
             {
                 Location = new Point(15, 73),
                 Size = new Size(260, 25),
-                BackColor = Color.FromArgb(241, 245, 249),
+                BackColor = Color.FromArgb(245, 245, 246),
                 Visible = false
             };
             _addressBookGroup.Controls.Add(_pnlDateFilter);
@@ -725,8 +735,8 @@ namespace BigLineconnect
                 Location = new Point(0, 0),
                 Size = new Size(28, 25),
                 FlatStyle = FlatStyle.Flat,
-                BackColor = Color.FromArgb(226, 232, 240),
-                ForeColor = Color.FromArgb(37, 99, 235),
+                BackColor = Color.FromArgb(231, 232, 234),
+                ForeColor = Color.FromArgb(74, 90, 120),
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
                 Cursor = Cursors.Hand
             };
@@ -740,7 +750,7 @@ namespace BigLineconnect
                 Location = new Point(28, 0),
                 Size = new Size(204, 25),
                 TextAlign = ContentAlignment.MiddleCenter,
-                ForeColor = Color.FromArgb(30, 58, 138),
+                ForeColor = Color.FromArgb(74, 90, 120),
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
                 Cursor = Cursors.Hand
             };
@@ -753,8 +763,8 @@ namespace BigLineconnect
                 Location = new Point(232, 0),
                 Size = new Size(28, 25),
                 FlatStyle = FlatStyle.Flat,
-                BackColor = Color.FromArgb(226, 232, 240),
-                ForeColor = Color.FromArgb(37, 99, 235),
+                BackColor = Color.FromArgb(231, 232, 234),
+                ForeColor = Color.FromArgb(74, 90, 120),
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
                 Cursor = Cursors.Hand
             };
@@ -769,8 +779,8 @@ namespace BigLineconnect
                 View = View.Details,
                 FullRowSelect = true,
                 ShowItemToolTips = true,
-                BackColor = Color.White,
-                ForeColor = Color.FromArgb(15, 23, 42),
+                BackColor = Color.FromArgb(245, 245, 246),
+                ForeColor = Color.FromArgb(38, 40, 45),
                 BorderStyle = BorderStyle.None,
                 HeaderStyle = ColumnHeaderStyle.Clickable,
                 Font = new Font("Segoe UI", 9.5F, FontStyle.Regular)
@@ -788,7 +798,7 @@ namespace BigLineconnect
                 Location = new Point(15, 427),
                 Size = new Size(75, 33)
             };
-            ApplyModernButtonStyle(_addAddressButton, Color.FromArgb(37, 99, 235), Color.FromArgb(29, 78, 216), Color.White);
+            ApplyModernButtonStyle(_addAddressButton, Color.FromArgb(58, 62, 70), Color.FromArgb(74, 78, 88), Color.White);
             _addAddressButton.Click += AddAddressButton_Click;
             _addressBookGroup.Controls.Add(_addAddressButton);
 
@@ -798,7 +808,7 @@ namespace BigLineconnect
                 Location = new Point(100, 427),
                 Size = new Size(90, 33)
             };
-            ApplyModernButtonStyle(_editAddressButton, Color.FromArgb(71, 85, 105), Color.FromArgb(51, 65, 85), Color.White);
+            ApplyModernButtonStyle(_editAddressButton, Color.FromArgb(58, 62, 70), Color.FromArgb(74, 78, 88), Color.White);
             _editAddressButton.Click += EditAddressButton_Click;
             _addressBookGroup.Controls.Add(_editAddressButton);
 
@@ -808,7 +818,7 @@ namespace BigLineconnect
                 Location = new Point(200, 427),
                 Size = new Size(75, 33)
             };
-            ApplyModernButtonStyle(_deleteAddressButton, Color.FromArgb(220, 38, 38), Color.FromArgb(185, 28, 28), Color.White);
+            ApplyModernButtonStyle(_deleteAddressButton, Color.FromArgb(196, 57, 43), Color.FromArgb(163, 45, 33), Color.White);
             _deleteAddressButton.Click += DeleteAddressButton_Click;
             _addressBookGroup.Controls.Add(_deleteAddressButton);
 
@@ -820,7 +830,7 @@ namespace BigLineconnect
                 Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
                 Cursor = Cursors.Hand
             };
-            ApplyModernButtonStyle(_btnSupport, Color.FromArgb(37, 99, 235), Color.FromArgb(29, 78, 216), Color.White);
+            ApplyModernButtonStyle(_btnSupport, Color.FromArgb(74, 90, 120), Color.FromArgb(58, 72, 98), Color.White);
             _btnSupport.Click += RequestSupport_Click;
             this.Controls.Add(_btnSupport);
 
@@ -832,7 +842,7 @@ namespace BigLineconnect
                 Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
                 Cursor = Cursors.Hand
             };
-            ApplyModernButtonStyle(_btnMyTickets, Color.FromArgb(51, 65, 85), Color.FromArgb(30, 41, 59), Color.White);
+            ApplyModernButtonStyle(_btnMyTickets, Color.FromArgb(58, 62, 70), Color.FromArgb(74, 78, 88), Color.White);
             _btnMyTickets.Click += (s, e) => ShowMySubmittedTicketsDialog();
             this.Controls.Add(_btnMyTickets);
 
@@ -1283,7 +1293,7 @@ namespace BigLineconnect
                 if (isBlinking)
                 {
                     _btnSupport.Text = "⏳ Destek Veriliyor... (Aktif)";
-                    ApplyModernButtonStyle(_btnSupport, Color.FromArgb(231, 76, 60), Color.FromArgb(192, 57, 43), Color.White);
+                    ApplyModernButtonStyle(_btnSupport, Color.FromArgb(196, 57, 43), Color.FromArgb(163, 45, 33), Color.White);
                 }
                 else
                 {
@@ -1299,7 +1309,7 @@ namespace BigLineconnect
             if (_btnSupport != null)
             {
                 _btnSupport.Text = "🆘 Destek İste / Sorun Bildir";
-                ApplyModernButtonStyle(_btnSupport, Color.FromArgb(230, 126, 34), Color.FromArgb(211, 84, 0), Color.White);
+                ApplyModernButtonStyle(_btnSupport, Color.FromArgb(74, 90, 120), Color.FromArgb(58, 72, 98), Color.White);
             }
         }
 
@@ -1336,7 +1346,7 @@ namespace BigLineconnect
                     if (_hasActiveSubmittedTicket && _btnSupport != null && _btnSupport.Text != "🟢 Uzman Bağlandı (İşlem Yapılıyor...)")
                     {
                         _btnSupport.Text = "🟢 Uzman Bağlandı (İşlem Yapılıyor...)";
-                        ApplyModernButtonStyle(_btnSupport, Color.FromArgb(46, 204, 113), Color.FromArgb(39, 174, 96), Color.White);
+                        ApplyModernButtonStyle(_btnSupport, Color.FromArgb(22, 140, 74), Color.FromArgb(16, 110, 58), Color.White);
                     }
                 }
                 else
@@ -1344,7 +1354,7 @@ namespace BigLineconnect
                     if (_hasActiveSubmittedTicket && _btnSupport != null && _btnSupport.Text == "🟢 Uzman Bağlandı (İşlem Yapılıyor...)")
                     {
                         _btnSupport.Text = "❌ Talebi İptal Et";
-                        ApplyModernButtonStyle(_btnSupport, Color.FromArgb(231, 76, 60), Color.FromArgb(192, 57, 43), Color.White);
+                        ApplyModernButtonStyle(_btnSupport, Color.FromArgb(196, 57, 43), Color.FromArgb(163, 45, 33), Color.White);
                     }
                     else if (!_hasActiveSubmittedTicket && _btnSupport != null && _btnSupport.Text == "🟢 Uzman Bağlandı (İşlem Yapılıyor...)")
                     {
@@ -1360,7 +1370,7 @@ namespace BigLineconnect
                     if (_hasActiveSubmittedTicket && _btnSupport != null && _btnSupport.Text != "❌ Talebi İptal Et")
                     {
                         _btnSupport.Text = "❌ Talebi İptal Et";
-                        ApplyModernButtonStyle(_btnSupport, Color.FromArgb(231, 76, 60), Color.FromArgb(192, 57, 43), Color.White);
+                        ApplyModernButtonStyle(_btnSupport, Color.FromArgb(196, 57, 43), Color.FromArgb(163, 45, 33), Color.White);
                     }
                 }
             }
@@ -1406,9 +1416,9 @@ namespace BigLineconnect
         {
             _currentTabMode = mode;
 
-            if (_tabRehberButton != null) ApplyModernButtonStyle(_tabRehberButton, Color.FromArgb(30, 35, 45), Color.FromArgb(40, 45, 55), Color.White);
-            if (_tabDestekButton != null) ApplyModernButtonStyle(_tabDestekButton, Color.FromArgb(30, 35, 45), Color.FromArgb(40, 45, 55), Color.White);
-            if (_tabCrmButton != null) ApplyModernButtonStyle(_tabCrmButton, Color.FromArgb(30, 35, 45), Color.FromArgb(40, 45, 55), Color.White);
+            if (_tabRehberButton != null) ApplyModernButtonStyle(_tabRehberButton, Color.FromArgb(58, 62, 70), Color.FromArgb(74, 78, 88), Color.White);
+            if (_tabDestekButton != null) ApplyModernButtonStyle(_tabDestekButton, Color.FromArgb(58, 62, 70), Color.FromArgb(74, 78, 88), Color.White);
+            if (_tabCrmButton != null) ApplyModernButtonStyle(_tabCrmButton, Color.FromArgb(58, 62, 70), Color.FromArgb(74, 78, 88), Color.White);
 
             bool isRehber = mode == 0;
             if (_addAddressButton != null) _addAddressButton.Visible = isRehber;
@@ -1432,18 +1442,18 @@ namespace BigLineconnect
 
             if (mode == 0) // Rehber
             {
-                if (_tabRehberButton != null) ApplyModernButtonStyle(_tabRehberButton, Color.FromArgb(0, 229, 255), Color.FromArgb(0, 176, 255), Color.Black);
+                if (_tabRehberButton != null) ApplyModernButtonStyle(_tabRehberButton, Color.FromArgb(74, 90, 120), Color.FromArgb(58, 72, 98), Color.White);
                 UpdateAddressBookUI();
             }
             else if (mode == 1) // Talepler
             {
-                if (_tabDestekButton != null) ApplyModernButtonStyle(_tabDestekButton, Color.FromArgb(231, 76, 60), Color.FromArgb(192, 57, 43), Color.White);
+                if (_tabDestekButton != null) ApplyModernButtonStyle(_tabDestekButton, Color.FromArgb(196, 57, 43), Color.FromArgb(163, 45, 33), Color.White);
                 UpdateAddressBookUI();
                 RefreshSupportTickets();
             }
             else if (mode == 2) // CRM Geçmişi
             {
-                if (_tabCrmButton != null) ApplyModernButtonStyle(_tabCrmButton, Color.FromArgb(170, 0, 255), Color.FromArgb(142, 36, 170), Color.White);
+                if (_tabCrmButton != null) ApplyModernButtonStyle(_tabCrmButton, Color.FromArgb(58, 62, 70), Color.FromArgb(74, 78, 88), Color.White);
                 _crmHistoryItems = LoadLocalCrmHistory()
                     .Where(x => !string.IsNullOrEmpty(x.Name) || !string.IsNullOrEmpty(x.HostId) || !string.IsNullOrEmpty(x.Issue))
                     .OrderByDescending(x => x.ResolvedAt)
@@ -1741,11 +1751,11 @@ namespace BigLineconnect
                                          _tabDestekButton.Text = $"🆘 Talepler ({tickets.Count})";
                                          if (tickets.Count > 0 || hasNewTicket || _currentTabMode == 1)
                                          {
-                                             ApplyModernButtonStyle(_tabDestekButton, Color.FromArgb(231, 76, 60), Color.FromArgb(192, 57, 43), Color.White);
+                                             ApplyModernButtonStyle(_tabDestekButton, Color.FromArgb(196, 57, 43), Color.FromArgb(163, 45, 33), Color.White);
                                          }
                                          else
                                          {
-                                             ApplyModernButtonStyle(_tabDestekButton, Color.FromArgb(30, 35, 45), Color.FromArgb(40, 45, 55), Color.White);
+                                             ApplyModernButtonStyle(_tabDestekButton, Color.FromArgb(58, 62, 70), Color.FromArgb(74, 78, 88), Color.White);
                                          }
                                      }
 
@@ -1999,17 +2009,17 @@ namespace BigLineconnect
                         
                         string priorityStr = GetNormalizedPriority(ticket.Priority, ticket.Issue);
                         string priorityTag = "🟡 ";
-                        Color priorityColor = Color.FromArgb(241, 196, 15); // Yellow default
+                        Color priorityColor = Color.FromArgb(191, 140, 15); // Yellow default
 
                         if (priorityStr.Contains("Düşük") || priorityStr.Contains("🟢"))
                         {
                             priorityTag = "🟢 ";
-                            priorityColor = Color.FromArgb(46, 204, 113); // Vibrant Green
+                            priorityColor = Color.FromArgb(22, 140, 74); // Vibrant Green
                         }
                         else if (priorityStr.Contains("Yüksek") || priorityStr.Contains("🔴"))
                         {
                             priorityTag = "🔴 ";
-                            priorityColor = Color.FromArgb(231, 76, 60); // Vibrant Red
+                            priorityColor = Color.FromArgb(196, 57, 43); // Vibrant Red
                         }
 
                         string statusTag = (ticket.RequiresConfirmation ? "🛡️ " : "") + priorityTag;
@@ -2086,7 +2096,7 @@ namespace BigLineconnect
                         item.SubItems.Add(displayStatus);
                         item.SubItems.Add(displayTenant);
                         item.Tag = h; // Store SupportHistoryItem object
-                        item.ForeColor = h.Status == "Çözüldü" ? Color.FromArgb(46, 204, 113) : (h.Status.Contains("İptal") ? Color.FromArgb(231, 76, 60) : Color.FromArgb(241, 196, 15));
+                        item.ForeColor = h.Status == "Çözüldü" ? Color.FromArgb(22, 140, 74) : (h.Status.Contains("İptal") ? Color.FromArgb(196, 57, 43) : Color.FromArgb(191, 140, 15));
                         _addressBookListView.Items.Add(item);
                     }
                 }
@@ -2111,10 +2121,10 @@ namespace BigLineconnect
             string adminArrow = _isAdminsExpanded ? "▼" : "►";
             var hAdmin = new ListViewItem($"{adminArrow} YÖNETİCİLER (ADMİN) ({admins.Count})")
             {
-                ForeColor = Color.FromArgb(254, 202, 87), // Gold/Yellow
+                ForeColor = Color.FromArgb(191, 140, 15), // Gold/Yellow
                 Font = new Font("Segoe UI", 9.0F, FontStyle.Bold),
                 Tag = "HEADER",
-                BackColor = Color.FromArgb(20, 22, 28),
+                BackColor = Color.FromArgb(245, 245, 246),
                 UseItemStyleForSubItems = true
             };
             hAdmin.SubItems.Add("");
@@ -2126,7 +2136,7 @@ namespace BigLineconnect
                 {
                     var item = new ListViewItem("  " + conn.Name);
                     item.SubItems.Add(conn.Id);
-                    item.ForeColor = Color.White;
+                    item.ForeColor = Color.FromArgb(38, 40, 45);
                     _addressBookListView.Items.Add(item);
                 }
             }
@@ -2135,10 +2145,10 @@ namespace BigLineconnect
             string teamArrow = _isTeamExpanded ? "▼" : "►";
             var hTeam = new ListViewItem($"{teamArrow} EKİP ARKADAŞLARIM ({team.Count})")
             {
-                ForeColor = Color.FromArgb(0, 229, 255), // Cyan
+                ForeColor = Color.FromArgb(74, 90, 120), // Cyan
                 Font = new Font("Segoe UI", 9.0F, FontStyle.Bold),
                 Tag = "HEADER",
-                BackColor = Color.FromArgb(20, 22, 28),
+                BackColor = Color.FromArgb(245, 245, 246),
                 UseItemStyleForSubItems = true
             };
             hTeam.SubItems.Add("");
@@ -2150,7 +2160,7 @@ namespace BigLineconnect
                 {
                     var item = new ListViewItem("  " + conn.Name);
                     item.SubItems.Add(conn.Id);
-                    item.ForeColor = Color.White;
+                    item.ForeColor = Color.FromArgb(38, 40, 45);
                     _addressBookListView.Items.Add(item);
                 }
             }
@@ -2159,10 +2169,10 @@ namespace BigLineconnect
             string clientsArrow = _isClientsExpanded ? "▼" : "►";
             var hClients = new ListViewItem($"{clientsArrow} MÜŞTERİLER & CARİLER ({clients.Count})")
             {
-                ForeColor = Color.FromArgb(189, 195, 199), // Silver/Gray
+                ForeColor = Color.FromArgb(107, 118, 132), // Silver/Gray
                 Font = new Font("Segoe UI", 9.0F, FontStyle.Bold),
                 Tag = "HEADER",
-                BackColor = Color.FromArgb(20, 22, 28),
+                BackColor = Color.FromArgb(245, 245, 246),
                 UseItemStyleForSubItems = true
             };
             hClients.SubItems.Add("");
@@ -2174,7 +2184,7 @@ namespace BigLineconnect
                 {
                     var item = new ListViewItem("  " + conn.Name);
                     item.SubItems.Add(conn.Id);
-                    item.ForeColor = Color.White;
+                    item.ForeColor = Color.FromArgb(38, 40, 45);
                     _addressBookListView.Items.Add(item);
                 }
             }
@@ -2255,8 +2265,8 @@ namespace BigLineconnect
                 {
                     var cms = new ContextMenuStrip
                     {
-                        BackColor = Color.FromArgb(25, 28, 36),
-                        ForeColor = Color.White,
+                        BackColor = Color.FromArgb(245, 245, 246),
+                        ForeColor = Color.FromArgb(38, 40, 45),
                         ShowImageMargin = false,
                         Font = new Font("Segoe UI", 9.5F, FontStyle.Regular)
                     };
@@ -2457,8 +2467,8 @@ namespace BigLineconnect
                 dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
                 dlg.MaximizeBox = false;
                 dlg.MinimizeBox = false;
-                dlg.BackColor = Color.FromArgb(20, 22, 28);
-                dlg.ForeColor = Color.White;
+                dlg.BackColor = Color.FromArgb(245, 245, 246);
+                dlg.ForeColor = Color.FromArgb(38, 40, 45);
 
                 Label lblHeader = new Label
                 {
@@ -2466,7 +2476,7 @@ namespace BigLineconnect
                     Location = new Point(20, 15),
                     Size = new Size(385, 55),
                     Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
-                    ForeColor = Color.FromArgb(0, 229, 255)
+                    ForeColor = Color.FromArgb(74, 90, 120)
                 };
                 dlg.Controls.Add(lblHeader);
 
@@ -2478,8 +2488,8 @@ namespace BigLineconnect
                     Location = new Point(20, 105),
                     Size = new Size(385, 25),
                     DropDownStyle = ComboBoxStyle.DropDownList,
-                    BackColor = Color.FromArgb(30, 35, 45),
-                    ForeColor = Color.White,
+                    BackColor = Color.FromArgb(231, 232, 234),
+                    ForeColor = Color.FromArgb(38, 40, 45),
                     Font = new Font("Segoe UI", 9.5F, FontStyle.Regular)
                 };
                 cbStatus.Items.Add("Çözüldü");
@@ -2497,8 +2507,8 @@ namespace BigLineconnect
                     Size = new Size(385, 100),
                     Multiline = true,
                     ScrollBars = ScrollBars.Vertical,
-                    BackColor = Color.FromArgb(30, 35, 45),
-                    ForeColor = Color.White,
+                    BackColor = Color.FromArgb(231, 232, 234),
+                    ForeColor = Color.FromArgb(38, 40, 45),
                     Font = new Font("Segoe UI", 9.5F, FontStyle.Regular)
                 };
                 dlg.Controls.Add(txtNotes);
@@ -2510,7 +2520,7 @@ namespace BigLineconnect
                     Size = new Size(385, 42),
                     Font = new Font("Segoe UI", 10F, FontStyle.Bold)
                 };
-                ApplyModernButtonStyle(btnConnect, Color.FromArgb(0, 229, 255), Color.FromArgb(0, 176, 255), Color.Black);
+                ApplyModernButtonStyle(btnConnect, Color.FromArgb(74, 90, 120), Color.FromArgb(58, 72, 98), Color.White);
                 btnConnect.Click += (s, e) => {
                     Program.AutoConnectTicketToken = ticket.Token;
                     Program.ActiveTicketId = ticket.Id;
@@ -2528,7 +2538,7 @@ namespace BigLineconnect
                     Size = new Size(385, 42),
                     Font = new Font("Segoe UI", 10F, FontStyle.Bold)
                 };
-                ApplyModernButtonStyle(btnSave, Color.FromArgb(46, 204, 113), Color.FromArgb(39, 174, 96), Color.White);
+                ApplyModernButtonStyle(btnSave, Color.FromArgb(22, 140, 74), Color.FromArgb(16, 110, 58), Color.White);
                 btnSave.Click += (s, e) => {
                     string newStatus = cbStatus.SelectedItem?.ToString() ?? "Çözüldü";
                     string newNotes = txtNotes.Text.Trim();
@@ -2578,8 +2588,8 @@ namespace BigLineconnect
                 dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
                 dlg.MaximizeBox = false;
                 dlg.MinimizeBox = false;
-                dlg.BackColor = Color.FromArgb(20, 22, 28);
-                dlg.ForeColor = Color.White;
+                dlg.BackColor = Color.FromArgb(245, 245, 246);
+                dlg.ForeColor = Color.FromArgb(38, 40, 45);
 
                 Label lblCustomer = new Label
                 {
@@ -2587,7 +2597,7 @@ namespace BigLineconnect
                     Location = new Point(20, 15),
                     Size = new Size(405, 22),
                     Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
-                    ForeColor = Color.FromArgb(0, 229, 255)
+                    ForeColor = Color.FromArgb(74, 90, 120)
                 };
                 dlg.Controls.Add(lblCustomer);
 
@@ -2597,7 +2607,7 @@ namespace BigLineconnect
                     Location = new Point(20, 39),
                     Size = new Size(405, 22),
                     Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
-                    ForeColor = Color.FromArgb(241, 196, 15)
+                    ForeColor = Color.FromArgb(191, 140, 15)
                 };
                 dlg.Controls.Add(lblIssue);
 
@@ -2608,7 +2618,7 @@ namespace BigLineconnect
                     Location = new Point(20, 63),
                     Size = new Size(405, 22),
                     Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
-                    ForeColor = Color.FromArgb(46, 204, 113)
+                    ForeColor = Color.FromArgb(22, 140, 74)
                 };
                 dlg.Controls.Add(lblDate);
 
@@ -2620,8 +2630,8 @@ namespace BigLineconnect
                     Location = new Point(20, 118),
                     Size = new Size(405, 28),
                     DropDownStyle = ComboBoxStyle.DropDownList,
-                    BackColor = Color.FromArgb(30, 35, 45),
-                    ForeColor = Color.White,
+                    BackColor = Color.FromArgb(231, 232, 234),
+                    ForeColor = Color.FromArgb(38, 40, 45),
                     Font = new Font("Segoe UI", 9.5F, FontStyle.Regular)
                 };
                 cbStatus.Items.Add("Çözüldü");
@@ -2639,8 +2649,8 @@ namespace BigLineconnect
                     Size = new Size(405, 110),
                     Multiline = true,
                     ScrollBars = ScrollBars.Vertical,
-                    BackColor = Color.FromArgb(30, 35, 45),
-                    ForeColor = Color.White,
+                    BackColor = Color.FromArgb(231, 232, 234),
+                    ForeColor = Color.FromArgb(38, 40, 45),
                     Text = h.Notes,
                     Font = new Font("Segoe UI", 9.5F, FontStyle.Regular)
                 };
@@ -2653,7 +2663,7 @@ namespace BigLineconnect
                     Size = new Size(405, 42),
                     Font = new Font("Segoe UI", 10F, FontStyle.Bold)
                 };
-                ApplyModernButtonStyle(btnSave, Color.FromArgb(46, 204, 113), Color.FromArgb(39, 174, 96), Color.White);
+                ApplyModernButtonStyle(btnSave, Color.FromArgb(22, 140, 74), Color.FromArgb(16, 110, 58), Color.White);
                 btnSave.Click += (s, e) => {
                     string newStatus = cbStatus.SelectedItem?.ToString() ?? "Çözüldü";
                     string newNotes = txtNotes.Text.Trim();
@@ -2943,35 +2953,35 @@ namespace BigLineconnect
                     StartPosition = FormStartPosition.CenterScreen,
                     MaximizeBox = false,
                     MinimizeBox = false,
-                    BackColor = Color.FromArgb(26, 28, 35),
-                    ForeColor = Color.White
+                    BackColor = Color.FromArgb(245, 245, 246),
+                    ForeColor = Color.FromArgb(38, 40, 45)
                 };
 
-                Label idLabel = new Label() { Left = 20, Top = 15, Text = "Uzak Bilgisayar ID (9 Hane):", Width = 300, ForeColor = Color.White };
-                TextBox idTextBox = new TextBox() { Left = 20, Top = 35, Width = 300, Text = id, BackColor = Color.FromArgb(15, 16, 22), ForeColor = Color.FromArgb(0, 229, 255), Font = new Font("Segoe UI", 10F, FontStyle.Bold), BorderStyle = BorderStyle.FixedSingle };
+                Label idLabel = new Label() { Left = 20, Top = 15, Text = "Uzak Bilgisayar ID (9 Hane):", Width = 300, ForeColor = Color.FromArgb(38, 40, 45) };
+                TextBox idTextBox = new TextBox() { Left = 20, Top = 35, Width = 300, Text = id, BackColor = Color.FromArgb(245, 245, 246), ForeColor = Color.FromArgb(74, 90, 120), Font = new Font("Segoe UI", 10F, FontStyle.Bold), BorderStyle = BorderStyle.FixedSingle };
 
-                Label nameLabel = new Label() { Left = 20, Top = 70, Text = "Bağlantı Adı / Firma / Müşteri:", Width = 300, ForeColor = Color.White };
-                TextBox nameTextBox = new TextBox() { Left = 20, Top = 90, Width = 300, Text = initialName, BackColor = Color.FromArgb(15, 16, 22), ForeColor = Color.White, BorderStyle = BorderStyle.FixedSingle };
+                Label nameLabel = new Label() { Left = 20, Top = 70, Text = "Bağlantı Adı / Firma / Müşteri:", Width = 300, ForeColor = Color.FromArgb(38, 40, 45) };
+                TextBox nameTextBox = new TextBox() { Left = 20, Top = 90, Width = 300, Text = initialName, BackColor = Color.FromArgb(245, 245, 246), ForeColor = Color.FromArgb(38, 40, 45), BorderStyle = BorderStyle.FixedSingle };
 
-                Label passLabel = new Label() { Left = 20, Top = 125, Text = "Erişim Şifresi (Onaysız Giriş İçin - İsteğe Bağlı):", Width = 300, ForeColor = Color.White };
-                TextBox passTextBox = new TextBox() { Left = 20, Top = 145, Width = 300, Text = initialPassword, PasswordChar = '*', BackColor = Color.FromArgb(15, 16, 22), ForeColor = Color.White, BorderStyle = BorderStyle.FixedSingle };
+                Label passLabel = new Label() { Left = 20, Top = 125, Text = "Erişim Şifresi (Onaysız Giriş İçin - İsteğe Bağlı):", Width = 300, ForeColor = Color.FromArgb(38, 40, 45) };
+                TextBox passTextBox = new TextBox() { Left = 20, Top = 145, Width = 300, Text = initialPassword, PasswordChar = '*', BackColor = Color.FromArgb(245, 245, 246), ForeColor = Color.FromArgb(38, 40, 45), BorderStyle = BorderStyle.FixedSingle };
 
-                Label groupLabel = new Label() { Left = 20, Top = 180, Text = "Grup / Kategori:", Width = 300, ForeColor = Color.White };
+                Label groupLabel = new Label() { Left = 20, Top = 180, Text = "Grup / Kategori:", Width = 300, ForeColor = Color.FromArgb(38, 40, 45) };
                 ComboBox groupComboBox = new ComboBox()
                 {
                     Left = 20,
                     Top = 200,
                     Width = 300,
-                    BackColor = Color.FromArgb(15, 16, 22),
-                    ForeColor = Color.White,
+                    BackColor = Color.FromArgb(245, 245, 246),
+                    ForeColor = Color.FromArgb(38, 40, 45),
                     FlatStyle = FlatStyle.Flat,
                     DropDownStyle = ComboBoxStyle.DropDownList
                 };
                 groupComboBox.Items.AddRange(new object[] { "Yöneticiler (Admin)", "Ekip Arkadaşlarım", "Müşteriler & Cariler" });
                 groupComboBox.SelectedItem = string.IsNullOrEmpty(initialGroup) ? "Müşteriler & Cariler" : initialGroup;
 
-                Button okBtn = new Button() { Text = "Kaydet", Left = 100, Width = 100, Top = 250, DialogResult = DialogResult.OK, BackColor = Color.FromArgb(46, 204, 113), ForeColor = Color.Black, FlatStyle = FlatStyle.Flat };
-                Button cancelBtn = new Button() { Text = "İptal", Left = 210, Width = 100, Top = 250, DialogResult = DialogResult.Cancel, BackColor = Color.FromArgb(231, 76, 60), ForeColor = Color.White, FlatStyle = FlatStyle.Flat };
+                Button okBtn = new Button() { Text = "Kaydet", Left = 100, Width = 100, Top = 250, DialogResult = DialogResult.OK, BackColor = Color.FromArgb(22, 140, 74), ForeColor = Color.White, FlatStyle = FlatStyle.Flat };
+                Button cancelBtn = new Button() { Text = "İptal", Left = 210, Width = 100, Top = 250, DialogResult = DialogResult.Cancel, BackColor = Color.FromArgb(196, 57, 43), ForeColor = Color.White, FlatStyle = FlatStyle.Flat };
 
                 okBtn.FlatAppearance.BorderSize = 0;
                 cancelBtn.FlatAppearance.BorderSize = 0;
@@ -3193,7 +3203,7 @@ namespace BigLineconnect
             {
                 Location = txt.Location,
                 Size = new Size(txt.Width, txt.Height + 6),
-                BackColor = Color.White
+                BackColor = Color.FromArgb(245, 245, 246)
             };
             
             txt.Location = new Point(3, 3);
@@ -3204,7 +3214,12 @@ namespace BigLineconnect
             pnl.Paint += (s, e) =>
             {
                 e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-                using (var pen = new Pen(Color.FromArgb(203, 213, 225), 1.2F))
+                using (var brush = new System.Drawing.Drawing2D.LinearGradientBrush(
+                    pnl.ClientRectangle,
+                    Color.FromArgb(74, 90, 120),
+                    Color.FromArgb(58, 72, 98),
+                    45F))
+                using (var pen = new Pen(brush, 1.5F))
                 {
                     e.Graphics.DrawRectangle(pen, 0, 0, pnl.Width - 1, pnl.Height - 1);
                 }
@@ -3218,7 +3233,7 @@ namespace BigLineconnect
             {
                 Location = txt.Location,
                 Size = new Size(txt.Width, txt.Height),
-                BackColor = Color.White
+                BackColor = Color.FromArgb(245, 245, 246)
             };
             
             txt.Location = new Point(3, 3);
@@ -3230,7 +3245,12 @@ namespace BigLineconnect
             pnl.Paint += (s, e) =>
             {
                 e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-                using (var pen = new Pen(Color.FromArgb(203, 213, 225), 1.2F))
+                using (var brush = new System.Drawing.Drawing2D.LinearGradientBrush(
+                    pnl.ClientRectangle,
+                    Color.FromArgb(74, 90, 120),
+                    Color.FromArgb(58, 72, 98),
+                    45F))
+                using (var pen = new Pen(brush, 1.5F))
                 {
                     e.Graphics.DrawRectangle(pen, 0, 0, pnl.Width - 1, pnl.Height - 1);
                 }
@@ -3245,9 +3265,9 @@ namespace BigLineconnect
             
             using (var brush = new System.Drawing.Drawing2D.LinearGradientBrush(
                 this.ClientRectangle,
-                Color.FromArgb(248, 250, 252),
-                Color.FromArgb(241, 245, 249),
-                90F))
+                Color.FromArgb(245, 245, 246),
+                Color.FromArgb(245, 245, 246),
+                45F))
             {
                 e.Graphics.FillRectangle(brush, this.ClientRectangle);
             }
@@ -3256,10 +3276,16 @@ namespace BigLineconnect
             DrawCard(e.Graphics, new Rectangle(20, 185, 245, 120), "Bu Bilgisayar");
             DrawCard(e.Graphics, new Rectangle(295, 185, 245, 120), "Karşı Bilgisayar");
             DrawCard(e.Graphics, new Rectangle(20, 315, 520, 135), "Kişisel Erişim & Güvenlik Ayarları");
+            DrawCard(e.Graphics, new Rectangle(20, 462, 520, 95), "Gelişmiş Ayarlar ve Oturum Seçenekleri");
             DrawCard(e.Graphics, new Rectangle(560, 100, 290, 520), "Kayıtlı Bilgisayarlar (Rehber)");
 
             // Draw a border around the Address Book ListView
-            using (var pen = new Pen(Color.FromArgb(203, 213, 225), 1))
+            using (var brush = new System.Drawing.Drawing2D.LinearGradientBrush(
+                new Rectangle(560 + 15, 100 + 20, 260, 395),
+                Color.FromArgb(74, 90, 120),
+                Color.FromArgb(58, 72, 98),
+                45F))
+            using (var pen = new Pen(brush, 1))
             {
                 e.Graphics.DrawRectangle(pen, 560 + 15 - 1, 100 + 20 - 1, 260 + 1, 395 + 1);
             }
@@ -3269,29 +3295,28 @@ namespace BigLineconnect
         {
             g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
 
-            // Pure White Card Fill
-            using (var fillBrush = new SolidBrush(Color.White))
+            using (var fillBrush = new SolidBrush(Color.FromArgb(30, 245, 245, 246)))
             {
                 FillRoundedRectangle(g, fillBrush, rect, 10);
             }
 
-            // Soft Crisp Corporate Slate Border
-            using (var pen = new Pen(Color.FromArgb(203, 213, 225), 1.2F))
+            using (var brush = new System.Drawing.Drawing2D.LinearGradientBrush(
+                rect,
+                Color.FromArgb(120, 74, 90, 120),
+                Color.FromArgb(120, 74, 90, 120),
+                45F))
+            using (var pen = new Pen(brush, 1.2F))
             {
                 DrawRoundedRectangle(g, pen, rect, 10);
             }
 
-            // Corporate Steel Navy Badge Header
             using (var titleFont = new Font("Segoe UI", 9.5F, FontStyle.Bold))
-            using (var textBrush = new SolidBrush(Color.FromArgb(30, 58, 138)))
-            using (var bgBrush = new SolidBrush(Color.FromArgb(239, 246, 255)))
-            using (var borderPen = new Pen(Color.FromArgb(191, 219, 254), 1F))
+            using (var textBrush = new SolidBrush(Color.FromArgb(74, 90, 120)))
+            using (var bgBrush = new SolidBrush(Color.FromArgb(245, 245, 246)))
             {
                 SizeF textSize = g.MeasureString(title, titleFont);
-                Rectangle titleBox = new Rectangle(rect.X + 12, rect.Y - 10, (int)textSize.Width + 10, (int)textSize.Height + 2);
-                g.FillRectangle(bgBrush, titleBox);
-                g.DrawRectangle(borderPen, titleBox);
-                g.DrawString(title, titleFont, textBrush, rect.X + 17, rect.Y - 9);
+                g.FillRectangle(bgBrush, rect.X + 12, rect.Y - 10, textSize.Width + 6, textSize.Height);
+                g.DrawString(title, titleFont, textBrush, rect.X + 15, rect.Y - 10);
             }
         }
 
@@ -3369,13 +3394,13 @@ namespace BigLineconnect
                 promptForm.StartPosition = FormStartPosition.CenterParent;
                 promptForm.MaximizeBox = false;
                 promptForm.MinimizeBox = false;
-                promptForm.BackColor = Color.FromArgb(10, 11, 16);
-                promptForm.ForeColor = Color.White;
+                promptForm.BackColor = Color.FromArgb(245, 245, 246);
+                promptForm.ForeColor = Color.FromArgb(38, 40, 45);
 
-                var textLabel = new Label() { Left = 20, Top = 15, Width = 320, Text = "Lütfen yönetici şifresini giriniz:", Font = new Font("Segoe UI", 9.5F, FontStyle.Bold), ForeColor = Color.FromArgb(0, 229, 255) };
+                var textLabel = new Label() { Left = 20, Top = 15, Width = 320, Text = "Lütfen yönetici şifresini giriniz:", Font = new Font("Segoe UI", 9.5F, FontStyle.Bold), ForeColor = Color.FromArgb(74, 90, 120) };
                 var textBox = new TextBox() { Left = 20, Top = 42, Width = 310, PasswordChar = '*', UseSystemPasswordChar = true, Font = new Font("Segoe UI", 10F) };
-                var confirmation = new Button() { Text = "Doğrula & Giriş", Left = 130, Width = 110, Height = 30, Top = 80, DialogResult = DialogResult.OK, BackColor = Color.FromArgb(0, 229, 255), ForeColor = Color.Black, FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 9F, FontStyle.Bold) };
-                var cancelBtn = new Button() { Text = "İptal", Left = 250, Width = 80, Height = 30, Top = 80, DialogResult = DialogResult.Cancel, BackColor = Color.FromArgb(40, 45, 55), ForeColor = Color.White, FlatStyle = FlatStyle.Flat };
+                var confirmation = new Button() { Text = "Doğrula & Giriş", Left = 130, Width = 110, Height = 30, Top = 80, DialogResult = DialogResult.OK, BackColor = Color.FromArgb(74, 90, 120), ForeColor = Color.White, FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 9F, FontStyle.Bold) };
+                var cancelBtn = new Button() { Text = "İptal", Left = 250, Width = 80, Height = 30, Top = 80, DialogResult = DialogResult.Cancel, BackColor = Color.FromArgb(58, 62, 70), ForeColor = Color.White, FlatStyle = FlatStyle.Flat };
 
                 textBox.KeyPress += (s, e) =>
                 {
@@ -3483,7 +3508,7 @@ namespace BigLineconnect
                 {
                     _btnLic.Text = "Lisans: Aktif";
                     _btnLic.Enabled = false;
-                    _btnLic.LinkColor = Color.FromArgb(0, 229, 255); // Cyan
+                    _btnLic.LinkColor = Color.FromArgb(74, 90, 120); // Cyan
                 }
                 HideLicensingOverlay();
             }
@@ -3499,7 +3524,7 @@ namespace BigLineconnect
                     {
                         _btnLic.Text = "Lisans Gir";
                         _btnLic.Enabled = true;
-                        _btnLic.LinkColor = Color.FromArgb(213, 0, 249); // Pink
+                        _btnLic.LinkColor = Color.FromArgb(58, 72, 98); // Pink
                     }
                     HideLicensingOverlay();
                 }
@@ -3520,7 +3545,7 @@ namespace BigLineconnect
                 // Blur / transparent dark background painting
                 _licensingOverlay.Paint += (s, e) =>
                 {
-                    using (var overlayBrush = new SolidBrush(Color.FromArgb(200, 10, 11, 16)))
+                    using (var overlayBrush = new SolidBrush(Color.FromArgb(200, 245, 245, 246)))
                     {
                         e.Graphics.FillRectangle(overlayBrush, _licensingOverlay.ClientRectangle);
                     }
@@ -3529,7 +3554,7 @@ namespace BigLineconnect
                 var container = new Panel
                 {
                     Size = new Size(520, 400),
-                    BackColor = Color.FromArgb(10, 11, 16)
+                    BackColor = Color.FromArgb(245, 245, 246)
                 };
                 _licensingOverlay.Controls.Add(container);
 
@@ -3547,8 +3572,8 @@ namespace BigLineconnect
                     e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
                     using (var brush = new System.Drawing.Drawing2D.LinearGradientBrush(
                         container.ClientRectangle,
-                        Color.FromArgb(0, 229, 255),
-                        Color.FromArgb(213, 0, 249),
+                        Color.FromArgb(74, 90, 120),
+                        Color.FromArgb(58, 72, 98),
                         45F))
                     using (var pen = new Pen(brush, 2f))
                     {
@@ -3560,7 +3585,7 @@ namespace BigLineconnect
                 {
                     Text = "🔑 DİJİTAL LİSANS VE BAYİ AYARLARI",
                     Font = new Font("Segoe UI", 15F, FontStyle.Bold),
-                    ForeColor = Color.FromArgb(0, 229, 255),
+                    ForeColor = Color.FromArgb(74, 90, 120),
                     Location = new Point(20, 15),
                     Size = new Size(480, 32),
                     TextAlign = ContentAlignment.MiddleCenter
@@ -3572,7 +3597,7 @@ namespace BigLineconnect
                 {
                     Text = "🏢 Bayi / Firma Kodunuz (Parametrik Destek Kanalı):",
                     Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
-                    ForeColor = Color.FromArgb(241, 196, 15),
+                    ForeColor = Color.FromArgb(191, 140, 15),
                     Location = new Point(30, 52),
                     Size = new Size(460, 20)
                 };
@@ -3583,8 +3608,8 @@ namespace BigLineconnect
                     Text = (string.IsNullOrWhiteSpace(LicenseSystem.CompanyCode) || LicenseSystem.CompanyCode == "BIGLINE" || LicenseSystem.CompanyCode.StartsWith("V1.") || LicenseSystem.CompanyCode.StartsWith("V2.") || LicenseSystem.CompanyCode.StartsWith("V3.") || LicenseSystem.CompanyCode.StartsWith("V4.")) ? "BAYIKODU" : LicenseSystem.CompanyCode,
                     Size = new Size(310, 28),
                     Location = new Point(30, 75),
-                    BackColor = Color.FromArgb(20, 22, 30),
-                    ForeColor = Color.White,
+                    BackColor = Color.FromArgb(245, 245, 246),
+                    ForeColor = Color.FromArgb(38, 40, 45),
                     BorderStyle = BorderStyle.FixedSingle,
                     Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
                     PlaceholderText = "Örn: BY-EMF-2026 veya EMF_BILGISAYAR"
@@ -3596,7 +3621,7 @@ namespace BigLineconnect
                     Text = "💾 Kaydet",
                     Size = new Size(120, 28),
                     Location = new Point(350, 75),
-                    BackColor = Color.FromArgb(46, 204, 113),
+                    BackColor = Color.FromArgb(22, 140, 74),
                     ForeColor = Color.White,
                     FlatStyle = FlatStyle.Flat,
                     Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
@@ -3624,7 +3649,7 @@ namespace BigLineconnect
                 {
                     Text = "💻 Bu Bilgisayarın Kodu (Machine ID):",
                     Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
-                    ForeColor = Color.FromArgb(46, 204, 113),
+                    ForeColor = Color.FromArgb(22, 140, 74),
                     Location = new Point(30, 115),
                     Size = new Size(460, 20)
                 };
@@ -3636,7 +3661,7 @@ namespace BigLineconnect
                     ReadOnly = true,
                     Size = new Size(310, 28),
                     Location = new Point(30, 138),
-                    BackColor = Color.FromArgb(20, 22, 30),
+                    BackColor = Color.FromArgb(245, 245, 246),
                     ForeColor = Color.LightGray,
                     BorderStyle = BorderStyle.FixedSingle,
                     Font = new Font("Consolas", 9.5F, FontStyle.Bold)
@@ -3648,8 +3673,8 @@ namespace BigLineconnect
                     Text = "📋 Kopyala",
                     Size = new Size(120, 28),
                     Location = new Point(350, 138),
-                    BackColor = Color.FromArgb(40, 45, 60),
-                    ForeColor = Color.White,
+                    BackColor = Color.FromArgb(231, 232, 234),
+                    ForeColor = Color.FromArgb(38, 40, 45),
                     FlatStyle = FlatStyle.Flat,
                     Font = new Font("Segoe UI", 9F, FontStyle.Bold),
                     Cursor = Cursors.Hand
@@ -3668,7 +3693,7 @@ namespace BigLineconnect
                 {
                     Text = "🔑 Pro Lisans Anahtarınız (Opsiyonel / Tam Sürüm):",
                     Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
-                    ForeColor = Color.FromArgb(0, 229, 255),
+                    ForeColor = Color.FromArgb(74, 90, 120),
                     Location = new Point(30, 178),
                     Size = new Size(460, 20)
                 };
@@ -3679,8 +3704,8 @@ namespace BigLineconnect
                     Multiline = true,
                     Size = new Size(440, 75),
                     Location = new Point(30, 201),
-                    BackColor = Color.FromArgb(20, 22, 30),
-                    ForeColor = Color.White,
+                    BackColor = Color.FromArgb(245, 245, 246),
+                    ForeColor = Color.FromArgb(38, 40, 45),
                     BorderStyle = BorderStyle.FixedSingle,
                     Font = new Font("Consolas", 9F, FontStyle.Regular),
                     PlaceholderText = "Buraya lisans anahtarınızı yapıştırın..."
@@ -3692,8 +3717,8 @@ namespace BigLineconnect
                     Text = "Lisansı Etkinleştir",
                     Size = new Size(180, 40),
                     Location = new Point(90, 330),
-                    BackColor = Color.FromArgb(0, 229, 255),
-                    ForeColor = Color.Black,
+                    BackColor = Color.FromArgb(74, 90, 120),
+                    ForeColor = Color.White,
                     FlatStyle = FlatStyle.Flat,
                     Font = new Font("Segoe UI", 10F, FontStyle.Bold),
                     Cursor = Cursors.Hand
@@ -3708,8 +3733,8 @@ namespace BigLineconnect
                     Text = isRequired ? "Çıkış" : "İptal",
                     Size = new Size(130, 40),
                     Location = new Point(280, 330),
-                    BackColor = Color.FromArgb(30, 35, 45),
-                    ForeColor = Color.White,
+                    BackColor = Color.FromArgb(231, 232, 234),
+                    ForeColor = Color.FromArgb(38, 40, 45),
                     FlatStyle = FlatStyle.Flat,
                     Font = new Font("Segoe UI", 10F, FontStyle.Bold),
                     Cursor = Cursors.Hand
@@ -4208,7 +4233,7 @@ namespace BigLineconnect
                     if (_btnSupport != null)
                     {
                         _btnSupport.Text = "🆘 Destek İste / Sorun Bildir";
-                        ApplyModernButtonStyle(_btnSupport, Color.FromArgb(230, 126, 34), Color.FromArgb(211, 84, 0), Color.White);
+                        ApplyModernButtonStyle(_btnSupport, Color.FromArgb(74, 90, 120), Color.FromArgb(58, 72, 98), Color.White);
                     }
                     MessageBox.Show("Destek talebiniz başarıyla iptal edildi.", "Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     AppendLog("[Destek] Destek talebi müşteri tarafından iptal edildi.");
@@ -4256,7 +4281,7 @@ namespace BigLineconnect
                                         if (_btnSupport != null)
                                         {
                                             _btnSupport.Text = "❌ Talebi İptal Et";
-                                            ApplyModernButtonStyle(_btnSupport, Color.FromArgb(231, 76, 60), Color.FromArgb(192, 57, 43), Color.White);
+                                            ApplyModernButtonStyle(_btnSupport, Color.FromArgb(196, 57, 43), Color.FromArgb(163, 45, 33), Color.White);
                                         }
 
                                         SaveLocalSubmittedTicket(new LocalSubmittedTicket { Token = token, HostId = hostId, Name = name, Issue = issue, Priority = priority, TenantId = LicenseSystem.CompanyCode, CreatedAt = DateTime.Now, Status = "⏳ Sırada Bekliyor", Notes = "Destek uzmanının bağlanması bekleniyor..." });
@@ -4321,8 +4346,8 @@ namespace BigLineconnect
                 this.MaximizeBox = false;
                 this.MinimizeBox = false;
                 this.StartPosition = FormStartPosition.CenterParent;
-                this.BackColor = Color.FromArgb(10, 11, 16);
-                this.ForeColor = Color.White;
+                this.BackColor = Color.FromArgb(245, 245, 246);
+                this.ForeColor = Color.FromArgb(38, 40, 45);
 
                 var lblName = new Label
                 {
@@ -4330,7 +4355,7 @@ namespace BigLineconnect
                     Location = new Point(25, 15),
                     Size = new Size(355, 20),
                     Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
-                    ForeColor = Color.FromArgb(0, 229, 255)
+                    ForeColor = Color.FromArgb(74, 90, 120)
                 };
                 this.Controls.Add(lblName);
 
@@ -4338,8 +4363,8 @@ namespace BigLineconnect
                 {
                     Location = new Point(25, 36),
                     Size = new Size(355, 26),
-                    BackColor = Color.FromArgb(20, 22, 30),
-                    ForeColor = Color.White,
+                    BackColor = Color.FromArgb(245, 245, 246),
+                    ForeColor = Color.FromArgb(38, 40, 45),
                     BorderStyle = BorderStyle.FixedSingle,
                     Font = new Font("Segoe UI", 9.5F),
                     Text = System.Environment.MachineName
@@ -4352,7 +4377,7 @@ namespace BigLineconnect
                     Location = new Point(25, 68),
                     Size = new Size(355, 20),
                     Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
-                    ForeColor = Color.FromArgb(241, 196, 15)
+                    ForeColor = Color.FromArgb(191, 140, 15)
                 };
                 this.Controls.Add(lblCompany);
 
@@ -4360,8 +4385,8 @@ namespace BigLineconnect
                 {
                     Location = new Point(25, 90),
                     Size = new Size(355, 26),
-                    BackColor = Color.FromArgb(20, 22, 30),
-                    ForeColor = Color.White,
+                    BackColor = Color.FromArgb(245, 245, 246),
+                    ForeColor = Color.FromArgb(38, 40, 45),
                     BorderStyle = BorderStyle.FixedSingle,
                     Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
                     Text = (string.IsNullOrWhiteSpace(LicenseSystem.CompanyCode) || LicenseSystem.CompanyCode == "BIGLINE" || LicenseSystem.CompanyCode.StartsWith("V1.") || LicenseSystem.CompanyCode.StartsWith("V2.") || LicenseSystem.CompanyCode.StartsWith("V3.") || LicenseSystem.CompanyCode.StartsWith("V4.")) ? "BAYIKODU" : LicenseSystem.CompanyCode
@@ -4374,7 +4399,7 @@ namespace BigLineconnect
                     Location = new Point(25, 122),
                     Size = new Size(355, 20),
                     Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
-                    ForeColor = Color.FromArgb(0, 229, 255)
+                    ForeColor = Color.FromArgb(74, 90, 120)
                 };
                 this.Controls.Add(lblIssue);
 
@@ -4383,8 +4408,8 @@ namespace BigLineconnect
                     Location = new Point(25, 144),
                     Size = new Size(355, 60),
                     Multiline = true,
-                    BackColor = Color.FromArgb(20, 22, 30),
-                    ForeColor = Color.White,
+                    BackColor = Color.FromArgb(245, 245, 246),
+                    ForeColor = Color.FromArgb(38, 40, 45),
                     BorderStyle = BorderStyle.FixedSingle,
                     Font = new Font("Segoe UI", 10F)
                 };
@@ -4396,7 +4421,7 @@ namespace BigLineconnect
                     Location = new Point(25, 212),
                     Size = new Size(355, 20),
                     Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
-                    ForeColor = Color.FromArgb(241, 196, 15)
+                    ForeColor = Color.FromArgb(191, 140, 15)
                 };
                 this.Controls.Add(lblPriority);
 
@@ -4405,8 +4430,8 @@ namespace BigLineconnect
                     Location = new Point(25, 234),
                     Size = new Size(355, 28),
                     DropDownStyle = ComboBoxStyle.DropDownList,
-                    BackColor = Color.FromArgb(20, 22, 30),
-                    ForeColor = Color.White,
+                    BackColor = Color.FromArgb(245, 245, 246),
+                    ForeColor = Color.FromArgb(38, 40, 45),
                     Font = new Font("Segoe UI", 9.5F, FontStyle.Bold)
                 };
                 cmbPriority.Items.Add("🔴 Yüksek (Acil / Fatura-Kasa Kilitlendi)");
@@ -4428,7 +4453,7 @@ namespace BigLineconnect
                     Location = new Point(25, 275),
                     Size = new Size(355, 26),
                     Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
-                    ForeColor = Color.FromArgb(0, 229, 255),
+                    ForeColor = Color.FromArgb(74, 90, 120),
                     Cursor = Cursors.Hand,
                     Checked = false
                 };
@@ -4439,8 +4464,8 @@ namespace BigLineconnect
                     Text = "🚀 Talebi Gönder",
                     Location = new Point(25, 296),
                     Size = new Size(172, 38),
-                    BackColor = Color.FromArgb(0, 229, 255),
-                    ForeColor = Color.Black,
+                    BackColor = Color.FromArgb(74, 90, 120),
+                    ForeColor = Color.White,
                     FlatStyle = FlatStyle.Flat,
                     Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
                     Cursor = Cursors.Hand
@@ -4474,8 +4499,8 @@ namespace BigLineconnect
                     Text = "İptal",
                     Location = new Point(208, 296),
                     Size = new Size(172, 38),
-                    BackColor = Color.FromArgb(40, 45, 55),
-                    ForeColor = Color.White,
+                    BackColor = Color.FromArgb(231, 232, 234),
+                    ForeColor = Color.FromArgb(38, 40, 45),
                     FlatStyle = FlatStyle.Flat,
                     Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
                     Cursor = Cursors.Hand
@@ -4492,13 +4517,13 @@ namespace BigLineconnect
                     Text = "📋 Daha Önce Açtığım Taleplerim ve Durumları",
                     Location = new Point(25, 344),
                     Size = new Size(355, 34),
-                    BackColor = Color.FromArgb(24, 28, 38),
-                    ForeColor = Color.FromArgb(0, 229, 255),
+                    BackColor = Color.FromArgb(245, 245, 246),
+                    ForeColor = Color.FromArgb(74, 90, 120),
                     FlatStyle = FlatStyle.Flat,
                     Font = new Font("Segoe UI", 9F, FontStyle.Bold),
                     Cursor = Cursors.Hand
                 };
-                btnHistory.FlatAppearance.BorderColor = Color.FromArgb(0, 229, 255);
+                btnHistory.FlatAppearance.BorderColor = Color.FromArgb(74, 90, 120);
                 btnHistory.Click += (s, e) => {
                     MainWindow.Instance?.ShowMySubmittedTicketsDialog();
                 };
@@ -4637,8 +4662,8 @@ namespace BigLineconnect
                 this.FormBorderStyle = FormBorderStyle.FixedDialog;
                 this.MaximizeBox = false;
                 this.MinimizeBox = false;
-                this.BackColor = Color.FromArgb(15, 17, 23);
-                this.ForeColor = Color.White;
+                this.BackColor = Color.FromArgb(245, 245, 246);
+                this.ForeColor = Color.FromArgb(38, 40, 45);
 
                 var lblTitle = new Label
                 {
@@ -4646,7 +4671,7 @@ namespace BigLineconnect
                     Location = new Point(20, 12),
                     Size = new Size(620, 28),
                     Font = new Font("Segoe UI", 12F, FontStyle.Bold),
-                    ForeColor = Color.FromArgb(0, 229, 255)
+                    ForeColor = Color.FromArgb(74, 90, 120)
                 };
                 this.Controls.Add(lblTitle);
 
@@ -4654,8 +4679,8 @@ namespace BigLineconnect
                 {
                     Location = new Point(20, 44),
                     Size = new Size(625, 26),
-                    BackColor = Color.FromArgb(20, 23, 32),
-                    ForeColor = Color.FromArgb(0, 229, 255),
+                    BackColor = Color.FromArgb(245, 245, 246),
+                    ForeColor = Color.FromArgb(74, 90, 120),
                     Font = new Font("Segoe UI", 9.5F, FontStyle.Italic),
                     BorderStyle = BorderStyle.FixedSingle,
                     Text = "🔍 Tüm Kolonlarda Ara (Tarih, Öncelik, Sorun, Durum, Not...)"
@@ -4665,7 +4690,7 @@ namespace BigLineconnect
                     if (txtSearchSubmitted.Text.StartsWith("🔍"))
                     {
                         txtSearchSubmitted.Text = "";
-                        txtSearchSubmitted.ForeColor = Color.White;
+                        txtSearchSubmitted.ForeColor = Color.FromArgb(38, 40, 45);
                         txtSearchSubmitted.Font = new Font("Segoe UI", 9.5F, FontStyle.Regular);
                     }
                 };
@@ -4674,7 +4699,7 @@ namespace BigLineconnect
                     if (string.IsNullOrWhiteSpace(txtSearchSubmitted.Text))
                     {
                         txtSearchSubmitted.Text = "🔍 Tüm Kolonlarda Ara (Tarih, Öncelik, Sorun, Durum, Not...)";
-                        txtSearchSubmitted.ForeColor = Color.FromArgb(0, 229, 255);
+                        txtSearchSubmitted.ForeColor = Color.FromArgb(74, 90, 120);
                         txtSearchSubmitted.Font = new Font("Segoe UI", 9.5F, FontStyle.Italic);
                     }
                 };
@@ -4691,8 +4716,8 @@ namespace BigLineconnect
                     View = View.Details,
                     FullRowSelect = true,
                     GridLines = false,
-                    BackColor = Color.FromArgb(20, 23, 32),
-                    ForeColor = Color.FromArgb(220, 225, 235),
+                    BackColor = Color.FromArgb(245, 245, 246),
+                    ForeColor = Color.FromArgb(107, 118, 132),
                     Font = new Font("Segoe UI", 9.5F),
                     BorderStyle = BorderStyle.FixedSingle,
                     OwnerDraw = true
@@ -4720,17 +4745,17 @@ namespace BigLineconnect
                 // Eye-pleasing soft-dark custom drawing (Zero stark white lines, soft zebra rows)
                 lstTickets.DrawColumnHeader += (s, e) =>
                 {
-                    using var headerBrush = new SolidBrush(Color.FromArgb(28, 32, 44));
+                    using var headerBrush = new SolidBrush(Color.FromArgb(245, 245, 246));
                     e.Graphics.FillRectangle(headerBrush, e.Bounds);
 
-                    using var borderPen = new Pen(Color.FromArgb(45, 50, 65));
+                    using var borderPen = new Pen(Color.FromArgb(231, 232, 234));
                     e.Graphics.DrawLine(borderPen, e.Bounds.Left, e.Bounds.Bottom - 1, e.Bounds.Right, e.Bounds.Bottom - 1);
                     if (e.ColumnIndex < lstTickets.Columns.Count - 1)
                     {
                         e.Graphics.DrawLine(borderPen, e.Bounds.Right - 1, e.Bounds.Top + 4, e.Bounds.Right - 1, e.Bounds.Bottom - 4);
                     }
 
-                    Color headerColor = (e.ColumnIndex == _sortColumnIndex) ? Color.FromArgb(46, 204, 113) : Color.FromArgb(0, 229, 255);
+                    Color headerColor = (e.ColumnIndex == _sortColumnIndex) ? Color.FromArgb(22, 140, 74) : Color.FromArgb(74, 90, 120);
                     string sortArrow = (e.ColumnIndex == _sortColumnIndex) ? (_sortAscending ? " ▲" : " ▼") : "";
                     string headerText = (e.Header?.Text ?? "").Replace(" ↕", "") + sortArrow;
 
@@ -4742,29 +4767,29 @@ namespace BigLineconnect
                 lstTickets.DrawSubItem += (s, e) =>
                 {
                     bool isSelected = e.Item != null && e.Item.Selected;
-                    Color rowBg = isSelected ? Color.FromArgb(10, 53, 80) :
-                                  (e.ItemIndex % 2 == 0 ? Color.FromArgb(20, 23, 32) : Color.FromArgb(27, 30, 42));
+                    Color rowBg = isSelected ? Color.FromArgb(74, 90, 120) :
+                                  (e.ItemIndex % 2 == 0 ? Color.FromArgb(245, 245, 246) : Color.FromArgb(245, 245, 246));
 
                     using var bgBrush = new SolidBrush(rowBg);
                     e.Graphics.FillRectangle(bgBrush, e.Bounds);
 
-                    using var dividerPen = new Pen(Color.FromArgb(38, 42, 56));
+                    using var dividerPen = new Pen(Color.FromArgb(231, 232, 234));
                     e.Graphics.DrawLine(dividerPen, e.Bounds.Left, e.Bounds.Bottom - 1, e.Bounds.Right, e.Bounds.Bottom - 1);
                     e.Graphics.DrawLine(dividerPen, e.Bounds.Right - 1, e.Bounds.Top, e.Bounds.Right - 1, e.Bounds.Bottom - 1);
 
-                    Color textColor = isSelected ? Color.White : Color.FromArgb(220, 225, 235);
+                    Color textColor = isSelected ? Color.White : Color.FromArgb(107, 118, 132);
                     if (!isSelected)
                     {
                         if (e.ColumnIndex == 1) // Priority Column
                         {
                             string pText = e.SubItem?.Text ?? "";
-                            if (pText.Contains("Yüksek")) textColor = Color.FromArgb(255, 77, 77);
-                            else if (pText.Contains("Orta")) textColor = Color.FromArgb(241, 196, 15);
-                            else textColor = Color.FromArgb(46, 204, 113);
+                            if (pText.Contains("Yüksek")) textColor = Color.FromArgb(196, 57, 43);
+                            else if (pText.Contains("Orta")) textColor = Color.FromArgb(191, 140, 15);
+                            else textColor = Color.FromArgb(22, 140, 74);
                         }
                         else if (e.ColumnIndex == 3) // Status Column
                         {
-                            textColor = e.Item?.ForeColor ?? Color.FromArgb(220, 225, 235);
+                            textColor = e.Item?.ForeColor ?? Color.FromArgb(107, 118, 132);
                         }
                     }
 
@@ -4788,7 +4813,7 @@ namespace BigLineconnect
                     Text = "🔄 Yenile",
                     Location = new Point(20, 365),
                     Size = new Size(110, 35),
-                    BackColor = Color.FromArgb(41, 128, 185),
+                    BackColor = Color.FromArgb(58, 62, 70),
                     ForeColor = Color.White,
                     FlatStyle = FlatStyle.Flat,
                     Font = new Font("Segoe UI", 9F, FontStyle.Bold),
@@ -4802,7 +4827,7 @@ namespace BigLineconnect
                     Text = "➕ Yeni Talep Aç",
                     Location = new Point(140, 365),
                     Size = new Size(130, 35),
-                    BackColor = Color.FromArgb(46, 204, 113),
+                    BackColor = Color.FromArgb(22, 140, 74),
                     ForeColor = Color.White,
                     FlatStyle = FlatStyle.Flat,
                     Font = new Font("Segoe UI", 9F, FontStyle.Bold),
@@ -4820,7 +4845,7 @@ namespace BigLineconnect
                     Text = "❌ Talebi İptal Et",
                     Location = new Point(280, 365),
                     Size = new Size(130, 35),
-                    BackColor = Color.FromArgb(231, 76, 60),
+                    BackColor = Color.FromArgb(196, 57, 43),
                     ForeColor = Color.White,
                     FlatStyle = FlatStyle.Flat,
                     Font = new Font("Segoe UI", 9F, FontStyle.Bold),
@@ -4834,8 +4859,8 @@ namespace BigLineconnect
                     Text = "Kapat",
                     Location = new Point(535, 365),
                     Size = new Size(110, 35),
-                    BackColor = Color.FromArgb(50, 55, 65),
-                    ForeColor = Color.White,
+                    BackColor = Color.FromArgb(231, 232, 234),
+                    ForeColor = Color.FromArgb(38, 40, 45),
                     FlatStyle = FlatStyle.Flat,
                     Font = new Font("Segoe UI", 9F, FontStyle.Bold),
                     Cursor = Cursors.Hand
@@ -4925,22 +4950,22 @@ namespace BigLineconnect
                     if (statusText.Contains("Çözüldü") && !statusText.Contains("Çözülmedi"))
                     {
                         item.SubItems.Add("✅ Çözüldü");
-                        item.ForeColor = Color.FromArgb(46, 204, 113);
+                        item.ForeColor = Color.FromArgb(22, 140, 74);
                     }
                     else if (statusText.Contains("Çözülmedi"))
                     {
                         item.SubItems.Add("❌ Çözülemedi");
-                        item.ForeColor = Color.FromArgb(231, 76, 60);
+                        item.ForeColor = Color.FromArgb(196, 57, 43);
                     }
                     else if (statusText.Contains("Takip") || statusText.Contains("Takipte"))
                     {
                         item.SubItems.Add("📌 Takip Edilecek");
-                        item.ForeColor = Color.FromArgb(243, 156, 18);
+                        item.ForeColor = Color.FromArgb(191, 140, 15);
                     }
                     else if (isStreamActive || statusText.Contains("Bağlandı") || statusText.Contains("İşlemde"))
                     {
                         item.SubItems.Add("🟢 Uzman Bağlandı (İşlem Yapılıyor...)");
-                        item.ForeColor = Color.FromArgb(46, 204, 113);
+                        item.ForeColor = Color.FromArgb(22, 140, 74);
                         if (string.IsNullOrEmpty(t.Notes) || t.Notes == "—")
                         {
                             t.Notes = "Uzman bilgisayarınıza bağlı, işlem gerçekleştiriliyor...";
@@ -4949,7 +4974,7 @@ namespace BigLineconnect
                     else
                     {
                         item.SubItems.Add(string.IsNullOrEmpty(statusText) ? "⏳ Sırada Bekliyor" : statusText);
-                        item.ForeColor = Color.FromArgb(241, 196, 15);
+                        item.ForeColor = Color.FromArgb(191, 140, 15);
                     }
 
                     item.SubItems.Add(string.IsNullOrEmpty(t.Notes) ? "—" : t.Notes);
@@ -5018,7 +5043,7 @@ namespace BigLineconnect
                         if (isStreamActive && btnCancelTicket != null)
                         {
                             btnCancelTicket.Text = "🟢 Uzman Bağlı";
-                            btnCancelTicket.BackColor = Color.FromArgb(46, 204, 113);
+                            btnCancelTicket.BackColor = Color.FromArgb(22, 140, 74);
                             btnCancelTicket.Enabled = false;
                         }
                         var combinedList = new List<LocalSubmittedTicket>(localTickets);
@@ -5123,8 +5148,8 @@ namespace BigLineconnect
                     dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
                     dlg.MaximizeBox = false;
                     dlg.MinimizeBox = false;
-                    dlg.BackColor = Color.FromArgb(18, 20, 28);
-                    dlg.ForeColor = Color.White;
+                    dlg.BackColor = Color.FromArgb(245, 245, 246);
+                    dlg.ForeColor = Color.FromArgb(38, 40, 45);
 
                     Label lblCustomer = new Label
                     {
@@ -5132,7 +5157,7 @@ namespace BigLineconnect
                         Location = new Point(20, 15),
                         Size = new Size(445, 22),
                         Font = new Font("Segoe UI", 10F, FontStyle.Bold),
-                        ForeColor = Color.FromArgb(0, 229, 255)
+                        ForeColor = Color.FromArgb(74, 90, 120)
                     };
                     dlg.Controls.Add(lblCustomer);
 
@@ -5143,14 +5168,14 @@ namespace BigLineconnect
                         Location = new Point(20, 42),
                         Size = new Size(445, 20),
                         Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
-                        ForeColor = Color.FromArgb(46, 204, 113)
+                        ForeColor = Color.FromArgb(22, 140, 74)
                     };
                     dlg.Controls.Add(lblDate);
 
                     string pText = ticket.Priority ?? "Orta";
-                    Color pColor = Color.FromArgb(241, 196, 15);
-                    if (pText.Contains("Yüksek")) { pText = "🔴 Yüksek (Acil / Fatura-Kasa)"; pColor = Color.FromArgb(255, 77, 77); }
-                    else if (pText.Contains("Düşük")) { pText = "🟢 Düşük (Rutin İşlem)"; pColor = Color.FromArgb(46, 204, 113); }
+                    Color pColor = Color.FromArgb(191, 140, 15);
+                    if (pText.Contains("Yüksek")) { pText = "🔴 Yüksek (Acil / Fatura-Kasa)"; pColor = Color.FromArgb(196, 57, 43); }
+                    else if (pText.Contains("Düşük")) { pText = "🟢 Düşük (Rutin İşlem)"; pColor = Color.FromArgb(22, 140, 74); }
                     else { pText = "🟡 Orta (Normal Destek)"; }
 
                     Label lblPriority = new Label
@@ -5169,7 +5194,7 @@ namespace BigLineconnect
                         Location = new Point(20, 92),
                         Size = new Size(445, 20),
                         Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
-                        ForeColor = Color.FromArgb(0, 229, 255)
+                        ForeColor = Color.FromArgb(74, 90, 120)
                     };
                     dlg.Controls.Add(lblStatus);
 
@@ -5179,7 +5204,7 @@ namespace BigLineconnect
                         Location = new Point(20, 122),
                         Size = new Size(445, 18),
                         Font = new Font("Segoe UI", 9F, FontStyle.Bold),
-                        ForeColor = Color.FromArgb(200, 210, 225)
+                        ForeColor = Color.FromArgb(107, 118, 132)
                     };
                     dlg.Controls.Add(lblIssueHeader);
 
@@ -5191,8 +5216,8 @@ namespace BigLineconnect
                         Multiline = true,
                         ReadOnly = true,
                         ScrollBars = ScrollBars.Vertical,
-                        BackColor = Color.FromArgb(25, 28, 38),
-                        ForeColor = Color.White,
+                        BackColor = Color.FromArgb(245, 245, 246),
+                        ForeColor = Color.FromArgb(38, 40, 45),
                         BorderStyle = BorderStyle.FixedSingle,
                         Font = new Font("Segoe UI", 9.5F)
                     };
@@ -5204,7 +5229,7 @@ namespace BigLineconnect
                         Location = new Point(20, 228),
                         Size = new Size(445, 18),
                         Font = new Font("Segoe UI", 9F, FontStyle.Bold),
-                        ForeColor = Color.FromArgb(200, 210, 225)
+                        ForeColor = Color.FromArgb(107, 118, 132)
                     };
                     dlg.Controls.Add(lblNotesHeader);
 
@@ -5216,8 +5241,8 @@ namespace BigLineconnect
                         Multiline = true,
                         ReadOnly = true,
                         ScrollBars = ScrollBars.Vertical,
-                        BackColor = Color.FromArgb(25, 28, 38),
-                        ForeColor = Color.FromArgb(0, 229, 255),
+                        BackColor = Color.FromArgb(245, 245, 246),
+                        ForeColor = Color.FromArgb(74, 90, 120),
                         BorderStyle = BorderStyle.FixedSingle,
                         Font = new Font("Segoe UI", 9.5F)
                     };
@@ -5228,7 +5253,7 @@ namespace BigLineconnect
                         Text = "Kapat",
                         Location = new Point(185, 345),
                         Size = new Size(130, 36),
-                        BackColor = Color.FromArgb(41, 128, 185),
+                        BackColor = Color.FromArgb(58, 62, 70),
                         ForeColor = Color.White,
                         FlatStyle = FlatStyle.Flat,
                         Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
@@ -5269,7 +5294,7 @@ namespace BigLineconnect
             this.TopMost = true;
             this.ShowInTaskbar = false;
             this.Size = new Size(420, 48);
-            this.BackColor = Color.FromArgb(15, 23, 42); // Sleek dark slate
+            this.BackColor = Color.FromArgb(10, 11, 16); // Orijinal koyu tema (bu bildirim kutusu hariç tutuldu)
             this.Padding = new Padding(1);
 
             // Position in bottom-right corner of primary working area
@@ -5279,7 +5304,7 @@ namespace BigLineconnect
             Panel pnlMain = new Panel
             {
                 Dock = DockStyle.Fill,
-                BackColor = Color.FromArgb(20, 24, 38),
+                BackColor = Color.FromArgb(10, 11, 16),
                 BorderStyle = BorderStyle.None
             };
             pnlMain.Paint += (s, e) =>
@@ -5294,7 +5319,7 @@ namespace BigLineconnect
             {
                 Text = "⚡",
                 Font = new Font("Segoe UI", 11f, FontStyle.Bold),
-                ForeColor = Color.FromArgb(0, 230, 118),
+                ForeColor = Color.FromArgb(46, 204, 113),
                 AutoSize = true,
                 Location = new Point(10, 13),
                 Cursor = Cursors.SizeAll
@@ -5325,14 +5350,14 @@ namespace BigLineconnect
                 Text = "Göster",
                 Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(0, 229, 255),
-                BackColor = Color.FromArgb(30, 42, 65),
+                BackColor = Color.FromArgb(30, 35, 45),
                 Location = new Point(320, 10),
                 Size = new Size(60, 26),
                 TextAlign = ContentAlignment.MiddleCenter,
                 Cursor = Cursors.Hand
             };
-            lblOpenApp.MouseEnter += (s, e) => { lblOpenApp.BackColor = Color.FromArgb(0, 150, 255); lblOpenApp.ForeColor = Color.White; };
-            lblOpenApp.MouseLeave += (s, e) => { lblOpenApp.BackColor = Color.FromArgb(30, 42, 65); lblOpenApp.ForeColor = Color.FromArgb(0, 229, 255); };
+            lblOpenApp.MouseEnter += (s, e) => { lblOpenApp.BackColor = Color.FromArgb(0, 229, 255); lblOpenApp.ForeColor = Color.Black; };
+            lblOpenApp.MouseLeave += (s, e) => { lblOpenApp.BackColor = Color.FromArgb(30, 35, 45); lblOpenApp.ForeColor = Color.FromArgb(0, 229, 255); };
             lblOpenApp.Click += (s, e) =>
             {
                 MainWindow.Instance?.RestoreAppWindow();
@@ -5410,8 +5435,8 @@ namespace BigLineconnect
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.StartPosition = FormStartPosition.CenterParent;
-            this.BackColor = Color.FromArgb(10, 11, 16);
-            this.ForeColor = Color.White;
+            this.BackColor = Color.FromArgb(245, 245, 246);
+            this.ForeColor = Color.FromArgb(38, 40, 45);
 
             var titleLabel = new Label
             {
@@ -5419,7 +5444,7 @@ namespace BigLineconnect
                 Location = new Point(25, 20),
                 Size = new Size(440, 30),
                 Font = new Font("Segoe UI", 12F, FontStyle.Bold),
-                ForeColor = Color.FromArgb(0, 229, 255)
+                ForeColor = Color.FromArgb(74, 90, 120)
             };
             this.Controls.Add(titleLabel);
 
@@ -5429,7 +5454,7 @@ namespace BigLineconnect
                 Location = new Point(25, 52),
                 Size = new Size(440, 38),
                 Font = new Font("Segoe UI", 9F),
-                ForeColor = Color.FromArgb(203, 213, 225)
+                ForeColor = Color.FromArgb(107, 118, 132)
             };
             this.Controls.Add(descLabel);
 
@@ -5438,7 +5463,7 @@ namespace BigLineconnect
             {
                 Location = new Point(25, 95),
                 Size = new Size(435, 110),
-                BackColor = Color.FromArgb(20, 24, 33),
+                BackColor = Color.FromArgb(245, 245, 246),
                 BorderStyle = BorderStyle.FixedSingle
             };
 
@@ -5448,7 +5473,7 @@ namespace BigLineconnect
                 Location = new Point(12, 10),
                 Size = new Size(410, 22),
                 Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
-                ForeColor = Color.FromArgb(241, 196, 15)
+                ForeColor = Color.FromArgb(191, 140, 15)
             };
             step1Panel.Controls.Add(step1Title);
 
@@ -5458,7 +5483,7 @@ namespace BigLineconnect
                 Location = new Point(12, 34),
                 Size = new Size(410, 20),
                 Font = new Font("Segoe UI", 8.5F),
-                ForeColor = Color.FromArgb(148, 163, 184)
+                ForeColor = Color.FromArgb(107, 118, 132)
             };
             step1Panel.Controls.Add(step1Sub);
 
@@ -5467,8 +5492,8 @@ namespace BigLineconnect
                 Text = (string.IsNullOrWhiteSpace(LicenseSystem.CompanyCode) || LicenseSystem.CompanyCode == "BIGLINE" || LicenseSystem.CompanyCode.StartsWith("V1.") || LicenseSystem.CompanyCode.StartsWith("V2.") || LicenseSystem.CompanyCode.StartsWith("V3.") || LicenseSystem.CompanyCode.StartsWith("V4.")) ? "BAYIKODU" : LicenseSystem.CompanyCode,
                 Location = new Point(12, 60),
                 Size = new Size(405, 30),
-                BackColor = Color.FromArgb(10, 11, 16),
-                ForeColor = Color.FromArgb(0, 229, 255),
+                BackColor = Color.FromArgb(245, 245, 246),
+                ForeColor = Color.FromArgb(74, 90, 120),
                 Font = new Font("Segoe UI", 11F, FontStyle.Bold),
                 BorderStyle = BorderStyle.FixedSingle
             };
@@ -5480,7 +5505,7 @@ namespace BigLineconnect
             {
                 Location = new Point(25, 215),
                 Size = new Size(435, 100),
-                BackColor = Color.FromArgb(20, 24, 33),
+                BackColor = Color.FromArgb(245, 245, 246),
                 BorderStyle = BorderStyle.FixedSingle
             };
 
@@ -5490,7 +5515,7 @@ namespace BigLineconnect
                 Location = new Point(12, 10),
                 Size = new Size(410, 22),
                 Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
-                ForeColor = Color.FromArgb(46, 204, 113)
+                ForeColor = Color.FromArgb(22, 140, 74)
             };
             step2Panel.Controls.Add(step2Title);
 
@@ -5500,7 +5525,7 @@ namespace BigLineconnect
                 Location = new Point(12, 34),
                 Size = new Size(410, 58),
                 Font = new Font("Segoe UI", 8.5F),
-                ForeColor = Color.FromArgb(226, 232, 240)
+                ForeColor = Color.FromArgb(107, 118, 132)
             };
             step2Panel.Controls.Add(step2Desc);
             this.Controls.Add(step2Panel);
@@ -5511,8 +5536,8 @@ namespace BigLineconnect
                 Text = "💾 Kaydet ve Uzman Ekranını Başlat 🚀",
                 Location = new Point(25, 330),
                 Size = new Size(435, 42),
-                BackColor = Color.FromArgb(0, 229, 255),
-                ForeColor = Color.Black,
+                BackColor = Color.FromArgb(74, 90, 120),
+                ForeColor = Color.White,
                 Font = new Font("Segoe UI", 10.5F, FontStyle.Bold),
                 FlatStyle = FlatStyle.Flat,
                 Cursor = Cursors.Hand
@@ -5551,8 +5576,8 @@ namespace BigLineconnect
                 this.FormBorderStyle = FormBorderStyle.FixedDialog;
                 this.MaximizeBox = false;
                 this.MinimizeBox = false;
-                this.BackColor = Color.FromArgb(15, 17, 23);
-                this.ForeColor = Color.White;
+                this.BackColor = Color.FromArgb(245, 245, 246);
+                this.ForeColor = Color.FromArgb(38, 40, 45);
 
                 var lblTitle = new Label
                 {
@@ -5560,7 +5585,7 @@ namespace BigLineconnect
                     Location = new Point(20, 15),
                     Size = new Size(620, 28),
                     Font = new Font("Segoe UI", 13F, FontStyle.Bold),
-                    ForeColor = Color.FromArgb(0, 229, 255)
+                    ForeColor = Color.FromArgb(74, 90, 120)
                 };
                 this.Controls.Add(lblTitle);
 
@@ -5571,8 +5596,8 @@ namespace BigLineconnect
                     View = View.Details,
                     FullRowSelect = true,
                     GridLines = false,
-                    BackColor = Color.FromArgb(16, 20, 28),
-                    ForeColor = Color.FromArgb(230, 235, 245),
+                    BackColor = Color.FromArgb(245, 245, 246),
+                    ForeColor = Color.FromArgb(107, 118, 132),
                     Font = new Font("Segoe UI", 9.5F),
                     BorderStyle = BorderStyle.FixedSingle
                 };
@@ -5587,7 +5612,7 @@ namespace BigLineconnect
                     Text = "🔄 Yenile",
                     Location = new Point(20, 365),
                     Size = new Size(110, 35),
-                    BackColor = Color.FromArgb(41, 128, 185),
+                    BackColor = Color.FromArgb(58, 62, 70),
                     ForeColor = Color.White,
                     FlatStyle = FlatStyle.Flat,
                     Font = new Font("Segoe UI", 9F, FontStyle.Bold),
@@ -5601,7 +5626,7 @@ namespace BigLineconnect
                     Text = "➕ Yeni Talep Aç",
                     Location = new Point(140, 365),
                     Size = new Size(130, 35),
-                    BackColor = Color.FromArgb(46, 204, 113),
+                    BackColor = Color.FromArgb(22, 140, 74),
                     ForeColor = Color.White,
                     FlatStyle = FlatStyle.Flat,
                     Font = new Font("Segoe UI", 9F, FontStyle.Bold),
@@ -5619,7 +5644,7 @@ namespace BigLineconnect
                     Text = "❌ Talebi İptal Et",
                     Location = new Point(280, 365),
                     Size = new Size(130, 35),
-                    BackColor = Color.FromArgb(231, 76, 60),
+                    BackColor = Color.FromArgb(196, 57, 43),
                     ForeColor = Color.White,
                     FlatStyle = FlatStyle.Flat,
                     Font = new Font("Segoe UI", 9F, FontStyle.Bold),
@@ -5633,8 +5658,8 @@ namespace BigLineconnect
                     Text = "Kapat",
                     Location = new Point(535, 365),
                     Size = new Size(110, 35),
-                    BackColor = Color.FromArgb(50, 55, 65),
-                    ForeColor = Color.White,
+                    BackColor = Color.FromArgb(231, 232, 234),
+                    ForeColor = Color.FromArgb(38, 40, 45),
                     FlatStyle = FlatStyle.Flat,
                     Font = new Font("Segoe UI", 9F, FontStyle.Bold),
                     Cursor = Cursors.Hand
@@ -5748,28 +5773,28 @@ namespace BigLineconnect
                             item.Tag = t;
 
                             // Alternating soft background for zero eye strain
-                            Color rowBg = (rowIndex % 2 == 0) ? Color.FromArgb(24, 29, 40) : Color.FromArgb(16, 20, 28);
+                            Color rowBg = (rowIndex % 2 == 0) ? Color.FromArgb(245, 245, 246) : Color.FromArgb(245, 245, 246);
                             item.BackColor = rowBg;
                             item.UseItemStyleForSubItems = false;
 
                             item.SubItems[0].BackColor = rowBg;
-                            item.SubItems[0].ForeColor = Color.FromArgb(170, 185, 205);
+                            item.SubItems[0].ForeColor = Color.FromArgb(107, 118, 132);
 
                             item.SubItems[1].BackColor = rowBg;
-                            item.SubItems[1].ForeColor = Color.FromArgb(235, 240, 250);
+                            item.SubItems[1].ForeColor = Color.FromArgb(107, 118, 132);
 
                             item.SubItems[2].BackColor = rowBg;
                             if (statusText.Contains("Çözüldü"))
-                                item.SubItems[2].ForeColor = Color.FromArgb(46, 204, 113);
+                                item.SubItems[2].ForeColor = Color.FromArgb(22, 140, 74);
                             else if (statusText.Contains("Çözülmedi"))
-                                item.SubItems[2].ForeColor = Color.FromArgb(231, 76, 60);
+                                item.SubItems[2].ForeColor = Color.FromArgb(196, 57, 43);
                             else if (statusText.Contains("Bağlandı") || statusText.Contains("İşlemde"))
-                                item.SubItems[2].ForeColor = Color.FromArgb(0, 229, 255);
+                                item.SubItems[2].ForeColor = Color.FromArgb(74, 90, 120);
                             else
-                                item.SubItems[2].ForeColor = Color.FromArgb(241, 196, 15);
+                                item.SubItems[2].ForeColor = Color.FromArgb(191, 140, 15);
 
                             item.SubItems[3].BackColor = rowBg;
-                            item.SubItems[3].ForeColor = Color.FromArgb(180, 190, 205);
+                            item.SubItems[3].ForeColor = Color.FromArgb(107, 118, 132);
 
                             lstTickets.Items.Add(item);
                             rowIndex++;
