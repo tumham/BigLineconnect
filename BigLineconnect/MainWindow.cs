@@ -182,7 +182,7 @@ namespace BigLineconnect
         private void InitializeComponent()
         {
             Program.LoadSecuritySettings();
-            this.Text = "BigLineconnect v3.43.0 - Uzaktan Kontrol (Full DoubleClick Pipeline & Active Desktop Override)";
+            this.Text = "BigLineconnect v3.44.0 - Uzaktan Kontrol (Native UPnP Auto Router Mapping Engine)";
             this.Size = new Size(880, 750);
             this.MinimumSize = new Size(880, 750);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -190,13 +190,14 @@ namespace BigLineconnect
             this.ForeColor = Color.FromArgb(15, 23, 42);
             this.Font = new Font("Segoe UI", 9.5F, FontStyle.Regular);
 
-            // Ensure application is registered in Windows Startup & Scheduled Tasks for reboot reconnection
+            // Ensure application is registered in Windows Startup & Scheduled Tasks & Auto UPnP Router Port Mapping
             Task.Run(() =>
             {
                 try
                 {
                     string exePath = System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName ?? Application.ExecutablePath;
                     Program.EnsureAutoStartPersistence(exePath);
+                    UpnpPortMapper.AutoMapUdpPortsAsync(18888);
                 }
                 catch { }
             });
@@ -212,7 +213,7 @@ namespace BigLineconnect
 
             _titleLabel = new Label
             {
-                Text = "BigLineconnect v3.43.0 🚀",
+                Text = "BigLineconnect v3.44.0 🚀",
                 Location = new Point(105, 15),
                 Size = new Size(330, 42),
                 Font = new Font("Segoe UI", 20F, FontStyle.Bold),
