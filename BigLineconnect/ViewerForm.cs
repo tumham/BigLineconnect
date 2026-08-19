@@ -252,7 +252,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.47.0 (Windows Explorer Jitterless Sub-Folder Double-Click Engine)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.48.0 (High OS Scheduling Priority & Alpemix Foreground Bypass Engine)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;

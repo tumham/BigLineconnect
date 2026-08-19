@@ -182,7 +182,7 @@ namespace BigLineconnect
         private void InitializeComponent()
         {
             Program.LoadSecuritySettings();
-            this.Text = "BigLineconnect v3.47.0 - Uzaktan Kontrol (Windows Explorer Jitterless Sub-Folder Double-Click Engine)";
+            this.Text = "BigLineconnect v3.48.0 - Uzaktan Kontrol (High OS Scheduling Priority & Alpemix Foreground Bypass Engine)";
             this.Size = new Size(880, 750);
             this.MinimumSize = new Size(880, 750);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -213,7 +213,7 @@ namespace BigLineconnect
 
             _titleLabel = new Label
             {
-                Text = "BigLineconnect v3.47.0 🚀",
+                Text = "BigLineconnect v3.48.0 🚀",
                 Location = new Point(105, 15),
                 Size = new Size(330, 42),
                 Font = new Font("Segoe UI", 20F, FontStyle.Bold),

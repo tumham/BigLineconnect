@@ -142,10 +142,32 @@ namespace BigLineconnect
         [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
         private static extern IntPtr OpenDesktop(string lpszDesktop, uint dwFlags, bool fInherit, uint dwDesiredAccess);
 
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern bool AllowSetForegroundWindow(int dwProcessId);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern bool SystemParametersInfo(uint uiAction, uint uiParam, ref uint pvParam, uint fWinIni);
+
+        private const uint SPI_SETFOREGROUNDLOCKTIMEOUT = 0x2001;
+        private const int ASFW_ANY = -1;
+
+        public static void DisableForegroundLock()
+        {
+            try
+            {
+                AllowSetForegroundWindow(ASFW_ANY);
+                uint zero = 0;
+                SystemParametersInfo(SPI_SETFOREGROUNDLOCKTIMEOUT, 0, ref zero, 0);
+            }
+            catch { }
+        }
+
         public static void AttachToInputDesktop()
         {
             try
             {
+                DisableForegroundLock();
+
                 IntPtr hDesk = OpenInputDesktop(0, false, GENERIC_ALL);
                 if (hDesk == IntPtr.Zero)
                 {

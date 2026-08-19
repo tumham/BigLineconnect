@@ -282,6 +282,13 @@ namespace BigLineconnect
             try { Application.OleRequired(); } catch { }
             try
             {
+                Process.GetCurrentProcess().PriorityClass = ProcessPriorityClass.High;
+                DesktopHelper.DisableForegroundLock();
+            }
+            catch { }
+
+            try
+            {
                 if (!SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2))
                 {
                     SetProcessDPIAware();
