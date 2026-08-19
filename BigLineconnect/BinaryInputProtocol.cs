@@ -94,7 +94,7 @@ namespace BigLineconnect
         {
             byte[] packet = new byte[9];
             packet[0] = MAGIC_BYTE;
-            packet[1] = (action == MOUSE_ACT_CLICK && button == MOUSE_BTN_LEFT) ? CMD_MOUSE_DBLCLICK : CMD_MOUSE_BUTTON;
+            packet[1] = CMD_MOUSE_BUTTON;
             packet[2] = button;
             packet[3] = action;
             packet[4] = 0;

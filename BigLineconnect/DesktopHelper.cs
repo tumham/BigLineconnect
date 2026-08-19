@@ -139,20 +139,27 @@ namespace BigLineconnect
             catch { }
         }
 
+        [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+        private static extern IntPtr OpenDesktop(string lpszDesktop, uint dwFlags, bool fInherit, uint dwDesiredAccess);
+
         public static void AttachToInputDesktop()
         {
             try
             {
-                IntPtr hDesk = OpenInputDesktop(0, false, MAXIMUM_ALLOWED);
+                IntPtr hDesk = OpenInputDesktop(0, false, GENERIC_ALL);
                 if (hDesk == IntPtr.Zero)
                 {
-                    hDesk = OpenInputDesktop(0, false, DESKTOP_ALL_ACCESS);
+                    hDesk = OpenInputDesktop(0, false, MAXIMUM_ALLOWED);
+                }
+                if (hDesk == IntPtr.Zero)
+                {
+                    hDesk = OpenDesktop("Default", 0, false, GENERIC_ALL);
                 }
 
                 if (hDesk != IntPtr.Zero)
                 {
                     SetThreadDesktop(hDesk);
-                    _lastDesktopAttachTime = DateTime.UtcNow;
+                    CloseDesktop(hDesk);
                 }
             }
             catch { }

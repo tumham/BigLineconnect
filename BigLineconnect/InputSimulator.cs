@@ -252,8 +252,9 @@ namespace BigLineconnect
         {
             try
             {
-                // Click 1 is already handled by MouseDown/MouseUp from viewer, execute Click 2 to complete double click sequence
-                System.Threading.Thread.Sleep(25);
+                SimulateMouseButton(button, "down", xPercent, yPercent, displayIndex);
+                SimulateMouseButton(button, "up", xPercent, yPercent, displayIndex);
+                System.Threading.Thread.Sleep(30);
                 SimulateMouseButton(button, "down", xPercent, yPercent, displayIndex);
                 SimulateMouseButton(button, "up", xPercent, yPercent, displayIndex);
                 Program.TriggerInstantCapture();
