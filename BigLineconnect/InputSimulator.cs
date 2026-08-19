@@ -252,9 +252,8 @@ namespace BigLineconnect
         {
             try
             {
-                SimulateMouseButton(button, "down", xPercent, yPercent, displayIndex);
-                SimulateMouseButton(button, "up", xPercent, yPercent, displayIndex);
-                System.Threading.Thread.Sleep(30);
+                // Click 1 was sent by MouseDown/MouseUp; execute Click 2 to complete natural double click sequence
+                System.Threading.Thread.Sleep(20);
                 SimulateMouseButton(button, "down", xPercent, yPercent, displayIndex);
                 SimulateMouseButton(button, "up", xPercent, yPercent, displayIndex);
                 Program.TriggerInstantCapture();

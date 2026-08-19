@@ -252,7 +252,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.45.0 (Natural DoubleClick Pipeline & Windows Explorer Fix)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.46.0 (Admin Privilege Elevation & Perfect 2-Click Sequence Engine)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
@@ -1757,8 +1757,16 @@ namespace BigLineconnect
 
         private void PictureBox_MouseDoubleClick(object? sender, MouseEventArgs e)
         {
-            // Do not send duplicate synthetic double_click packets.
-            // PictureBox_MouseDown and PictureBox_MouseUp already stream exact natural double-clicks to Windows Explorer!
+            if (_pictureBox == null) return;
+
+            var (x, y) = GetNormalizedMousePos(e, _pictureBox);
+
+            byte button = BinaryInputProtocol.MOUSE_BTN_LEFT;
+            if (e.Button == MouseButtons.Right) button = BinaryInputProtocol.MOUSE_BTN_RIGHT;
+            else if (e.Button == MouseButtons.Middle) button = BinaryInputProtocol.MOUSE_BTN_MIDDLE;
+
+            byte[] binPkt = BinaryInputProtocol.EncodeMouseButton(button, BinaryInputProtocol.MOUSE_ACT_CLICK, x, y);
+            SendBinaryInput(binPkt);
         }
 
         private void SendReleaseAllModifiers()
