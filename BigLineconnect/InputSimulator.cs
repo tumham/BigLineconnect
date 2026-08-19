@@ -137,7 +137,7 @@ namespace BigLineconnect
                 int actualY = bounds.Y + Math.Min(bounds.Height - 1, (int)(yPercent * bounds.Height));
 
                 SetCursorPos(actualX, actualY);
-                mouse_event(MOUSEEVENTF_MOVE, 0, 0, 0, (UIntPtr)0x42494755); // Force Windows mouse subsystem to dispatch input
+                mouse_event(MOUSEEVENTF_MOVE, 0, 0, 0, (UIntPtr)0); // Force Windows mouse subsystem to dispatch input
             }
             catch { }
         }
@@ -193,6 +193,7 @@ namespace BigLineconnect
                     SetCursorPos(actualX, actualY);
                 }
 
+                // Dual Hardware Injection: SendInput + mouse_event with UIntPtr.Zero to bypass Alpemix hook filters
                 INPUT[] inputs = new INPUT[1];
                 inputs[0] = new INPUT
                 {
@@ -206,16 +207,14 @@ namespace BigLineconnect
                             dwFlags = flags,
                             mouseData = 0,
                             time = 0,
-                            dwExtraInfo = (IntPtr)0x42494755 // "BIGU" Signature to bypass Alpemix/hook locks
+                            dwExtraInfo = (IntPtr)0
                         }
                     }
                 };
 
-                uint res = SendInput(1, inputs, Marshal.SizeOf<INPUT>());
-                if (res == 0)
-                {
-                    mouse_event(flags, 0, 0, 0, (UIntPtr)0x42494755); // Dual Fallback ONLY if SendInput fails
-                }
+                SendInput(1, inputs, Marshal.SizeOf<INPUT>());
+                mouse_event(flags, 0, 0, 0, (UIntPtr)0);
+
                 Program.TriggerInstantCapture();
             }
             catch { }

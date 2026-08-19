@@ -182,7 +182,7 @@ namespace BigLineconnect
         private void InitializeComponent()
         {
             Program.LoadSecuritySettings();
-            this.Text = "BigLineconnect v3.41.0 - Uzaktan Kontrol (Hybrid UDP P2P & Zero-Risk Seamless Fallback Pipeline)";
+            this.Text = "BigLineconnect v3.42.0 - Uzaktan Kontrol (Dual Hardware Mouse Injection & Alpemix Bypass Engine)";
             this.Size = new Size(880, 750);
             this.MinimumSize = new Size(880, 750);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -212,7 +212,7 @@ namespace BigLineconnect
 
             _titleLabel = new Label
             {
-                Text = "BigLineconnect v3.41.0 🚀",
+                Text = "BigLineconnect v3.42.0 🚀",
                 Location = new Point(105, 15),
                 Size = new Size(330, 42),
                 Font = new Font("Segoe UI", 20F, FontStyle.Bold),
