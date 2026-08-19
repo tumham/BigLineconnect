@@ -182,7 +182,7 @@ namespace BigLineconnect
         private void InitializeComponent()
         {
             Program.LoadSecuritySettings();
-            this.Text = "BigLineconnect v3.55.0 - Uzaktan Kontrol (Restored Original YOLDAS Design & Ultra-Fast LAN Direct Engine)";
+            this.Text = "BigLineconnect v3.56.0 - Uzaktan Kontrol (Fixed Remote ID Textbox Color & Focus Engine)";
             this.Size = new Size(880, 750);
             this.MinimumSize = new Size(880, 750);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -215,7 +215,7 @@ namespace BigLineconnect
 
             _titleLabel = new Label
             {
-                Text = "BigLineconnect v3.55.0 🚀",
+                Text = "BigLineconnect v3.56.0 🚀",
                 Location = new Point(105, 15),
                 Size = new Size(330, 42),
                 Font = new Font("Segoe UI", 20F, FontStyle.Bold),
@@ -226,7 +226,7 @@ namespace BigLineconnect
 
             var subtitleLabel = new Label
             {
-                Text = "v3.55.0",
+                Text = "v3.56.0",
                 Location = new Point(108, 58),
                 Size = new Size(450, 20),
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
@@ -293,7 +293,10 @@ namespace BigLineconnect
             };
             btnInfo.LinkClicked += (s, e) =>
             {
-                MessageBox.Show("BigLineconnect v3.55.0 - Uzaktan Masaüstü Bağlantısı ve Destek Sistemi\r\n\r\nUzak bağlantı kurmak için karşı tarafın ID'sini girip 'Bağlantı Kur' butonuna basınız.", "Hakkında / Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                using (var dlg = new InfoForm())
+                {
+                    dlg.ShowDialog(this);
+                }
             };
             this.Controls.Add(btnInfo);
 
@@ -410,15 +413,16 @@ namespace BigLineconnect
 
             _remoteIdTextBox = new TextBox
             {
-                Location = new Point(15, 22),
-                Size = new Size(215, 30),
-                BackColor = Color.FromArgb(245, 245, 246),
-                ForeColor = Color.FromArgb(38, 40, 45),
-                Font = new Font("Segoe UI", 12F, FontStyle.Bold),
+                Location = new Point(15, 25),
+                Size = new Size(215, 32),
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(15, 23, 42),
+                BorderStyle = BorderStyle.FixedSingle,
+                Font = new Font("Segoe UI", 13F, FontStyle.Bold),
                 TextAlign = HorizontalAlignment.Center
             };
             _remoteIdTextBox.KeyPress += RemoteIdTextBox_KeyPress;
-            _remoteDeskGroup.Controls.Add(CreateModernTextBoxWrapper(_remoteIdTextBox));
+            _remoteDeskGroup.Controls.Add(_remoteIdTextBox);
 
             _connectButton = new Button
             {
@@ -1057,8 +1061,8 @@ namespace BigLineconnect
 
         private void RemoteIdTextBox_KeyPress(object? sender, KeyPressEventArgs e)
         {
-            // Allow digits, control keys, dots and colons for IP addresses
-            if (!char.IsControl(e.KeyChar) && !char.IsDigit(e.KeyChar) && e.KeyChar != '.' && e.KeyChar != ':')
+            // Allow digits, control keys, spaces, dots and colons for IP addresses
+            if (!char.IsControl(e.KeyChar) && !char.IsDigit(e.KeyChar) && e.KeyChar != '.' && e.KeyChar != ':' && e.KeyChar != ' ')
             {
                 e.Handled = true;
                 return;
@@ -5825,5 +5829,82 @@ namespace BigLineconnect
                     }
                 }
             }
+        }
+    }
+
+    public class InfoForm : Form
+    {
+        public InfoForm()
+        {
+            this.Text = "BigLineconnect - Sistem & Sürüm Bilgileri ℹ️";
+            this.Size = new Size(520, 480);
+            this.StartPosition = FormStartPosition.CenterParent;
+            this.FormBorderStyle = FormBorderStyle.FixedDialog;
+            this.MaximizeBox = false;
+            this.MinimizeBox = false;
+            this.BackColor = Color.FromArgb(245, 245, 246);
+            this.ForeColor = Color.FromArgb(38, 40, 45);
+            this.Font = new Font("Segoe UI", 9.5F, FontStyle.Regular);
+
+            var titleLbl = new Label
+            {
+                Text = "BigLineconnect Enterprise v3.56.0 🚀",
+                Location = new Point(20, 20),
+                Size = new Size(460, 32),
+                Font = new Font("Segoe UI", 14F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(74, 90, 120)
+            };
+            this.Controls.Add(titleLbl);
+
+            var txtInfo = new TextBox
+            {
+                Location = new Point(20, 60),
+                Size = new Size(460, 310),
+                Multiline = true,
+                ReadOnly = true,
+                ScrollBars = ScrollBars.Vertical,
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(38, 40, 45),
+                Font = new Font("Consolas", 9.5F, FontStyle.Regular),
+                BorderStyle = BorderStyle.FixedSingle,
+                Text = "==================================================\r\n" +
+                       " BIGLINECONNECT UZAKTAN KONTROL & DESTEK YAZILIMI  \r\n" +
+                       "==================================================\r\n\r\n" +
+                       "Sürüm: v3.56.0 Enterprise Edition (Certum Signed)\r\n" +
+                       "Lisans: DİJİTAL PRO LİSANS (Aktif & Süresiz)\r\n" +
+                       "Geliştirici: BIGUS BİLİŞİM GELİŞTİRME VE UYGULAMA\r\n" +
+                       "            SİSTEMLERİ LİMİTED ŞİRKETİ\r\n\r\n" +
+                       "--------------------------------------------------\r\n" +
+                       "TEKNİK SİSTEM & PROTOKOL ALTYAPISI:\r\n" +
+                       "--------------------------------------------------\r\n" +
+                       "• Ekran Motoru   : H.264 Donanımsal Grafik Kodlayıcı\r\n" +
+                       "• Ağ İletişimi   : 0.5ms Yerel Ağ (LAN Direct Transport)\r\n" +
+                       "• Bulut Tüneli   : WSS WebSocket Relay / UPnP UDP P2P\r\n" +
+                       "• Giriş Motoru   : 9-Byte Binary Input & DirectUI Injector\r\n" +
+                       "• Yönetici Yetki : High Integrity Level (app.manifest)\r\n\r\n" +
+                       "--------------------------------------------------\r\n" +
+                       "İLETİŞİM & TEKNİK DESTEK:\r\n" +
+                       "--------------------------------------------------\r\n" +
+                       "• E-Posta        : my@bigus.com.tr\r\n" +
+                       "• Web Sunucu     : https://relay.biglineconnect.com\r\n" +
+                       "• Sunucu Konumu  : Türkiye / Almanya Yüksek Hızlı Sunucu\r\n\r\n" +
+                       "Tüm hakları saklıdır. © 2026 Bigus Bilişim A.Ş."
+            };
+            this.Controls.Add(txtInfo);
+
+            var btnClose = new Button
+            {
+                Text = "Kapat",
+                Location = new Point(380, 385),
+                Size = new Size(100, 35),
+                BackColor = Color.FromArgb(74, 90, 120),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
+                DialogResult = DialogResult.OK
+            };
+            btnClose.FlatAppearance.BorderSize = 0;
+            this.Controls.Add(btnClose);
+            this.AcceptButton = btnClose;
         }
     }
