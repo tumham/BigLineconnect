@@ -778,7 +778,8 @@ namespace BigLineconnect
                                     $"&username={Uri.EscapeDataString(username)}" +
                                     $"&os={Uri.EscapeDataString(osVersion)}" +
                                     $"&version={Uri.EscapeDataString(appVersion)}" +
-                                    $"&license_status={Uri.EscapeDataString(licenseStatus)}";
+                                    $"&license_status={Uri.EscapeDataString(licenseStatus)}" +
+                                    $"&lan_ip={Uri.EscapeDataString(GetLocalLanIPAddress())}";
 
             string connectUrl = url;
             connectUrl += (connectUrl.Contains("?") ? "&" : "?") + telemetryQuery;
