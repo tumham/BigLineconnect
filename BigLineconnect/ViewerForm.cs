@@ -252,7 +252,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.49.0 (Automatic Windows Firewall UDP Inbound Rule Engine)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.50.0 (Automatic Self-Updater & Zero-Bombing Process Swap Engine)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
