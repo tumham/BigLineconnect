@@ -36,7 +36,7 @@ namespace BigLineconnect
         private bool _isTeamExpanded = true;
         private bool _isClientsExpanded = true;
 
-        private PictureBox? _logoBox;
+        public PictureBox? _logoBox;
         private Label? _titleLabel;
         
         // Relay Server settings group
@@ -182,7 +182,7 @@ namespace BigLineconnect
         private void InitializeComponent()
         {
             Program.LoadSecuritySettings();
-            this.Text = "BigLineconnect v3.60.0 - Uzaktan Kontrol (Multi-Monitor Display 2 Mouse Input Mapping Engine)";
+            this.Text = "BigLineconnect v3.61.0 - Uzaktan Kontrol (File Explorer Debounced Navigation & Modern Corporate Info Engine)";
             this.Size = new Size(880, 750);
             this.MinimumSize = new Size(880, 750);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -215,7 +215,7 @@ namespace BigLineconnect
 
             _titleLabel = new Label
             {
-                Text = "BigLineconnect v3.60.0 🚀",
+                Text = "BigLineconnect v3.61.0 🚀",
                 Location = new Point(105, 15),
                 Size = new Size(330, 42),
                 Font = new Font("Segoe UI", 20F, FontStyle.Bold),
@@ -226,7 +226,7 @@ namespace BigLineconnect
 
             var subtitleLabel = new Label
             {
-                Text = "v3.60.0",
+                Text = "v3.61.0",
                 Location = new Point(108, 58),
                 Size = new Size(450, 20),
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
@@ -5836,59 +5836,156 @@ namespace BigLineconnect
     {
         public InfoForm()
         {
-            this.Text = "BigLineconnect - Sistem & Sürüm Bilgileri ℹ️";
-            this.Size = new Size(520, 480);
+            this.Text = "BigLineconnect - Kurumsal Sürüm Bilgileri ℹ️";
+            this.Size = new Size(540, 485);
             this.StartPosition = FormStartPosition.CenterParent;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
             this.MinimizeBox = false;
-            this.BackColor = Color.FromArgb(245, 245, 246);
-            this.ForeColor = Color.FromArgb(38, 40, 45);
+            this.BackColor = Color.FromArgb(248, 249, 250);
+            this.ForeColor = Color.FromArgb(33, 37, 41);
             this.Font = new Font("Segoe UI", 9.5F, FontStyle.Regular);
+
+            // Main Corporate Card Panel
+            var cardPanel = new Panel
+            {
+                Location = new Point(20, 20),
+                Size = new Size(484, 380),
+                BackColor = Color.White,
+                BorderStyle = BorderStyle.FixedSingle
+            };
+            this.Controls.Add(cardPanel);
+
+            // Header Icon / Title Box
+            var headerIcon = new PictureBox
+            {
+                Location = new Point(20, 20),
+                Size = new Size(48, 48),
+                SizeMode = PictureBoxSizeMode.Zoom
+            };
+            try
+            {
+                if (BigLineconnect.MainWindow.Instance != null && BigLineconnect.MainWindow.Instance._logoBox != null && BigLineconnect.MainWindow.Instance._logoBox.Image != null)
+                {
+                    headerIcon.Image = BigLineconnect.MainWindow.Instance._logoBox.Image;
+                }
+            }
+            catch { }
+            cardPanel.Controls.Add(headerIcon);
 
             var titleLbl = new Label
             {
-                Text = "BigLineconnect Enterprise v3.57.0 🚀",
-                Location = new Point(20, 20),
-                Size = new Size(460, 32),
-                Font = new Font("Segoe UI", 14F, FontStyle.Bold),
-                ForeColor = Color.FromArgb(74, 90, 120)
+                Text = "BigLineconnect Enterprise",
+                Location = new Point(78, 18),
+                Size = new Size(380, 28),
+                Font = new Font("Segoe UI", 15F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(15, 23, 42)
             };
-            this.Controls.Add(titleLbl);
+            cardPanel.Controls.Add(titleLbl);
 
-            var txtInfo = new TextBox
+            var versionBadge = new Label
             {
-                Location = new Point(20, 60),
-                Size = new Size(460, 310),
-                Multiline = true,
-                ReadOnly = true,
-                ScrollBars = ScrollBars.Vertical,
-                BackColor = Color.White,
-                ForeColor = Color.FromArgb(38, 40, 45),
-                Font = new Font("Segoe UI", 10F, FontStyle.Regular),
-                BorderStyle = BorderStyle.FixedSingle,
-                Text = "==================================================\r\n" +
-                       " BIGLINECONNECT UZAKTAN KONTROL & DESTEK YAZILIMI  \r\n" +
-                       "==================================================\r\n\r\n" +
-                       "Sürüm     : v3.57.0 Enterprise Edition\r\n" +
-                       "Lisans    : DİJİTAL PRO LİSANS (Aktif & Süresiz)\r\n" +
-                       "Geliştirici: BIGUS BİLİŞİM GELİŞTİRME VE UYGULAMA\r\n" +
-                       "            SİSTEMLERİ LİMİTED ŞİRKETİ\r\n\r\n" +
-                       "--------------------------------------------------\r\n" +
-                       "İLETİŞİM & DESTEK:\r\n" +
-                       "--------------------------------------------------\r\n" +
-                       "• E-Posta    : my@bigus.com.tr\r\n" +
-                       "• Web Adresi : https://relay.biglineconnect.com\r\n\r\n" +
-                       "Tüm hakları saklıdır. © 2026 Bigus Bilişim A.Ş."
+                Text = "v3.61.0 (60 FPS Ultra Fast & LAN Direct)",
+                Location = new Point(80, 46),
+                Size = new Size(380, 20),
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(14, 165, 233)
             };
-            this.Controls.Add(txtInfo);
+            cardPanel.Controls.Add(versionBadge);
 
+            // Divider Line
+            var div1 = new Panel
+            {
+                Location = new Point(20, 80),
+                Size = new Size(444, 1),
+                BackColor = Color.FromArgb(226, 232, 240)
+            };
+            cardPanel.Controls.Add(div1);
+
+            // License Status Badge
+            var badgePill = new Label
+            {
+                Text = "  🟢 DİJİTAL PRO LİSANS (Aktif & Süresiz)  ",
+                Location = new Point(20, 95),
+                AutoSize = true,
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                BackColor = Color.FromArgb(220, 252, 231),
+                ForeColor = Color.FromArgb(22, 101, 52),
+                Padding = new Padding(6, 4, 6, 4)
+            };
+            cardPanel.Controls.Add(badgePill);
+
+            // Information Grid Panel
+            var infoGrid = new TableLayoutPanel
+            {
+                Location = new Point(20, 135),
+                Size = new Size(444, 170),
+                ColumnCount = 2,
+                RowCount = 5,
+                BackColor = Color.Transparent
+            };
+            infoGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 120F));
+            infoGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+
+            string[,] details = {
+                { "Geliştirici:", "Bigus Bilişim Ltd.Şti." },
+                { "Şirket Unvanı:", "Bigus Bilişim Geliştirme ve Uygulama Sistemleri Ltd.Şti." },
+                { "E-Posta:", "my@bigus.com.tr" },
+                { "Web Adresi:", "https://bigus.com.tr" },
+                { "Sertifika:", "Certum EV Digital Signed Code Signing" }
+            };
+
+            for (int r = 0; r < 5; r++)
+            {
+                var lblKey = new Label
+                {
+                    Text = details[r, 0],
+                    Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
+                    ForeColor = Color.FromArgb(71, 85, 105),
+                    Dock = DockStyle.Fill,
+                    TextAlign = ContentAlignment.MiddleLeft
+                };
+                var lblVal = new Label
+                {
+                    Text = details[r, 1],
+                    Font = new Font("Segoe UI", 9.5F, FontStyle.Regular),
+                    ForeColor = Color.FromArgb(15, 23, 42),
+                    Dock = DockStyle.Fill,
+                    TextAlign = ContentAlignment.MiddleLeft
+                };
+                infoGrid.Controls.Add(lblKey, 0, r);
+                infoGrid.Controls.Add(lblVal, 1, r);
+            }
+            cardPanel.Controls.Add(infoGrid);
+
+            // Divider Line 2
+            var div2 = new Panel
+            {
+                Location = new Point(20, 320),
+                Size = new Size(444, 1),
+                BackColor = Color.FromArgb(226, 232, 240)
+            };
+            cardPanel.Controls.Add(div2);
+
+            // Footer Copyright
+            var copyrightLbl = new Label
+            {
+                Text = "Tüm hakları saklıdır. © 2026 Bigus Bilişim Ltd.Şti.",
+                Location = new Point(20, 335),
+                Size = new Size(444, 25),
+                Font = new Font("Segoe UI", 8.5F, FontStyle.Regular),
+                ForeColor = Color.FromArgb(100, 116, 139),
+                TextAlign = ContentAlignment.MiddleCenter
+            };
+            cardPanel.Controls.Add(copyrightLbl);
+
+            // Close Button
             var btnClose = new Button
             {
-                Text = "Kapat",
-                Location = new Point(380, 385),
-                Size = new Size(100, 35),
-                BackColor = Color.FromArgb(74, 90, 120),
+                Text = "Tamam",
+                Location = new Point(404, 408),
+                Size = new Size(100, 32),
+                BackColor = Color.FromArgb(15, 23, 42),
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
                 Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),

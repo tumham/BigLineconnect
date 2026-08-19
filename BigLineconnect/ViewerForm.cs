@@ -258,7 +258,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.60.0 (Multi-Monitor Display 2 Mouse Input Mapping Engine)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.61.0 (File Explorer Debounced Navigation & Modern Corporate Info Engine)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
@@ -3382,85 +3382,94 @@ namespace BigLineconnect
 
         public void Populate(JsonElement root)
         {
-            cbRemoteTargetFolder.Items.Clear();
-            lvReceivedFiles.Items.Clear();
-
-            string driveLabel = "[" + (LanguageManager.CurrentLanguage == "tr" ? "Sürücü" : "Drive") + "]";
-            string folderLabel = "[" + (LanguageManager.CurrentLanguage == "tr" ? "Klasör" : "Folder") + "]";
-
-            string currentPath = root.TryGetProperty("path", out var pProp) ? (pProp.GetString() ?? "") : "";
-            if (!string.IsNullOrEmpty(currentPath))
+            lvReceivedFiles.BeginUpdate();
+            try
             {
-                string parentPath = Path.GetDirectoryName(currentPath) ?? "";
-                var backItem = new ListViewItem("⬅️ [ .. Üst Klasör ]");
-                backItem.SubItems.Add(folderLabel);
-                backItem.SubItems.Add(parentPath);
-                lvReceivedFiles.Items.Add(backItem);
-            }
+                cbRemoteTargetFolder.Items.Clear();
+                lvReceivedFiles.Items.Clear();
 
-            if (root.TryGetProperty("drives", out var drivesProp) && drivesProp.ValueKind == JsonValueKind.Array)
-            {
-                foreach (var d in drivesProp.EnumerateArray())
+                string driveLabel = "[" + (LanguageManager.CurrentLanguage == "tr" ? "Sürücü" : "Drive") + "]";
+                string folderLabel = "[" + (LanguageManager.CurrentLanguage == "tr" ? "Klasör" : "Folder") + "]";
+
+                string currentPath = root.TryGetProperty("path", out var pProp) ? (pProp.GetString() ?? "") : "";
+                if (!string.IsNullOrEmpty(currentPath))
                 {
-                    string driveName = d.GetString() ?? "";
-                    if (!string.IsNullOrEmpty(driveName))
+                    string parentPath = Path.GetDirectoryName(currentPath) ?? "";
+                    var backItem = new ListViewItem("⬅️ [ .. Üst Klasör ]");
+                    backItem.SubItems.Add(folderLabel);
+                    backItem.SubItems.Add(parentPath);
+                    lvReceivedFiles.Items.Add(backItem);
+                }
+
+                if (root.TryGetProperty("drives", out var drivesProp) && drivesProp.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var d in drivesProp.EnumerateArray())
                     {
-                        cbRemoteTargetFolder.Items.Add($"💽 Karşı {driveName} Sürücüsü");
-                        
-                        var item = new ListViewItem(driveName);
-                        item.SubItems.Add(driveLabel);
-                        item.SubItems.Add("");
+                        string driveName = d.GetString() ?? "";
+                        if (!string.IsNullOrEmpty(driveName))
+                        {
+                            cbRemoteTargetFolder.Items.Add($"💽 Karşı {driveName} Sürücüsü");
+                            
+                            var item = new ListViewItem(driveName);
+                            item.SubItems.Add(driveLabel);
+                            item.SubItems.Add("");
+                            lvReceivedFiles.Items.Add(item);
+                        }
+                    }
+                }
+
+                if (root.TryGetProperty("folders", out var foldersProp) && foldersProp.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var f in foldersProp.EnumerateArray())
+                    {
+                        string folderName = f.GetString() ?? "";
+                        if (!string.IsNullOrEmpty(folderName))
+                        {
+                            if (folderName.StartsWith("Masaüstü"))
+                            {
+                                cbRemoteTargetFolder.Items.Insert(0, $"🖥️ Karşı {folderName}");
+                            }
+                            else if (folderName.StartsWith("İndirilenler"))
+                            {
+                                cbRemoteTargetFolder.Items.Insert(Math.Min(1, cbRemoteTargetFolder.Items.Count), $"📥 Karşı {folderName}");
+                            }
+                            else
+                            {
+                                cbRemoteTargetFolder.Items.Add($"📁 {folderName}");
+                            }
+
+                            string fullFolderPath = !string.IsNullOrEmpty(currentPath) ? Path.Combine(currentPath, folderName) : folderName;
+                            var item = new ListViewItem(fullFolderPath);
+                            item.SubItems.Add(folderLabel);
+                            item.SubItems.Add("");
+                            lvReceivedFiles.Items.Add(item);
+                        }
+                    }
+                }
+
+                if (root.TryGetProperty("files", out var filesProp) && filesProp.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var f in filesProp.EnumerateArray())
+                    {
+                        string name = f.TryGetProperty("name", out var nProp) ? (nProp.GetString() ?? "") : "";
+                        long size = f.TryGetProperty("size", out var sProp) ? sProp.GetInt64() : 0;
+                        string modified = f.TryGetProperty("modified", out var mProp) ? (mProp.GetString() ?? "") : "";
+
+                        string fullFilePath = !string.IsNullOrEmpty(currentPath) ? Path.Combine(currentPath, name) : name;
+                        var item = new ListViewItem(fullFilePath);
+                        item.SubItems.Add(FormatSize(size));
+                        item.SubItems.Add(modified);
                         lvReceivedFiles.Items.Add(item);
                     }
                 }
-            }
 
-            if (root.TryGetProperty("folders", out var foldersProp) && foldersProp.ValueKind == JsonValueKind.Array)
+                if (cbRemoteTargetFolder.Items.Count > 0) cbRemoteTargetFolder.SelectedIndex = 0;
+            }
+            finally
             {
-                foreach (var f in foldersProp.EnumerateArray())
-                {
-                    string folderName = f.GetString() ?? "";
-                    if (!string.IsNullOrEmpty(folderName))
-                    {
-                        if (folderName.StartsWith("Masaüstü"))
-                        {
-                            cbRemoteTargetFolder.Items.Insert(0, $"🖥️ Karşı {folderName}");
-                        }
-                        else if (folderName.StartsWith("İndirilenler"))
-                        {
-                            cbRemoteTargetFolder.Items.Insert(Math.Min(1, cbRemoteTargetFolder.Items.Count), $"📥 Karşı {folderName}");
-                        }
-                        else
-                        {
-                            cbRemoteTargetFolder.Items.Add($"📁 {folderName}");
-                        }
-
-                        string fullFolderPath = !string.IsNullOrEmpty(currentPath) ? Path.Combine(currentPath, folderName) : folderName;
-                        var item = new ListViewItem(fullFolderPath);
-                        item.SubItems.Add(folderLabel);
-                        item.SubItems.Add("");
-                        lvReceivedFiles.Items.Add(item);
-                    }
-                }
+                lvReceivedFiles.SelectedItems.Clear();
+                lvReceivedFiles.EndUpdate();
             }
-
-            if (root.TryGetProperty("files", out var filesProp) && filesProp.ValueKind == JsonValueKind.Array)
-            {
-                foreach (var f in filesProp.EnumerateArray())
-                {
-                    string name = f.TryGetProperty("name", out var nProp) ? (nProp.GetString() ?? "") : "";
-                    long size = f.TryGetProperty("size", out var sProp) ? sProp.GetInt64() : 0;
-                    string modified = f.TryGetProperty("modified", out var mProp) ? (mProp.GetString() ?? "") : "";
-
-                    string fullFilePath = !string.IsNullOrEmpty(currentPath) ? Path.Combine(currentPath, name) : name;
-                    var item = new ListViewItem(fullFilePath);
-                    item.SubItems.Add(FormatSize(size));
-                    item.SubItems.Add(modified);
-                    lvReceivedFiles.Items.Add(item);
-                }
-            }
-
-            if (cbRemoteTargetFolder.Items.Count > 0) cbRemoteTargetFolder.SelectedIndex = 0;
         }
 
         private string FormatSize(long bytes)
@@ -3476,9 +3485,15 @@ namespace BigLineconnect
             return $"{val:0.##} {suffixes[i]}";
         }
 
+        private bool _isNavigatingFolder = false;
         private void LvReceivedFiles_DoubleClick(object? sender, EventArgs e)
         {
+            if (_isNavigatingFolder) return;
             if (lvReceivedFiles.SelectedItems.Count == 0) return;
+            
+            _isNavigatingFolder = true;
+            Task.Delay(400).ContinueWith(_ => _isNavigatingFolder = false);
+
             var item = lvReceivedFiles.SelectedItems[0];
             string name = item.Text;
             string type = item.SubItems[1].Text;
