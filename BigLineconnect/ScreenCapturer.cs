@@ -415,38 +415,11 @@ namespace BigLineconnect
                     {
                         using (Graphics g = Graphics.FromImage(scaledBmp))
                         {
-                            if (quality <= 50)
-                            {
-                                g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.Low;
-                                g.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.HighSpeed;
-                                g.CompositingQuality = System.Drawing.Drawing2D.CompositingQuality.HighSpeed;
-                                g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighSpeed;
-                                g.DrawImage(bmpScreen, new Rectangle(0, 0, newW, newH), 0, 0, originalW, originalH, GraphicsUnit.Pixel);
-                            }
-                            else
-                            {
-                                g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
-                                g.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.Half;
-                                g.CompositingQuality = System.Drawing.Drawing2D.CompositingQuality.HighSpeed;
-                                g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.None;
-
-                                using (ImageAttributes attributes = new ImageAttributes())
-                                {
-                                    float c = 1.10f; // 10% contrast boost for sharp text
-                                    float t = (1.0f - c) / 2.0f;
-                                    ColorMatrix contrastMatrix = new ColorMatrix(new float[][]
-                                    {
-                                        new float[] {c, 0, 0, 0, 0},
-                                        new float[] {0, c, 0, 0, 0},
-                                        new float[] {0, 0, c, 0, 0},
-                                        new float[] {0, 0, 0, 1, 0},
-                                        new float[] {t, t, t, 0, 1}
-                                    });
-
-                                    attributes.SetColorMatrix(contrastMatrix);
-                                    g.DrawImage(bmpScreen, new Rectangle(0, 0, newW, newH), 0, 0, originalW, originalH, GraphicsUnit.Pixel, attributes);
-                                }
-                            }
+                            g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.Bilinear;
+                            g.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.HighSpeed;
+                            g.CompositingQuality = System.Drawing.Drawing2D.CompositingQuality.HighSpeed;
+                            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighSpeed;
+                            g.DrawImage(bmpScreen, new Rectangle(0, 0, newW, newH), 0, 0, originalW, originalH, GraphicsUnit.Pixel);
                         }
                         return CompressToJpeg(scaledBmp, quality);
                     }

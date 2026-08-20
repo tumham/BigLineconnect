@@ -104,6 +104,14 @@ namespace BigLineconnect
         private Form? _activeRestartDialog;
         private bool _isLanDirectActive = false;
         private string _remoteLanIp = "";
+        private int _isDecodingFrame = 0;
+
+        private bool IsTrueLanDirect()
+        {
+            if (string.IsNullOrEmpty(_wsUrl)) return false;
+            if (_wsUrl.Contains("relay.biglineconnect.com") || _wsUrl.StartsWith("wss://")) return false;
+            return _isLanDirectActive || _wsUrl.StartsWith("ws://192.168.") || _wsUrl.StartsWith("ws://10.") || _wsUrl.StartsWith("ws://172.") || _wsUrl.StartsWith("ws://127.") || _wsUrl.Contains(":18888");
+        }
 
         private void StartP2pAndLanProbe()
         {
@@ -352,7 +360,7 @@ namespace BigLineconnect
             };
             _lblConnModeBadge.Click += (s, e) =>
             {
-                string infoText = (_isLanDirectActive || _wsUrl.Contains(":18888") || _wsUrl.Contains("192.168.") || _wsUrl.Contains("10.") || _wsUrl.Contains("172.")) ?
+                string infoText = IsTrueLanDirect() ?
                     "⚡ BAĞLANTI DURUMU: YEREL AĞ (LAN DIRECT 0.5ms)\n\n" +
                     "• İki bilgisayar aynı lokal ağ üzerindedir.\n" +
                     "• Veri 0.5 ms kablo hızında doğrudan yerel ağdan akar." :
@@ -385,24 +393,24 @@ namespace BigLineconnect
 
             var btnQuality = new NoFocusButton
             {
-                Text = "Kalite: Düşük (1280p) 🎨",
-                Size = new Size(135, 28),
+                Text = "Kalite: Dengeli (1280p) 🎨",
+                Size = new Size(150, 28),
                 Margin = new Padding(2, 0, 4, 0)
             };
             ModernUIHelper.ApplyButtonStyle(btnQuality, Color.FromArgb(156, 39, 176), Color.FromArgb(123, 31, 162), Color.White);
             
             var cmsQuality = new ContextMenuStrip();
-            var itemLow = new ToolStripMenuItem("Düşük Mod (Hızlı & Net 1536p)", null, (s, e) => {
-                btnQuality.Text = "Kalite: Düşük (1536p) 🎨";
-                SendJson("{\"type\":\"set_quality\",\"quality\":68,\"maxDim\":1536}");
+            var itemLow = new ToolStripMenuItem("⚡ Düşük Mod (Ultra Hızlı 960p - Düşük Kota)", null, (s, e) => {
+                btnQuality.Text = "Kalite: Hızlı (960p) 🎨";
+                SendJson("{\"type\":\"set_quality\",\"quality\":45,\"maxDim\":960}");
             });
-            var itemMid = new ToolStripMenuItem("Orta Mod (Dengeli HD - 1600p)", null, (s, e) => {
-                btnQuality.Text = "Kalite: Orta (1600p) 🎨";
-                SendJson("{\"type\":\"set_quality\",\"quality\":65,\"maxDim\":1600}");
+            var itemMid = new ToolStripMenuItem("🎨 Dengeli HD (1280p - Önerilen)", null, (s, e) => {
+                btnQuality.Text = "Kalite: Dengeli (1280p) 🎨";
+                SendJson("{\"type\":\"set_quality\",\"quality\":55,\"maxDim\":1280}");
             });
-            var itemHigh = new ToolStripMenuItem("Pırıl Pırıl (Jilet Netlik 1080p HD)", null, (s, e) => {
-                btnQuality.Text = "Kalite: Pırıl Pırıl (1080p HD) 🎨";
-                SendJson("{\"type\":\"set_quality\",\"quality\":78,\"maxDim\":1920}");
+            var itemHigh = new ToolStripMenuItem("💎 Pırıl Pırıl (Full HD 1080p)", null, (s, e) => {
+                btnQuality.Text = "Kalite: Full HD (1080p) 🎨";
+                SendJson("{\"type\":\"set_quality\",\"quality\":70,\"maxDim\":1920}");
             });
             cmsQuality.Items.Add(itemLow);
             cmsQuality.Items.Add(itemMid);
@@ -673,7 +681,7 @@ namespace BigLineconnect
                             string connModeText;
                             Color connModeColor;
 
-                            if (_isLanDirectActive || _wsUrl.Contains(":18888") || _wsUrl.Contains("192.168.") || _wsUrl.Contains("10.") || _wsUrl.Contains("172."))
+                            if (IsTrueLanDirect())
                             {
                                 connModeText = " ⚡ LAN DIRECT (0.5ms) ";
                                 connModeColor = Color.FromArgb(0, 230, 118); // Bright Green
@@ -740,31 +748,31 @@ namespace BigLineconnect
 
                         if (this.WindowState != FormWindowState.Minimized)
                         {
-                            _ = Task.Run(() =>
+                            if (Interlocked.CompareExchange(ref _isDecodingFrame, 1, 0) == 0)
                             {
-                                try
+                                _ = Task.Run(() =>
                                 {
-                                    if (this.WindowState == FormWindowState.Minimized || _pictureBox == null || _pictureBox.IsDisposed) return;
-
-                                    Image? newImg = null;
-
-                                    if (H264Decoder.IsH264Packet(isolatedFrame))
+                                    try
                                     {
-                                        if (_h264Decoder == null) _h264Decoder = new H264Decoder();
-                                        newImg = _h264Decoder.DecodeNalUnit(isolatedFrame);
-                                    }
-                                    else
-                                    {
-                                        using (var ms = new MemoryStream(isolatedFrame, 0, isolatedFrame.Length))
-                                        using (var tempImg = Image.FromStream(ms))
+                                        if (this.WindowState == FormWindowState.Minimized || _pictureBox == null || _pictureBox.IsDisposed) return;
+
+                                        Image? newImg = null;
+
+                                        if (H264Decoder.IsH264Packet(isolatedFrame))
                                         {
-                                            newImg = new Bitmap(tempImg);
+                                            if (_h264Decoder == null) _h264Decoder = new H264Decoder();
+                                            newImg = _h264Decoder.DecodeNalUnit(isolatedFrame);
                                         }
-                                    }
+                                        else
+                                        {
+                                            using (var ms = new MemoryStream(isolatedFrame, 0, isolatedFrame.Length))
+                                            using (var tempImg = Image.FromStream(ms))
+                                            {
+                                                newImg = new Bitmap(tempImg);
+                                            }
+                                        }
 
-                                    if (newImg != null)
-                                    {
-                                        if (_pictureBox != null && !_pictureBox.IsDisposed)
+                                        if (newImg != null && _pictureBox != null && !_pictureBox.IsDisposed)
                                         {
                                             _pictureBox.BeginInvoke(new Action(() =>
                                             {
@@ -786,9 +794,13 @@ namespace BigLineconnect
                                             }));
                                         }
                                     }
-                                }
-                                catch { }
-                            });
+                                    catch { }
+                                    finally
+                                    {
+                                        Interlocked.Exchange(ref _isDecodingFrame, 0);
+                                    }
+                                });
+                            }
                         }
                     }
                     else if (result.MessageType == WebSocketMessageType.Text)
