@@ -258,7 +258,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.61.0 (File Explorer Debounced Navigation & Modern Corporate Info Engine)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.62.0 (Commercial PRO License & 10-Minute Free Session Limits Engine)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
@@ -2027,10 +2027,33 @@ namespace BigLineconnect
             }
         }
 
+        private int _sessionDurationSeconds = 0;
         private int _heartbeatTickCounter = 0;
         private void ClipboardTimer_Tick(object? sender, EventArgs e)
         {
             OnLocalClipboardChanged();
+
+            _sessionDurationSeconds++;
+
+            // Free User 10-Minute Session Timeout Check (600 seconds)
+            if (!FreeLimitsEngine.IsProUser())
+            {
+                if (_sessionDurationSeconds >= 600)
+                {
+                    FreeLimitsEngine.AddDailyUsageSeconds(_sessionDurationSeconds);
+                    this.BeginInvoke((MethodInvoker)delegate
+                    {
+                        try
+                        {
+                            this.Close();
+                            using var dlg = new ProLicenseDialog("⚠️ 10 Dakikalık Ücretsiz Oturum Süreniz Dolmuştur.\r\nSınırsız, kesintisiz ve çoklu bağlantı için PRO Lisansa yükseltin.");
+                            dlg.ShowDialog();
+                        }
+                        catch { }
+                    });
+                    return;
+                }
+            }
 
             _heartbeatTickCounter++;
             if (_heartbeatTickCounter % 2 == 0)

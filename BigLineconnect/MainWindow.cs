@@ -182,7 +182,7 @@ namespace BigLineconnect
         private void InitializeComponent()
         {
             Program.LoadSecuritySettings();
-            this.Text = "BigLineconnect v3.61.0 - Uzaktan Kontrol (File Explorer Debounced Navigation & Modern Corporate Info Engine)";
+            this.Text = "BigLineconnect v3.62.0 - Uzaktan Kontrol (Commercial PRO License & 10-Minute Free Session Limits Engine)";
             this.Size = new Size(880, 750);
             this.MinimumSize = new Size(880, 750);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -215,7 +215,7 @@ namespace BigLineconnect
 
             _titleLabel = new Label
             {
-                Text = "BigLineconnect v3.61.0 🚀",
+                Text = "BigLineconnect v3.62.0 🚀",
                 Location = new Point(105, 15),
                 Size = new Size(330, 42),
                 Font = new Font("Segoe UI", 20F, FontStyle.Bold),
@@ -226,7 +226,7 @@ namespace BigLineconnect
 
             var subtitleLabel = new Label
             {
-                Text = "v3.61.0",
+                Text = "v3.62.0",
                 Location = new Point(108, 58),
                 Size = new Size(450, 20),
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
@@ -1049,6 +1049,13 @@ namespace BigLineconnect
             string password = !string.IsNullOrEmpty(Program.AutoConnectPassword) 
                 ? Program.AutoConnectPassword 
                 : (savedConn != null ? savedConn.Password : "");
+
+            if (!FreeLimitsEngine.CheckCanInitiateConnection(targetId, out string blockReason))
+            {
+                using var dlg = new ProLicenseDialog(blockReason);
+                dlg.ShowDialog(this);
+                return;
+            }
 
             // Open remote viewer form
             var viewer = new ViewerForm(clientWsUrl, targetId, password);
@@ -5830,6 +5837,302 @@ namespace BigLineconnect
                 }
             }
         }
+
+        public static class FreeLimitsEngine
+        {
+            public static bool IsProUser()
+            {
+                try
+                {
+                    if (LicenseSystem.IsSpecialistMode || LicenseSystem.IsLicenseActive) return true;
+                    string proFile = ConfigHelper.GetConfigPath("pro_license.key");
+                    if (File.Exists(proFile))
+                    {
+                        string key = File.ReadAllText(proFile).Trim();
+                        if (!string.IsNullOrEmpty(key) && key.Length >= 6) return true;
+                    }
+                }
+                catch { }
+                return false;
+            }
+
+            public static int GetActiveViewerCount()
+            {
+                int count = 0;
+                try
+                {
+                    foreach (Form f in Application.OpenForms)
+                    {
+                        if (f is ViewerForm && !f.IsDisposed) count++;
+                    }
+                }
+                catch { }
+                return count;
+            }
+
+            public static bool CheckCanInitiateConnection(string targetId, out string blockReason)
+            {
+                blockReason = "";
+                if (IsProUser()) return true;
+
+                // Rule 1: Max 1 simultaneous active connection
+                if (GetActiveViewerCount() >= 1)
+                {
+                    blockReason = "⚠️ Ücretsiz kullanımda aynı anda yalnızca 1 bilgisayara bağlanabilirsiniz.\r\nSınırsız ve çoklu sekme bağlantısı için PRO Lisansa yükseltin.";
+                    return false;
+                }
+
+                // Rule 2: Check daily quota (max 30 mins = 1800s total per day)
+                string todayStr = DateTime.Now.ToString("yyyy-MM-dd");
+                string dailyFile = ConfigHelper.GetConfigPath("daily_free_usage.json");
+                long dailyUsedSeconds = 0;
+                try
+                {
+                    if (File.Exists(dailyFile))
+                    {
+                        string json = File.ReadAllText(dailyFile);
+                        using var doc = JsonDocument.Parse(json);
+                        if (doc.RootElement.TryGetProperty("date", out var dProp) && dProp.GetString() == todayStr)
+                        {
+                            if (doc.RootElement.TryGetProperty("seconds", out var sProp))
+                            {
+                                dailyUsedSeconds = sProp.GetInt64();
+                            }
+                        }
+                    }
+                }
+                catch { }
+
+                if (dailyUsedSeconds >= 1800) // 30 minutes total daily quota
+                {
+                    blockReason = "⚠️ Gün içindeki ücretsiz bağlantı sürenizi (30 Dakika) doldurdunuz.\r\nSınırsız ve kesintisiz bağlantı için PRO Lisansa yükseltin.";
+                    return false;
+                }
+
+                // Rule 3: Check max 3 unique target IDs in 7 days
+                string cleanId = targetId != null ? targetId.Replace(" ", "").Trim() : "";
+                string idsFile = ConfigHelper.GetConfigPath("free_target_ids.json");
+                var idList = new List<string>();
+                try
+                {
+                    if (File.Exists(idsFile))
+                    {
+                        string json = File.ReadAllText(idsFile);
+                        using var doc = JsonDocument.Parse(json);
+                        if (doc.RootElement.ValueKind == JsonValueKind.Array)
+                        {
+                            foreach (var elem in doc.RootElement.EnumerateArray())
+                            {
+                                string id = elem.GetString() ?? "";
+                                if (!string.IsNullOrEmpty(id) && !idList.Contains(id)) idList.Add(id);
+                            }
+                        }
+                    }
+                }
+                catch { }
+
+                if (!idList.Contains(cleanId) && idList.Count >= 3)
+                {
+                    blockReason = "⚠️ Ücretsiz kullanımda 7 gün içinde en fazla 3 farklı bilgisayara bağlanabilirsiniz.\r\nFarklı bilgisayarlara sınırsız destek vermek için PRO Lisansa yükseltin.";
+                    return false;
+                }
+
+                // Record target ID
+                if (!idList.Contains(cleanId))
+                {
+                    idList.Add(cleanId);
+                    try
+                    {
+                        string jsonOut = JsonSerializer.Serialize(idList);
+                        File.WriteAllText(idsFile, jsonOut);
+                    }
+                    catch { }
+                }
+
+                return true;
+            }
+
+            public static void AddDailyUsageSeconds(long seconds)
+            {
+                if (IsProUser()) return;
+                string todayStr = DateTime.Now.ToString("yyyy-MM-dd");
+                string dailyFile = ConfigHelper.GetConfigPath("daily_free_usage.json");
+                long dailyUsedSeconds = 0;
+                try
+                {
+                    if (File.Exists(dailyFile))
+                    {
+                        string json = File.ReadAllText(dailyFile);
+                        using var doc = JsonDocument.Parse(json);
+                        if (doc.RootElement.TryGetProperty("date", out var dProp) && dProp.GetString() == todayStr)
+                        {
+                            if (doc.RootElement.TryGetProperty("seconds", out var sProp))
+                            {
+                                dailyUsedSeconds = sProp.GetInt64();
+                            }
+                        }
+                    }
+                }
+                catch { }
+
+                dailyUsedSeconds += seconds;
+                try
+                {
+                    var data = new { date = todayStr, seconds = dailyUsedSeconds };
+                    File.WriteAllText(dailyFile, JsonSerializer.Serialize(data));
+                }
+                catch { }
+            }
+        }
+
+        public class ProLicenseDialog : Form
+        {
+            public ProLicenseDialog(string message = "")
+            {
+                this.Text = "BigLineconnect PRO Lisans Aktivasyonu 🔑";
+                this.Size = new Size(550, 440);
+                this.StartPosition = FormStartPosition.CenterParent;
+                this.FormBorderStyle = FormBorderStyle.FixedDialog;
+                this.MaximizeBox = false;
+                this.MinimizeBox = false;
+                this.BackColor = Color.FromArgb(248, 249, 250);
+                this.ForeColor = Color.FromArgb(33, 37, 41);
+                this.Font = new Font("Segoe UI", 9.5F, FontStyle.Regular);
+
+                var cardPanel = new Panel
+                {
+                    Location = new Point(20, 20),
+                    Size = new Size(494, 340),
+                    BackColor = Color.White,
+                    BorderStyle = BorderStyle.FixedSingle
+                };
+                this.Controls.Add(cardPanel);
+
+                var titleLbl = new Label
+                {
+                    Text = "⚡ PRO Lisans Aktivasyonu",
+                    Location = new Point(20, 18),
+                    Size = new Size(454, 30),
+                    Font = new Font("Segoe UI", 15F, FontStyle.Bold),
+                    ForeColor = Color.FromArgb(15, 23, 42)
+                };
+                cardPanel.Controls.Add(titleLbl);
+
+                var msgLbl = new Label
+                {
+                    Text = string.IsNullOrEmpty(message) 
+                        ? "Gün içindeki ücretsiz bağlantı sürenizi doldurdunuz.\r\nSınırsız, kesintisiz ve çoklu bağlantı için PRO Lisansa yükseltin." 
+                        : message,
+                    Location = new Point(20, 56),
+                    Size = new Size(454, 55),
+                    Font = new Font("Segoe UI", 9.5F, FontStyle.Regular),
+                    ForeColor = Color.FromArgb(71, 85, 105)
+                };
+                cardPanel.Controls.Add(msgLbl);
+
+                // Price Badge
+                var priceBadge = new Label
+                {
+                    Text = "  🏷️ Aylık 149 TL'den Başlayan Fiyatlarla  ",
+                    Location = new Point(20, 115),
+                    AutoSize = true,
+                    Font = new Font("Segoe UI", 11F, FontStyle.Bold),
+                    BackColor = Color.FromArgb(220, 252, 231),
+                    ForeColor = Color.FromArgb(22, 101, 52),
+                    Padding = new Padding(8, 6, 8, 6)
+                };
+                cardPanel.Controls.Add(priceBadge);
+
+                // Features list
+                var featLbl = new Label
+                {
+                    Text = "✔ 10 Dakika Oturum Zaman Aşımı Yok\r\n✔ Günlük Kota ve Cihaz Sayısı Sınırı Yok (Sınırsız)\r\n✔ Aynı Anda Çoklu Bilgisayar Bağlantısı (Sekme Modu)\r\n✔ 7/24 Kesintisiz Yüksek Hızlı Donanım İvmesi",
+                    Location = new Point(20, 165),
+                    Size = new Size(454, 90),
+                    Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
+                    ForeColor = Color.FromArgb(30, 41, 59)
+                };
+                cardPanel.Controls.Add(featLbl);
+
+                // Buy License Web Button
+                var btnBuy = new Button
+                {
+                    Text = "💳 Aylık 149 TL ile PRO Lisans Al (Web Sayfasına Git)",
+                    Location = new Point(20, 275),
+                    Size = new Size(454, 42),
+                    BackColor = Color.FromArgb(16, 185, 129),
+                    ForeColor = Color.White,
+                    FlatStyle = FlatStyle.Flat,
+                    Font = new Font("Segoe UI", 10.5F, FontStyle.Bold),
+                    Cursor = Cursors.Hand
+                };
+                btnBuy.FlatAppearance.BorderSize = 0;
+                btnBuy.Click += (s, e) =>
+                {
+                    try
+                    {
+                        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                        {
+                            FileName = "https://bigus.com.tr",
+                            UseShellExecute = true
+                        });
+                    }
+                    catch { }
+                };
+                cardPanel.Controls.Add(btnBuy);
+
+                // Enter License Key Button
+                var btnEnterKey = new Button
+                {
+                    Text = "🔑 Lisans Anahtarı Etkinleştir",
+                    Location = new Point(20, 368),
+                    Size = new Size(240, 32),
+                    BackColor = Color.FromArgb(15, 23, 42),
+                    ForeColor = Color.White,
+                    FlatStyle = FlatStyle.Flat,
+                    Font = new Font("Segoe UI", 9F, FontStyle.Bold)
+                };
+                btnEnterKey.FlatAppearance.BorderSize = 0;
+                btnEnterKey.Click += (s, e) => PromptAndActivateKey();
+                this.Controls.Add(btnEnterKey);
+
+                // Close Button
+                var btnClose = new Button
+                {
+                    Text = "Kapat",
+                    Location = new Point(414, 368),
+                    Size = new Size(100, 32),
+                    BackColor = Color.FromArgb(203, 213, 225),
+                    ForeColor = Color.FromArgb(51, 65, 85),
+                    FlatStyle = FlatStyle.Flat,
+                    Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                    DialogResult = DialogResult.OK
+                };
+                btnClose.FlatAppearance.BorderSize = 0;
+                this.Controls.Add(btnClose);
+                this.AcceptButton = btnClose;
+            }
+
+            private void PromptAndActivateKey()
+            {
+                string key = Microsoft.VisualBasic.Interaction.InputBox("Lütfen Bigus Bilişim PRO Lisans Anahtarınızı Giriniz:", "PRO Lisans Aktivasyonu", "");
+                if (!string.IsNullOrWhiteSpace(key))
+                {
+                    try
+                    {
+                        string proFile = ConfigHelper.GetConfigPath("pro_license.key");
+                        File.WriteAllText(proFile, key.Trim());
+                        MessageBox.Show("🎉 PRO Lisansınız başarıyla etkinleştirildi! Tüm sınırlamalar kaldırıldı.", "Lisans Etkinleştirildi", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        this.DialogResult = DialogResult.OK;
+                        this.Close();
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Lisans kaydedilirken hata: {ex.Message}", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+            }
+        }
     }
 
     public class InfoForm : Form
@@ -5905,7 +6208,7 @@ namespace BigLineconnect
             // License Status Badge
             var badgePill = new Label
             {
-                Text = "  🟢 DİJİTAL PRO LİSANS (Aktif & Süresiz)  ",
+                Text = "  🟢 DİJİTAL PRO LİSANS (Kurumsal Lisanslı)  ",
                 Location = new Point(20, 95),
                 AutoSize = true,
                 Font = new Font("Segoe UI", 9F, FontStyle.Bold),
