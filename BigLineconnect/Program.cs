@@ -1937,19 +1937,22 @@ namespace BigLineconnect
                     bool authenticated = false;
                     int attempts = 0;
 
-                    while (!authenticated && attempts < 5 && !token.IsCancellationRequested)
+                    // Send AUTH_REQUIRED once to notify Viewer that password authentication is required
+                    byte[] reqMsg = Encoding.UTF8.GetBytes("AUTH_REQUIRED");
+                    await SafeSendAsync(ws, new ArraySegment<byte>(reqMsg), WebSocketMessageType.Text, true, token).ConfigureAwait(false);
+
+                    while (!authenticated && attempts < 5 && !token.IsCancellationRequested && ws.State == WebSocketState.Open)
                     {
                         attempts++;
                         _authPasswordTcs = new TaskCompletionSource<string>();
 
-                        byte[] reqMsg = Encoding.UTF8.GetBytes("AUTH_REQUIRED");
-                        await SafeSendAsync(ws, new ArraySegment<byte>(reqMsg), WebSocketMessageType.Text, true, token).ConfigureAwait(false);
-
-                        var completedTask = await Task.WhenAny(_authPasswordTcs.Task, Task.Delay(45000, token)).ConfigureAwait(false);
+                        var completedTask = await Task.WhenAny(_authPasswordTcs.Task, Task.Delay(60000, token)).ConfigureAwait(false);
 
                         if (completedTask == _authPasswordTcs.Task)
                         {
                             string password = await _authPasswordTcs.Task.ConfigureAwait(false);
+                            
+                            LoadSecuritySettings(); // Always load fresh settings from disk
                             string localAccessPassword = AccessPassword;
                             if (MainWindow.Instance != null && !MainWindow.Instance.IsDisposed)
                             {
@@ -1990,10 +1993,9 @@ namespace BigLineconnect
                             }
                             else
                             {
-                                Log($"Hatalı şifre girildi (Girilen: {cleanInputPass}, Beklenen: {cleanLocalPass}). Tekrar deneniyor ({attempts}/5)...");
+                                Log($"Hatalı şifre girildi (Girilen: {cleanInputPass}, Beklenen: {cleanLocalPass}). Deneme: {attempts}/5.");
                                 byte[] failMsg = Encoding.UTF8.GetBytes("AUTH_FAILED");
                                 await SafeSendAsync(ws, new ArraySegment<byte>(failMsg), WebSocketMessageType.Text, true, token).ConfigureAwait(false);
-                                await Task.Delay(500, token).ConfigureAwait(false);
                             }
                         }
                         else

@@ -893,13 +893,12 @@ namespace BigLineconnect
                         }
                         else if (message == "AUTH_FAILED")
                         {
-                            _savedPassword = ""; // Clear stored password to prompt user again
+                            _savedPassword = ""; // Clear stored password
                             this.BeginInvoke(new Action(async () => {
-                                MessageBox.Show(LanguageManager.Get("auth_failed"), LanguageManager.Get("msg_connection_failed"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
                                 if (!_isPromptOpen)
                                 {
                                     _isPromptOpen = true;
-                                    _savedPassword = Prompt.ShowDialog(LanguageManager.Get("msg_enter_password"), LanguageManager.Get("title_password_required"));
+                                    _savedPassword = Prompt.ShowDialog("⚠️ Hatalı erişim şifresi girildi!\r\nLütfen karşı bilgisayarın 6 haneli erişim şifresini giriniz:", LanguageManager.Get("title_password_required"));
                                     _isPromptOpen = false;
 
                                     if (string.IsNullOrEmpty(_savedPassword))

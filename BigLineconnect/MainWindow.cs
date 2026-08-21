@@ -500,6 +500,27 @@ namespace BigLineconnect
             };
             _securityGroup.Controls.Add(CreateModernTextBoxWrapper(_passwordTextBox));
 
+            var btnShowPass = new Button
+            {
+                Text = "👁️",
+                Location = new Point(515, 12),
+                Size = new Size(35, 25),
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(245, 245, 246),
+                ForeColor = Color.FromArgb(38, 40, 45),
+                Font = new Font("Segoe UI", 9F),
+                Cursor = Cursors.Hand
+            };
+            btnShowPass.FlatAppearance.BorderSize = 1;
+            btnShowPass.FlatAppearance.BorderColor = Color.FromArgb(210, 215, 225);
+            bool showPass = false;
+            btnShowPass.Click += (s, ev) => {
+                showPass = !showPass;
+                _passwordTextBox.PasswordChar = showPass ? '\0' : '*';
+                btnShowPass.Text = showPass ? "🙈" : "👁️";
+            };
+            _securityGroup.Controls.Add(btnShowPass);
+
             var runOnStartupCheckBox = new CheckBox
             {
                 Text = "Windows başlangıcında otomatik çalıştır",
