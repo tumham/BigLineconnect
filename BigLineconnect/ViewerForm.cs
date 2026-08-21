@@ -270,7 +270,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.62.5 (Commercial PRO License & 10-Minute Free Session Limits Engine)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.62.6 (Commercial PRO License & 10-Minute Free Session Limits Engine)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
@@ -551,7 +551,7 @@ namespace BigLineconnect
             this.KeyPreview = true;
             
             // Clipboard Monitoring Timer
-            _clipboardTimer = new System.Windows.Forms.Timer { Interval = 1000 };
+            _clipboardTimer = new System.Windows.Forms.Timer { Interval = 100 };
             _clipboardTimer.Tick += ClipboardTimer_Tick;
             _clipboardTimer.Start();
 

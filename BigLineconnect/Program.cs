@@ -2219,6 +2219,8 @@ namespace BigLineconnect
                 }
             }
             catch { }
+
+            TriggerInstantCapture(2);
         }
 
         public static void LoadSecuritySettings()
