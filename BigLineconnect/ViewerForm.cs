@@ -105,6 +105,8 @@ namespace BigLineconnect
         private bool _isLanDirectActive = false;
         private string _remoteLanIp = "";
         private int _isDecodingFrame = 0;
+        private bool _isAuthFailureClosing = false;
+        private bool _isPromptOpen = false;
 
         private bool IsTrueLanDirect()
         {
@@ -845,11 +847,17 @@ namespace BigLineconnect
                             _connectionStatusText = "🔑 Uzak bilgisayar erişim şifresi bekleniyor...\r\nLütfen açılan pencereye karşı bilgisayarın 6 haneli erişim şifresini giriniz.";
                             this.BeginInvoke(new Action(async () => {
                                 _pictureBox?.Invalidate();
+                                if (_isPromptOpen) return;
+
                                 if (string.IsNullOrEmpty(_savedPassword))
                                 {
+                                    _isPromptOpen = true;
                                     _savedPassword = Prompt.ShowDialog(LanguageManager.Get("msg_enter_password"), LanguageManager.Get("title_password_required"));
+                                    _isPromptOpen = false;
+
                                     if (string.IsNullOrEmpty(_savedPassword))
                                     {
+                                        _isAuthFailureClosing = true;
                                         this.Close();
                                         return;
                                     }
@@ -886,8 +894,27 @@ namespace BigLineconnect
                         else if (message == "AUTH_FAILED")
                         {
                             _savedPassword = ""; // Clear stored password to prompt user again
-                            MessageBox.Show(LanguageManager.Get("auth_failed"), LanguageManager.Get("msg_connection_failed"), MessageBoxButtons.OK, MessageBoxIcon.Error);
-                            this.BeginInvoke(new Action(this.Close));
+                            this.BeginInvoke(new Action(async () => {
+                                MessageBox.Show(LanguageManager.Get("auth_failed"), LanguageManager.Get("msg_connection_failed"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                                if (!_isPromptOpen)
+                                {
+                                    _isPromptOpen = true;
+                                    _savedPassword = Prompt.ShowDialog(LanguageManager.Get("msg_enter_password"), LanguageManager.Get("title_password_required"));
+                                    _isPromptOpen = false;
+
+                                    if (string.IsNullOrEmpty(_savedPassword))
+                                    {
+                                        _isAuthFailureClosing = true;
+                                        this.Close();
+                                        return;
+                                    }
+                                    byte[] passBytes = Encoding.UTF8.GetBytes("AUTH_PASS:" + _savedPassword);
+                                    if (_ws != null && _ws.State == WebSocketState.Open)
+                                    {
+                                        await _ws.SendAsync(new ArraySegment<byte>(passBytes), WebSocketMessageType.Text, true, CancellationToken.None);
+                                    }
+                                }
+                            }));
                         }
                         else if (message == "AUTH_REJECTED")
                         {
@@ -2084,6 +2111,16 @@ namespace BigLineconnect
 
         private void ViewerForm_FormClosing(object? sender, FormClosingEventArgs e)
         {
+            if (_isAuthFailureClosing)
+            {
+                _cts.Cancel();
+                if (_ws != null)
+                {
+                    try { _ws.Dispose(); } catch { }
+                }
+                return;
+            }
+
             if (e.CloseReason == CloseReason.UserClosing && _ws != null && (_ws.State == WebSocketState.Open || _ws.State == WebSocketState.Connecting))
             {
                 var result = MessageBox.Show(
@@ -2630,8 +2667,8 @@ namespace BigLineconnect
             {
                 Form prompt = new Form()
                 {
-                    Width = 320,
-                    Height = 150,
+                    Width = 340,
+                    Height = 170,
                     FormBorderStyle = FormBorderStyle.FixedDialog,
                     Text = caption,
                     StartPosition = FormStartPosition.CenterScreen,
@@ -2640,14 +2677,25 @@ namespace BigLineconnect
                     BackColor = Color.FromArgb(26, 28, 35),
                     ForeColor = Color.White
                 };
-                Label textLabel = new Label() { Left = 20, Top = 15, Text = text, Width = 280, ForeColor = Color.White };
-                TextBox textBox = new TextBox() { Left = 20, Top = 45, Width = 260, PasswordChar = '*' };
-                Button confirmation = new Button() { Text = "Tamam", Left = 180, Width = 100, Top = 75, DialogResult = DialogResult.OK };
+                Label textLabel = new Label() { Left = 20, Top = 15, Text = text, Width = 290, ForeColor = Color.White, Font = new Font("Segoe UI", 9F) };
+                TextBox textBox = new TextBox() { Left = 20, Top = 45, Width = 280, PasswordChar = '*', BackColor = Color.FromArgb(40, 43, 54), ForeColor = Color.White, BorderStyle = BorderStyle.FixedSingle, Font = new Font("Segoe UI", 10F) };
+                Button confirmation = new Button() { Text = "Bağlan ⚡", Left = 170, Width = 130, Top = 82, Height = 32, DialogResult = DialogResult.OK, FlatStyle = FlatStyle.Flat, BackColor = Color.FromArgb(0, 188, 212), ForeColor = Color.White, Font = new Font("Segoe UI", 9F, FontStyle.Bold) };
+                Button cancelBtn = new Button() { Text = "İptal", Left = 80, Width = 80, Top = 82, Height = 32, DialogResult = DialogResult.Cancel, FlatStyle = FlatStyle.Flat, BackColor = Color.FromArgb(60, 64, 75), ForeColor = Color.White, Font = new Font("Segoe UI", 9F) };
+                
                 confirmation.Click += (sender, e) => { prompt.Close(); };
+                cancelBtn.Click += (sender, e) => { prompt.Close(); };
+
                 prompt.Controls.Add(textBox);
                 prompt.Controls.Add(confirmation);
+                prompt.Controls.Add(cancelBtn);
                 prompt.Controls.Add(textLabel);
                 prompt.AcceptButton = confirmation;
+                prompt.CancelButton = cancelBtn;
+
+                prompt.Shown += (s, e) => {
+                    textBox.Focus();
+                    textBox.SelectAll();
+                };
 
                 return prompt.ShowDialog() == DialogResult.OK ? textBox.Text : "";
             }

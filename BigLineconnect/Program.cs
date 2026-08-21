@@ -1993,6 +1993,7 @@ namespace BigLineconnect
                                 Log($"Hatalı şifre girildi (Girilen: {cleanInputPass}, Beklenen: {cleanLocalPass}). Tekrar deneniyor ({attempts}/5)...");
                                 byte[] failMsg = Encoding.UTF8.GetBytes("AUTH_FAILED");
                                 await SafeSendAsync(ws, new ArraySegment<byte>(failMsg), WebSocketMessageType.Text, true, token).ConfigureAwait(false);
+                                await Task.Delay(500, token).ConfigureAwait(false);
                             }
                         }
                         else
