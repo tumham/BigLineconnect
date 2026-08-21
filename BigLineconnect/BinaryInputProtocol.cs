@@ -19,6 +19,7 @@ namespace BigLineconnect
         public const byte CMD_MOUSE_BUTTON = 0x05;
         public const byte CMD_MOUSE_SCROLL = 0x06;
         public const byte CMD_MOUSE_DBLCLICK = 0x07;
+        public const byte CMD_KEY_CHAR = 0x08;
 
         public const byte MOUSE_BTN_LEFT = 0x01;
         public const byte MOUSE_BTN_RIGHT = 0x02;
@@ -62,6 +63,22 @@ namespace BigLineconnect
             packet[1] = CMD_KEY_UP;
             packet[2] = (byte)(vkCode & 0xFF);
             packet[3] = (byte)((vkCode >> 8) & 0xFF);
+            packet[4] = 0;
+            packet[5] = 0;
+            packet[6] = 0;
+            packet[7] = 0;
+            packet[8] = 0;
+            return packet;
+        }
+
+        public static byte[] EncodeChar(char ch)
+        {
+            byte[] packet = new byte[9];
+            packet[0] = MAGIC_BYTE;
+            packet[1] = CMD_KEY_CHAR;
+            ushort code = (ushort)ch;
+            packet[2] = (byte)(code & 0xFF);
+            packet[3] = (byte)((code >> 8) & 0xFF);
             packet[4] = 0;
             packet[5] = 0;
             packet[6] = 0;

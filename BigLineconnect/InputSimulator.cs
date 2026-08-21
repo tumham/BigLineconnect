@@ -555,6 +555,8 @@ namespace BigLineconnect
                 inputs[1] = CreateKeyInput(0, (ushort)ch, KEYEVENTF_UNICODE | KEYEVENTF_KEYUP);
                 SendInput(2, inputs, Marshal.SizeOf<INPUT>());
             }
+
+            Program.TriggerInstantCapture(2);
         }
 
         public static void SimulateBinaryInput(ReadOnlySpan<byte> packet, int displayIndex = 0)
@@ -563,7 +565,12 @@ namespace BigLineconnect
 
             byte cmd = packet[1];
 
-            if (cmd == BinaryInputProtocol.CMD_KEY_STROKE || cmd == BinaryInputProtocol.CMD_KEY_DOWN)
+            if (cmd == BinaryInputProtocol.CMD_KEY_CHAR)
+            {
+                ushort charCode = (ushort)(packet[2] | (packet[3] << 8));
+                SimulateChar((char)charCode);
+            }
+            else if (cmd == BinaryInputProtocol.CMD_KEY_STROKE || cmd == BinaryInputProtocol.CMD_KEY_DOWN)
             {
                 ushort vkCode = (ushort)(packet[2] | (packet[3] << 8));
                 byte mods = packet[4];
