@@ -2229,19 +2229,16 @@ namespace BigLineconnect
                     string[] lines = File.ReadAllLines(path);
                     if (lines.Length >= 1)
                     {
-                        UsePassword = bool.Parse(lines[0].Trim());
+                        if (bool.TryParse(lines[0].Trim(), out bool usePass))
+                        {
+                            UsePassword = usePass;
+                        }
                     }
                     if (lines.Length >= 2)
                     {
                         string raw = lines[1].Trim();
                         AccessPassword = new string(raw.Where(char.IsDigit).ToArray());
                     }
-                }
-
-                if (string.IsNullOrWhiteSpace(AccessPassword) || AccessPassword.Length < 4)
-                {
-                    AccessPassword = Random.Shared.Next(100000, 999999).ToString();
-                    SaveSecuritySettings();
                 }
             }
             catch { }

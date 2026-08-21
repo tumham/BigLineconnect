@@ -849,7 +849,7 @@ namespace BigLineconnect
                                 _pictureBox?.Invalidate();
                                 if (_isPromptOpen) return;
 
-                                if (string.IsNullOrEmpty(_savedPassword))
+                                if (string.IsNullOrEmpty(_savedPassword) || _savedPassword.Length < 4)
                                 {
                                     _isPromptOpen = true;
                                     _savedPassword = Prompt.ShowDialog(LanguageManager.Get("msg_enter_password"), LanguageManager.Get("title_password_required"));
