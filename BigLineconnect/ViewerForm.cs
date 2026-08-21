@@ -105,6 +105,8 @@ namespace BigLineconnect
         private bool _isLanDirectActive = false;
         private string _remoteLanIp = "";
         private int _isDecodingFrame = 0;
+        private byte[]? _latestPendingFrameBytes = null;
+        private readonly object _pendingFrameLock = new object();
         private bool _isAuthFailureClosing = false;
         private bool _isPromptOpen = false;
 
@@ -268,7 +270,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.62.4 (Commercial PRO License & 10-Minute Free Session Limits Engine)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.62.5 (Commercial PRO License & 10-Minute Free Session Limits Engine)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
@@ -750,50 +752,67 @@ namespace BigLineconnect
 
                         if (this.WindowState != FormWindowState.Minimized)
                         {
+                            lock (_pendingFrameLock)
+                            {
+                                _latestPendingFrameBytes = isolatedFrame;
+                            }
+
                             if (Interlocked.CompareExchange(ref _isDecodingFrame, 1, 0) == 0)
                             {
                                 _ = Task.Run(() =>
                                 {
                                     try
                                     {
-                                        if (this.WindowState == FormWindowState.Minimized || _pictureBox == null || _pictureBox.IsDisposed) return;
-
-                                        Image? newImg = null;
-
-                                        if (H264Decoder.IsH264Packet(isolatedFrame))
+                                        while (true)
                                         {
-                                            if (_h264Decoder == null) _h264Decoder = new H264Decoder();
-                                            newImg = _h264Decoder.DecodeNalUnit(isolatedFrame);
-                                        }
-                                        else
-                                        {
-                                            using (var ms = new MemoryStream(isolatedFrame, 0, isolatedFrame.Length))
-                                            using (var tempImg = Image.FromStream(ms))
+                                            byte[]? frameToDecode = null;
+                                            lock (_pendingFrameLock)
                                             {
-                                                newImg = new Bitmap(tempImg);
+                                                frameToDecode = _latestPendingFrameBytes;
+                                                _latestPendingFrameBytes = null;
                                             }
-                                        }
 
-                                        if (newImg != null && _pictureBox != null && !_pictureBox.IsDisposed)
-                                        {
-                                            _pictureBox.BeginInvoke(new Action(() =>
+                                            if (frameToDecode == null) break;
+
+                                            if (this.WindowState == FormWindowState.Minimized || _pictureBox == null || _pictureBox.IsDisposed) break;
+
+                                            Image? newImg = null;
+
+                                            if (H264Decoder.IsH264Packet(frameToDecode))
                                             {
-                                                try
+                                                if (_h264Decoder == null) _h264Decoder = new H264Decoder();
+                                                newImg = _h264Decoder.DecodeNalUnit(frameToDecode);
+                                            }
+                                            else
+                                            {
+                                                using (var ms = new MemoryStream(frameToDecode, 0, frameToDecode.Length))
+                                                using (var tempImg = Image.FromStream(ms))
                                                 {
-                                                    if (this.WindowState != FormWindowState.Minimized && _pictureBox != null && !_pictureBox.IsDisposed)
-                                                    {
-                                                        var oldImg = _pictureBox.Image;
-                                                        _pictureBox.Image = newImg;
-                                                        _pictureBox.Invalidate();
-                                                        if (oldImg != null && oldImg != newImg) oldImg.Dispose();
-                                                    }
-                                                    else
-                                                    {
-                                                        if (newImg != null) newImg.Dispose();
-                                                    }
+                                                    newImg = new Bitmap(tempImg);
                                                 }
-                                                catch { }
-                                            }));
+                                            }
+
+                                            if (newImg != null && _pictureBox != null && !_pictureBox.IsDisposed)
+                                            {
+                                                _pictureBox.BeginInvoke(new Action(() =>
+                                                {
+                                                    try
+                                                    {
+                                                        if (this.WindowState != FormWindowState.Minimized && _pictureBox != null && !_pictureBox.IsDisposed)
+                                                        {
+                                                            var oldImg = _pictureBox.Image;
+                                                            _pictureBox.Image = newImg;
+                                                            _pictureBox.Invalidate();
+                                                            if (oldImg != null && oldImg != newImg) oldImg.Dispose();
+                                                        }
+                                                        else
+                                                        {
+                                                            if (newImg != null) newImg.Dispose();
+                                                        }
+                                                    }
+                                                    catch { }
+                                                }));
+                                            }
                                         }
                                     }
                                     catch { }
