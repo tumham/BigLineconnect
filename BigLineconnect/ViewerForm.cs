@@ -272,7 +272,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.63.3 (Commercial PRO License & 10-Minute Free Session Limits Engine)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.63.4 (Commercial PRO License & 10-Minute Free Session Limits Engine)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
@@ -693,9 +693,9 @@ namespace BigLineconnect
                                 }
                                 long normalizedTicks = frameTicks + _clockOffsetTicks;
                                 double ageMs = (DateTime.UtcNow.Ticks - normalizedTicks) / (double)TimeSpan.TicksPerMillisecond;
-                                if (ageMs > 3000)
+                                if (ageMs > 180)
                                 {
-                                    // DISCARD STALE BUFFERBLOAT FRAME IN 0 MS!
+                                    // DISCARD STALE BUFFERBLOAT FRAME IN 0 MS! Prevents 2-3 second lag buildup!
                                     continue;
                                 }
                                 frameDataOffset = 8;
