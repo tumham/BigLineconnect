@@ -273,7 +273,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.63.5 (Commercial PRO License & 10-Minute Free Session Limits Engine)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.63.6 (Commercial PRO License & 10-Minute Free Session Limits Engine)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
@@ -690,17 +690,16 @@ namespace BigLineconnect
                             {
                                 long currentDelta = DateTime.UtcNow.Ticks - frameTicks;
 
-                                // Continuously self-heal baseline offset to the fastest observed frame transit delta
-                                if (currentDelta < _minDeltaTicks || (DateTime.UtcNow - _lastDeltaResetTime).TotalSeconds > 5)
+                                // Baseline minimum delta tracks the fastest observed frame transit time
+                                if (currentDelta < _minDeltaTicks)
                                 {
                                     _minDeltaTicks = currentDelta;
-                                    _lastDeltaResetTime = DateTime.UtcNow;
                                 }
 
                                 double ageMs = (currentDelta - _minDeltaTicks) / (double)TimeSpan.TicksPerMillisecond;
-                                if (ageMs > 120)
+                                if (ageMs > 100)
                                 {
-                                    // DISCARD STALE BUFFERBLOAT FRAME IN 0 MS! Prevents 10-second initial lag buildup!
+                                    // DISCARD STALE BUFFERBLOAT FRAME IN 0 MS! Prevents 20-30s lag buildup!
                                     continue;
                                 }
                                 frameDataOffset = 8;
