@@ -110,7 +110,8 @@ namespace BigLineconnect
         private readonly object _pendingFrameLock = new object();
         private bool _isAuthFailureClosing = false;
         private bool _isPromptOpen = false;
-        private long _clockOffsetTicks = 0;
+        private long _minDeltaTicks = long.MaxValue;
+        private DateTime _lastDeltaResetTime = DateTime.UtcNow;
 
         private bool IsTrueLanDirect()
         {
@@ -272,7 +273,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.63.4 (Commercial PRO License & 10-Minute Free Session Limits Engine)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.63.5 (Commercial PRO License & 10-Minute Free Session Limits Engine)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
@@ -687,15 +688,19 @@ namespace BigLineconnect
                             long frameTicks = BitConverter.ToInt64(_receiveBuffer, 0);
                             if (frameTicks > 630000000000000000L && frameTicks < 700000000000000000L)
                             {
-                                if (_clockOffsetTicks == 0)
+                                long currentDelta = DateTime.UtcNow.Ticks - frameTicks;
+
+                                // Continuously self-heal baseline offset to the fastest observed frame transit delta
+                                if (currentDelta < _minDeltaTicks || (DateTime.UtcNow - _lastDeltaResetTime).TotalSeconds > 5)
                                 {
-                                    _clockOffsetTicks = DateTime.UtcNow.Ticks - frameTicks;
+                                    _minDeltaTicks = currentDelta;
+                                    _lastDeltaResetTime = DateTime.UtcNow;
                                 }
-                                long normalizedTicks = frameTicks + _clockOffsetTicks;
-                                double ageMs = (DateTime.UtcNow.Ticks - normalizedTicks) / (double)TimeSpan.TicksPerMillisecond;
-                                if (ageMs > 180)
+
+                                double ageMs = (currentDelta - _minDeltaTicks) / (double)TimeSpan.TicksPerMillisecond;
+                                if (ageMs > 120)
                                 {
-                                    // DISCARD STALE BUFFERBLOAT FRAME IN 0 MS! Prevents 2-3 second lag buildup!
+                                    // DISCARD STALE BUFFERBLOAT FRAME IN 0 MS! Prevents 10-second initial lag buildup!
                                     continue;
                                 }
                                 frameDataOffset = 8;
