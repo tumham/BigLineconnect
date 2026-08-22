@@ -110,6 +110,7 @@ namespace BigLineconnect
         private readonly object _pendingFrameLock = new object();
         private bool _isAuthFailureClosing = false;
         private bool _isPromptOpen = false;
+        private long _clockOffsetTicks = 0;
 
         private bool IsTrueLanDirect()
         {
@@ -271,7 +272,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.63.0 (Commercial PRO License & 10-Minute Free Session Limits Engine)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.63.1 (Commercial PRO License & 10-Minute Free Session Limits Engine)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
@@ -689,10 +690,15 @@ namespace BigLineconnect
                             long frameTicks = BitConverter.ToInt64(_receiveBuffer, 0);
                             if (frameTicks > 630000000000000000L && frameTicks < 700000000000000000L)
                             {
-                                double ageMs = (DateTime.UtcNow - new DateTime(frameTicks, DateTimeKind.Utc)).TotalMilliseconds;
-                                if (ageMs > 150)
+                                if (_clockOffsetTicks == 0)
                                 {
-                                    // DISCARD STALE BUFFERBLOAT FRAME IN 0 MS! Prevents 2-4 second lag buildup!
+                                    _clockOffsetTicks = DateTime.UtcNow.Ticks - frameTicks;
+                                }
+                                long normalizedTicks = frameTicks + _clockOffsetTicks;
+                                double ageMs = (DateTime.UtcNow.Ticks - normalizedTicks) / (double)TimeSpan.TicksPerMillisecond;
+                                if (ageMs > 3000)
+                                {
+                                    // DISCARD STALE BUFFERBLOAT FRAME IN 0 MS!
                                     continue;
                                 }
                                 frameDataOffset = 8;
