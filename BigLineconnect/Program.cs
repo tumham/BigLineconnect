@@ -1309,6 +1309,7 @@ namespace BigLineconnect
                     CurrentQuality = q;
                     CurrentMaxDimension = maxDim;
                     _lastSentFrameBytes = null; // Instantly flush old frame cache so new quality applies in 0ms!
+                    TriggerInstantCapture(2);
                     Log($"Görüntü kalitesi değiştirildi: %{q}, MaxDim: {maxDim}");
                 }
                 else if (type == "toggle_wallpaper")

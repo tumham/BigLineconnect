@@ -101,6 +101,7 @@ namespace BigLineconnect
         private FileManagerForm? _fileManagerForm;
         private readonly SemaphoreSlim _sendSemaphore = new SemaphoreSlim(1, 1);
         private ComboBox? _cbDisplays;
+        private ToolTip _toolTip = new ToolTip();
         private Form? _activeRestartDialog;
         private bool _isLanDirectActive = false;
         private string _remoteLanIp = "";
@@ -270,7 +271,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.62.6 (Commercial PRO License & 10-Minute Free Session Limits Engine)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.62.7 (Commercial PRO License & 10-Minute Free Session Limits Engine)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
@@ -307,31 +308,42 @@ namespace BigLineconnect
             };
             panelTop.Controls.Add(flowTop);
 
+            _toolTip = new ToolTip
+            {
+                AutoPopDelay = 5000,
+                InitialDelay = 200,
+                ReshowDelay = 100,
+                ShowAlways = true
+            };
+
             var btnChat = new NoFocusButton
             {
-                Text = LanguageManager.Get("btn_chat"),
+                Text = "💬 Sohbet",
                 Size = new Size(85, 28),
                 Margin = new Padding(2, 0, 4, 0)
             };
             ModernUIHelper.ApplyButtonStyle(btnChat, Color.FromArgb(0, 229, 255), Color.FromArgb(0, 176, 255), Color.Black);
             btnChat.Click += (s, e) => OpenChat();
+            _toolTip.SetToolTip(btnChat, "Canlı Sohbet / Mesajlaşma (Ctrl+Shift+C)");
 
             var btnFileManager = new NoFocusButton
             {
-                Text = "🗂️ Dosya",
-                Size = new Size(85, 28),
+                Text = "📁 Dosya",
+                Size = new Size(80, 28),
                 Margin = new Padding(2, 0, 4, 0)
             };
             ModernUIHelper.ApplyButtonStyle(btnFileManager, Color.FromArgb(0, 229, 255), Color.FromArgb(0, 176, 255), Color.Black);
             btnFileManager.Click += (s, e) => OpenFileManager();
+            _toolTip.SetToolTip(btnFileManager, "Dosya Transferi (Sürükle - Bırak / Dosya Gönder)");
 
             var btnActions = new NoFocusButton
             {
-                Text = "🔑 Eylemler ⚡",
-                Size = new Size(115, 28),
+                Text = "🔑 Eylemler",
+                Size = new Size(95, 28),
                 Margin = new Padding(2, 0, 6, 0)
             };
             ModernUIHelper.ApplyButtonStyle(btnActions, Color.FromArgb(231, 76, 60), Color.FromArgb(192, 57, 43), Color.White);
+            _toolTip.SetToolTip(btnActions, "Gelişmiş Eylemler (Ctrl+Alt+Del / Oturumu Kapat / Kilitle)");
 
             var cmsActions = new ContextMenuStrip();
             var itemCad = new ToolStripMenuItem("🔑 Ctrl + Alt + Del Gönder", null, (s, e) => {
@@ -354,7 +366,7 @@ namespace BigLineconnect
             _lblConnModeBadge = new Label
             {
                 Text = " ☁️ BULUT TÜNELİ ",
-                Size = new Size(165, 28),
+                Size = new Size(150, 28),
                 Font = new Font("Segoe UI", 9F, FontStyle.Bold),
                 ForeColor = Color.Black,
                 BackColor = Color.FromArgb(255, 193, 7),
@@ -362,6 +374,7 @@ namespace BigLineconnect
                 Margin = new Padding(2, 0, 6, 0),
                 Cursor = Cursors.Hand
             };
+            _toolTip.SetToolTip(_lblConnModeBadge, "Aktif Bağlantı Türü (Bulut Tüneli / Yerel Ağ)");
             _lblConnModeBadge.Click += (s, e) =>
             {
                 string infoText = IsTrueLanDirect() ?
@@ -382,7 +395,7 @@ namespace BigLineconnect
 
             _cbDisplays = new ComboBox
             {
-                Size = new Size(125, 28),
+                Size = new Size(120, 28),
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 BackColor = Color.FromArgb(15, 16, 22),
                 ForeColor = Color.White,
@@ -394,27 +407,29 @@ namespace BigLineconnect
             _cbDisplays.Items.Add("Ekran 1 (Ana)");
             _cbDisplays.SelectedIndex = 0;
             _cbDisplays.SelectedIndexChanged += CbDisplays_SelectedIndexChanged;
+            _toolTip.SetToolTip(_cbDisplays, "Uzak Ekran Seçimi (Monitör 1 / 2)");
 
             var btnQuality = new NoFocusButton
             {
-                Text = "Kalite: Dengeli (1280p) 🎨",
-                Size = new Size(150, 28),
+                Text = "🎨 Düşük",
+                Size = new Size(95, 28),
                 Margin = new Padding(2, 0, 4, 0)
             };
             ModernUIHelper.ApplyButtonStyle(btnQuality, Color.FromArgb(156, 39, 176), Color.FromArgb(123, 31, 162), Color.White);
+            _toolTip.SetToolTip(btnQuality, "Görüntü Kalitesi Seçimi (Düşük / İyi / En İyi)");
             
             var cmsQuality = new ContextMenuStrip();
-            var itemLow = new ToolStripMenuItem("⚡ Düşük Mod (Ultra Hızlı 960p - Düşük Kota)", null, (s, e) => {
-                btnQuality.Text = "Kalite: Hızlı (960p) 🎨";
-                SendJson("{\"type\":\"set_quality\",\"quality\":45,\"maxDim\":960}");
+            var itemLow = new ToolStripMenuItem("⚡ Düşük (Ultra Hızlı - Düşük Kota)", null, (s, e) => {
+                btnQuality.Text = "🎨 Düşük";
+                SendJson("{\"type\":\"set_quality\",\"quality\":40,\"maxDim\":960}");
             });
-            var itemMid = new ToolStripMenuItem("🎨 Dengeli HD (1280p - Önerilen)", null, (s, e) => {
-                btnQuality.Text = "Kalite: Dengeli (1280p) 🎨";
+            var itemMid = new ToolStripMenuItem("🎨 İyi (Dengeli HD)", null, (s, e) => {
+                btnQuality.Text = "🎨 İyi";
                 SendJson("{\"type\":\"set_quality\",\"quality\":55,\"maxDim\":1280}");
             });
-            var itemHigh = new ToolStripMenuItem("💎 Pırıl Pırıl (Full HD 1080p)", null, (s, e) => {
-                btnQuality.Text = "Kalite: Full HD (1080p) 🎨";
-                SendJson("{\"type\":\"set_quality\",\"quality\":70,\"maxDim\":1920}");
+            var itemHigh = new ToolStripMenuItem("💎 En İyi (Full HD 1080p)", null, (s, e) => {
+                btnQuality.Text = "🎨 En İyi";
+                SendJson("{\"type\":\"set_quality\",\"quality\":75,\"maxDim\":1920}");
             });
             cmsQuality.Items.Add(itemLow);
             cmsQuality.Items.Add(itemMid);
@@ -424,22 +439,23 @@ namespace BigLineconnect
             bool wallpaperEnabled = false;
             var btnWallpaper = new NoFocusButton
             {
-                Text = "Arka Plan: Siyah ⬛",
-                Size = new Size(130, 28),
+                Text = "⬛ Siyah",
+                Size = new Size(85, 28),
                 Margin = new Padding(2, 0, 4, 0)
             };
             ModernUIHelper.ApplyButtonStyle(btnWallpaper, Color.FromArgb(76, 175, 80), Color.FromArgb(56, 142, 60), Color.White);
+            _toolTip.SetToolTip(btnWallpaper, "Masaüstü Duvar Kağıdını Göster / Bastır");
             btnWallpaper.Click += (s, e) => {
                 wallpaperEnabled = !wallpaperEnabled;
                 if (wallpaperEnabled)
                 {
-                    btnWallpaper.Text = "Arka Plan: Canlı 🖼️";
+                    btnWallpaper.Text = "🖼️ Canlı";
                     ModernUIHelper.ApplyButtonStyle(btnWallpaper, Color.FromArgb(255, 152, 0), Color.FromArgb(245, 124, 0), Color.White);
                     SendJson("{\"type\":\"toggle_wallpaper\",\"enable\":true}");
                 }
                 else
                 {
-                    btnWallpaper.Text = "Arka Plan: Siyah ⬛";
+                    btnWallpaper.Text = "⬛ Siyah";
                     ModernUIHelper.ApplyButtonStyle(btnWallpaper, Color.FromArgb(76, 175, 80), Color.FromArgb(56, 142, 60), Color.White);
                     SendJson("{\"type\":\"toggle_wallpaper\",\"enable\":false}");
                 }
@@ -448,23 +464,24 @@ namespace BigLineconnect
             bool isOriginalMode = false;
             var btnDisplayMode = new NoFocusButton
             {
-                Text = "Görünüm: Sığdır 📐",
-                Size = new Size(125, 28),
+                Text = "📐 Sığdır",
+                Size = new Size(85, 28),
                 Margin = new Padding(2, 0, 6, 0)
             };
             ModernUIHelper.ApplyButtonStyle(btnDisplayMode, Color.FromArgb(0, 188, 212), Color.FromArgb(0, 151, 167), Color.White);
+            _toolTip.SetToolTip(btnDisplayMode, "Görüntü Ölçeği (Pencereye Sığdır / 1:1 Gerçek Boyut)");
 
             btnDisplayMode.Click += (s, e) => {
                 isOriginalMode = !isOriginalMode;
                 if (isOriginalMode)
                 {
-                    btnDisplayMode.Text = "Görünüm: 1:1 Net 📐";
+                    btnDisplayMode.Text = "🔍 1:1 Net";
                     if (_pictureBox != null) _pictureBox.SizeMode = PictureBoxSizeMode.CenterImage;
                     ModernUIHelper.ApplyButtonStyle(btnDisplayMode, Color.FromArgb(233, 30, 99), Color.FromArgb(194, 24, 91), Color.White);
                 }
                 else
                 {
-                    btnDisplayMode.Text = "Görünüm: Sığdır 📐";
+                    btnDisplayMode.Text = "📐 Sığdır";
                     if (_pictureBox != null) _pictureBox.SizeMode = PictureBoxSizeMode.Zoom;
                     ModernUIHelper.ApplyButtonStyle(btnDisplayMode, Color.FromArgb(0, 188, 212), Color.FromArgb(0, 151, 167), Color.White);
                 }
@@ -473,12 +490,13 @@ namespace BigLineconnect
             _lblFpsStats = new Label
             {
                 Text = "⚡ -- FPS | -- ms",
-                Size = new Size(140, 28),
+                Size = new Size(130, 28),
                 ForeColor = Color.FromArgb(0, 229, 255),
                 Font = new Font("Segoe UI", 9f, FontStyle.Bold),
                 TextAlign = ContentAlignment.MiddleLeft,
                 Margin = new Padding(4, 4, 2, 0)
             };
+            _toolTip.SetToolTip(_lblFpsStats, "Anlık Canlı Akış Hızı ve Bağlantı Gecikmesi");
 
             flowTop.Controls.Add(btnChat);
             flowTop.Controls.Add(btnFileManager);
@@ -500,9 +518,9 @@ namespace BigLineconnect
             // Custom Paint event to enforce high quality interpolation and render modern overlay when image is null
             _pictureBox.Paint += (s, pe) =>
             {
-                pe.Graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
-                pe.Graphics.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.HighQuality;
-                pe.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighQuality;
+                pe.Graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.Bilinear;
+                pe.Graphics.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.HighSpeed;
+                pe.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighSpeed;
 
                 if (_pictureBox.Image == null)
                 {
@@ -602,6 +620,9 @@ namespace BigLineconnect
             {
                 await _ws.ConnectAsync(new Uri(_wsUrl), CancellationToken.None);
                 
+                // Enforce default Düşük quality mode (960p / Q=40) for zero-lag 60 FPS streaming
+                SendJson("{\"type\":\"set_quality\",\"quality\":40,\"maxDim\":960}");
+
                 // Launch immediate parallel LAN Direct probe for 0ms local socket auto-switch
                 StartP2pAndLanProbe();
 
