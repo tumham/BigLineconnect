@@ -271,7 +271,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.62.9 (Commercial PRO License & 10-Minute Free Session Limits Engine)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.63.0 (Commercial PRO License & 10-Minute Free Session Limits Engine)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
@@ -681,6 +681,25 @@ namespace BigLineconnect
 
                     if (result.MessageType == WebSocketMessageType.Binary && totalReceived > 0)
                     {
+                        int frameDataOffset = 0;
+                        int frameDataLength = totalReceived;
+
+                        if (totalReceived >= 16)
+                        {
+                            long frameTicks = BitConverter.ToInt64(_receiveBuffer, 0);
+                            if (frameTicks > 630000000000000000L && frameTicks < 700000000000000000L)
+                            {
+                                double ageMs = (DateTime.UtcNow - new DateTime(frameTicks, DateTimeKind.Utc)).TotalMilliseconds;
+                                if (ageMs > 150)
+                                {
+                                    // DISCARD STALE BUFFERBLOAT FRAME IN 0 MS! Prevents 2-4 second lag buildup!
+                                    continue;
+                                }
+                                frameDataOffset = 8;
+                                frameDataLength = totalReceived - 8;
+                            }
+                        }
+
                         _hasConnectedOnce = true;
                         DateTime now = DateTime.Now;
                         double frameGap = (now - _lastFrameReceivedTime).TotalMilliseconds;
@@ -758,8 +777,8 @@ namespace BigLineconnect
                                 _savedFrameIndex++;
                                 int currentSavedIndex = _savedFrameIndex;
                                 string framePath = Path.Combine(_recordDir, $"frame_{currentSavedIndex:D6}.jpg");
-                                byte[] frameBytes = new byte[totalReceived];
-                                Array.Copy(_receiveBuffer, 0, frameBytes, 0, totalReceived);
+                                byte[] frameBytes = new byte[frameDataLength];
+                                Array.Copy(_receiveBuffer, frameDataOffset, frameBytes, 0, frameDataLength);
                                 _ = Task.Run(() =>
                                 {
                                     try { File.WriteAllBytes(framePath, frameBytes); } catch { }
@@ -768,8 +787,8 @@ namespace BigLineconnect
                         }
 
                         // Thread-safe isolated frame copy for GDI+ JPEG or H.264 NAL decoding
-                        byte[] isolatedFrame = new byte[totalReceived];
-                        Buffer.BlockCopy(_receiveBuffer, 0, isolatedFrame, 0, totalReceived);
+                        byte[] isolatedFrame = new byte[frameDataLength];
+                        Buffer.BlockCopy(_receiveBuffer, frameDataOffset, isolatedFrame, 0, frameDataLength);
 
                         if (this.WindowState != FormWindowState.Minimized)
                         {

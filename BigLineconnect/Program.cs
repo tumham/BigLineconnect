@@ -1098,9 +1098,13 @@ namespace BigLineconnect
                                 try
                                 {
                                     DateTime sendStart = DateTime.Now;
+                                    byte[] stampedPayload = new byte[8 + frameToSend.Length];
+                                    Buffer.BlockCopy(BitConverter.GetBytes(DateTime.UtcNow.Ticks), 0, stampedPayload, 0, 8);
+                                    Buffer.BlockCopy(frameToSend, 0, stampedPayload, 8, frameToSend.Length);
+
                                     await SafeSendAsync(
                                         ws,
-                                        new ArraySegment<byte>(frameToSend),
+                                        new ArraySegment<byte>(stampedPayload),
                                         WebSocketMessageType.Binary,
                                         true,
                                         token
