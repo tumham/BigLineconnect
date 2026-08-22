@@ -71,42 +71,63 @@ namespace BigLineconnect
         private const int COLOR_DESKTOP = 1;
         private static string? _originalWallpaper = null;
 
+        private static string GetWindowsWallpaperPath()
+        {
+            try
+            {
+                using var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(@"Control Panel\Desktop");
+                string? regPath = key?.GetValue("WallPaper") as string;
+                if (!string.IsNullOrEmpty(regPath) && File.Exists(regPath))
+                {
+                    return regPath;
+                }
+
+                string transcoded = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                    @"Microsoft\Windows\Themes\TranscodedWallpaper"
+                );
+                if (File.Exists(transcoded))
+                {
+                    return transcoded;
+                }
+            }
+            catch { }
+            return "";
+        }
+
         public static void SuppressWallpaper(bool suppress)
         {
             try
             {
                 if (suppress)
                 {
-                    if (_originalWallpaper == null)
+                    if (string.IsNullOrEmpty(_originalWallpaper))
                     {
-                        var sb = new System.Text.StringBuilder(500);
-                        SystemParametersInfo(SPI_GETDESKWALLPAPER, sb.Capacity, sb, 0);
-                        _originalWallpaper = sb.ToString();
+                        _originalWallpaper = GetWindowsWallpaperPath();
                     }
 
                     int[] elements = new int[] { COLOR_DESKTOP };
                     uint[] colors = new uint[] { 0x000000 }; // Solid Black
                     SetSysColors(1, elements, colors);
-
-                    SystemParametersInfo(SPI_SETDESKWALLPAPER, 0, "", SPIF_UPDATEINIFILE | SPIF_SENDCHANGE);
-
-                    try
-                    {
-                        using (var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(@"Control Panel\Colors", true))
-                        {
-                            key?.SetValue("Background", "0 0 0");
-                        }
-                    }
-                    catch { }
+                    SystemParametersInfo(SPI_SETDESKWALLPAPER, 0, "", SPIF_SENDCHANGE);
                 }
                 else
                 {
-                    if (_originalWallpaper != null && !string.IsNullOrEmpty(_originalWallpaper))
+                    string wallpaperToRestore = !string.IsNullOrEmpty(_originalWallpaper)
+                        ? _originalWallpaper
+                        : GetWindowsWallpaperPath();
+
+                    if (!string.IsNullOrEmpty(wallpaperToRestore) && File.Exists(wallpaperToRestore))
                     {
-                        SystemParametersInfo(SPI_SETDESKWALLPAPER, 0, _originalWallpaper, SPIF_UPDATEINIFILE | SPIF_SENDCHANGE);
-                        _originalWallpaper = null;
+                        SystemParametersInfo(SPI_SETDESKWALLPAPER, 0, wallpaperToRestore, SPIF_UPDATEINIFILE | SPIF_SENDCHANGE);
+                    }
+                    else
+                    {
+                        // Refresh Windows Shell to reload wallpaper
+                        SystemParametersInfo(SPI_SETDESKWALLPAPER, 0, (string?)null, SPIF_SENDCHANGE);
                     }
                 }
+                Program.TriggerInstantCapture(2);
             }
             catch { }
         }
