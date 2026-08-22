@@ -272,7 +272,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.63.1 (Commercial PRO License & 10-Minute Free Session Limits Engine)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.63.2 (Commercial PRO License & 10-Minute Free Session Limits Engine)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
@@ -580,10 +580,7 @@ namespace BigLineconnect
             this.KeyPress += ViewerForm_KeyPress;
             this.Deactivate += (s, e) => SendReleaseAllModifiers();
             this.Leave += (s, e) => SendReleaseAllModifiers();
-            if (_pictureBox != null)
-            {
-                _pictureBox.MouseDoubleClick += PictureBox_MouseDoubleClick;
-            }
+            // MouseDown and MouseUp already natively handle double clicks without duplicate bleed-through
 
             // Bind Drag and Drop events
             try
