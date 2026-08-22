@@ -1097,6 +1097,7 @@ namespace BigLineconnect
                                 _isSendingFrame = true;
                                 try
                                 {
+                                    DateTime sendStart = DateTime.Now;
                                     await SafeSendAsync(
                                         ws,
                                         new ArraySegment<byte>(frameToSend),
@@ -1104,6 +1105,16 @@ namespace BigLineconnect
                                         true,
                                         token
                                     ).ConfigureAwait(false);
+
+                                    double sendMs = (DateTime.Now - sendStart).TotalMilliseconds;
+                                    if (sendMs > 120)
+                                    {
+                                        // Slow network or Mobile Hotspot detected (>120ms socket send time).
+                                        // Auto-tune resolution/quality to Ultra-Low 15 KB mode to prevent 1 FPS stuttering!
+                                        CurrentQuality = Math.Min(CurrentQuality, 25);
+                                        CurrentMaxDimension = Math.Min(CurrentMaxDimension, 640);
+                                        _lastSentFrameBytes = null;
+                                    }
 
                                     _lastSentFrameBytes = frameToSend;
                                     _lastSentFrameTime = DateTime.Now;
