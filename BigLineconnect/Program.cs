@@ -1090,8 +1090,8 @@ namespace BigLineconnect
                         // 2. KOTA KORUMASI: Yalnızca ekran değiştiğinde, ilk açılışta veya tıklamada kare gönder (Statik ekranda 0 KB/sn!)
                         if (!isDuplicate || isInitialBurst || isForcedBurst)
                         {
-                            // Enforce minimum frame spacing to prevent socket buffer congestion
-                            int minIntervalMs = 16; // 60 FPS zero artificial delay across all quality modes!
+                            // Enforce dynamic frame interval pacing to prevent TCP socket buffer congestion
+                            int minIntervalMs = (CurrentQuality <= 35) ? 33 : 16; // 30 FPS pacing on Düşük mode eliminates TCP bufferbloat!
                             if (isInitialBurst || isForcedBurst || (DateTime.Now - _lastSentFrameTime).TotalMilliseconds >= minIntervalMs)
                             {
                                 _isSendingFrame = true;

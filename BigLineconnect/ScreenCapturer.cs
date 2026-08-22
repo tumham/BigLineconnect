@@ -405,7 +405,7 @@ namespace BigLineconnect
                 int originalW = bmpScreen.Width;
                 int originalH = bmpScreen.Height;
 
-                if (maxDimension > 0 && (originalW > maxDimension || originalH > maxDimension))
+                if (quality > 35 && maxDimension > 0 && (originalW > maxDimension || originalH > maxDimension))
                 {
                     double scale = Math.Min((double)maxDimension / originalW, (double)maxDimension / originalH);
                     int newW = (int)(originalW * scale);

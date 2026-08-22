@@ -271,7 +271,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.62.8 (Commercial PRO License & 10-Minute Free Session Limits Engine)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.62.9 (Commercial PRO License & 10-Minute Free Session Limits Engine)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
@@ -419,17 +419,17 @@ namespace BigLineconnect
             _toolTip.SetToolTip(btnQuality, "Görüntü Kalitesi Seçimi (Düşük / İyi / En İyi)");
             
             var cmsQuality = new ContextMenuStrip();
-            var itemLow = new ToolStripMenuItem("⚡ Düşük (Mobil & Ultra Hızlı - 15 KB)", null, (s, e) => {
+            var itemLow = new ToolStripMenuItem("⚡ Düşük (Ultra Hızlı - 0ms Gecikme)", null, (s, e) => {
                 btnQuality.Text = "🎨 Düşük";
-                SendJson("{\"type\":\"set_quality\",\"quality\":30,\"maxDim\":720}");
+                SendJson("{\"type\":\"set_quality\",\"quality\":30,\"maxDim\":0}");
             });
-            var itemMid = new ToolStripMenuItem("🎨 İyi (Dengeli HD - 45 KB)", null, (s, e) => {
+            var itemMid = new ToolStripMenuItem("🎨 İyi (Dengeli HD)", null, (s, e) => {
                 btnQuality.Text = "🎨 İyi";
-                SendJson("{\"type\":\"set_quality\",\"quality\":45,\"maxDim\":960}");
+                SendJson("{\"type\":\"set_quality\",\"quality\":50,\"maxDim\":1280}");
             });
-            var itemHigh = new ToolStripMenuItem("💎 En İyi (Full HD 1080p - 80 KB)", null, (s, e) => {
+            var itemHigh = new ToolStripMenuItem("💎 En İyi (Full HD 1080p)", null, (s, e) => {
                 btnQuality.Text = "🎨 En İyi";
-                SendJson("{\"type\":\"set_quality\",\"quality\":65,\"maxDim\":1280}");
+                SendJson("{\"type\":\"set_quality\",\"quality\":70,\"maxDim\":1920}");
             });
             cmsQuality.Items.Add(itemLow);
             cmsQuality.Items.Add(itemMid);
@@ -620,8 +620,8 @@ namespace BigLineconnect
             {
                 await _ws.ConnectAsync(new Uri(_wsUrl), CancellationToken.None);
                 
-                // Enforce default Düşük quality mode (720p / Q=30 - 15 KB) for zero-lag mobile streaming
-                SendJson("{\"type\":\"set_quality\",\"quality\":30,\"maxDim\":720}");
+                // Enforce default Düşük quality mode (Native res / Q=30) for 0ms latency
+                SendJson("{\"type\":\"set_quality\",\"quality\":30,\"maxDim\":0}");
 
                 // Launch immediate parallel LAN Direct probe for 0ms local socket auto-switch
                 StartP2pAndLanProbe();
