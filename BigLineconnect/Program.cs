@@ -1091,7 +1091,7 @@ namespace BigLineconnect
                         if (!isDuplicate || isInitialBurst || isForcedBurst)
                         {
                             // Enforce dynamic frame interval pacing to prevent TCP socket buffer congestion
-                            int minIntervalMs = (CurrentQuality <= 35) ? 33 : 16; // 30 FPS pacing on Düşük mode eliminates TCP bufferbloat!
+                            int minIntervalMs = (CurrentQuality <= 48) ? 25 : 16; // 40 FPS pacing on Düşük mode preserves 0ms latency!
                             if (isInitialBurst || isForcedBurst || (DateTime.Now - _lastSentFrameTime).TotalMilliseconds >= minIntervalMs)
                             {
                                 _isSendingFrame = true;
