@@ -273,7 +273,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.63.6 (Commercial PRO License & 10-Minute Free Session Limits Engine)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.63.7 (Commercial PRO License & 10-Minute Free Session Limits Engine)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
@@ -688,20 +688,6 @@ namespace BigLineconnect
                             long frameTicks = BitConverter.ToInt64(_receiveBuffer, 0);
                             if (frameTicks > 630000000000000000L && frameTicks < 700000000000000000L)
                             {
-                                long currentDelta = DateTime.UtcNow.Ticks - frameTicks;
-
-                                // Baseline minimum delta tracks the fastest observed frame transit time
-                                if (currentDelta < _minDeltaTicks)
-                                {
-                                    _minDeltaTicks = currentDelta;
-                                }
-
-                                double ageMs = (currentDelta - _minDeltaTicks) / (double)TimeSpan.TicksPerMillisecond;
-                                if (ageMs > 100)
-                                {
-                                    // DISCARD STALE BUFFERBLOAT FRAME IN 0 MS! Prevents 20-30s lag buildup!
-                                    continue;
-                                }
                                 frameDataOffset = 8;
                                 frameDataLength = totalReceived - 8;
                             }
