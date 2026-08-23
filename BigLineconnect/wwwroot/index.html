@@ -583,15 +583,17 @@
                                 cv.height = tempImg.height;
                             }
                             ctx.drawImage(tempImg, 0, 0);
-                        }
-                        if (fallbackImg) {
+                            if (cv.style.display !== 'block') cv.style.display = 'block';
+                            if (fallbackImg && fallbackImg.style.display !== 'none') fallbackImg.style.display = 'none';
+                        } else if (fallbackImg) {
                             fallbackImg.src = url;
-                            if (fallbackImg.style.display === 'none') {
+                            if (fallbackImg.style.display !== 'block') {
                                 fallbackImg.style.display = 'block';
                                 fallbackImg.style.width = '100%';
                                 fallbackImg.style.height = '100%';
                                 fallbackImg.style.objectFit = 'contain';
                             }
+                            if (cv && cv.style.display !== 'none') cv.style.display = 'none';
                         }
                         URL.revokeObjectURL(url);
                     };
@@ -620,12 +622,28 @@
         window.startConnectionProcess = doConnect;
 
         // 100% Pixel-Perfect Mouse Calibration with Aspect Ratio & Letterbox Compensation
-        function getMousePos(cv, clientX, clientY) {
-            var rect = cv.getBoundingClientRect();
+        function getMousePos(clientX, clientY) {
+            var container = document.getElementById('canvas-container');
+            var cv = document.getElementById('screen-canvas');
+            var fallbackImg = document.getElementById('screen-img');
+
+            var targetEl = (cv && cv.style.display !== 'none' && cv.offsetWidth > 0) ? cv :
+                           ((fallbackImg && fallbackImg.offsetWidth > 0) ? fallbackImg : container);
+
+            if (!targetEl) return { x: 0, y: 0 };
+            var rect = targetEl.getBoundingClientRect();
             if (rect.width <= 0 || rect.height <= 0) return { x: 0, y: 0 };
 
-            var naturalWidth = (cv.width && cv.width > 300) ? cv.width : 1920;
-            var naturalHeight = (cv.height && cv.height > 150) ? cv.height : 1080;
+            var naturalWidth = 1920;
+            var naturalHeight = 1080;
+
+            if (targetEl.tagName === 'CANVAS' && targetEl.width > 300) {
+                naturalWidth = targetEl.width;
+                naturalHeight = targetEl.height;
+            } else if (targetEl.tagName === 'IMG' && targetEl.naturalWidth > 300) {
+                naturalWidth = targetEl.naturalWidth;
+                naturalHeight = targetEl.naturalHeight;
+            }
 
             var imageAspect = naturalWidth / naturalHeight;
             var containerAspect = rect.width / rect.height;
@@ -633,13 +651,11 @@
             var renderedWidth, renderedHeight, offsetX, offsetY;
 
             if (containerAspect > imageAspect) {
-                // Black bars on left & right
                 renderedHeight = rect.height;
                 renderedWidth = rect.height * imageAspect;
                 offsetX = (rect.width - renderedWidth) / 2;
                 offsetY = 0;
             } else {
-                // Black bars on top & bottom
                 renderedWidth = rect.width;
                 renderedHeight = rect.width / imageAspect;
                 offsetX = 0;
@@ -665,10 +681,10 @@
         var isPinchZooming = false;
 
         function applyZoomTransform() {
-            var cv = document.getElementById('screen-canvas');
-            if (cv) {
-                cv.style.transformOrigin = originXPercent + '% ' + originYPercent + '%';
-                cv.style.transform = 'translate(' + panX + 'px, ' + panY + 'px) scale(' + currentScale + ')';
+            var container = document.getElementById('canvas-container');
+            if (container) {
+                container.style.transformOrigin = originXPercent + '% ' + originYPercent + '%';
+                container.style.transform = 'translate(' + panX + 'px, ' + panY + 'px) scale(' + currentScale + ')';
             }
         }
 
@@ -721,42 +737,42 @@
 
         // Input Listeners (Mouse, Focal Pinch Zoom, Mobile Virtual Keyboard)
         window.addEventListener('load', function() {
-            var cv = document.getElementById('screen-canvas');
-            if (!cv) return;
+            var targetHost = document.getElementById('canvas-container') || document.getElementById('screen-canvas');
+            if (!targetHost) return;
 
-            cv.style.touchAction = 'none';
+            targetHost.style.touchAction = 'none';
 
             var lastMove = 0;
-            cv.addEventListener('mousemove', function(e) {
+            targetHost.addEventListener('mousemove', function(e) {
                 if (!ws || ws.readyState !== WebSocket.OPEN) return;
                 var now = Date.now();
                 if (now - lastMove < 16) return;
                 lastMove = now;
 
-                var pos = getMousePos(cv, e.clientX, e.clientY);
+                var pos = getMousePos(e.clientX, e.clientY);
                 ws.send(JSON.stringify({ type: 'move', x: pos.x, y: pos.y }));
             });
 
-            cv.addEventListener('mousedown', function(e) {
+            targetHost.addEventListener('mousedown', function(e) {
                 if (!ws || ws.readyState !== WebSocket.OPEN) return;
-                var pos = getMousePos(cv, e.clientX, e.clientY);
+                var pos = getMousePos(e.clientX, e.clientY);
                 var btn = isRightClickNext ? 'right' : (e.button === 2 ? 'right' : (e.button === 1 ? 'middle' : 'left'));
                 ws.send(JSON.stringify({ type: 'click', button: btn, action: 'down', x: pos.x, y: pos.y }));
                 if (isRightClickNext) toggleRightClickMode();
                 e.preventDefault();
             });
 
-            cv.addEventListener('mouseup', function(e) {
+            targetHost.addEventListener('mouseup', function(e) {
                 if (!ws || ws.readyState !== WebSocket.OPEN) return;
-                var pos = getMousePos(cv, e.clientX, e.clientY);
+                var pos = getMousePos(e.clientX, e.clientY);
                 var btn = isRightClickNext ? 'right' : (e.button === 2 ? 'right' : (e.button === 1 ? 'middle' : 'left'));
                 ws.send(JSON.stringify({ type: 'click', button: btn, action: 'up', x: pos.x, y: pos.y }));
                 e.preventDefault();
             });
 
-            cv.addEventListener('contextmenu', function(e) { e.preventDefault(); });
+            targetHost.addEventListener('contextmenu', function(e) { e.preventDefault(); });
 
-            cv.addEventListener('wheel', function(e) {
+            targetHost.addEventListener('wheel', function(e) {
                 if (!ws || ws.readyState !== WebSocket.OPEN) return;
                 ws.send(JSON.stringify({ type: 'scroll', deltaY: e.deltaY }));
                 e.preventDefault();
@@ -765,7 +781,7 @@
             // Mobile Touch Engine: Focal Point Pinch Zoom + Pan + Tap & Hold
             var touchStartX = 0, touchStartY = 0, touchStartTime = 0, isTouchDragging = false;
 
-            cv.addEventListener('touchstart', function(e) {
+            targetHost.addEventListener('touchstart', function(e) {
                 if (!ws || ws.readyState !== WebSocket.OPEN) return;
                 if (e.touches.length === 2) {
                     isPinchZooming = true;
@@ -774,7 +790,7 @@
                     var midX = (t1.clientX + t2.clientX) / 2;
                     var midY = (t1.clientY + t2.clientY) / 2;
 
-                    var rect = cv.getBoundingClientRect();
+                    var rect = targetHost.getBoundingClientRect();
                     if (rect.width > 0 && rect.height > 0) {
                         originXPercent = Math.max(0, Math.min(100, ((midX - rect.left) / rect.width) * 100));
                         originYPercent = Math.max(0, Math.min(100, ((midY - rect.top) / rect.height) * 100));
@@ -791,12 +807,12 @@
                     touchStartY = t.clientY;
                     touchStartTime = Date.now();
                     isTouchDragging = false;
-                    var pos = getMousePos(cv, t.clientX, t.clientY);
+                    var pos = getMousePos(t.clientX, t.clientY);
                     ws.send(JSON.stringify({ type: 'move', x: pos.x, y: pos.y }));
                 }
             }, { passive: false });
 
-            cv.addEventListener('touchmove', function(e) {
+            targetHost.addEventListener('touchmove', function(e) {
                 if (!ws || ws.readyState !== WebSocket.OPEN) return;
                 if (e.touches.length === 2) {
                     var t1 = e.touches[0];
@@ -826,7 +842,7 @@
                         var now = Date.now();
                         if (now - lastMove >= 16) {
                             lastMove = now;
-                            var pos = getMousePos(cv, t.clientX, t.clientY);
+                            var pos = getMousePos(t.clientX, t.clientY);
                             ws.send(JSON.stringify({ type: 'move', x: pos.x, y: pos.y }));
                         }
                     }
@@ -834,7 +850,7 @@
                 }
             }, { passive: false });
 
-            cv.addEventListener('touchend', function(e) {
+            targetHost.addEventListener('touchend', function(e) {
                 if (!ws || ws.readyState !== WebSocket.OPEN) return;
                 if (isPinchZooming) {
                     if (e.touches.length === 0) isPinchZooming = false;
@@ -847,7 +863,7 @@
 
                 if (!isTouchDragging && duration < 600 && e.changedTouches.length > 0) {
                     var t = e.changedTouches[0];
-                    var pos = getMousePos(cv, t.clientX, t.clientY);
+                    var pos = getMousePos(t.clientX, t.clientY);
                     ws.send(JSON.stringify({ type: 'click', button: clickButton, action: 'down', x: pos.x, y: pos.y }));
                     setTimeout(function() {
                         if (ws && ws.readyState === WebSocket.OPEN) {
@@ -857,6 +873,7 @@
                     if (isRightClickNext) toggleRightClickMode();
                     e.preventDefault();
                 }
+            }, { passive: false });
             }, { passive: false });
 
             // Virtual Keyboard Touch Input Listener
