@@ -255,11 +255,35 @@ namespace BigLineconnect
             try
             {
                 DesktopHelper.AttachToInputDesktop();
-                SimulateMouseButton(button, "down", xPercent, yPercent, displayIndex);
-                SimulateMouseButton(button, "up", xPercent, yPercent, displayIndex);
-                Thread.Sleep(40);
-                SimulateMouseButton(button, "down", xPercent, yPercent, displayIndex);
-                SimulateMouseButton(button, "up", xPercent, yPercent, displayIndex);
+                // Ensure no mouse buttons are stuck down before double-clicking
+                mouse_event(MOUSEEVENTF_LEFTUP | MOUSEEVENTF_RIGHTUP, 0, 0, 0, (UIntPtr)0);
+                _isLeftMouseDown = false;
+                _isRightMouseDown = false;
+
+                if (xPercent.HasValue && yPercent.HasValue)
+                {
+                    SimulateMouseMove(xPercent.Value, yPercent.Value, displayIndex);
+                }
+
+                uint downFlag = button.Equals("right", StringComparison.OrdinalIgnoreCase) ? MOUSEEVENTF_RIGHTDOWN : MOUSEEVENTF_LEFTDOWN;
+                uint upFlag = button.Equals("right", StringComparison.OrdinalIgnoreCase) ? MOUSEEVENTF_RIGHTUP : MOUSEEVENTF_LEFTUP;
+
+                // 1st Click
+                mouse_event(downFlag, 0, 0, 0, (UIntPtr)0);
+                Thread.Sleep(25);
+                mouse_event(upFlag, 0, 0, 0, (UIntPtr)0);
+
+                Thread.Sleep(35);
+
+                // 2nd Click
+                mouse_event(downFlag, 0, 0, 0, (UIntPtr)0);
+                Thread.Sleep(25);
+                mouse_event(upFlag, 0, 0, 0, (UIntPtr)0);
+
+                // Safety cleanup
+                _isLeftMouseDown = false;
+                _isRightMouseDown = false;
+
                 Program.TriggerInstantCapture(2);
             }
             catch { }

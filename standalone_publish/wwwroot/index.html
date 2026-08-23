@@ -766,10 +766,12 @@
 
             targetHost.addEventListener('mousedown', function(e) {
                 if (!ws || ws.readyState !== WebSocket.OPEN) return;
+                if (e.pointerType === 'touch') return; // Skip synthetic touch mousedown to avoid duplicate clicks
                 var pos = getMousePos(e.clientX, e.clientY);
                 var btn = (clickMode === 2 || e.button === 2) ? 'right' : (e.button === 1 ? 'middle' : 'left');
                 if (clickMode === 1) {
                     ws.send(JSON.stringify({ type: 'double_click', button: 'left', x: pos.x, y: pos.y }));
+                    toggleMouseMode(); // Auto-reset to Sol Tık mode
                 } else {
                     ws.send(JSON.stringify({ type: 'click', button: btn, action: 'down', x: pos.x, y: pos.y }));
                 }
@@ -778,6 +780,7 @@
 
             targetHost.addEventListener('mouseup', function(e) {
                 if (!ws || ws.readyState !== WebSocket.OPEN) return;
+                if (e.pointerType === 'touch') return; // Skip synthetic touch mouseup
                 if (clickMode !== 1) {
                     var pos = getMousePos(e.clientX, e.clientY);
                     var btn = (clickMode === 2 || e.button === 2) ? 'right' : (e.button === 1 ? 'middle' : 'left');
@@ -890,6 +893,7 @@
                         ws.send(JSON.stringify({ type: 'double_click', button: 'left', x: dblPos.x, y: dblPos.y }));
                         lastTapTime = 0;
                         lastTapPos = null;
+                        if (clickMode === 1) toggleMouseMode(); // Auto-reset to Sol Tık mode
                     } else if (clickMode === 2 || duration >= 450) {
                         // Right-Click mode or Long-Press
                         ws.send(JSON.stringify({ type: 'click', button: 'right', action: 'down', x: pos.x, y: pos.y }));
@@ -900,6 +904,7 @@
                         }, 50);
                         lastTapTime = now;
                         lastTapPos = { clientX: t.clientX, clientY: t.clientY };
+                        if (clickMode === 2) toggleMouseMode(); // Auto-reset to Sol Tık mode
                     } else {
                         // Single Left-Click
                         ws.send(JSON.stringify({ type: 'click', button: 'left', action: 'down', x: pos.x, y: pos.y }));
