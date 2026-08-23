@@ -103,16 +103,37 @@
 
                     <!-- TAB 1: CONNECT TO REMOTE -->
                     <div id="tab-content-client">
-                        <div class="input-group">
-                            <label for="target-id" data-i18n="widget.label"><i class="fa-solid fa-desktop"></i> UZAKTAKİ MASA ID'Sİ (REMOTE ID)</label>
-                            <input type="text" id="target-id" placeholder="Örn: 219 675 629" data-i18n-ph="widget.placeholder" onkeydown="if(event.key==='Enter') doConnect()" style="text-align: center; letter-spacing: 2px; font-weight: 800; font-size: 1.3rem;">
+                        <div class="input-group" style="position: relative;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                <label for="target-id" data-i18n="widget.label" style="font-weight: 700; font-size: 0.85rem; color: #00e5ff;">
+                                    <i class="fa-solid fa-desktop"></i> UZAKTAKİ MASA ID'Sİ (REMOTE ID)
+                                </label>
+                                <button type="button" onclick="saveCurrentIdToFavorites()" style="background: rgba(0, 229, 255, 0.15); border: 1px solid #00e5ff; color: #00e5ff; border-radius: 12px; padding: 4px 10px; font-size: 0.75rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                                    <i class="fa-solid fa-bookmark"></i> <span>ID Kaydet</span>
+                                </button>
+                            </div>
+                            <input type="tel" inputmode="numeric" pattern="[0-9]*" autocomplete="off" id="target-id" placeholder="Örn: 219 675 629" data-i18n-ph="widget.placeholder" oninput="onIdInputType(this)" onkeydown="if(event.key==='Enter') doConnect()" style="text-align: center; letter-spacing: 3px; font-weight: 900; font-size: 1.6rem; padding: 14px; height: 58px; border-radius: 14px; border: 2px solid rgba(0, 229, 255, 0.4); background: rgba(15, 23, 42, 0.85); color: #fff; width: 100%;">
+                            
+                            <!-- Auto-Suggest Dropdown Popup -->
+                            <div id="id-suggestions-box" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: #0f172a; border: 1.5px solid #00e5ff; border-radius: 12px; margin-top: 4px; max-height: 200px; overflow-y: auto; z-index: 99999; box-shadow: 0 10px 25px rgba(0,0,0,0.8); padding: 6px;"></div>
                         </div>
                         
-                        <button id="connect-btn" type="button" onclick="doConnect()" class="primary-btn" style="position: relative; z-index: 99999; pointer-events: auto !important; cursor: pointer;">
+                        <button id="connect-btn" type="button" onclick="doConnect()" class="primary-btn" style="position: relative; z-index: 9999; pointer-events: auto !important; cursor: pointer; height: 54px; font-size: 1.15rem; font-weight: 800; margin-top: 10px;">
                             <span data-i18n="widget.connect">Bağlan</span> <i class="fa-solid fa-arrow-right-to-bracket"></i>
                         </button>
-                        
-                        <div style="display: flex; gap: 8px; margin-top: 10px;">
+
+                        <!-- Kayıtlı Bilgisayarlarım (Favorites / Saved Devices Section) -->
+                        <div id="saved-devices-section" style="margin-top: 16px;">
+                            <div style="font-size: 0.8rem; font-weight: 800; color: #a0aec0; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between;">
+                                <span><i class="fa-solid fa-star" style="color: #f59e0b;"></i> Kayıtlı Bilgisayarlarım</span>
+                                <span id="saved-count-badge" style="background: rgba(245, 158, 11, 0.2); color: #f59e0b; padding: 2px 6px; border-radius: 10px; font-size: 0.7rem;">0</span>
+                            </div>
+                            <div id="saved-devices-list" style="display: flex; flex-direction: column; gap: 8px; max-height: 220px; overflow-y: auto;">
+                                <!-- Dynamically rendered saved device cards -->
+                            </div>
+                        </div>
+
+                        <div style="display: flex; gap: 8px; margin-top: 12px;">
                             <button type="button" onclick="shareViaWhatsApp()" style="flex: 1; padding: 10px; background: rgba(37, 211, 102, 0.15); border: 1px solid #25D366; border-radius: 8px; color: #25D366; font-weight: 700; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
                                 <i class="fa-brands fa-whatsapp" style="font-size: 1.1rem;"></i> <span>WhatsApp'la Gönder</span>
                             </button>
@@ -473,6 +494,179 @@
     <script>
         var ws = null;
 
+        // --- ID MEMORY, SUGGESTIONS & SAVED FAVORITES ENGINE ---
+        function formatIdDisplay(rawId) {
+            var digits = rawId.replace(/\D/g, '');
+            if (digits.length === 9) {
+                return digits.substring(0, 3) + ' ' + digits.substring(3, 6) + ' ' + digits.substring(6);
+            }
+            return rawId;
+        }
+
+        function getHistoryList() {
+            try { return JSON.parse(localStorage.getItem('bigline_id_history') || '[]'); } catch(e) { return []; }
+        }
+
+        function getSavedDevices() {
+            try { return JSON.parse(localStorage.getItem('bigline_saved_devices') || '[]'); } catch(e) { return []; }
+        }
+
+        function saveToIdHistory(rawId, customName) {
+            var clean = rawId.replace(/\s+/g, '');
+            if (!clean || clean.length < 3) return;
+            var list = getHistoryList();
+            var existingIndex = list.findIndex(function(x) { return x.id === clean; });
+            var entryName = customName || (existingIndex >= 0 ? list[existingIndex].name : ('Bilgisayar ' + formatIdDisplay(clean)));
+            
+            if (existingIndex >= 0) {
+                list.splice(existingIndex, 1);
+            }
+            list.unshift({ id: clean, formatted: formatIdDisplay(clean), name: entryName, time: Date.now() });
+            if (list.length > 20) list.pop();
+            try { localStorage.setItem('bigline_id_history', JSON.stringify(list)); } catch(e) {}
+        }
+
+        function saveCurrentIdToFavorites() {
+            var inputElem = document.getElementById('target-id');
+            if (!inputElem || !inputElem.value.trim()) {
+                alert('⚠️ Lütfen önce kaydetmek istediğiniz ID numarasını girin.');
+                return;
+            }
+            var raw = inputElem.value.trim();
+            var clean = raw.replace(/\s+/g, '');
+            var nick = prompt('💾 Bu bilgisayara bir takma isim verin (Örn: Ofis PC, Muhasebe, Ahmet Bey):', 'Bilgisayar ' + formatIdDisplay(clean));
+            if (!nick) return;
+
+            var saved = getSavedDevices();
+            var idx = saved.findIndex(function(x) { return x.id === clean; });
+            if (idx >= 0) saved.splice(idx, 1);
+            saved.unshift({ id: clean, formatted: formatIdDisplay(clean), name: nick });
+            try { localStorage.setItem('bigline_saved_devices', JSON.stringify(saved)); } catch(e) {}
+            
+            saveToIdHistory(clean, nick);
+            renderSavedDevices();
+            alert('✅ "' + nick + '" başarıyla kayıtlı bilgisayarlarınıza eklendi!');
+        }
+        window.saveCurrentIdToFavorites = saveCurrentIdToFavorites;
+
+        function deleteSavedDevice(cleanId) {
+            var saved = getSavedDevices();
+            var filtered = saved.filter(function(x) { return x.id !== cleanId; });
+            try { localStorage.setItem('bigline_saved_devices', JSON.stringify(filtered)); } catch(e) {}
+            renderSavedDevices();
+        }
+        window.deleteSavedDevice = deleteSavedDevice;
+
+        function renderSavedDevices() {
+            var container = document.getElementById('saved-devices-list');
+            var badge = document.getElementById('saved-count-badge');
+            if (!container) return;
+
+            var saved = getSavedDevices();
+            if (badge) badge.innerText = saved.length;
+
+            if (saved.length === 0) {
+                container.innerHTML = '<div style="font-size: 0.8rem; color: #64748b; text-align: center; padding: 12px; background: rgba(255,255,255,0.03); border-radius: 10px;">Henüz kayıtlı bilgisayarınız yok. Yukarıdan ID yazıp "ID Kaydet" butonuna basarak ekleyebilirsiniz.</div>';
+                return;
+            }
+
+            var html = '';
+            saved.forEach(function(item) {
+                html += '<div style="display: flex; justify-content: space-between; align-items: center; background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(0, 229, 255, 0.2); border-radius: 12px; padding: 10px 14px; gap: 8px;">';
+                html += '  <div style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">';
+                html += '    <div style="font-weight: 800; font-size: 0.9rem; color: #fff;">' + escapeHtml(item.name) + '</div>';
+                html += '    <div style="font-size: 0.78rem; color: #00e5ff; font-weight: 700; letter-spacing: 1px;">' + escapeHtml(item.formatted) + '</div>';
+                html += '  </div>';
+                html += '  <div style="display: flex; gap: 6px;">';
+                html += '    <button type="button" onclick="selectSuggestion(\'' + item.id + '\')" style="background: linear-gradient(135deg, #00e5ff, #3b82f6); color: #000; border: none; border-radius: 10px; padding: 7px 12px; font-weight: 800; font-size: 0.8rem; cursor: pointer;">⚡ Bağlan</button>';
+                html += '    <button type="button" onclick="deleteSavedDevice(\'' + item.id + '\')" style="background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #ef4444; border-radius: 10px; padding: 7px 10px; font-size: 0.8rem; cursor: pointer;"><i class="fa-solid fa-trash"></i></button>';
+                html += '  </div>';
+                html += '</div>';
+            });
+            container.innerHTML = html;
+        }
+
+        function escapeHtml(str) {
+            return (str || '').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+        }
+
+        function onIdInputType(inputElem) {
+            var raw = inputElem.value;
+            var digits = raw.replace(/\D/g, '');
+
+            // Auto-format digits with spaces (e.g. 219 675 629)
+            if (digits.length <= 9 && digits.length > 0) {
+                if (digits.length > 6) {
+                    inputElem.value = digits.substring(0, 3) + ' ' + digits.substring(3, 6) + ' ' + digits.substring(6);
+                } else if (digits.length > 3) {
+                    inputElem.value = digits.substring(0, 3) + ' ' + digits.substring(3, 6);
+                } else {
+                    inputElem.value = digits;
+                }
+            }
+
+            var clean = raw.replace(/\s+/g, '');
+            var suggestBox = document.getElementById('id-suggestions-box');
+            if (!suggestBox) return;
+
+            if (clean.length < 3) {
+                suggestBox.style.display = 'none';
+                return;
+            }
+
+            // Search history & saved devices
+            var allItems = getSavedDevices().concat(getHistoryList());
+            var matched = [];
+            var seen = {};
+
+            allItems.forEach(function(item) {
+                if (!seen[item.id] && (item.id.includes(clean) || (item.name && item.name.toLowerCase().includes(clean.toLowerCase())))) {
+                    seen[item.id] = true;
+                    matched.push(item);
+                }
+            });
+
+            if (matched.length === 0) {
+                suggestBox.style.display = 'none';
+                return;
+            }
+
+            var html = '';
+            matched.slice(0, 5).forEach(function(item) {
+                html += '<div onclick="selectSuggestion(\'' + item.id + '\')" style="padding: 8px 12px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center;">';
+                html += '  <span style="font-weight: 700; color: #fff; font-size: 0.85rem;">' + escapeHtml(item.name || item.formatted) + '</span>';
+                html += '  <span style="font-weight: 800; color: #00e5ff; font-size: 0.85rem; letter-spacing: 1px;">' + escapeHtml(item.formatted) + '</span>';
+                html += '</div>';
+            });
+            suggestBox.innerHTML = html;
+            suggestBox.style.display = 'block';
+        }
+        window.onIdInputType = onIdInputType;
+
+        function selectSuggestion(cleanId) {
+            var inputElem = document.getElementById('target-id');
+            var suggestBox = document.getElementById('id-suggestions-box');
+            if (inputElem) {
+                inputElem.value = formatIdDisplay(cleanId);
+            }
+            if (suggestBox) suggestBox.style.display = 'none';
+            doConnect();
+        }
+        window.selectSuggestion = selectSuggestion;
+
+        // Render saved devices on page load
+        window.addEventListener('load', function() {
+            renderSavedDevices();
+            // Close suggestions on outside tap
+            document.addEventListener('click', function(e) {
+                var suggestBox = document.getElementById('id-suggestions-box');
+                var inputElem = document.getElementById('target-id');
+                if (suggestBox && e.target !== suggestBox && e.target !== inputElem) {
+                    suggestBox.style.display = 'none';
+                }
+            });
+        });
+
         function resetConnectButton() {
             var btn = document.getElementById('connect-btn');
             if (btn) {
@@ -498,6 +692,7 @@
             }
 
             var cleanId = rawVal.replace(/\s+/g, '');
+            saveToIdHistory(cleanId); // Save to history on connect!
 
             var btn = document.getElementById('connect-btn');
             if (btn) {
