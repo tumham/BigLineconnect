@@ -182,7 +182,7 @@ namespace BigLineconnect
         private void InitializeComponent()
         {
             Program.LoadSecuritySettings();
-            this.Text = "BigLineconnect v3.64.7 - Uzaktan Kontrol (Commercial PRO License & 10-Minute Free Session Limits Engine)";
+            this.Text = "BigLineconnect v3.65.0 - Uzaktan Kontrol (Commercial PRO License & 10-Minute Free Session Limits Engine)";
             this.Size = new Size(880, 750);
             this.MinimumSize = new Size(880, 750);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -215,7 +215,7 @@ namespace BigLineconnect
 
             _titleLabel = new Label
             {
-                Text = "BigLineconnect v3.64.7 🚀",
+                Text = "BigLineconnect v3.65.0 🚀",
                 Location = new Point(105, 15),
                 Size = new Size(330, 42),
                 Font = new Font("Segoe UI", 20F, FontStyle.Bold),
@@ -226,7 +226,7 @@ namespace BigLineconnect
 
             var subtitleLabel = new Label
             {
-                Text = "v3.64.7",
+                Text = "v3.65.0",
                 Location = new Point(108, 58),
                 Size = new Size(450, 20),
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
@@ -2336,6 +2336,20 @@ namespace BigLineconnect
                             var itemDisabled = new ToolStripMenuItem("🔒 Önce Çift Tıklayıp Karşıya Bağlanın") { Enabled = false };
                             cms.Items.Add(itemDisabled);
                         }
+
+                        cms.Items.Add(new ToolStripSeparator());
+
+                        var itemExcelSingle = new ToolStripMenuItem("📊 Seçili Talebi Excel'e Aktar (Renkli)");
+                        itemExcelSingle.Click += (s, ev) => ExportTicketsToColoredExcel(new[] { ticket }, $"Destek Talebi - {ticket.Id}");
+                        cms.Items.Add(itemExcelSingle);
+
+                        var itemExcelAll = new ToolStripMenuItem("📊 Tüm Talepleri Excel'e Aktar (Renkli)");
+                        itemExcelAll.Click += (s, ev) => ExportTicketsToColoredExcel(_activeTickets, "Gelen Tüm Destek Talepleri");
+                        cms.Items.Add(itemExcelAll);
+
+                        var itemWhatsapp = new ToolStripMenuItem("💬 WhatsApp İle Paylaş");
+                        itemWhatsapp.Click += (s, ev) => ShareTicketOnWhatsApp(ticket.Priority, ticket.Id, ticket.Name, ticket.Issue, "⏳ Sırada Bekliyor", "", ticket.CreatedAt);
+                        cms.Items.Add(itemWhatsapp);
                     }
                     else if (_currentTabMode == 2 && item.Tag is SupportHistoryItem h)
                     {
@@ -2350,6 +2364,24 @@ namespace BigLineconnect
                         var itemClearCrm = new ToolStripMenuItem("🧹 Tüm Geçmişi Sıfırla / Temizle");
                         itemClearCrm.Click += (s, ev) => ClearAllCrmHistory();
                         cms.Items.Add(itemClearCrm);
+
+                        cms.Items.Add(new ToolStripSeparator());
+
+                        var itemExcelSingle = new ToolStripMenuItem("📊 Seçili Geçmiş Kaydını Excel'e Aktar (Renkli)");
+                        itemExcelSingle.Click += (s, ev) => ExportTicketsToColoredExcel(new[] { h }, $"CRM Geçmiş Kaydı - {h.HostId}");
+                        cms.Items.Add(itemExcelSingle);
+
+                        var itemExcelAll = new ToolStripMenuItem("📊 Tüm CRM Geçmişini Excel'e Aktar (Renkli)");
+                        itemExcelAll.Click += (s, ev) => ExportTicketsToColoredExcel(_crmHistoryItems, "Destek Çağrı Geçmişi Raporu");
+                        cms.Items.Add(itemExcelAll);
+
+                        var itemWhatsapp = new ToolStripMenuItem("💬 WhatsApp İle Paylaş");
+                        itemWhatsapp.Click += (s, ev) =>
+                        {
+                            DateTime.TryParse(h.CreatedAt, out var dtParsed);
+                            ShareTicketOnWhatsApp(GetNormalizedPriority("", h.Issue), h.HostId, h.Name, h.Issue, h.Status, h.Notes, dtParsed);
+                        };
+                        cms.Items.Add(itemWhatsapp);
                     }
                     else if (_currentTabMode == 0)
                     {
@@ -4532,6 +4564,166 @@ namespace BigLineconnect
             }
         }
 
+        public static void ExportTicketsToColoredExcel(System.Collections.IEnumerable tickets, string title)
+        {
+            try
+            {
+                using var sfd = new SaveFileDialog
+                {
+                    Filter = "Excel Dosyası (*.xls)|*.xls|HTML Dokümanı (*.html)|*.html",
+                    FileName = $"Destek_Talepleri_{DateTime.Now:yyyyMMdd_HHmm}.xls",
+                    Title = "Excel Raporunu Kaydet"
+                };
+
+                if (sfd.ShowDialog() == DialogResult.OK)
+                {
+                    var sb = new StringBuilder();
+                    sb.AppendLine("<!DOCTYPE html>");
+                    sb.AppendLine("<html xmlns:o=\"urn:schemas-microsoft-com:office:office\" xmlns:x=\"urn:schemas-microsoft-com:office:excel\" xmlns=\"http://www.w3.org/TR/REC-html40\">");
+                    sb.AppendLine("<head>");
+                    sb.AppendLine("<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">");
+                    sb.AppendLine("<title>" + System.Net.WebUtility.HtmlEncode(title) + "</title>");
+                    sb.AppendLine("<style>");
+                    sb.AppendLine("  body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background-color: #ffffff; color: #1e293b; }");
+                    sb.AppendLine("  h2 { color: #2563eb; font-size: 20px; margin-bottom: 4px; border-bottom: 2px solid #2563eb; padding-bottom: 8px; }");
+                    sb.AppendLine("  .meta { color: #64748b; font-size: 12px; margin-bottom: 16px; }");
+                    sb.AppendLine("  table { border-collapse: collapse; width: 100%; font-size: 13px; margin-top: 10px; }");
+                    sb.AppendLine("  th { background-color: #3b82f6; color: #ffffff; font-weight: bold; text-align: left; padding: 10px 12px; border: 1px solid #1d4ed8; }");
+                    sb.AppendLine("  td { padding: 10px 12px; border: 1px solid #cbd5e1; vertical-align: middle; }");
+                    sb.AppendLine("  tr:nth-child(even) { background-color: #f8fafc; }");
+                    sb.AppendLine("  .prio-high { background-color: #fee2e2; color: #991b1b; font-weight: bold; padding: 4px 8px; border-radius: 4px; }");
+                    sb.AppendLine("  .prio-med { background-color: #fef3c7; color: #92400e; font-weight: bold; padding: 4px 8px; border-radius: 4px; }");
+                    sb.AppendLine("  .prio-low { background-color: #dcfce7; color: #166534; font-weight: bold; padding: 4px 8px; border-radius: 4px; }");
+                    sb.AppendLine("  .status-done { color: #166534; font-weight: bold; background-color: #dcfce7; padding: 4px 8px; border-radius: 4px; }");
+                    sb.AppendLine("  .status-fail { color: #991b1b; font-weight: bold; background-color: #fee2e2; padding: 4px 8px; border-radius: 4px; }");
+                    sb.AppendLine("  .status-wait { color: #92400e; font-weight: bold; background-color: #fef3c7; padding: 4px 8px; border-radius: 4px; }");
+                    sb.AppendLine("</style>");
+                    sb.AppendLine("</head>");
+                    sb.AppendLine("<body>");
+                    sb.AppendLine($"<h2>📋 {System.Net.WebUtility.HtmlEncode(title)}</h2>");
+                    sb.AppendLine($"<div class=\"meta\">Rapor Oluşturma Tarihi: <b>{DateTime.Now:dd.MM.yyyy HH:mm:ss}</b> | BigLineconnect Enterprise Engine</div>");
+                    sb.AppendLine("<table>");
+                    sb.AppendLine("<thead>");
+                    sb.AppendLine("  <tr>");
+                    sb.AppendLine("    <th style=\"width:40px;\">#</th>");
+                    sb.AppendLine("    <th style=\"width:130px;\">Tarih / Saat</th>");
+                    sb.AppendLine("    <th style=\"width:100px;\">Öncelik</th>");
+                    sb.AppendLine("    <th style=\"width:110px;\">Müşteri ID</th>");
+                    sb.AppendLine("    <th style=\"width:160px;\">İsim / Firma</th>");
+                    sb.AppendLine("    <th>Sorun / Açıklama</th>");
+                    sb.AppendLine("    <th style=\"width:140px;\">Durum</th>");
+                    sb.AppendLine("    <th style=\"width:180px;\">Uzman Çözüm Notu</th>");
+                    sb.AppendLine("  </tr>");
+                    sb.AppendLine("</thead>");
+                    sb.AppendLine("<tbody>");
+
+                    int idx = 1;
+                    foreach (var item in tickets)
+                    {
+                        string hostId = "";
+                        string name = "";
+                        string issue = "";
+                        string priority = "";
+                        string status = "";
+                        string notes = "";
+                        DateTime createdAt = DateTime.Now;
+
+                        if (item is SupportTicket st)
+                        {
+                            hostId = st.Id;
+                            name = st.Name;
+                            issue = st.Issue;
+                            priority = st.Priority;
+                            status = "⏳ Sırada Bekliyor";
+                            notes = "";
+                            createdAt = st.CreatedAt;
+                        }
+                        else if (item is LocalSubmittedTicket lt)
+                        {
+                            hostId = lt.HostId;
+                            name = lt.Name;
+                            issue = lt.Issue;
+                            priority = lt.Priority;
+                            status = lt.Status;
+                            notes = lt.Notes;
+                            createdAt = lt.CreatedAt;
+                        }
+                        else if (item is SupportHistoryItem shi)
+                        {
+                            hostId = shi.HostId;
+                            name = shi.Name;
+                            issue = shi.Issue;
+                            priority = GetNormalizedPriority("", shi.Issue);
+                            status = shi.Status;
+                            notes = shi.Notes;
+                            DateTime.TryParse(shi.CreatedAt, out createdAt);
+                        }
+
+                        priority = GetNormalizedPriority(priority, issue);
+                        string timeStr = createdAt != default ? createdAt.ToString("dd.MM.yyyy HH:mm") : "";
+
+                        string prioClass = priority.Contains("Yüksek") || priority.Contains("🔴") ? "prio-high" :
+                                          (priority.Contains("Düşük") || priority.Contains("🟢") ? "prio-low" : "prio-med");
+
+                        string statusClass = status.Contains("Çözüldü") && !status.Contains("Çözülmedi") ? "status-done" :
+                                            (status.Contains("Çözülmedi") ? "status-fail" : "status-wait");
+
+                        sb.AppendLine("  <tr>");
+                        sb.AppendLine($"    <td>{idx++}</td>");
+                        sb.AppendLine($"    <td>{System.Net.WebUtility.HtmlEncode(timeStr)}</td>");
+                        sb.AppendLine($"    <td><span class=\"{prioClass}\">{System.Net.WebUtility.HtmlEncode(priority)}</span></td>");
+                        sb.AppendLine($"    <td><b>{System.Net.WebUtility.HtmlEncode(hostId)}</b></td>");
+                        sb.AppendLine($"    <td>{System.Net.WebUtility.HtmlEncode(name)}</td>");
+                        sb.AppendLine($"    <td>{System.Net.WebUtility.HtmlEncode(issue)}</td>");
+                        sb.AppendLine($"    <td><span class=\"{statusClass}\">{System.Net.WebUtility.HtmlEncode(status)}</span></td>");
+                        sb.AppendLine($"    <td>{System.Net.WebUtility.HtmlEncode(notes)}</td>");
+                        sb.AppendLine("  </tr>");
+                    }
+
+                    sb.AppendLine("</tbody>");
+                    sb.AppendLine("</table>");
+                    sb.AppendLine("</body>");
+                    sb.AppendLine("</html>");
+
+                    File.WriteAllText(sfd.FileName, sb.ToString(), Encoding.UTF8);
+
+                    var openRes = MessageBox.Show("Destek talepleri Excel formatında (renkli ve biçimlendirilmiş) başarıyla kaydedildi!\n\nDosyayı şimdi Excel ile açmak ister misiniz?", "Başarılı", MessageBoxButtons.YesNo, MessageBoxIcon.Information);
+                    if (openRes == DialogResult.Yes)
+                    {
+                        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo { FileName = sfd.FileName, UseShellExecute = true });
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Excel dışa aktarım hatası: {ex.Message}", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        public static void ShareTicketOnWhatsApp(string priority, string hostId, string name, string issue, string status, string notes, DateTime createdAt)
+        {
+            try
+            {
+                priority = GetNormalizedPriority(priority, issue);
+                string pIcon = priority.Contains("Yüksek") ? "🔴" : (priority.Contains("Düşük") ? "🟢" : "🟡");
+                string message = $"📋 *BigLineconnect Destek Talebi*\r\n\r\n" +
+                                 $"{pIcon} *Öncelik:* {priority}\r\n" +
+                                 $"🆔 *Müşteri ID:* {hostId}\r\n" +
+                                 (string.IsNullOrEmpty(name) ? "" : $"👤 *İsim / Firma:* {name}\r\n") +
+                                 $"📝 *Sorun:* {issue}\r\n" +
+                                 $"📅 *Tarih:* {(createdAt != default ? createdAt.ToString("dd.MM.yyyy HH:mm") : DateTime.Now.ToString("dd.MM.yyyy HH:mm"))}\r\n" +
+                                 $"📊 *Durum:* {status}\r\n" +
+                                 (string.IsNullOrEmpty(notes) ? "" : $"💬 *Uzman Notu:* {notes}\r\n");
+
+                string url = $"https://api.whatsapp.com/send?text={Uri.EscapeDataString(message)}";
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo { FileName = url, UseShellExecute = true });
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"WhatsApp açma hatası: {ex.Message}", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
         public static string GetNormalizedPriority(string? priorityText, string? issueText)
         {
             string p = (priorityText ?? "").ToLowerInvariant();
@@ -4789,6 +4981,53 @@ namespace BigLineconnect
                     if (lstTickets.SelectedItems.Count > 0 && lstTickets.SelectedItems[0].Tag is LocalSubmittedTicket t)
                     {
                         ShowTicketDetailModal(t);
+                    }
+                };
+
+                lstTickets.MouseClick += (s, e) =>
+                {
+                    if (e.Button == MouseButtons.Right && lstTickets.SelectedItems.Count > 0)
+                    {
+                        var selectedItem = lstTickets.SelectedItems[0];
+                        if (selectedItem.Tag is LocalSubmittedTicket t)
+                        {
+                            var cms = new ContextMenuStrip
+                            {
+                                BackColor = Color.FromArgb(245, 245, 246),
+                                ForeColor = Color.FromArgb(38, 40, 45),
+                                ShowImageMargin = false,
+                                Font = new Font("Segoe UI", 9.5F, FontStyle.Regular)
+                            };
+
+                            var itemExcelSingle = new ToolStripMenuItem("📊 Seçili Talebi Excel'e Aktar (Renkli)");
+                            itemExcelSingle.Click += (evS, evE) => ExportTicketsToColoredExcel(new[] { t }, $"Destek Talebi - {t.Token}");
+                            cms.Items.Add(itemExcelSingle);
+
+                            var itemExcelAll = new ToolStripMenuItem("📊 Tüm Taleplerimi Excel'e Aktar (Renkli)");
+                            itemExcelAll.Click += (evS, evE) => ExportTicketsToColoredExcel(_masterSubmittedList, "Açtığım Tüm Destek Talepleri");
+                            cms.Items.Add(itemExcelAll);
+
+                            cms.Items.Add(new ToolStripSeparator());
+
+                            var itemWhatsapp = new ToolStripMenuItem("💬 WhatsApp İle Paylaş");
+                            itemWhatsapp.Click += (evS, evE) => ShareTicketOnWhatsApp(t.Priority, t.HostId, t.Name, t.Issue, t.Status, t.Notes, t.CreatedAt);
+                            cms.Items.Add(itemWhatsapp);
+
+                            var itemCopy = new ToolStripMenuItem("📋 Talep Detaylarını Kopyala");
+                            itemCopy.Click += (evS, evE) =>
+                            {
+                                try
+                                {
+                                    string info = $"ID: {t.HostId}\nSorun: {t.Issue}\nÖncelik: {t.Priority}\nDurum: {t.Status}\nTarih: {t.CreatedAt:dd.MM.yyyy HH:mm}";
+                                    Clipboard.SetText(info);
+                                    MessageBox.Show("Talep bilgileri panoya kopyalandı!", "Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                                }
+                                catch { }
+                            };
+                            cms.Items.Add(itemCopy);
+
+                            cms.Show(lstTickets, e.Location);
+                        }
                     }
                 };
 
