@@ -1110,12 +1110,18 @@ namespace BigLineconnect
                                     ).ConfigureAwait(false);
 
                                     double sendMs = (DateTime.Now - sendStart).TotalMilliseconds;
-                                    if (sendMs > 120)
+                                    if (sendMs > 35)
                                     {
-                                        // Slow network or Mobile Hotspot detected (>120ms socket send time).
-                                        // Auto-tune resolution/quality to Ultra-Low 15 KB mode to prevent socket congestion!
-                                        CurrentQuality = Math.Min(CurrentQuality, 25);
-                                        CurrentMaxDimension = Math.Min(CurrentMaxDimension, 640);
+                                        // Low bandwidth (3G / 5 Mbps / Mobile Hotspot) detected (>35ms socket send time).
+                                        // Auto-tune frame size to 12 KB - 15 KB mode for instant 0.1s response matching Alpemix!
+                                        CurrentQuality = Math.Min(CurrentQuality, 38);
+                                        CurrentMaxDimension = Math.Min(CurrentMaxDimension, 1080);
+                                    }
+                                    else if (sendMs < 20 && CurrentQuality < 55)
+                                    {
+                                        // Fast network restored (<20ms socket send time). Gradually restore high sharpness.
+                                        CurrentQuality = Math.Min(55, CurrentQuality + 2);
+                                        CurrentMaxDimension = Math.Min(1440, CurrentMaxDimension + 100);
                                     }
 
                                     _lastSentFrameBytes = frameToSend;
