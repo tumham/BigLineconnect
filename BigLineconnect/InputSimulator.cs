@@ -255,32 +255,35 @@ namespace BigLineconnect
             try
             {
                 DesktopHelper.AttachToInputDesktop();
-                // Ensure no mouse buttons are stuck down before double-clicking
                 mouse_event(MOUSEEVENTF_LEFTUP | MOUSEEVENTF_RIGHTUP, 0, 0, 0, (UIntPtr)0);
                 _isLeftMouseDown = false;
                 _isRightMouseDown = false;
 
                 if (xPercent.HasValue && yPercent.HasValue)
                 {
-                    SimulateMouseMove(xPercent.Value, yPercent.Value, displayIndex);
+                    var screens = System.Windows.Forms.Screen.AllScreens;
+                    if (displayIndex < 0 || displayIndex >= screens.Length) displayIndex = 0;
+                    var bounds = screens[displayIndex].Bounds;
+                    int actualX = bounds.X + Math.Min(bounds.Width - 1, (int)(xPercent.Value * bounds.Width));
+                    int actualY = bounds.Y + Math.Min(bounds.Height - 1, (int)(yPercent.Value * bounds.Height));
+
+                    SetCursorPos(actualX, actualY);
+                    mouse_event(MOUSEEVENTF_MOVE, 0, 0, 0, (UIntPtr)0);
                 }
 
                 uint downFlag = button.Equals("right", StringComparison.OrdinalIgnoreCase) ? MOUSEEVENTF_RIGHTDOWN : MOUSEEVENTF_LEFTDOWN;
                 uint upFlag = button.Equals("right", StringComparison.OrdinalIgnoreCase) ? MOUSEEVENTF_RIGHTUP : MOUSEEVENTF_LEFTUP;
 
-                // 1st Click
+                // 1st Click (Instant down/up)
                 mouse_event(downFlag, 0, 0, 0, (UIntPtr)0);
-                Thread.Sleep(25);
                 mouse_event(upFlag, 0, 0, 0, (UIntPtr)0);
 
-                Thread.Sleep(35);
+                Thread.Sleep(15);
 
-                // 2nd Click
+                // 2nd Click (Instant down/up)
                 mouse_event(downFlag, 0, 0, 0, (UIntPtr)0);
-                Thread.Sleep(25);
                 mouse_event(upFlag, 0, 0, 0, (UIntPtr)0);
 
-                // Safety cleanup
                 _isLeftMouseDown = false;
                 _isRightMouseDown = false;
 
