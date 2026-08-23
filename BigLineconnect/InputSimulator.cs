@@ -257,7 +257,10 @@ namespace BigLineconnect
                 DesktopHelper.AttachToInputDesktop();
                 SimulateMouseButton(button, "down", xPercent, yPercent, displayIndex);
                 SimulateMouseButton(button, "up", xPercent, yPercent, displayIndex);
-                Program.TriggerInstantCapture();
+                Thread.Sleep(40);
+                SimulateMouseButton(button, "down", xPercent, yPercent, displayIndex);
+                SimulateMouseButton(button, "up", xPercent, yPercent, displayIndex);
+                Program.TriggerInstantCapture(2);
             }
             catch { }
         }

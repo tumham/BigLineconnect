@@ -677,7 +677,8 @@
         var currentScale = 1.0;
         var panX = 0, panY = 0;
         var originXPercent = 50, originYPercent = 50;
-        var isRightClickNext = false;
+        var clickMode = 0; // 0: Sol Tık, 1: Çift Tık, 2: Sağ Tık
+        var lastTapTime = 0, lastTapPos = null;
         var initialPinchDist = 0, initialPinchScale = 1.0;
         var lastTouchMidX = 0, lastTouchMidY = 0;
         var isPinchZooming = false;
@@ -711,22 +712,30 @@
         }
         window.resetZoom = resetZoom;
 
-        function toggleRightClickMode() {
-            isRightClickNext = !isRightClickNext;
+        function toggleMouseMode() {
+            clickMode = (clickMode + 1) % 3;
             var btnText = document.getElementById('mouse-mode-text');
             var btn = document.getElementById('mouse-mode-btn');
-            if (btnText) btnText.innerText = isRightClickNext ? 'Sağ Tık' : 'Sol Tık';
+            if (btnText) {
+                if (clickMode === 0) btnText.innerText = 'Sol Tık';
+                else if (clickMode === 1) btnText.innerText = 'Çift Tık ⚡';
+                else if (clickMode === 2) btnText.innerText = 'Sağ Tık';
+            }
             if (btn) {
-                if (isRightClickNext) {
-                    btn.style.background = 'rgba(239, 68, 68, 0.3)';
-                    btn.style.borderColor = '#ef4444';
-                } else {
+                if (clickMode === 0) {
                     btn.style.background = 'rgba(168, 85, 247, 0.2)';
                     btn.style.borderColor = '#a855f7';
+                } else if (clickMode === 1) {
+                    btn.style.background = 'rgba(0, 229, 255, 0.3)';
+                    btn.style.borderColor = '#00e5ff';
+                } else if (clickMode === 2) {
+                    btn.style.background = 'rgba(239, 68, 68, 0.3)';
+                    btn.style.borderColor = '#ef4444';
                 }
             }
         }
-        window.toggleRightClickMode = toggleRightClickMode;
+        window.toggleMouseMode = toggleMouseMode;
+        window.toggleRightClickMode = toggleMouseMode;
 
         function openMobileKeyboard() {
             var hiddenInput = document.getElementById('hidden-keyboard-input');
@@ -758,17 +767,22 @@
             targetHost.addEventListener('mousedown', function(e) {
                 if (!ws || ws.readyState !== WebSocket.OPEN) return;
                 var pos = getMousePos(e.clientX, e.clientY);
-                var btn = isRightClickNext ? 'right' : (e.button === 2 ? 'right' : (e.button === 1 ? 'middle' : 'left'));
-                ws.send(JSON.stringify({ type: 'click', button: btn, action: 'down', x: pos.x, y: pos.y }));
-                if (isRightClickNext) toggleRightClickMode();
+                var btn = (clickMode === 2 || e.button === 2) ? 'right' : (e.button === 1 ? 'middle' : 'left');
+                if (clickMode === 1) {
+                    ws.send(JSON.stringify({ type: 'double_click', button: 'left', x: pos.x, y: pos.y }));
+                } else {
+                    ws.send(JSON.stringify({ type: 'click', button: btn, action: 'down', x: pos.x, y: pos.y }));
+                }
                 e.preventDefault();
             });
 
             targetHost.addEventListener('mouseup', function(e) {
                 if (!ws || ws.readyState !== WebSocket.OPEN) return;
-                var pos = getMousePos(e.clientX, e.clientY);
-                var btn = isRightClickNext ? 'right' : (e.button === 2 ? 'right' : (e.button === 1 ? 'middle' : 'left'));
-                ws.send(JSON.stringify({ type: 'click', button: btn, action: 'up', x: pos.x, y: pos.y }));
+                if (clickMode !== 1) {
+                    var pos = getMousePos(e.clientX, e.clientY);
+                    var btn = (clickMode === 2 || e.button === 2) ? 'right' : (e.button === 1 ? 'middle' : 'left');
+                    ws.send(JSON.stringify({ type: 'click', button: btn, action: 'up', x: pos.x, y: pos.y }));
+                }
                 e.preventDefault();
             });
 
@@ -860,19 +874,43 @@
                 }
 
                 var duration = Date.now() - touchStartTime;
-                var isRightClick = isRightClickNext || (duration >= 400);
-                var clickButton = isRightClick ? 'right' : 'left';
+                var now = Date.now();
 
                 if (!isTouchDragging && duration < 600 && e.changedTouches.length > 0) {
                     var t = e.changedTouches[0];
                     var pos = getMousePos(t.clientX, t.clientY);
-                    ws.send(JSON.stringify({ type: 'click', button: clickButton, action: 'down', x: pos.x, y: pos.y }));
-                    setTimeout(function() {
-                        if (ws && ws.readyState === WebSocket.OPEN) {
-                            ws.send(JSON.stringify({ type: 'click', button: clickButton, action: 'up', x: pos.x, y: pos.y }));
-                        }
-                    }, 50);
-                    if (isRightClickNext) toggleRightClickMode();
+
+                    // Automatic Double-Tap Detection (within 380ms)
+                    var isDoubleTap = (now - lastTapTime < 380) && lastTapPos &&
+                                      (Math.abs(t.clientX - lastTapPos.clientX) < 25 && Math.abs(t.clientY - lastTapPos.clientY) < 25);
+
+                    if (clickMode === 1 || isDoubleTap) {
+                        // Double-Click mode active OR quick double-tap detected!
+                        var dblPos = (isDoubleTap && lastTapPos) ? getMousePos(lastTapPos.clientX, lastTapPos.clientY) : pos;
+                        ws.send(JSON.stringify({ type: 'double_click', button: 'left', x: dblPos.x, y: dblPos.y }));
+                        lastTapTime = 0;
+                        lastTapPos = null;
+                    } else if (clickMode === 2 || duration >= 450) {
+                        // Right-Click mode or Long-Press
+                        ws.send(JSON.stringify({ type: 'click', button: 'right', action: 'down', x: pos.x, y: pos.y }));
+                        setTimeout(function() {
+                            if (ws && ws.readyState === WebSocket.OPEN) {
+                                ws.send(JSON.stringify({ type: 'click', button: 'right', action: 'up', x: pos.x, y: pos.y }));
+                            }
+                        }, 50);
+                        lastTapTime = now;
+                        lastTapPos = { clientX: t.clientX, clientY: t.clientY };
+                    } else {
+                        // Single Left-Click
+                        ws.send(JSON.stringify({ type: 'click', button: 'left', action: 'down', x: pos.x, y: pos.y }));
+                        setTimeout(function() {
+                            if (ws && ws.readyState === WebSocket.OPEN) {
+                                ws.send(JSON.stringify({ type: 'click', button: 'left', action: 'up', x: pos.x, y: pos.y }));
+                            }
+                        }, 50);
+                        lastTapTime = now;
+                        lastTapPos = { clientX: t.clientX, clientY: t.clientY };
+                    }
                     e.preventDefault();
                 }
             }, { passive: false });
