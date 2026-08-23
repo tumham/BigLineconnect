@@ -1066,13 +1066,12 @@ namespace BigLineconnect
                         _lastViewerActivityTime = DateTime.Now;
                     }
 
-                    if (_isSendingFrame && (DateTime.Now - _lastSentFrameTime).TotalMilliseconds < 500)
+                    if (_isSendingFrame)
                     {
                         // Socket is busy sending previous frame. Drop frame to keep socket queue at EXACTLY 0 bytes!
                         await Task.Delay(10, token).ConfigureAwait(false);
                         continue;
                     }
-                    _isSendingFrame = false;
 
                     byte[]? frameToSend = null;
                     lock (FrameLock)
@@ -1114,10 +1113,9 @@ namespace BigLineconnect
                                     if (sendMs > 120)
                                     {
                                         // Slow network or Mobile Hotspot detected (>120ms socket send time).
-                                        // Auto-tune resolution/quality to Ultra-Low 15 KB mode to prevent 1 FPS stuttering!
+                                        // Auto-tune resolution/quality to Ultra-Low 15 KB mode to prevent socket congestion!
                                         CurrentQuality = Math.Min(CurrentQuality, 25);
                                         CurrentMaxDimension = Math.Min(CurrentMaxDimension, 640);
-                                        _lastSentFrameBytes = null;
                                     }
 
                                     _lastSentFrameBytes = frameToSend;
