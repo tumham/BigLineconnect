@@ -207,7 +207,15 @@ function connectToHost(id) {
             const screenCanvas = document.getElementById('screen-canvas');
             const ctx = screenCanvas ? screenCanvas.getContext('2d', { alpha: false, desynchronized: true }) : null;
 
-            const blob = new Blob([ev.data], { type: 'image/jpeg' });
+            let frameBytes = ev.data;
+            if (frameBytes && frameBytes.byteLength > 8) {
+                const u8 = new Uint8Array(frameBytes);
+                if ((u8[0] !== 0xFF || u8[1] !== 0xD8) && (u8[8] === 0xFF && u8[9] === 0xD8)) {
+                    frameBytes = frameBytes.slice(8);
+                }
+            }
+
+            const blob = new Blob([frameBytes], { type: 'image/jpeg' });
             const url = URL.createObjectURL(blob);
             const img = new Image();
             img.onload = () => {

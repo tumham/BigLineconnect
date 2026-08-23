@@ -66,7 +66,15 @@ document.addEventListener('DOMContentLoaded', () => {
                         viewport.classList.remove('hidden');
                     }
 
-                    const blob = new Blob([event.data], { type: 'image/jpeg' });
+                    let frameBytes = event.data;
+                    if (frameBytes && frameBytes.byteLength > 8) {
+                        const u8 = new Uint8Array(frameBytes);
+                        if ((u8[0] !== 0xFF || u8[1] !== 0xD8) && (u8[8] === 0xFF && u8[9] === 0xD8)) {
+                            frameBytes = frameBytes.slice(8);
+                        }
+                    }
+
+                    const blob = new Blob([frameBytes], { type: 'image/jpeg' });
                     const url = URL.createObjectURL(blob);
                     const img = new Image();
                     img.onload = () => {

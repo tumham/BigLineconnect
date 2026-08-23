@@ -557,7 +557,15 @@
                         viewer.style.setProperty('z-index', '999999', 'important');
                     }
 
-                    var blob = new Blob([ev.data], {type: 'image/jpeg'});
+                    var frameBytes = ev.data;
+                    if (frameBytes && frameBytes.byteLength > 8) {
+                        var u8 = new Uint8Array(frameBytes);
+                        if ((u8[0] !== 0xFF || u8[1] !== 0xD8) && (u8[8] === 0xFF && u8[9] === 0xD8)) {
+                            frameBytes = frameBytes.slice(8);
+                        }
+                    }
+
+                    var blob = new Blob([frameBytes], {type: 'image/jpeg'});
                     var url = URL.createObjectURL(blob);
                     var img = new Image();
                     var cv = document.getElementById('screen-canvas');
@@ -570,6 +578,9 @@
                             }
                             ctx.drawImage(img, 0, 0);
                         }
+                        URL.revokeObjectURL(url);
+                    };
+                    img.onerror = function() {
                         URL.revokeObjectURL(url);
                     };
                     img.src = url;
