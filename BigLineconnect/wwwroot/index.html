@@ -490,12 +490,14 @@
             var inputElem = document.getElementById('target-id') || document.getElementById('tid');
             if (!inputElem) { alert('Hata: ID giriş kutusu bulunamadı.'); return; }
 
-            var id = inputElem.value.replace(/\D/g, '');
-            if (!id || id.length < 5) {
-                alert('⚠️ Lütfen bağlanmak istediğiniz uzaktaki bilgisayarın 9 haneli ID numarasını girin (Örn: 219 675 629).');
+            var rawVal = inputElem.value ? inputElem.value.trim() : '';
+            if (!rawVal) {
+                alert('⚠️ Lütfen bağlanmak istediğiniz uzaktaki bilgisayarın ID numarasını girin (Örn: 219 675 629).');
                 resetConnectButton();
                 return;
             }
+
+            var cleanId = rawVal.replace(/\s+/g, '');
 
             var btn = document.getElementById('connect-btn');
             if (btn) {
@@ -506,7 +508,7 @@
             var wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
             if (ws) { try { ws.close(); } catch(e) {} }
 
-            ws = new WebSocket(wsProtocol + '//' + location.host + '/connect-client?id=' + id);
+            ws = new WebSocket(wsProtocol + '//' + location.host + '/connect-client?id=' + encodeURIComponent(cleanId));
             ws.binaryType = 'arraybuffer';
 
             ws.onopen = function() {
@@ -874,7 +876,15 @@
                     e.preventDefault();
                 }
             }, { passive: false });
-            }, { passive: false });
+
+            // Ensure mobile connect button fires doConnect on tap
+            var connectBtn = document.getElementById('connect-btn');
+            if (connectBtn) {
+                connectBtn.addEventListener('touchend', function(e) {
+                    e.preventDefault();
+                    doConnect();
+                });
+            }
 
             // Virtual Keyboard Touch Input Listener
             var hiddenInput = document.getElementById('hidden-keyboard-input');
