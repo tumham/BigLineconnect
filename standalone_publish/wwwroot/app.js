@@ -206,30 +206,44 @@ function connectToHost(id) {
 
             const screenCanvas = document.getElementById('screen-canvas');
             const ctx = screenCanvas ? screenCanvas.getContext('2d', { alpha: false, desynchronized: true }) : null;
+            const fallbackImg = document.getElementById('screen-img');
 
             let frameBytes = ev.data;
             if (frameBytes && frameBytes.byteLength > 8) {
                 const u8 = new Uint8Array(frameBytes);
-                if ((u8[0] !== 0xFF || u8[1] !== 0xD8) && (u8[8] === 0xFF && u8[9] === 0xD8)) {
-                    frameBytes = frameBytes.slice(8);
+                for (let i = 0; i < Math.min(16, u8.length - 1); i++) {
+                    if (u8[i] === 0xFF && u8[i + 1] === 0xD8) {
+                        if (i > 0) frameBytes = frameBytes.slice(i);
+                        break;
+                    }
                 }
             }
 
             const blob = new Blob([frameBytes], { type: 'image/jpeg' });
             const url = URL.createObjectURL(blob);
-            const img = new Image();
-            img.onload = () => {
+
+            const tempImg = new Image();
+            tempImg.onload = () => {
                 if (screenCanvas && ctx) {
-                    if (screenCanvas.width !== img.width || screenCanvas.height !== img.height) {
-                        screenCanvas.width = img.width;
-                        screenCanvas.height = img.height;
+                    if (screenCanvas.width !== tempImg.width || screenCanvas.height !== tempImg.height) {
+                        screenCanvas.width = tempImg.width;
+                        screenCanvas.height = tempImg.height;
                     }
-                    ctx.drawImage(img, 0, 0);
+                    ctx.drawImage(tempImg, 0, 0);
+                }
+                if (fallbackImg) {
+                    fallbackImg.src = url;
+                    if (fallbackImg.style.display === 'none') {
+                        fallbackImg.style.display = 'block';
+                        fallbackImg.style.width = '100%';
+                        fallbackImg.style.height = '100%';
+                        fallbackImg.style.objectFit = 'contain';
+                    }
                 }
                 URL.revokeObjectURL(url);
             };
-            img.onerror = () => URL.revokeObjectURL(url);
-            img.src = url;
+            tempImg.onerror = () => URL.revokeObjectURL(url);
+            tempImg.src = url;
         }
     };
 
