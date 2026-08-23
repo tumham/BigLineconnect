@@ -115,9 +115,10 @@ namespace BigLineconnect
 
         private bool IsTrueLanDirect()
         {
+            if (_isLanDirectActive) return true;
             if (string.IsNullOrEmpty(_wsUrl)) return false;
             if (_wsUrl.Contains("relay.biglineconnect.com") || _wsUrl.StartsWith("wss://")) return false;
-            return _isLanDirectActive || _wsUrl.StartsWith("ws://192.168.") || _wsUrl.StartsWith("ws://10.") || _wsUrl.StartsWith("ws://172.") || _wsUrl.StartsWith("ws://127.") || _wsUrl.Contains(":18888");
+            return _wsUrl.StartsWith("ws://192.168.") || _wsUrl.StartsWith("ws://10.") || _wsUrl.StartsWith("ws://172.") || _wsUrl.StartsWith("ws://127.") || _wsUrl.Contains(":18888");
         }
 
         private void StartP2pAndLanProbe()
@@ -273,7 +274,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.64.4 (Commercial PRO License & 10-Minute Free Session Limits Engine)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.64.5 (Commercial PRO License & 10-Minute Free Session Limits Engine)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
