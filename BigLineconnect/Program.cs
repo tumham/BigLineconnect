@@ -1058,12 +1058,12 @@ namespace BigLineconnect
 
                 while (!token.IsCancellationRequested && _isStreaming && ws.State == WebSocketState.Open)
                 {
-                    // 1. WATCHDOG KOTA KORUMASI: İzleyiciden 10 saniye boyunca sinyal/heartbeat gelmezse yayını ANINDA KES!
-                    if ((DateTime.Now - _lastViewerActivityTime).TotalSeconds > 10)
+                    // 1. 24/7 OVERNIGHT RESILIENCE: Maintain stream loop active even during idle periods (0 KB/s when screen is static)
+                    if ((DateTime.Now - _lastViewerActivityTime).TotalSeconds > 300)
                     {
-                        Log("[Kota Koruma Akıllı Şalteri]: İzleyiciden 10 saniyedir sinyal alınamadı. Arka plan yayını ve internet kullanımı TAMAMEN KESİLDİ!");
-                        SetStreamActive(false);
-                        break;
+                        // Refresh desktop handle every 5 minutes during idle to ensure Winlogon/lock screen readiness
+                        DesktopHelper.AttachToInputDesktop();
+                        _lastViewerActivityTime = DateTime.Now;
                     }
 
                     if (_isSendingFrame && (DateTime.Now - _lastSentFrameTime).TotalMilliseconds < 500)
@@ -1211,6 +1211,7 @@ namespace BigLineconnect
 
                 if (type == "click" || type == "key" || type == "scroll" || type == "double_click")
                 {
+                    DesktopHelper.AttachToInputDesktop();
                     FlushPendingMouseMove();
                     Interlocked.Exchange(ref _forceSendUntilTicks, DateTime.Now.AddMilliseconds(250).Ticks);
                     _lastSentFrameBytes = null;
