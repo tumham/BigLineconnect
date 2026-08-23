@@ -182,7 +182,7 @@ namespace BigLineconnect
         private void InitializeComponent()
         {
             Program.LoadSecuritySettings();
-            this.Text = "BigLineconnect v3.64.5 - Uzaktan Kontrol (Commercial PRO License & 10-Minute Free Session Limits Engine)";
+            this.Text = "BigLineconnect v3.64.6 - Uzaktan Kontrol (Commercial PRO License & 10-Minute Free Session Limits Engine)";
             this.Size = new Size(880, 750);
             this.MinimumSize = new Size(880, 750);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -215,7 +215,7 @@ namespace BigLineconnect
 
             _titleLabel = new Label
             {
-                Text = "BigLineconnect v3.64.5 🚀",
+                Text = "BigLineconnect v3.64.6 🚀",
                 Location = new Point(105, 15),
                 Size = new Size(330, 42),
                 Font = new Font("Segoe UI", 20F, FontStyle.Bold),
@@ -226,7 +226,7 @@ namespace BigLineconnect
 
             var subtitleLabel = new Label
             {
-                Text = "v3.64.5",
+                Text = "v3.64.6",
                 Location = new Point(108, 58),
                 Size = new Size(450, 20),
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
@@ -989,10 +989,10 @@ namespace BigLineconnect
             if (_remoteIdTextBox == null || _relayUrlTextBox == null) return;
             string targetId = _remoteIdTextBox.Text.Replace(" ", "").Trim();
 
-            bool isIpAddress = targetId.Contains(".") || targetId.StartsWith("192.") || targetId.StartsWith("10.") || targetId.StartsWith("172.");
-            if (targetId.Length != 9 && !isIpAddress)
+            bool isDirectAddress = targetId.Contains(".") || targetId.StartsWith("192.") || targetId.StartsWith("10.") || targetId.StartsWith("172.") || targetId.EndsWith(".local", StringComparison.OrdinalIgnoreCase);
+            if (targetId.Length != 9 && !isDirectAddress)
             {
-                MessageBox.Show("Lütfen 9 haneli geçerli bir ID veya yerel IP adresi (Örn: 192.168.1.101) girin.", "Uyarı", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Lütfen 9 haneli geçerli bir ID, IP adresi (Örn: 192.168.1.101) veya Alan Adı (Örn: ofis.firma.com) girin.", "Uyarı", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
@@ -1036,12 +1036,12 @@ namespace BigLineconnect
             string protocol = uri.Scheme == "wss" ? "wss" : "ws";
             string clientWsUrl;
 
-            if (targetId.Contains(".") || targetId.StartsWith("192.168.") || targetId.StartsWith("10.") || targetId.StartsWith("172."))
+            if (targetId.Contains(".") || targetId.StartsWith("192.168.") || targetId.StartsWith("10.") || targetId.StartsWith("172.") || targetId.EndsWith(".local", StringComparison.OrdinalIgnoreCase))
             {
-                // Direct LAN IP Connection
-                string ip = targetId.Contains(":") ? targetId : $"{targetId}:18888";
-                clientWsUrl = $"ws://{ip}/";
-                AppendLog($"[Yerel Ağ (LAN)] {ip} IP adresine doğrudan (0.5 ms) bağlanılıyor...");
+                // Direct IP / Domain Name (DNS) Connection
+                string host = targetId.Contains(":") ? targetId : $"{targetId}:18888";
+                clientWsUrl = $"ws://{host}/";
+                AppendLog($"[Doğrudan Bağlantı (IP / DNS)] {host} adresine doğrudan (0.5 ms) bağlanılıyor...");
             }
             else
             {
