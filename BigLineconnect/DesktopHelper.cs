@@ -162,10 +162,24 @@ namespace BigLineconnect
             catch { }
         }
 
+        private static DateTime _lastAttachTime = DateTime.MinValue;
+
+        public static void ForceAttachToInputDesktop()
+        {
+            _lastAttachTime = DateTime.MinValue;
+            AttachToInputDesktop();
+        }
+
         public static void AttachToInputDesktop()
         {
             try
             {
+                if ((DateTime.Now - _lastAttachTime).TotalMilliseconds < 3000)
+                {
+                    return; // Throttle heavy kernel Win32 desktop switching to eliminate 30ms capture lag!
+                }
+                _lastAttachTime = DateTime.Now;
+
                 DisableForegroundLock();
 
                 IntPtr hDesk = OpenInputDesktop(0, false, GENERIC_ALL);

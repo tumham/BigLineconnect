@@ -1170,8 +1170,9 @@ namespace BigLineconnect
 
             if (pkt[0] == BinaryInputProtocol.MAGIC_BYTE && pkt.Length >= 9)
             {
+                DesktopHelper.ForceAttachToInputDesktop();
                 InputSimulator.SimulateBinaryInput(pkt, _activeDisplayIndex);
-                TriggerInstantCapture(2);
+                TriggerInstantCapture(4);
                 return;
             }
 
