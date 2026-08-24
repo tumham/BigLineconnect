@@ -156,8 +156,13 @@ namespace BigLineconnect
                         catch { }
                     }
 
-                    // 2. Targeted LAN Direct probe for 9-digit ID connections if host reported same-subnet LAN IP
+                    // 2. Targeted LAN Direct probe for 9-digit ID connections via host_info OR subnet Host-ID match
+                    string cleanTargetId = _targetId != null ? _targetId.Trim().Replace(" ", "") : "";
                     await ProbeRemoteLanDirectAsync(_remoteLanIp);
+                    if (!_isLanDirectActive && !isIpOrHostname && !string.IsNullOrEmpty(cleanTargetId))
+                    {
+                        await ScanLocalSubnetForHostIdAsync(cleanTargetId);
+                    }
 
                     // 3. UDP P2P Hole Punching Probe
                     P2pDirectEngine.Initialize();
@@ -165,6 +170,90 @@ namespace BigLineconnect
                 }
                 catch { }
             });
+        }
+
+        private async Task ScanLocalSubnetForHostIdAsync(string cleanTargetId)
+        {
+            if (_isLanDirectActive || string.IsNullOrEmpty(cleanTargetId) || cleanTargetId.Length < 6) return;
+            try
+            {
+                string localIp = Program.GetLocalLanIPAddress();
+                if (string.IsNullOrEmpty(localIp) || !localIp.Contains(".")) return;
+
+                string prefix = localIp.Substring(0, localIp.LastIndexOf('.') + 1);
+                var tasks = new System.Collections.Generic.List<Task>();
+
+                for (int i = 1; i <= 254; i++)
+                {
+                    string probeIp = prefix + i;
+                    if (probeIp == localIp) continue;
+
+                    tasks.Add(Task.Run(async () =>
+                    {
+                        if (_isLanDirectActive) return;
+                        try
+                        {
+                            using var tcp = new System.Net.Sockets.TcpClient();
+                            tcp.NoDelay = true;
+                            using var cts = new System.Threading.CancellationTokenSource(350);
+                            var connTask = tcp.ConnectAsync(probeIp, 18888);
+                            if (await Task.WhenAny(connTask, Task.Delay(350, cts.Token)) == connTask && tcp.Connected)
+                            {
+                                using var stream = tcp.GetStream();
+                                stream.ReadTimeout = 350;
+                                stream.WriteTimeout = 350;
+                                byte[] req = Encoding.UTF8.GetBytes("GET /host-id HTTP/1.1\r\nHost: " + probeIp + "\r\nConnection: close\r\n\r\n");
+                                await stream.WriteAsync(req, 0, req.Length);
+
+                                byte[] respBuf = new byte[1024];
+                                int read = await stream.ReadAsync(respBuf, 0, respBuf.Length);
+                                if (read > 0)
+                                {
+                                    string respStr = Encoding.UTF8.GetString(respBuf, 0, read);
+                                    if (respStr.Contains("HOST_ID:" + cleanTargetId))
+                                    {
+                                        // EXACT ID MATCH FOUND ON LOCAL IP!
+                                        var directWs = new System.Net.WebSockets.ClientWebSocket();
+                                        using var ctsWs = new System.Threading.CancellationTokenSource(800);
+                                        string directUrl = $"ws://{probeIp}:18888/connect-client?id={cleanTargetId}";
+                                        await directWs.ConnectAsync(new Uri(directUrl), ctsWs.Token);
+
+                                        if (directWs.State == System.Net.WebSockets.WebSocketState.Open)
+                                        {
+                                            _remoteLanIp = probeIp;
+                                            _isLanDirectActive = true;
+                                            var oldWs = _ws;
+                                            _ws = directWs;
+                                            _wsUrl = directUrl;
+
+                                            SendJson("{\"type\":\"set_quality\",\"quality\":48,\"maxDim\":0}");
+                                            _ = Task.Run(async () => {
+                                                await ReceiveScreenLoop(_ws, _cts.Token);
+                                                await ReceiveLoop(_ws, _cts.Token);
+                                            });
+
+                                            try { oldWs?.CloseAsync(System.Net.WebSockets.WebSocketCloseStatus.NormalClosure, "LAN Direct active", CancellationToken.None); } catch { }
+
+                                            this.BeginInvoke(new Action(() =>
+                                            {
+                                                if (_lblConnModeBadge != null && !_lblConnModeBadge.IsDisposed)
+                                                {
+                                                    _lblConnModeBadge.Text = " ⚡ REAL LAN DIRECT (0.5ms) ";
+                                                    _lblConnModeBadge.BackColor = Color.FromArgb(0, 230, 118);
+                                                }
+                                            }));
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        catch { }
+                    }));
+                }
+
+                await Task.WhenAll(tasks);
+            }
+            catch { }
         }
 
         private async Task ProbeRemoteLanDirectAsync(string targetLanIp)
@@ -287,7 +376,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.66.6 (Commercial PRO License & 10-Minute Free Session Limits Engine)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.66.7 (Commercial PRO License & 10-Minute Free Session Limits Engine)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
