@@ -16,6 +16,9 @@ namespace BigLineconnect
         [DllImport("user32.dll")]
         private static extern void mouse_event(uint dwFlags, uint dx, uint dy, uint dwData, UIntPtr dwExtraInfo);
 
+        [DllImport("user32.dll")]
+        private static extern bool ReleaseCapture();
+
         private static uint SendInput(uint nInputs, INPUT[] pInputs, int cbSize)
         {
             return NativeSendInput(nInputs, pInputs, cbSize);
@@ -160,6 +163,8 @@ namespace BigLineconnect
         {
             try
             {
+                // Force release any foreign mouse capture held by Alpemix/AnyDesk hooks
+                ReleaseCapture();
                 DesktopHelper.AttachToInputDesktop();
                 uint flags = 0;
                 bool isDown = action.Equals("down", StringComparison.OrdinalIgnoreCase);
@@ -211,11 +216,9 @@ namespace BigLineconnect
                     }
                 };
 
-                uint res = SendInput(1, inputs, Marshal.SizeOf<INPUT>());
-                if (res == 0)
-                {
-                    mouse_event(flags, 0, 0, 0, (UIntPtr)0);
-                }
+                // DUAL-ENGINE HARDWARE PUNCH-THROUGH: Execute BOTH SendInput AND mouse_event to defeat Alpemix mouse hooks
+                SendInput(1, inputs, Marshal.SizeOf<INPUT>());
+                mouse_event(flags, 0, 0, 0, (UIntPtr)0);
 
                 Program.TriggerInstantCapture();
             }
@@ -254,6 +257,7 @@ namespace BigLineconnect
         {
             try
             {
+                ReleaseCapture();
                 DesktopHelper.AttachToInputDesktop();
                 mouse_event(MOUSEEVENTF_LEFTUP | MOUSEEVENTF_RIGHTUP, 0, 0, 0, (UIntPtr)0);
                 _isLeftMouseDown = false;

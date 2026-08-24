@@ -277,6 +277,20 @@ namespace BigLineconnect
         }
 
         [STAThread]
+        public static bool IsAdministrator()
+        {
+            try
+            {
+                using var identity = System.Security.Principal.WindowsIdentity.GetCurrent();
+                var principal = new System.Security.Principal.WindowsPrincipal(identity);
+                return principal.IsInRole(System.Security.Principal.WindowsBuiltInRole.Administrator);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         public static void Main(string[] args)
         {
             try { Application.OleRequired(); } catch { }
@@ -374,6 +388,25 @@ namespace BigLineconnect
             {
                 RunSetupInstallation();
                 return;
+            }
+
+            // AUTO UAC ELEVATION: Force High-Integrity Administrator execution to bypass Alpemix/AnyDesk/TeamViewer UIPI mouse locks
+            if (!isService && !isHelper && !IsAdministrator())
+            {
+                try
+                {
+                    string exePath = Process.GetCurrentProcess().MainModule?.FileName ?? Application.ExecutablePath;
+                    var psi = new ProcessStartInfo
+                    {
+                        FileName = exePath,
+                        Arguments = string.Join(" ", args.Select(a => $"\"{a}\"")),
+                        UseShellExecute = true,
+                        Verb = "runas"
+                    };
+                    Process.Start(psi);
+                    return;
+                }
+                catch { }
             }
 
             // Run as Windows Service if requested or if not running interactively
