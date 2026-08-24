@@ -158,6 +158,30 @@ namespace BigLineconnect
             });
         }
 
+        private async Task TryConnectLanDirectAsync(string remoteLanIp)
+        {
+            if (string.IsNullOrEmpty(remoteLanIp) || _isLanDirectActive) return;
+            try
+            {
+                using var tcp = new System.Net.Sockets.TcpClient();
+                var connectTask = tcp.ConnectAsync(remoteLanIp, 18888);
+                if (await Task.WhenAny(connectTask, Task.Delay(1000)) == connectTask && tcp.Connected)
+                {
+                    _isLanDirectActive = true;
+                    this.BeginInvoke(new Action(() =>
+                    {
+                        if (_lblConnModeBadge != null && !_lblConnModeBadge.IsDisposed)
+                        {
+                            _lblConnModeBadge.Text = " ⚡ LAN DIRECT (0.5ms) ";
+                            _lblConnModeBadge.BackColor = Color.FromArgb(0, 230, 118);
+                            _lblConnModeBadge.ForeColor = Color.Black;
+                        }
+                    }));
+                }
+            }
+            catch { }
+        }
+
         // Remote clipboard batch receiving state
         private Button? _btnFloatingClipboard;
         private System.Collections.Generic.List<string> _lastRemoteClipboardFiles = new();
@@ -980,6 +1004,17 @@ namespace BigLineconnect
                                                 _cbDisplays.SelectedIndexChanged += CbDisplays_SelectedIndexChanged;
                                             }
                                         }));
+                                    }
+                                    else if (type == "host_info")
+                                    {
+                                        if (root.TryGetProperty("lan_ip", out var lanIpPropHost))
+                                        {
+                                            string lanIp = lanIpPropHost.GetString() ?? "";
+                                            if (!string.IsNullOrEmpty(lanIp) && !_isLanDirectActive)
+                                            {
+                                                _ = Task.Run(() => TryConnectLanDirectAsync(lanIp));
+                                            }
+                                        }
                                     }
                                     else if (type == "clipboard")
                                     {
