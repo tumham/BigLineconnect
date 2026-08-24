@@ -562,6 +562,7 @@ namespace BigLineconnect.Relay
             public string AppVersion { get; set; } = "Bilinmeyen";
             public string LicenseStatus { get; set; } = "Bilinmeyen";
             public string IpAddress { get; set; } = "Bilinmeyen";
+            public string LanIp { get; set; } = "";
             public DateTime ConnectedAt { get; set; } = DateTime.Now;
         }
 
@@ -686,6 +687,7 @@ namespace BigLineconnect.Relay
                     string os = context.Request.Query["os"].ToString().Trim();
                     string ver = context.Request.Query["version"].ToString().Trim();
                     string lic = context.Request.Query["license_status"].ToString().Trim();
+                    string lanIp = context.Request.Query["lan_ip"].ToString().Trim();
                     string ip = context.Connection.RemoteIpAddress?.ToString() ?? "Bilinmeyen";
 
                     if (string.IsNullOrEmpty(hwid)) hwid = "Bilinmeyen";
@@ -729,6 +731,7 @@ namespace BigLineconnect.Relay
                         AppVersion = ver,
                         LicenseStatus = lic,
                         IpAddress = ip,
+                        LanIp = lanIp,
                         ConnectedAt = DateTime.Now
                     };
 
@@ -995,6 +998,14 @@ namespace BigLineconnect.Relay
                         Console.WriteLine($"[Relay] Client connected to Host ID: {targetId}");
                         string clientIp = context.Connection.RemoteIpAddress?.ToString() ?? "Bilinmeyen";
                         TelemetryManager.LogEvent(session.Hwid, session.IpAddress, session.ComputerName, session.Username, session.OsVersion, session.AppVersion, "connect", $"İstemci bağlandı. İstemci IP: {clientIp}, Hedef ID: {targetId}");
+
+                        // Send host_info JSON packet to viewer so viewer can auto-upgrade to 0.5ms LAN Direct if on same subnet
+                        if (!string.IsNullOrEmpty(session.LanIp))
+                        {
+                            string hostInfoJson = $"{{\"type\":\"host_info\",\"id\":\"{targetId}\",\"lan_ip\":\"{session.LanIp}\",\"computer\":\"{session.ComputerName}\"}}";
+                            byte[] hostInfoBytes = Encoding.UTF8.GetBytes(hostInfoJson);
+                            try { _ = clientSocket.SendAsync(new ArraySegment<byte>(hostInfoBytes), WebSocketMessageType.Text, true, CancellationToken.None); } catch { }
+                        }
 
                         string ticketToken = context.Request.Query["ticketToken"].ToString().Trim();
                         
