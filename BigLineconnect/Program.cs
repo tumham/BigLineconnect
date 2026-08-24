@@ -430,6 +430,28 @@ namespace BigLineconnect
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
 
+            // Global Exception Handler to suppress non-critical WinForms UI & DragDrop OLE exceptions
+            Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
+            Application.ThreadException += (s, e) =>
+            {
+                try
+                {
+                    LogHelper($"[Global Thread Exception Suppressed] {e.Exception?.Message}");
+                }
+                catch { }
+            };
+            AppDomain.CurrentDomain.UnhandledException += (s, e) =>
+            {
+                try
+                {
+                    if (e.ExceptionObject is Exception ex)
+                    {
+                        LogHelper($"[Global Domain Exception Suppressed] {ex.Message}");
+                    }
+                }
+                catch { }
+            };
+
             LoadSecuritySettings();
             LoadAdvancedSettings();
             // Sanitize relay URL

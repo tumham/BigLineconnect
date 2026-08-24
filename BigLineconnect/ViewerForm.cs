@@ -376,7 +376,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.67.0 (Commercial PRO License & 10-Minute Free Session Limits Engine)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.67.1 (Commercial PRO License & 10-Minute Free Session Limits Engine)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
@@ -3492,9 +3492,9 @@ namespace BigLineconnect
                 Location = new Point(15, 115),
                 Size = new Size(435, 120),
                 BorderStyle = BorderStyle.FixedSingle,
-                BackColor = Color.FromArgb(17, 19, 24),
-                AllowDrop = true
+                BackColor = Color.FromArgb(17, 19, 24)
             };
+            try { panelDropZone.AllowDrop = true; } catch { }
             panelDropZone.DragEnter += PanelDropZone_DragEnter;
             panelDropZone.DragDrop += PanelDropZone_DragDrop;
 
