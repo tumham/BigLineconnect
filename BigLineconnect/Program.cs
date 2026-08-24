@@ -2420,7 +2420,7 @@ namespace BigLineconnect
                 uint sessionId = WtsHelper.GetActiveSessionId();
                 if (sessionId != 0 && sessionId != 0xFFFFFFFF && WtsHelper.WTSQueryUserToken(sessionId, ref hToken))
                 {
-                    if (WtsHelper.SHGetKnownFolderPath(WtsHelper.FOLDERID_Desktop, 0, hToken, out string desktopPath) == 0 && !string.IsNullOrEmpty(desktopPath))
+                    if (WtsHelper.SHGetKnownFolderPath(WtsHelper.FOLDERID_Desktop, 0, hToken, out string desktopPath) == 0 && !string.IsNullOrEmpty(desktopPath) && Directory.Exists(desktopPath))
                     {
                         return desktopPath;
                     }
@@ -2434,10 +2434,21 @@ namespace BigLineconnect
 
             try
             {
-                string publicDesktop = Environment.GetFolderPath(Environment.SpecialFolder.CommonDesktopDirectory);
-                if (!string.IsNullOrEmpty(publicDesktop) && Directory.Exists(publicDesktop))
+                string userDesktop = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+                if (!string.IsNullOrEmpty(userDesktop) && Directory.Exists(userDesktop))
                 {
-                    return publicDesktop;
+                    return userDesktop;
+                }
+            }
+            catch { }
+
+            try
+            {
+                string username = WtsHelper.GetActiveSessionUsername();
+                if (!string.IsNullOrEmpty(username) && username != "SYSTEM")
+                {
+                    string path = Path.Combine(@"C:\Users", username, "Desktop");
+                    if (Directory.Exists(path)) return path;
                 }
             }
             catch { }
@@ -2453,7 +2464,7 @@ namespace BigLineconnect
                 uint sessionId = WtsHelper.GetActiveSessionId();
                 if (sessionId != 0 && sessionId != 0xFFFFFFFF && WtsHelper.WTSQueryUserToken(sessionId, ref hToken))
                 {
-                    if (WtsHelper.SHGetKnownFolderPath(WtsHelper.FOLDERID_Downloads, 0, hToken, out string downloadsPath) == 0 && !string.IsNullOrEmpty(downloadsPath))
+                    if (WtsHelper.SHGetKnownFolderPath(WtsHelper.FOLDERID_Downloads, 0, hToken, out string downloadsPath) == 0 && !string.IsNullOrEmpty(downloadsPath) && Directory.Exists(downloadsPath))
                     {
                         return downloadsPath;
                     }
@@ -2467,9 +2478,23 @@ namespace BigLineconnect
 
             try
             {
-                string home = Environment.GetEnvironmentVariable("USERPROFILE") ?? @"C:\Users\Default";
-                string path = Path.Combine(home, "Downloads");
-                if (Directory.Exists(path)) return path;
+                string username = WtsHelper.GetActiveSessionUsername();
+                if (!string.IsNullOrEmpty(username) && username != "SYSTEM")
+                {
+                    string path = Path.Combine(@"C:\Users", username, "Downloads");
+                    if (Directory.Exists(path)) return path;
+                }
+            }
+            catch { }
+
+            try
+            {
+                string userProfile = Environment.GetEnvironmentVariable("USERPROFILE") ?? "";
+                if (!string.IsNullOrEmpty(userProfile))
+                {
+                    string path = Path.Combine(userProfile, "Downloads");
+                    if (Directory.Exists(path)) return path;
+                }
             }
             catch { }
 
@@ -3866,6 +3891,18 @@ namespace BigLineconnect
 
             LogService("Fallback: defaulting to Session 1");
             return 1;
+        }
+
+        public static string GetActiveSessionUsername()
+        {
+            try
+            {
+                string user = Environment.UserName;
+                if (!string.IsNullOrEmpty(user) && user != "SYSTEM") return user;
+            }
+            catch { }
+
+            return "";
         }
 
         public static bool IsWorkstationLocked(uint sessionId)
