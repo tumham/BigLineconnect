@@ -376,7 +376,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.67.3 (Commercial PRO License & 10-Minute Free Session Limits Engine)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.67.4 (Commercial PRO License & 10-Minute Free Session Limits Engine)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
@@ -2777,7 +2777,6 @@ namespace BigLineconnect
             {
                 _fileManagerForm = new FileManagerForm(this);
             }
-            _fileManagerForm.TopMost = true;
             _fileManagerForm.Show(this);
             _fileManagerForm.BringToFront();
             _fileManagerForm.Activate();
@@ -3517,6 +3516,16 @@ namespace BigLineconnect
                 Dock = DockStyle.Fill
             };
             lblDropHint.Click += (s, e) => AddFiles();
+            try
+            {
+                if (System.Threading.Thread.CurrentThread.GetApartmentState() == System.Threading.ApartmentState.STA)
+                {
+                    lblDropHint.AllowDrop = true;
+                }
+            }
+            catch { }
+            lblDropHint.DragEnter += PanelDropZone_DragEnter;
+            lblDropHint.DragDrop += PanelDropZone_DragDrop;
             panelDropZone.Controls.Add(lblDropHint);
 
             lbSenderFiles = new ListBox
@@ -3526,6 +3535,26 @@ namespace BigLineconnect
                 BackColor = Color.FromArgb(17, 19, 24),
                 ForeColor = Color.White,
                 BorderStyle = BorderStyle.None
+            };
+            try
+            {
+                if (System.Threading.Thread.CurrentThread.GetApartmentState() == System.Threading.ApartmentState.STA)
+                {
+                    lbSenderFiles.AllowDrop = true;
+                }
+            }
+            catch { }
+            lbSenderFiles.DragEnter += PanelDropZone_DragEnter;
+            lbSenderFiles.DragDrop += PanelDropZone_DragDrop;
+            lbSenderFiles.DoubleClick += (s, e) =>
+            {
+                if (lbSenderFiles.SelectedItem != null)
+                {
+                    string selected = lbSenderFiles.SelectedItem.ToString() ?? "";
+                    _sendPaths.Remove(selected);
+                    lbSenderFiles.Items.Remove(selected);
+                    if (lblSendStatus != null) lblSendStatus.Text = $"{_sendPaths.Count} öğe listede kaldı.";
+                }
             };
 
             btnAddFiles = new Button
@@ -3793,32 +3822,46 @@ namespace BigLineconnect
 
         private void AddFiles()
         {
-            using var ofd = new OpenFileDialog { Multiselect = true };
-            if (ofd.ShowDialog() == DialogResult.OK)
+            try
             {
-                foreach (var f in ofd.FileNames)
+                using var ofd = new OpenFileDialog { Multiselect = true, Title = "Karşı Bilgisayara Gönderilecek Dosyaları Seçin" };
+                if (ofd.ShowDialog(this) == DialogResult.OK)
                 {
-                    if (!_sendPaths.Contains(f))
+                    foreach (var f in ofd.FileNames)
                     {
-                        _sendPaths.Add(f);
-                        lbSenderFiles.Items.Add(f);
+                        if (!string.IsNullOrEmpty(f) && !_sendPaths.Contains(f))
+                        {
+                            _sendPaths.Add(f);
+                            if (lbSenderFiles != null) lbSenderFiles.Items.Add(f);
+                        }
                     }
+                    if (lblSendStatus != null) lblSendStatus.Text = $"{_sendPaths.Count} öğe gönderilmek üzere eklendi.";
                 }
-                lblSendStatus.Text = $"{_sendPaths.Count} öğe gönderilmek üzere eklendi.";
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Dosya seçim penceresi hatası: {ex.Message}", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
         private void AddFolder()
         {
-            using var fbd = new FolderBrowserDialog();
-            if (fbd.ShowDialog() == DialogResult.OK)
+            try
             {
-                if (!_sendPaths.Contains(fbd.SelectedPath))
+                using var fbd = new FolderBrowserDialog { Description = "Karşı Bilgisayara Gönderilecek Klasörü Seçin" };
+                if (fbd.ShowDialog(this) == DialogResult.OK)
                 {
-                    _sendPaths.Add(fbd.SelectedPath);
-                    lbSenderFiles.Items.Add(fbd.SelectedPath);
+                    if (!string.IsNullOrEmpty(fbd.SelectedPath) && !_sendPaths.Contains(fbd.SelectedPath))
+                    {
+                        _sendPaths.Add(fbd.SelectedPath);
+                        if (lbSenderFiles != null) lbSenderFiles.Items.Add(fbd.SelectedPath);
+                    }
+                    if (lblSendStatus != null) lblSendStatus.Text = $"{_sendPaths.Count} öğe gönderilmek üzere eklendi.";
                 }
-                lblSendStatus.Text = $"{_sendPaths.Count} öğe gönderilmek üzere eklendi.";
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Klasör seçim penceresi hatası: {ex.Message}", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
