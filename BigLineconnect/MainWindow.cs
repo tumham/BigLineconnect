@@ -182,7 +182,7 @@ namespace BigLineconnect
         private void InitializeComponent()
         {
             Program.LoadSecuritySettings();
-            this.Text = "BigLineconnect v3.70.3 - Uzaktan Kontrol (Commercial PRO License & 10-Minute Free Session Limits Engine)";
+            this.Text = "BigLineconnect v3.70.4 - Uzaktan Kontrol (Commercial PRO License & 10-Minute Free Session Limits Engine)";
             this.Size = new Size(880, 750);
             this.MinimumSize = new Size(880, 750);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -215,7 +215,7 @@ namespace BigLineconnect
 
             _titleLabel = new Label
             {
-                Text = "BigLineconnect v3.70.3 🚀",
+                Text = "BigLineconnect v3.70.4 🚀",
                 Location = new Point(105, 15),
                 Size = new Size(330, 42),
                 Font = new Font("Segoe UI", 20F, FontStyle.Bold),
@@ -226,7 +226,7 @@ namespace BigLineconnect
 
             var subtitleLabel = new Label
             {
-                Text = "v3.70.3",
+                Text = "v3.70.4",
                 Location = new Point(108, 58),
                 Size = new Size(450, 20),
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
@@ -893,6 +893,9 @@ namespace BigLineconnect
             // Form Events
             this.Resize += MainWindow_Resize;
             this.FormClosing += MainWindow_FormClosing;
+            this.HandleCreated += (s, e) => {
+                try { AddClipboardFormatListener(this.Handle); } catch { }
+            };
         }
 
         private void LoadLogoAndIcon()
@@ -1252,6 +1255,23 @@ namespace BigLineconnect
                 }
             }
             catch { }
+        }
+
+        [System.Runtime.InteropServices.DllImport("user32.dll", SetLastError = true)]
+        [return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Bool)]
+        public static extern bool AddClipboardFormatListener(IntPtr hwnd);
+
+        [System.Runtime.InteropServices.DllImport("user32.dll", SetLastError = true)]
+        [return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Bool)]
+        public static extern bool RemoveClipboardFormatListener(IntPtr hwnd);
+
+        protected override void WndProc(ref Message m)
+        {
+            if (m.Msg == 0x031D) // WM_CLIPBOARDUPDATE
+            {
+                ClipboardTimer_Tick(null, EventArgs.Empty);
+            }
+            base.WndProc(ref m);
         }
 
         private bool AreFileListsEqual(System.Collections.Specialized.StringCollection? a, System.Collections.Specialized.StringCollection? b)
