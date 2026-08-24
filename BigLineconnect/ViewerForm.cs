@@ -85,7 +85,7 @@ namespace BigLineconnect
         private ClientWebSocket? _ws;
         private CancellationTokenSource _cts = new CancellationTokenSource();
         
-        private PictureBox? _pictureBox;
+        private DoubleBufferedPictureBox? _pictureBox;
         private DateTime _lastMoveSent = DateTime.MinValue;
         private Point _lastSentMousePos = new Point(-1, -1);
         private System.Windows.Forms.Timer? _clipboardTimer;
@@ -376,7 +376,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.69.1 (Commercial PRO License & 10-Minute Free Session Limits Engine)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.69.2 (Commercial PRO License & 10-Minute Free Session Limits Engine)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
@@ -666,6 +666,13 @@ namespace BigLineconnect
             _pictureBox.MouseMove += PictureBox_MouseMove;
             _pictureBox.MouseWheel += PictureBox_MouseWheel;
             _pictureBox.Click += (s, e) => this.Focus();
+            _pictureBox.OnFilesDropped = (files) =>
+            {
+                if (files != null && files.Count > 0)
+                {
+                    _ = Task.Run(async () => await SendPathsBatchAsync(files));
+                }
+            };
 
             this.Controls.Add(_pictureBox);
             this.Controls.Add(panelTop);
@@ -2116,13 +2123,13 @@ namespace BigLineconnect
         }
 
         [System.Runtime.InteropServices.DllImport("shell32.dll", CharSet = System.Runtime.InteropServices.CharSet.Auto)]
-        private static extern void DragAcceptFiles(IntPtr hWnd, bool fAccept);
+        public static extern void DragAcceptFiles(IntPtr hWnd, bool fAccept);
 
         [System.Runtime.InteropServices.DllImport("shell32.dll", CharSet = System.Runtime.InteropServices.CharSet.Auto)]
-        private static extern uint DragQueryFile(IntPtr hDrop, uint iFile, System.Text.StringBuilder? lpszFile, uint cch);
+        public static extern uint DragQueryFile(IntPtr hDrop, uint iFile, System.Text.StringBuilder? lpszFile, uint cch);
 
         [System.Runtime.InteropServices.DllImport("shell32.dll")]
-        private static extern void DragFinish(IntPtr hDrop);
+        public static extern void DragFinish(IntPtr hDrop);
 
         [System.Runtime.InteropServices.DllImport("user32.dll")]
         private static extern bool ChangeWindowMessageFilter(uint message, uint flags);
@@ -4441,11 +4448,55 @@ namespace BigLineconnect
 
     public class DoubleBufferedPictureBox : PictureBox
     {
+        public Action<System.Collections.Generic.List<string>>? OnFilesDropped;
+
         public DoubleBufferedPictureBox()
         {
             this.DoubleBuffered = true;
             this.SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint | ControlStyles.OptimizedDoubleBuffer, true);
             this.UpdateStyles();
+        }
+
+        protected override void OnHandleCreated(EventArgs e)
+        {
+            base.OnHandleCreated(e);
+            try
+            {
+                ViewerForm.DragAcceptFiles(this.Handle, true);
+            }
+            catch { }
+        }
+
+        protected override void WndProc(ref Message m)
+        {
+            const int WM_DROPFILES = 0x0233;
+            if (m.Msg == WM_DROPFILES)
+            {
+                try
+                {
+                    IntPtr hDrop = m.WParam;
+                    uint count = ViewerForm.DragQueryFile(hDrop, 0xFFFFFFFF, null, 0);
+                    var fileList = new System.Collections.Generic.List<string>();
+                    for (uint i = 0; i < count; i++)
+                    {
+                        var sb = new System.Text.StringBuilder(512);
+                        ViewerForm.DragQueryFile(hDrop, i, sb, (uint)sb.Capacity);
+                        string path = sb.ToString();
+                        if (!string.IsNullOrEmpty(path))
+                        {
+                            fileList.Add(path);
+                        }
+                    }
+                    ViewerForm.DragFinish(hDrop);
+
+                    if (fileList.Count > 0 && OnFilesDropped != null)
+                    {
+                        OnFilesDropped(fileList);
+                    }
+                }
+                catch { }
+            }
+            base.WndProc(ref m);
         }
 
         protected override void OnPaintBackground(PaintEventArgs e)
