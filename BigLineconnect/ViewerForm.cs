@@ -376,7 +376,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.67.8 (Commercial PRO License & 10-Minute Free Session Limits Engine)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.67.9 (Commercial PRO License & 10-Minute Free Session Limits Engine)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
@@ -3534,18 +3534,18 @@ namespace BigLineconnect
             catch { }
             panelDropZone.DragEnter += PanelDropZone_DragEnter;
             panelDropZone.DragDrop += PanelDropZone_DragDrop;
-            panelDropZone.Click += (s, e) => PromptAddFilesOrFolders();
+            panelDropZone.Click += (s, e) => AddFiles();
 
             lblDropHint = new Label
             {
-                Text = "📁 Dosyaları veya Klasörleri Buraya Sürükleyin\nveya Tıklayarak Seçin",
+                Text = "📁 Dosyaları veya Klasörleri Buraya Sürükleyin\nveya Tıklayarak Bu Bilgisayardan (C:\\ / D:\\) Seçin",
                 Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
                 ForeColor = Color.FromArgb(180, 180, 180),
                 TextAlign = ContentAlignment.MiddleCenter,
                 Dock = DockStyle.Fill,
                 Cursor = Cursors.Hand
             };
-            lblDropHint.Click += (s, e) => PromptAddFilesOrFolders();
+            lblDropHint.Click += (s, e) => AddFiles();
             lblDropHint.MouseEnter += (s, e) => { panelDropZone.BackColor = Color.FromArgb(30, 35, 45); lblDropHint.ForeColor = Color.FromArgb(0, 229, 255); };
             lblDropHint.MouseLeave += (s, e) => { panelDropZone.BackColor = Color.FromArgb(17, 19, 24); lblDropHint.ForeColor = Color.FromArgb(180, 180, 180); };
             panelDropZone.MouseEnter += (s, e) => { panelDropZone.BackColor = Color.FromArgb(30, 35, 45); lblDropHint.ForeColor = Color.FromArgb(0, 229, 255); };
@@ -3876,7 +3876,12 @@ namespace BigLineconnect
         {
             try
             {
-                using var ofd = new OpenFileDialog { Multiselect = true, Title = "Karşı Bilgisayara Gönderilecek Dosyaları Seçin" };
+                using var ofd = new OpenFileDialog
+                {
+                    Multiselect = true,
+                    Title = "Karşı Bilgisayara Gönderilecek Dosyaları Seçin (Bu Bilgisayar - C:\\ / D:\\)",
+                    InitialDirectory = @"C:\"
+                };
                 if (ofd.ShowDialog(this) == DialogResult.OK)
                 {
                     foreach (var f in ofd.FileNames)
