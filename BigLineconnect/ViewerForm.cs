@@ -376,7 +376,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.67.7 (Commercial PRO License & 10-Minute Free Session Limits Engine)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.67.8 (Commercial PRO License & 10-Minute Free Session Limits Engine)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
@@ -3521,7 +3521,8 @@ namespace BigLineconnect
                 Location = new Point(15, 115),
                 Size = new Size(435, 120),
                 BorderStyle = BorderStyle.FixedSingle,
-                BackColor = Color.FromArgb(17, 19, 24)
+                BackColor = Color.FromArgb(17, 19, 24),
+                Cursor = Cursors.Hand
             };
             try
             {
@@ -3533,16 +3534,23 @@ namespace BigLineconnect
             catch { }
             panelDropZone.DragEnter += PanelDropZone_DragEnter;
             panelDropZone.DragDrop += PanelDropZone_DragDrop;
+            panelDropZone.Click += (s, e) => PromptAddFilesOrFolders();
 
             lblDropHint = new Label
             {
-                Text = "📁 Dosyaları veya Klasörleri Buraya Sürükleyin\nveya Aşağıdaki Butonları Kullanarak Seçin",
+                Text = "📁 Dosyaları veya Klasörleri Buraya Sürükleyin\nveya Tıklayarak Seçin",
                 Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
                 ForeColor = Color.FromArgb(180, 180, 180),
                 TextAlign = ContentAlignment.MiddleCenter,
-                Dock = DockStyle.Fill
+                Dock = DockStyle.Fill,
+                Cursor = Cursors.Hand
             };
-            lblDropHint.Click += (s, e) => AddFiles();
+            lblDropHint.Click += (s, e) => PromptAddFilesOrFolders();
+            lblDropHint.MouseEnter += (s, e) => { panelDropZone.BackColor = Color.FromArgb(30, 35, 45); lblDropHint.ForeColor = Color.FromArgb(0, 229, 255); };
+            lblDropHint.MouseLeave += (s, e) => { panelDropZone.BackColor = Color.FromArgb(17, 19, 24); lblDropHint.ForeColor = Color.FromArgb(180, 180, 180); };
+            panelDropZone.MouseEnter += (s, e) => { panelDropZone.BackColor = Color.FromArgb(30, 35, 45); lblDropHint.ForeColor = Color.FromArgb(0, 229, 255); };
+            panelDropZone.MouseLeave += (s, e) => { panelDropZone.BackColor = Color.FromArgb(17, 19, 24); lblDropHint.ForeColor = Color.FromArgb(180, 180, 180); };
+
             try
             {
                 if (System.Threading.Thread.CurrentThread.GetApartmentState() == System.Threading.ApartmentState.STA)
@@ -3844,6 +3852,23 @@ namespace BigLineconnect
                     }
                     lblSendStatus.Text = $"{_sendPaths.Count} öğe gönderilmek üzere eklendi.";
                 }
+            }
+        }
+
+        private void PromptAddFilesOrFolders()
+        {
+            try
+            {
+                var menu = new ContextMenuStrip();
+                var itemFile = new ToolStripMenuItem("📄 Dosya Seç ve Ekle", null, (s, e) => AddFiles());
+                var itemFolder = new ToolStripMenuItem("📁 Klasör Seç ve Ekle", null, (s, e) => AddFolder());
+                menu.Items.Add(itemFile);
+                menu.Items.Add(itemFolder);
+                menu.Show(Cursor.Position);
+            }
+            catch
+            {
+                AddFiles();
             }
         }
 
