@@ -431,7 +431,7 @@ namespace BigLineconnect
             Application.SetCompatibleTextRenderingDefault(false);
 
             // Global Exception Handler to suppress non-critical WinForms UI & DragDrop OLE exceptions
-            Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
+            Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException, true);
             Application.ThreadException += (s, e) =>
             {
                 try

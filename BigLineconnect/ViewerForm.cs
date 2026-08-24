@@ -376,7 +376,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.67.1 (Commercial PRO License & 10-Minute Free Session Limits Engine)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.67.2 (Commercial PRO License & 10-Minute Free Session Limits Engine)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
@@ -686,17 +686,20 @@ namespace BigLineconnect
             this.Leave += (s, e) => SendReleaseAllModifiers();
             // MouseDown and MouseUp already natively handle double clicks without duplicate bleed-through
 
-            // Bind Drag and Drop events
+            // Bind Drag and Drop events safely only on STA threads
             try
             {
-                this.AllowDrop = true;
-                _pictureBox.AllowDrop = true;
-                this.DragEnter += ViewerForm_DragEnter;
-                _pictureBox.DragEnter += ViewerForm_DragEnter;
-                this.DragOver += ViewerForm_DragOver;
-                _pictureBox.DragOver += ViewerForm_DragOver;
-                this.DragDrop += ViewerForm_DragDrop;
-                _pictureBox.DragDrop += ViewerForm_DragDrop;
+                if (System.Threading.Thread.CurrentThread.GetApartmentState() == System.Threading.ApartmentState.STA)
+                {
+                    try { this.AllowDrop = true; } catch { }
+                    try { if (_pictureBox != null) _pictureBox.AllowDrop = true; } catch { }
+                    try { this.DragEnter += ViewerForm_DragEnter; } catch { }
+                    try { if (_pictureBox != null) _pictureBox.DragEnter += ViewerForm_DragEnter; } catch { }
+                    try { this.DragOver += ViewerForm_DragOver; } catch { }
+                    try { if (_pictureBox != null) _pictureBox.DragOver += ViewerForm_DragOver; } catch { }
+                    try { this.DragDrop += ViewerForm_DragDrop; } catch { }
+                    try { if (_pictureBox != null) _pictureBox.DragDrop += ViewerForm_DragDrop; } catch { }
+                }
             }
             catch { }
         }
