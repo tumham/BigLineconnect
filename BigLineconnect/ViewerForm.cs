@@ -230,7 +230,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.66.3 (Commercial PRO License & 10-Minute Free Session Limits Engine)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.71.1 (Commercial PRO License & 10-Minute Free Session Limits Engine)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
@@ -1976,10 +1976,10 @@ namespace BigLineconnect
         public static extern void DragFinish(IntPtr hDrop);
 
         [System.Runtime.InteropServices.DllImport("user32.dll")]
-        private static extern bool ChangeWindowMessageFilter(uint message, uint flags);
+        public static extern bool ChangeWindowMessageFilter(uint message, uint flags);
 
         [System.Runtime.InteropServices.DllImport("user32.dll")]
-        private static extern bool ChangeWindowMessageFilterEx(IntPtr hWnd, uint msg, uint action, IntPtr pObsFilter);
+        public static extern bool ChangeWindowMessageFilterEx(IntPtr hWnd, uint msg, uint action, IntPtr pObsFilter);
 
         private const uint MSGFLT_ALLOW = 1;
         private const uint MSGFLT_ADD = 1;
@@ -4227,7 +4227,14 @@ namespace BigLineconnect
         protected override void OnHandleCreated(EventArgs e)
         {
             base.OnHandleCreated(e);
-            try { ViewerForm.DragAcceptFiles(this.Handle, true); } catch { }
+            try
+            {
+                ViewerForm.DragAcceptFiles(this.Handle, true);
+                ViewerForm.ChangeWindowMessageFilterEx(this.Handle, 0x0233, 1, IntPtr.Zero);
+                ViewerForm.ChangeWindowMessageFilterEx(this.Handle, 0x004A, 1, IntPtr.Zero);
+                ViewerForm.ChangeWindowMessageFilterEx(this.Handle, 0x0049, 1, IntPtr.Zero);
+            }
+            catch { }
         }
 
         protected override void WndProc(ref Message m)
