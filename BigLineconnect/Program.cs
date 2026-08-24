@@ -3133,23 +3133,39 @@ namespace BigLineconnect
 
                 string serviceExe = File.Exists(targetExe) ? targetExe : currentExe;
 
-                // 3. Create new service pointing to permanent system path
-                var psiSvc = new ProcessStartInfo("cmd.exe", $"/c sc.exe delete BigLineconnectSvc & sc.exe create BigLineconnectSvc binPath= \"\\\"{serviceExe}\\\" --service\" DisplayName= \"BigLineconnect Background Service\" start= auto")
+                // Check if service already exists
+                bool serviceExists = false;
+                try
                 {
-                    CreateNoWindow = true,
-                    UseShellExecute = false
-                };
-                var process = Process.Start(psiSvc);
-                process?.WaitForExit();
+                    using (var sc = new ServiceController("BigLineconnectSvc"))
+                    {
+                        var status = sc.Status;
+                        serviceExists = true;
+                    }
+                }
+                catch { }
 
-                // 4. Set description
-                psiSvc = new ProcessStartInfo("sc.exe", "description BigLineconnectSvc \"BigLineconnect Modern Uzaktan Kontrol Servisi\"")
+                ProcessStartInfo psiSvc;
+                Process? process;
+
+                if (!serviceExists)
                 {
-                    CreateNoWindow = true,
-                    UseShellExecute = false
-                };
-                process = Process.Start(psiSvc);
-                process?.WaitForExit();
+                    psiSvc = new ProcessStartInfo("cmd.exe", $"/c sc.exe create BigLineconnectSvc binPath= \"\\\"{serviceExe}\\\" --service\" DisplayName= \"BigLineconnect Background Service\" start= auto")
+                    {
+                        CreateNoWindow = true,
+                        UseShellExecute = false
+                    };
+                    process = Process.Start(psiSvc);
+                    process?.WaitForExit();
+
+                    psiSvc = new ProcessStartInfo("sc.exe", "description BigLineconnectSvc \"BigLineconnect Modern Uzaktan Kontrol Servisi\"")
+                    {
+                        CreateNoWindow = true,
+                        UseShellExecute = false
+                    };
+                    process = Process.Start(psiSvc);
+                    process?.WaitForExit();
+                }
 
                 // 4.5. Set recovery options on failure
                 psiSvc = new ProcessStartInfo("sc.exe", "failure BigLineconnectSvc reset= 86400 actions= restart/60000/restart/60000/restart/60000")
