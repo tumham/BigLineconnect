@@ -2617,154 +2617,176 @@ namespace BigLineconnect
         {
             try
             {
-                var drives = new List<string>();
-                var folders = new List<string>();
-                var files = new List<FileItemInfo>();
-
                 Log($"[FS_LIST] İstek işleniyor. Path: '{path}'");
 
-                if (string.IsNullOrEmpty(path))
+                var listTask = Task.Run(() =>
                 {
-                    // 1. Sürücüleri al
-                    try
-                    {
-                        string[] logicalDrives = Directory.GetLogicalDrives();
-                        foreach (var d in logicalDrives)
-                        {
-                            if (!string.IsNullOrEmpty(d)) drives.Add(d);
-                        }
-                    }
-                    catch { }
+                    var drives = new List<string>();
+                    var folders = new List<string>();
+                    var files = new List<FileItemInfo>();
 
-                    if (drives.Count == 0)
+                    if (string.IsNullOrEmpty(path))
                     {
+                        // 1. Sürücüleri al
                         try
                         {
-                            foreach (var drive in DriveInfo.GetDrives())
+                            string[] logicalDrives = Directory.GetLogicalDrives();
+                            foreach (var d in logicalDrives)
                             {
-                                try { drives.Add(drive.Name); } catch { }
+                                if (!string.IsNullOrEmpty(d)) drives.Add(d);
+                            }
+                        }
+                        catch { }
+
+                        if (drives.Count == 0)
+                        {
+                            try
+                            {
+                                foreach (var drive in DriveInfo.GetDrives())
+                                {
+                                    try { if (drive.IsReady) drives.Add(drive.Name); } catch { }
+                                }
+                            }
+                            catch { }
+                        }
+
+                        if (drives.Count == 0)
+                        {
+                            drives.Add(@"C:\");
+                            drives.Add(@"D:\");
+                        }
+
+                        // 2. Masaüstü ve İndirilenler klasörlerini al
+                        try
+                        {
+                            string desktop = GetUserDesktopPath();
+                            if (!string.IsNullOrEmpty(desktop) && Directory.Exists(desktop))
+                            {
+                                folders.Add("Masaüstü (" + desktop + ")");
+                            }
+                        }
+                        catch { }
+
+                        try
+                        {
+                            string downloads = GetUserDownloadsPath();
+                            if (!string.IsNullOrEmpty(downloads) && Directory.Exists(downloads))
+                            {
+                                folders.Add("İndirilenler (" + downloads + ")");
                             }
                         }
                         catch { }
                     }
-
-                    if (drives.Count == 0)
+                    else
                     {
-                        drives.Add(@"C:\");
-                        drives.Add(@"D:\");
-                    }
-
-                    // 2. Masaüstü ve İndirilenler klasörlerini al
-                    try
-                    {
-                        string desktop = GetUserDesktopPath();
-                        if (!string.IsNullOrEmpty(desktop) && Directory.Exists(desktop))
+                        string targetPath = path;
+                        if (targetPath.StartsWith("Masaüstü (") && targetPath.EndsWith(")"))
                         {
-                            folders.Add("Masaüstü (" + desktop + ")");
+                            targetPath = targetPath.Substring(10, targetPath.Length - 11);
                         }
-                    }
-                    catch { }
-
-                    try
-                    {
-                        string downloads = GetUserDownloadsPath();
-                        if (!string.IsNullOrEmpty(downloads) && Directory.Exists(downloads))
+                        else if (targetPath.StartsWith("İndirilenler (") && targetPath.EndsWith(")"))
                         {
-                            folders.Add("İndirilenler (" + downloads + ")");
+                            targetPath = targetPath.Substring(14, targetPath.Length - 15);
                         }
-                    }
-                    catch { }
-                }
-                else
-                {
-                    if (path.StartsWith("Masaüstü (") && path.EndsWith(")"))
-                    {
-                        path = path.Substring(10, path.Length - 11);
-                    }
-                    else if (path.StartsWith("İndirilenler (") && path.EndsWith(")"))
-                    {
-                        path = path.Substring(14, path.Length - 15);
-                    }
 
-                    if (Directory.Exists(path))
-                    {
-                        try
+                        if (Directory.Exists(targetPath))
                         {
-                            foreach (var dir in Directory.GetDirectories(path))
+                            try
                             {
-                                try
+                                foreach (var dir in Directory.GetDirectories(targetPath))
                                 {
-                                    var di = new DirectoryInfo(dir);
-                                    if ((di.Attributes & FileAttributes.Hidden) != FileAttributes.Hidden)
+                                    try
                                     {
-                                        folders.Add(di.Name);
+                                        var di = new DirectoryInfo(dir);
+                                        if ((di.Attributes & FileAttributes.Hidden) != FileAttributes.Hidden)
+                                        {
+                                            folders.Add(di.Name);
+                                        }
+                                    }
+                                    catch
+                                    {
+                                        folders.Add(Path.GetFileName(dir));
                                     }
                                 }
-                                catch
-                                {
-                                    folders.Add(Path.GetFileName(dir));
-                                }
                             }
-                        }
-                        catch { }
+                            catch { }
 
-                        try
-                        {
-                            foreach (var file in Directory.GetFiles(path))
+                            try
                             {
-                                try
+                                foreach (var file in Directory.GetFiles(targetPath))
                                 {
-                                    var fi = new FileInfo(file);
-                                    if ((fi.Attributes & FileAttributes.Hidden) != FileAttributes.Hidden)
+                                    try
+                                    {
+                                        var fi = new FileInfo(file);
+                                        if ((fi.Attributes & FileAttributes.Hidden) != FileAttributes.Hidden)
+                                        {
+                                            files.Add(new FileItemInfo
+                                            {
+                                                Name = fi.Name,
+                                                Size = fi.Length,
+                                                Modified = fi.LastWriteTime.ToString("yyyy-MM-dd HH:mm:ss")
+                                            });
+                                        }
+                                    }
+                                    catch
                                     {
                                         files.Add(new FileItemInfo
                                         {
-                                            Name = fi.Name,
-                                            Size = fi.Length,
-                                            Modified = fi.LastWriteTime.ToString("yyyy-MM-dd HH:mm:ss")
+                                            Name = Path.GetFileName(file),
+                                            Size = 0L,
+                                            Modified = ""
                                         });
                                     }
                                 }
-                                catch
-                                {
-                                    files.Add(new FileItemInfo
-                                    {
-                                        Name = Path.GetFileName(file),
-                                        Size = 0L,
-                                        Modified = ""
-                                    });
-                                }
                             }
+                            catch { }
                         }
-                        catch { }
                     }
+
+                    return (drives, folders, files);
+                });
+
+                List<string> resDrives;
+                List<string> resFolders;
+                List<FileItemInfo> resFiles;
+
+                if (await Task.WhenAny(listTask, Task.Delay(2000)).ConfigureAwait(false) == listTask)
+                {
+                    (resDrives, resFolders, resFiles) = listTask.Result;
+                }
+                else
+                {
+                    Log("[FS_LIST] Zaman aşımı! Varsayılan liste döndürülüyor.");
+                    resDrives = new List<string> { @"C:\", @"D:\" };
+                    resFolders = new List<string> { "Masaüstü (" + GetUserDesktopPath() + ")", "İndirilenler (" + GetUserDownloadsPath() + ")" };
+                    resFiles = new List<FileItemInfo>();
                 }
 
-                Log($"[FS_LIST] Yanıt hazır: {drives.Count} sürücü, {folders.Count} klasör, {files.Count} dosya.");
+                Log($"[FS_LIST] Yanıt hazır: {resDrives.Count} sürücü, {resFolders.Count} klasör, {resFiles.Count} dosya.");
 
                 var sbRes = new StringBuilder();
                 sbRes.Append($"{{\"type\":\"fs_list_res\",\"path\":\"{EscapeJson(path)}\",\"drives\":[");
-                for (int i = 0; i < drives.Count; i++)
+                for (int i = 0; i < resDrives.Count; i++)
                 {
-                    sbRes.Append($"\"{EscapeJson(drives[i])}\"");
-                    if (i < drives.Count - 1) sbRes.Append(",");
+                    sbRes.Append($"\"{EscapeJson(resDrives[i])}\"");
+                    if (i < resDrives.Count - 1) sbRes.Append(",");
                 }
                 sbRes.Append("],\"folders\":[");
-                for (int i = 0; i < folders.Count; i++)
+                for (int i = 0; i < resFolders.Count; i++)
                 {
-                    sbRes.Append($"\"{EscapeJson(folders[i])}\"");
-                    if (i < folders.Count - 1) sbRes.Append(",");
+                    sbRes.Append($"\"{EscapeJson(resFolders[i])}\"");
+                    if (i < resFolders.Count - 1) sbRes.Append(",");
                 }
                 sbRes.Append("],\"files\":[");
-                for (int i = 0; i < files.Count; i++)
+                for (int i = 0; i < resFiles.Count; i++)
                 {
-                    var f = files[i];
+                    var f = resFiles[i];
                     sbRes.Append($"{{\"name\":\"{EscapeJson(f.Name)}\",\"size\":{f.Size},\"modified\":\"{EscapeJson(f.Modified)}\"}}");
-                    if (i < files.Count - 1) sbRes.Append(",");
+                    if (i < resFiles.Count - 1) sbRes.Append(",");
                 }
                 sbRes.Append("]}");
 
-                await SendJsonMessageAsync(sbRes.ToString());
+                await SendJsonMessageAsync(sbRes.ToString()).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
