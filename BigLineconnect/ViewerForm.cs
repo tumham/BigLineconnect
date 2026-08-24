@@ -376,7 +376,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.70.1 (Commercial PRO License & 10-Minute Free Session Limits Engine)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.70.2 (Commercial PRO License & 10-Minute Free Session Limits Engine)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
@@ -438,8 +438,31 @@ namespace BigLineconnect
                 Margin = new Padding(2, 0, 4, 0)
             };
             ModernUIHelper.ApplyButtonStyle(btnFileManager, Color.FromArgb(0, 229, 255), Color.FromArgb(0, 176, 255), Color.Black);
-            btnFileManager.Click += (s, e) => OpenFileManager();
-            _toolTip.SetToolTip(btnFileManager, "Dosya Transferi (Sürükle - Bırak / Dosya Gönder)");
+            _toolTip.SetToolTip(btnFileManager, "Dosya Transferi (Gönder / Çek / Sürükle - Bırak)");
+
+            var cmsFileManager = new ContextMenuStrip();
+            cmsFileManager.Font = new Font("Segoe UI", 9.5F, FontStyle.Regular);
+            
+            var itemSendFiles = new ToolStripMenuItem("📤 Karşı Bilgisayara Dosya Gönder...", null, (s, e) => {
+                PromptSendFilesToRemote();
+            });
+            var itemSendFolder = new ToolStripMenuItem("📁 Karşı Bilgisayara Klasör Gönder...", null, (s, e) => {
+                PromptSendFolderToRemote();
+            });
+            var itemFetchFiles = new ToolStripMenuItem("📥 Karşı Bilgisayardan Dosya Çek / İndir...", null, (s, e) => {
+                OpenFileManager();
+            });
+            var itemOpenManager = new ToolStripMenuItem("⚡ BigLineTransfer Tam Sürücü Yöneticisi", null, (s, e) => {
+                OpenFileManager();
+            });
+
+            cmsFileManager.Items.Add(itemSendFiles);
+            cmsFileManager.Items.Add(itemSendFolder);
+            cmsFileManager.Items.Add(new ToolStripSeparator());
+            cmsFileManager.Items.Add(itemFetchFiles);
+            cmsFileManager.Items.Add(itemOpenManager);
+
+            btnFileManager.Click += (s, e) => cmsFileManager.Show(btnFileManager, new Point(0, btnFileManager.Height));
 
             var btnActions = new NoFocusButton
             {
@@ -2761,6 +2784,51 @@ namespace BigLineconnect
             }
         }
 
+        public void PromptSendFilesToRemote()
+        {
+            try
+            {
+                using var ofd = new OpenFileDialog
+                {
+                    Title = "Karşı Bilgisayara Gönderilecek Dosyaları Seçin",
+                    Multiselect = true,
+                    Filter = "Tüm Dosyalar (*.*)|*.*"
+                };
+
+                if (ofd.ShowDialog(this) == DialogResult.OK && ofd.FileNames.Length > 0)
+                {
+                    var fileList = new System.Collections.Generic.List<string>(ofd.FileNames);
+                    _ = Task.Run(async () => await SendPathsBatchAsync(fileList));
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Dosya seçme hatası: {ex.Message}", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        public void PromptSendFolderToRemote()
+        {
+            try
+            {
+                using var fbd = new FolderBrowserDialog
+                {
+                    Description = "Karşı Bilgisayara Gönderilecek Klasörü Seçin:",
+                    ShowNewFolderButton = false
+                };
+
+                if (fbd.ShowDialog(this) == DialogResult.OK && !string.IsNullOrEmpty(fbd.SelectedPath))
+                {
+                    var folderList = new System.Collections.Generic.List<string> { fbd.SelectedPath };
+                    _ = Task.Run(async () => await SendPathsBatchAsync(folderList));
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Klasör seçme hatası: {ex.Message}", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
         private void OpenChat()
         {
             if (_clientChatForm == null || _clientChatForm.IsDisposed)
@@ -3698,6 +3766,7 @@ namespace BigLineconnect
                             var item = new ListViewItem(driveName);
                             item.SubItems.Add(driveLabel);
                             item.SubItems.Add("");
+                            item.Tag = driveName;
                             lvReceivedFiles.Items.Add(item);
                         }
                     }
@@ -3710,23 +3779,32 @@ namespace BigLineconnect
                         string folderName = f.GetString() ?? "";
                         if (!string.IsNullOrEmpty(folderName))
                         {
-                            if (folderName.StartsWith("Masaüstü"))
+                            string rawFolderPath = folderName;
+                            string displayName = folderName;
+
+                            if (folderName.StartsWith("Masaüstü (") && folderName.EndsWith(")"))
                             {
-                                cbRemoteTargetFolder.Items.Insert(0, $"🖥️ Karşı {folderName}");
+                                rawFolderPath = folderName.Substring(10, folderName.Length - 11);
+                                displayName = "🖥️ Masaüstü";
+                                cbRemoteTargetFolder.Items.Insert(0, $"🖥️ Karşı Masaüstü ({rawFolderPath})");
                             }
-                            else if (folderName.StartsWith("İndirilenler"))
+                            else if (folderName.StartsWith("İndirilenler (") && folderName.EndsWith(")"))
                             {
-                                cbRemoteTargetFolder.Items.Insert(Math.Min(1, cbRemoteTargetFolder.Items.Count), $"📥 Karşı {folderName}");
+                                rawFolderPath = folderName.Substring(14, folderName.Length - 15);
+                                displayName = "📥 İndirilenler";
+                                cbRemoteTargetFolder.Items.Insert(Math.Min(1, cbRemoteTargetFolder.Items.Count), $"📥 Karşı İndirilenler ({rawFolderPath})");
                             }
                             else
                             {
+                                rawFolderPath = !string.IsNullOrEmpty(currentPath) ? Path.Combine(currentPath, folderName) : folderName;
+                                displayName = "📁 " + folderName;
                                 cbRemoteTargetFolder.Items.Add($"📁 {folderName}");
                             }
 
-                            string fullFolderPath = !string.IsNullOrEmpty(currentPath) ? Path.Combine(currentPath, folderName) : folderName;
-                            var item = new ListViewItem(fullFolderPath);
+                            var item = new ListViewItem(displayName);
                             item.SubItems.Add(folderLabel);
                             item.SubItems.Add("");
+                            item.Tag = rawFolderPath;
                             lvReceivedFiles.Items.Add(item);
                         }
                     }
@@ -3740,10 +3818,11 @@ namespace BigLineconnect
                         long size = f.TryGetProperty("size", out var sProp) ? sProp.GetInt64() : 0;
                         string modified = f.TryGetProperty("modified", out var mProp) ? (mProp.GetString() ?? "") : "";
 
-                        string fullFilePath = !string.IsNullOrEmpty(currentPath) ? Path.Combine(currentPath, name) : name;
-                        var item = new ListViewItem(fullFilePath);
+                        string rawFilePath = !string.IsNullOrEmpty(currentPath) ? Path.Combine(currentPath, name) : name;
+                        var item = new ListViewItem("📄 " + name);
                         item.SubItems.Add(FormatSize(size));
                         item.SubItems.Add(modified);
+                        item.Tag = rawFilePath;
                         lvReceivedFiles.Items.Add(item);
                     }
                 }
@@ -3777,6 +3856,7 @@ namespace BigLineconnect
             var item = lvReceivedFiles.SelectedItems[0];
             string name = item.Text;
             string type = item.SubItems[1].Text;
+            string rawPath = item.Tag?.ToString() ?? name;
 
             if (name.Contains("Üst Klasör"))
             {
@@ -3787,7 +3867,7 @@ namespace BigLineconnect
 
             if (type.Contains("Sürücü") || type.Contains("Drive") || type.Contains("Klasör") || type.Contains("Folder"))
             {
-                _parent.SendJson($"{{\"type\":\"fs_list\",\"path\":\"{ViewerForm.EscapeJson(name)}\"}}");
+                _parent.SendJson($"{{\"type\":\"fs_list\",\"path\":\"{ViewerForm.EscapeJson(rawPath)}\"}}");
             }
             else
             {
@@ -3961,46 +4041,18 @@ namespace BigLineconnect
             var item = lvReceivedFiles.SelectedItems[0];
             string name = item.Text;
             string type = item.SubItems[1].Text;
+            string rawPath = item.Tag?.ToString() ?? name;
+            if (rawPath.StartsWith("📄 ") || rawPath.StartsWith("📁 ")) rawPath = rawPath.Substring(2).Trim();
 
             if (type.Contains("Sürücü") || type.Contains("Drive")) return;
 
             bool isFolder = type.Contains("Klasör") || type.Contains("Folder");
-            string fileNameOnly = Path.GetFileName(name);
+            string fileNameOnly = Path.GetFileName(rawPath);
             if (string.IsNullOrEmpty(fileNameOnly)) fileNameOnly = "download";
             string suggestedName = isFolder ? (fileNameOnly.EndsWith(".zip", StringComparison.OrdinalIgnoreCase) ? fileNameOnly : fileNameOnly + ".zip") : fileNameOnly;
 
-            using var sfd = new SaveFileDialog { FileName = suggestedName, InitialDirectory = _currentSavePath };
-            if (sfd.ShowDialog(this) == DialogResult.OK)
-            {
-                _downloadFileName = sfd.FileName;
-                try
-                {
-                    if (_downloadStream != null)
-                    {
-                        _downloadStream.Close();
-                        _downloadStream.Dispose();
-                        _downloadStream = null;
-                    }
-                    _downloadStream = new FileStream(_downloadFileName, FileMode.Create, FileAccess.Write);
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Dosya yazma hatası: {ex.Message}", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
-                }
-
-                btnDownloadSelected.Enabled = false;
-                btnDownloadSelected.Text = "Hazırlanıyor...";
-
-                if (isFolder)
-                {
-                    _parent.SendJson($"{{\"type\":\"folder_download_req\",\"path\":\"{ViewerForm.EscapeJson(name)}\"}}");
-                }
-                else
-                {
-                    _parent.SendJson($"{{\"type\":\"file_download_req\",\"path\":\"{ViewerForm.EscapeJson(name)}\"}}");
-                }
-            }
+            _parent.SendJson($"{{\"type\":\"trigger_host_clipboard_send\",\"targetFolder\":\"DESKTOP\",\"files\":[\"{ViewerForm.EscapeJson(rawPath)}\"]}}");
+            MessageBox.Show($"'{fileNameOnly}' dosyası karşı taraftan Masaüstünüze indiriliyor...", "İndirme Başlatıldı", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         public void StartIncomingDownload(string name, long totalSize = 0)
