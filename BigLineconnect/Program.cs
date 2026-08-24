@@ -696,30 +696,12 @@ namespace BigLineconnect
             catch { }
         }
 
-        private static void EnsureSingleInstanceProcessCleanup()
-        {
-            try
-            {
-                int currentPid = Process.GetCurrentProcess().Id;
-                foreach (var p in Process.GetProcessesByName("BigLineconnect"))
-                {
-                    if (p.Id != currentPid)
-                    {
-                        try { p.Kill(); } catch { }
-                    }
-                }
-            }
-            catch { }
-        }
-
         public static void StartLocalLanServer()
         {
             if (_isLanServerStarted) return;
             _isLanServerStarted = true;
 
             EnsureFirewallRule();
-
-            EnsureSingleInstanceProcessCleanup();
             _ = Task.Run(async () =>
             {
                 try
