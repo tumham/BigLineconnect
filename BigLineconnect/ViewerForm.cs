@@ -376,7 +376,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.67.5 (Commercial PRO License & 10-Minute Free Session Limits Engine)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.67.6 (Commercial PRO License & 10-Minute Free Session Limits Engine)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
@@ -3318,7 +3318,34 @@ namespace BigLineconnect
             _currentSavePath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
             if (txtSavePath != null) txtSavePath.Text = _currentSavePath;
 
-            this.Shown += (s, e) => RefreshList();
+            this.Shown += (s, e) =>
+            {
+                PopulateFallbackDrives();
+                RefreshList();
+            };
+        }
+
+        private void PopulateFallbackDrives()
+        {
+            try
+            {
+                if (lvReceivedFiles != null && lvReceivedFiles.Items.Count == 0)
+                {
+                    string driveLabel = "[" + (LanguageManager.CurrentLanguage == "tr" ? "Sürücü" : "Drive") + "]";
+                    string folderLabel = "[" + (LanguageManager.CurrentLanguage == "tr" ? "Klasör" : "Folder") + "]";
+
+                    var itemC = new ListViewItem(@"C:\"); itemC.SubItems.Add(driveLabel); itemC.SubItems.Add("");
+                    var itemD = new ListViewItem(@"D:\"); itemD.SubItems.Add(driveLabel); itemD.SubItems.Add("");
+                    var itemDesktop = new ListViewItem("Masaüstü (C:\\Users\\Public\\Desktop)"); itemDesktop.SubItems.Add(folderLabel); itemDesktop.SubItems.Add("");
+                    var itemDownloads = new ListViewItem("İndirilenler (C:\\Users\\user\\Downloads)"); itemDownloads.SubItems.Add(folderLabel); itemDownloads.SubItems.Add("");
+
+                    lvReceivedFiles.Items.Add(itemC);
+                    lvReceivedFiles.Items.Add(itemD);
+                    lvReceivedFiles.Items.Add(itemDesktop);
+                    lvReceivedFiles.Items.Add(itemDownloads);
+                }
+            }
+            catch { }
         }
 
         private void InitializeComponent()
