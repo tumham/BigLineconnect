@@ -216,9 +216,11 @@ namespace BigLineconnect
                     }
                 };
 
-                // DUAL-ENGINE HARDWARE PUNCH-THROUGH: Execute BOTH SendInput AND mouse_event to defeat Alpemix mouse hooks
-                SendInput(1, inputs, Marshal.SizeOf<INPUT>());
-                mouse_event(flags, 0, 0, 0, (UIntPtr)0);
+                uint res = SendInput(1, inputs, Marshal.SizeOf<INPUT>());
+                if (res == 0)
+                {
+                    mouse_event(flags, 0, 0, 0, (UIntPtr)0);
+                }
 
                 Program.TriggerInstantCapture();
             }
