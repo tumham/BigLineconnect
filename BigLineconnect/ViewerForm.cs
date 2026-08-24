@@ -129,69 +129,35 @@ namespace BigLineconnect
                 {
                     string candidate = _targetId != null ? _targetId.Trim().Replace(" ", "") : "";
                     
-                    // 1. Check if target ID is explicit IP address (e.g. 192.168.1.101)
-                    if (candidate.Contains(".") || candidate.StartsWith("192.") || candidate.StartsWith("10.") || candidate.StartsWith("172."))
+                    // 1. Direct IP / Hostname / Computer Name (NetBIOS / mDNS) probe
+                    bool isIpOrHostname = candidate.Contains(".") || candidate.StartsWith("192.") || candidate.StartsWith("10.") || candidate.StartsWith("172.") || !candidate.All(char.IsDigit);
+                    if (isIpOrHostname)
                     {
-                        using var tcp = new System.Net.Sockets.TcpClient();
-                        var connectTask = tcp.ConnectAsync(candidate.Split(':')[0], 18888);
-                        if (await Task.WhenAny(connectTask, Task.Delay(500)) == connectTask && tcp.Connected)
+                        try
                         {
-                            _isLanDirectActive = true;
-                            this.BeginInvoke(new Action(() =>
+                            string hostToProbe = candidate.Split(':')[0];
+                            using var tcp = new System.Net.Sockets.TcpClient();
+                            tcp.NoDelay = true;
+                            var connectTask = tcp.ConnectAsync(hostToProbe, 18888);
+                            if (await Task.WhenAny(connectTask, Task.Delay(600)) == connectTask && tcp.Connected)
                             {
-                                if (_lblConnModeBadge != null && !_lblConnModeBadge.IsDisposed)
+                                _isLanDirectActive = true;
+                                this.BeginInvoke(new Action(() =>
                                 {
-                                    _lblConnModeBadge.Text = " ⚡ LAN DIRECT (0.5ms) ";
-                                    _lblConnModeBadge.BackColor = Color.FromArgb(0, 230, 118);
-                                }
-                            }));
-                            return;
-                        }
-                    }
-
-                    // 2. Targeted LAN Direct probe ONLY for host's reported local IP if on the same subnet
-                    string cleanTargetId = _targetId != null ? _targetId.Trim().Replace(" ", "") : "";
-                    string localSubnet = Program.GetLocalLanIPAddress();
-                    if (!_isLanDirectActive && !string.IsNullOrEmpty(_remoteLanIp) && !string.IsNullOrEmpty(localSubnet) && localSubnet.Contains("."))
-                    {
-                        string localSubnetPrefix = localSubnet.Substring(0, localSubnet.LastIndexOf('.') + 1);
-                        if (_remoteLanIp.StartsWith(localSubnetPrefix) && _remoteLanIp != localSubnet)
-                        {
-                            try
-                            {
-                                var directWs = new System.Net.WebSockets.ClientWebSocket();
-                                using var ctsProbe = new System.Threading.CancellationTokenSource(600);
-                                string directUrl = $"ws://{_remoteLanIp}:18888/connect-client?id={cleanTargetId}";
-                                await directWs.ConnectAsync(new Uri(directUrl), ctsProbe.Token);
-
-                                if (directWs.State == System.Net.WebSockets.WebSocketState.Open)
-                                {
-                                    _isLanDirectActive = true;
-                                    var oldWs = _ws;
-                                    _ws = directWs;
-                                    _wsUrl = directUrl;
-
-                                    SendJson("{\"type\":\"set_quality\",\"quality\":48,\"maxDim\":0}");
-                                    _ = Task.Run(async () => {
-                                        await ReceiveScreenLoop(_ws, _cts.Token);
-                                        await ReceiveLoop(_ws, _cts.Token);
-                                    });
-
-                                    try { oldWs?.CloseAsync(System.Net.WebSockets.WebSocketCloseStatus.NormalClosure, "LAN Direct active", CancellationToken.None); } catch { }
-
-                                    this.BeginInvoke(new Action(() =>
+                                    if (_lblConnModeBadge != null && !_lblConnModeBadge.IsDisposed)
                                     {
-                                        if (_lblConnModeBadge != null && !_lblConnModeBadge.IsDisposed)
-                                        {
-                                            _lblConnModeBadge.Text = " ⚡ REAL LAN DIRECT (0.5ms) ";
-                                            _lblConnModeBadge.BackColor = Color.FromArgb(0, 230, 118);
-                                        }
-                                    }));
-                                }
+                                        _lblConnModeBadge.Text = " ⚡ REAL LAN DIRECT (0.5ms) ";
+                                        _lblConnModeBadge.BackColor = Color.FromArgb(0, 230, 118);
+                                    }
+                                }));
+                                return;
                             }
-                            catch { }
                         }
+                        catch { }
                     }
+
+                    // 2. Targeted LAN Direct probe for 9-digit ID connections if host reported same-subnet LAN IP
+                    await ProbeRemoteLanDirectAsync(_remoteLanIp);
 
                     // 3. UDP P2P Hole Punching Probe
                     P2pDirectEngine.Initialize();
@@ -199,6 +165,54 @@ namespace BigLineconnect
                 }
                 catch { }
             });
+        }
+
+        private async Task ProbeRemoteLanDirectAsync(string targetLanIp)
+        {
+            if (_isLanDirectActive || string.IsNullOrEmpty(targetLanIp)) return;
+            try
+            {
+                string cleanTargetId = _targetId != null ? _targetId.Trim().Replace(" ", "") : "";
+                string localSubnet = Program.GetLocalLanIPAddress();
+                if (!string.IsNullOrEmpty(localSubnet) && localSubnet.Contains("."))
+                {
+                    string localSubnetPrefix = localSubnet.Substring(0, localSubnet.LastIndexOf('.') + 1);
+                    if (targetLanIp.StartsWith(localSubnetPrefix) && targetLanIp != localSubnet)
+                    {
+                        var directWs = new System.Net.WebSockets.ClientWebSocket();
+                        using var ctsProbe = new System.Threading.CancellationTokenSource(800);
+                        string directUrl = $"ws://{targetLanIp}:18888/connect-client?id={cleanTargetId}";
+                        await directWs.ConnectAsync(new Uri(directUrl), ctsProbe.Token);
+
+                        if (directWs.State == System.Net.WebSockets.WebSocketState.Open)
+                        {
+                            _remoteLanIp = targetLanIp;
+                            _isLanDirectActive = true;
+                            var oldWs = _ws;
+                            _ws = directWs;
+                            _wsUrl = directUrl;
+
+                            SendJson("{\"type\":\"set_quality\",\"quality\":48,\"maxDim\":0}");
+                            _ = Task.Run(async () => {
+                                await ReceiveScreenLoop(_ws, _cts.Token);
+                                await ReceiveLoop(_ws, _cts.Token);
+                            });
+
+                            try { oldWs?.CloseAsync(System.Net.WebSockets.WebSocketCloseStatus.NormalClosure, "LAN Direct active", CancellationToken.None); } catch { }
+
+                            this.BeginInvoke(new Action(() =>
+                            {
+                                if (_lblConnModeBadge != null && !_lblConnModeBadge.IsDisposed)
+                                {
+                                    _lblConnModeBadge.Text = " ⚡ REAL LAN DIRECT (0.5ms) ";
+                                    _lblConnModeBadge.BackColor = Color.FromArgb(0, 230, 118);
+                                }
+                            }));
+                        }
+                    }
+                }
+            }
+            catch { }
         }
 
         // Remote clipboard batch receiving state
@@ -273,7 +287,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.66.4 (Commercial PRO License & 10-Minute Free Session Limits Engine)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.66.5 (Commercial PRO License & 10-Minute Free Session Limits Engine)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
@@ -990,7 +1004,7 @@ namespace BigLineconnect
                                     if (!string.IsNullOrEmpty(lanIp) && lanIp != Program.GetLocalLanIPAddress())
                                     {
                                         _remoteLanIp = lanIp;
-                                        StartP2pAndLanProbe();
+                                        _ = Task.Run(() => ProbeRemoteLanDirectAsync(lanIp));
                                     }
                                 }
 
