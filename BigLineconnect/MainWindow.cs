@@ -182,7 +182,7 @@ namespace BigLineconnect
         private void InitializeComponent()
         {
             Program.LoadSecuritySettings();
-            this.Text = "BigLineconnect v3.71.0 - Uzaktan Kontrol (Commercial PRO License & 10-Minute Free Session Limits Engine)";
+            this.Text = "BigLineconnect v3.66.3 - Uzaktan Kontrol (Commercial PRO License & 10-Minute Free Session Limits Engine)";
             this.Size = new Size(880, 750);
             this.MinimumSize = new Size(880, 750);
             this.StartPosition = FormStartPosition.CenterScreen;
@@ -215,7 +215,7 @@ namespace BigLineconnect
 
             _titleLabel = new Label
             {
-                Text = "BigLineconnect v3.71.0 🚀",
+                Text = "BigLineconnect v3.66.3 🚀",
                 Location = new Point(105, 15),
                 Size = new Size(330, 42),
                 Font = new Font("Segoe UI", 20F, FontStyle.Bold),
@@ -226,7 +226,7 @@ namespace BigLineconnect
 
             var subtitleLabel = new Label
             {
-                Text = "v3.71.0",
+                Text = "v3.66.3",
                 Location = new Point(108, 58),
                 Size = new Size(450, 20),
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
@@ -893,9 +893,6 @@ namespace BigLineconnect
             // Form Events
             this.Resize += MainWindow_Resize;
             this.FormClosing += MainWindow_FormClosing;
-            this.HandleCreated += (s, e) => {
-                try { AddClipboardFormatListener(this.Handle); } catch { }
-            };
         }
 
         private void LoadLogoAndIcon()
@@ -1226,25 +1223,35 @@ namespace BigLineconnect
                         }
                     }
                 }
+
+                // File clipboard sync
+                if (Clipboard.ContainsFileDropList())
+                {
+                    var files = Clipboard.GetFileDropList();
+                    if (!AreFileListsEqual(files, _lastClipboardFiles))
+                    {
+                        _lastClipboardFiles = files;
+                        var fileList = new System.Collections.Generic.List<string>();
+                        foreach (var f in files)
+                        {
+                            if (!string.IsNullOrEmpty(f)) fileList.Add(f);
+                        }
+                        if (fileList.Count > 0)
+                        {
+                            _ = Program.SendJsonMessageAsync(new
+                            {
+                                type = "host_clipboard_files",
+                                files = fileList
+                            });
+                        }
+                    }
+                }
+                else
+                {
+                    _lastClipboardFiles = null;
+                }
             }
             catch { }
-        }
-
-        [System.Runtime.InteropServices.DllImport("user32.dll", SetLastError = true)]
-        [return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Bool)]
-        public static extern bool AddClipboardFormatListener(IntPtr hwnd);
-
-        [System.Runtime.InteropServices.DllImport("user32.dll", SetLastError = true)]
-        [return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Bool)]
-        public static extern bool RemoveClipboardFormatListener(IntPtr hwnd);
-
-        protected override void WndProc(ref Message m)
-        {
-            if (m.Msg == 0x031D) // WM_CLIPBOARDUPDATE
-            {
-                ClipboardTimer_Tick(null, EventArgs.Empty);
-            }
-            base.WndProc(ref m);
         }
 
         private bool AreFileListsEqual(System.Collections.Specialized.StringCollection? a, System.Collections.Specialized.StringCollection? b)
@@ -3568,19 +3575,26 @@ namespace BigLineconnect
                 {
                     _btnLic.Text = "Lisans: Aktif";
                     _btnLic.Enabled = false;
-                    _btnLic.LinkColor = Color.FromArgb(74, 90, 120);
+                    _btnLic.LinkColor = Color.FromArgb(74, 90, 120); // Cyan
                 }
                 HideLicensingOverlay();
             }
             else
             {
-                if (_btnLic != null)
+                if (LicenseSystem.IsTrialExpired)
                 {
-                    _btnLic.Text = "Lisans Gir";
-                    _btnLic.Enabled = true;
-                    _btnLic.LinkColor = Color.FromArgb(58, 72, 98);
+                    ShowLicensingOverlay();
                 }
-                HideLicensingOverlay();
+                else
+                {
+                    if (_btnLic != null)
+                    {
+                        _btnLic.Text = "Lisans Gir";
+                        _btnLic.Enabled = true;
+                        _btnLic.LinkColor = Color.FromArgb(58, 72, 98); // Pink
+                    }
+                    HideLicensingOverlay();
+                }
             }
         }
 

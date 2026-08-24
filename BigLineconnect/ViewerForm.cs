@@ -85,7 +85,7 @@ namespace BigLineconnect
         private ClientWebSocket? _ws;
         private CancellationTokenSource _cts = new CancellationTokenSource();
         
-        private DoubleBufferedPictureBox? _pictureBox;
+        private PictureBox? _pictureBox;
         private DateTime _lastMoveSent = DateTime.MinValue;
         private Point _lastSentMousePos = new Point(-1, -1);
         private System.Windows.Forms.Timer? _clipboardTimer;
@@ -129,179 +129,33 @@ namespace BigLineconnect
                 {
                     string candidate = _targetId != null ? _targetId.Trim().Replace(" ", "") : "";
                     
-                    // 1. Direct IP / Hostname / Computer Name (NetBIOS / mDNS) probe
-                    bool isIpOrHostname = candidate.Contains(".") || candidate.StartsWith("192.") || candidate.StartsWith("10.") || candidate.StartsWith("172.") || !candidate.All(char.IsDigit);
-                    if (isIpOrHostname)
+                    // 1. Check if target ID is explicit IP address (e.g. 192.168.1.101)
+                    if (candidate.Contains(".") || candidate.StartsWith("192.") || candidate.StartsWith("10.") || candidate.StartsWith("172."))
                     {
-                        try
+                        using var tcp = new System.Net.Sockets.TcpClient();
+                        var connectTask = tcp.ConnectAsync(candidate.Split(':')[0], 18888);
+                        if (await Task.WhenAny(connectTask, Task.Delay(500)) == connectTask && tcp.Connected)
                         {
-                            string hostToProbe = candidate.Split(':')[0];
-                            using var tcp = new System.Net.Sockets.TcpClient();
-                            tcp.NoDelay = true;
-                            var connectTask = tcp.ConnectAsync(hostToProbe, 18888);
-                            if (await Task.WhenAny(connectTask, Task.Delay(600)) == connectTask && tcp.Connected)
+                            _isLanDirectActive = true;
+                            this.BeginInvoke(new Action(() =>
                             {
-                                _isLanDirectActive = true;
-                                this.BeginInvoke(new Action(() =>
+                                if (_lblConnModeBadge != null && !_lblConnModeBadge.IsDisposed)
                                 {
-                                    if (_lblConnModeBadge != null && !_lblConnModeBadge.IsDisposed)
-                                    {
-                                        _lblConnModeBadge.Text = " ⚡ REAL LAN DIRECT (0.5ms) ";
-                                        _lblConnModeBadge.BackColor = Color.FromArgb(0, 230, 118);
-                                    }
-                                }));
-                                return;
-                            }
+                                    _lblConnModeBadge.Text = " ⚡ LAN DIRECT (0.5ms) ";
+                                    _lblConnModeBadge.BackColor = Color.FromArgb(0, 230, 118);
+                                }
+                            }));
+                            return;
                         }
-                        catch { }
                     }
 
-                    // 2. Targeted LAN Direct probe for 9-digit ID connections via host_info OR subnet Host-ID match
-                    string cleanTargetId = _targetId != null ? _targetId.Trim().Replace(" ", "") : "";
-                    await ProbeRemoteLanDirectAsync(_remoteLanIp);
-                    if (!_isLanDirectActive && !isIpOrHostname && !string.IsNullOrEmpty(cleanTargetId))
-                    {
-                        await ScanLocalSubnetForHostIdAsync(cleanTargetId);
-                    }
-
-                    // 3. UDP P2P Hole Punching Probe
+                    // 2. For 9-digit ID connections, do NOT scan local subnet IPs to prevent wrong local redirection!
+                    // Initiate P2P NAT Punching exclusively for the target ID.
                     P2pDirectEngine.Initialize();
                     await P2pDirectEngine.PunchHoleAndConnectAsync(candidate, 18888);
                 }
                 catch { }
             });
-        }
-
-        private async Task ScanLocalSubnetForHostIdAsync(string cleanTargetId)
-        {
-            if (_isLanDirectActive || string.IsNullOrEmpty(cleanTargetId) || cleanTargetId.Length < 6) return;
-            try
-            {
-                string localIp = Program.GetLocalLanIPAddress();
-                if (string.IsNullOrEmpty(localIp) || !localIp.Contains(".")) return;
-
-                string prefix = localIp.Substring(0, localIp.LastIndexOf('.') + 1);
-                var tasks = new System.Collections.Generic.List<Task>();
-
-                for (int i = 1; i <= 254; i++)
-                {
-                    string probeIp = prefix + i;
-                    if (probeIp == localIp) continue;
-
-                    tasks.Add(Task.Run(async () =>
-                    {
-                        if (_isLanDirectActive) return;
-                        try
-                        {
-                            using var tcp = new System.Net.Sockets.TcpClient();
-                            tcp.NoDelay = true;
-                            using var cts = new System.Threading.CancellationTokenSource(350);
-                            var connTask = tcp.ConnectAsync(probeIp, 18888);
-                            if (await Task.WhenAny(connTask, Task.Delay(350, cts.Token)) == connTask && tcp.Connected)
-                            {
-                                using var stream = tcp.GetStream();
-                                stream.ReadTimeout = 350;
-                                stream.WriteTimeout = 350;
-                                byte[] req = Encoding.UTF8.GetBytes("GET /host-id HTTP/1.1\r\nHost: " + probeIp + "\r\nConnection: close\r\n\r\n");
-                                await stream.WriteAsync(req, 0, req.Length);
-
-                                byte[] respBuf = new byte[1024];
-                                int read = await stream.ReadAsync(respBuf, 0, respBuf.Length);
-                                if (read > 0)
-                                {
-                                    string respStr = Encoding.UTF8.GetString(respBuf, 0, read);
-                                    if (respStr.Contains("HOST_ID:" + cleanTargetId))
-                                    {
-                                        // EXACT ID MATCH FOUND ON LOCAL IP!
-                                        var directWs = new System.Net.WebSockets.ClientWebSocket();
-                                        using var ctsWs = new System.Threading.CancellationTokenSource(800);
-                                        string directUrl = $"ws://{probeIp}:18888/connect-client?id={cleanTargetId}";
-                                        await directWs.ConnectAsync(new Uri(directUrl), ctsWs.Token);
-
-                                        if (directWs.State == System.Net.WebSockets.WebSocketState.Open)
-                                        {
-                                            _remoteLanIp = probeIp;
-                                            _isLanDirectActive = true;
-                                            var oldWs = _ws;
-                                            _ws = directWs;
-                                            _wsUrl = directUrl;
-
-                                            SendJson("{\"type\":\"set_quality\",\"quality\":48,\"maxDim\":0}");
-                                            _ = Task.Run(async () => {
-                                                await ReceiveScreenLoop(_ws, _cts.Token);
-                                                await ReceiveLoop(_ws, _cts.Token);
-                                            });
-
-                                            try { oldWs?.CloseAsync(System.Net.WebSockets.WebSocketCloseStatus.NormalClosure, "LAN Direct active", CancellationToken.None); } catch { }
-
-                                            this.BeginInvoke(new Action(() =>
-                                            {
-                                                if (_lblConnModeBadge != null && !_lblConnModeBadge.IsDisposed)
-                                                {
-                                                    _lblConnModeBadge.Text = " ⚡ REAL LAN DIRECT (0.5ms) ";
-                                                    _lblConnModeBadge.BackColor = Color.FromArgb(0, 230, 118);
-                                                }
-                                            }));
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        catch { }
-                    }));
-                }
-
-                await Task.WhenAll(tasks);
-            }
-            catch { }
-        }
-
-        private async Task ProbeRemoteLanDirectAsync(string targetLanIp)
-        {
-            if (_isLanDirectActive || string.IsNullOrEmpty(targetLanIp)) return;
-            try
-            {
-                string cleanTargetId = _targetId != null ? _targetId.Trim().Replace(" ", "") : "";
-                string localSubnet = Program.GetLocalLanIPAddress();
-                if (!string.IsNullOrEmpty(localSubnet) && localSubnet.Contains("."))
-                {
-                    string localSubnetPrefix = localSubnet.Substring(0, localSubnet.LastIndexOf('.') + 1);
-                    if (targetLanIp.StartsWith(localSubnetPrefix) && targetLanIp != localSubnet)
-                    {
-                        var directWs = new System.Net.WebSockets.ClientWebSocket();
-                        using var ctsProbe = new System.Threading.CancellationTokenSource(800);
-                        string directUrl = $"ws://{targetLanIp}:18888/connect-client?id={cleanTargetId}";
-                        await directWs.ConnectAsync(new Uri(directUrl), ctsProbe.Token);
-
-                        if (directWs.State == System.Net.WebSockets.WebSocketState.Open)
-                        {
-                            _remoteLanIp = targetLanIp;
-                            _isLanDirectActive = true;
-                            var oldWs = _ws;
-                            _ws = directWs;
-                            _wsUrl = directUrl;
-
-                            SendJson("{\"type\":\"set_quality\",\"quality\":48,\"maxDim\":0}");
-                            _ = Task.Run(async () => {
-                                await ReceiveScreenLoop(_ws, _cts.Token);
-                                await ReceiveLoop(_ws, _cts.Token);
-                            });
-
-                            try { oldWs?.CloseAsync(System.Net.WebSockets.WebSocketCloseStatus.NormalClosure, "LAN Direct active", CancellationToken.None); } catch { }
-
-                            this.BeginInvoke(new Action(() =>
-                            {
-                                if (_lblConnModeBadge != null && !_lblConnModeBadge.IsDisposed)
-                                {
-                                    _lblConnModeBadge.Text = " ⚡ REAL LAN DIRECT (0.5ms) ";
-                                    _lblConnModeBadge.BackColor = Color.FromArgb(0, 230, 118);
-                                }
-                            }));
-                        }
-                    }
-                }
-            }
-            catch { }
         }
 
         // Remote clipboard batch receiving state
@@ -376,12 +230,11 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.71.0 (Commercial PRO License & 10-Minute Free Session Limits Engine)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.66.3 (Commercial PRO License & 10-Minute Free Session Limits Engine)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
             this.KeyPreview = true;
-            this.HandleCreated += (s, e) => { try { MainWindow.AddClipboardFormatListener(this.Handle); } catch { } };
 
             var panelTop = new Panel
             {
@@ -439,31 +292,8 @@ namespace BigLineconnect
                 Margin = new Padding(2, 0, 4, 0)
             };
             ModernUIHelper.ApplyButtonStyle(btnFileManager, Color.FromArgb(0, 229, 255), Color.FromArgb(0, 176, 255), Color.Black);
-            _toolTip.SetToolTip(btnFileManager, "Dosya Transferi (Gönder / Çek / Sürükle - Bırak)");
-
-            var cmsFileManager = new ContextMenuStrip();
-            cmsFileManager.Font = new Font("Segoe UI", 9.5F, FontStyle.Regular);
-            
-            var itemSendFiles = new ToolStripMenuItem("📤 Karşı Bilgisayara Dosya Gönder...", null, (s, e) => {
-                PromptSendFilesToRemote();
-            });
-            var itemSendFolder = new ToolStripMenuItem("📁 Karşı Bilgisayara Klasör Gönder...", null, (s, e) => {
-                PromptSendFolderToRemote();
-            });
-            var itemFetchFiles = new ToolStripMenuItem("📥 Karşı Bilgisayardan Dosya Çek / İndir...", null, (s, e) => {
-                OpenFileManager();
-            });
-            var itemOpenManager = new ToolStripMenuItem("⚡ BigLineTransfer Tam Sürücü Yöneticisi", null, (s, e) => {
-                OpenFileManager();
-            });
-
-            cmsFileManager.Items.Add(itemSendFiles);
-            cmsFileManager.Items.Add(itemSendFolder);
-            cmsFileManager.Items.Add(new ToolStripSeparator());
-            cmsFileManager.Items.Add(itemFetchFiles);
-            cmsFileManager.Items.Add(itemOpenManager);
-
-            btnFileManager.Click += (s, e) => cmsFileManager.Show(btnFileManager, new Point(0, btnFileManager.Height));
+            btnFileManager.Click += (s, e) => OpenFileManager();
+            _toolTip.SetToolTip(btnFileManager, "Dosya Transferi (Sürükle - Bırak / Dosya Gönder)");
 
             var btnActions = new NoFocusButton
             {
@@ -690,13 +520,6 @@ namespace BigLineconnect
             _pictureBox.MouseMove += PictureBox_MouseMove;
             _pictureBox.MouseWheel += PictureBox_MouseWheel;
             _pictureBox.Click += (s, e) => this.Focus();
-            _pictureBox.OnFilesDropped = (files) =>
-            {
-                if (files != null && files.Count > 0)
-                {
-                    _ = Task.Run(async () => await SendPathsBatchAsync(files));
-                }
-            };
 
             this.Controls.Add(_pictureBox);
             this.Controls.Add(panelTop);
@@ -717,20 +540,17 @@ namespace BigLineconnect
             this.Leave += (s, e) => SendReleaseAllModifiers();
             // MouseDown and MouseUp already natively handle double clicks without duplicate bleed-through
 
-            // Bind Drag and Drop events safely only on STA threads
+            // Bind Drag and Drop events
             try
             {
-                if (System.Threading.Thread.CurrentThread.GetApartmentState() == System.Threading.ApartmentState.STA)
-                {
-                    try { this.AllowDrop = true; } catch { }
-                    try { if (_pictureBox != null) _pictureBox.AllowDrop = true; } catch { }
-                    try { this.DragEnter += ViewerForm_DragEnter; } catch { }
-                    try { if (_pictureBox != null) _pictureBox.DragEnter += ViewerForm_DragEnter; } catch { }
-                    try { this.DragOver += ViewerForm_DragOver; } catch { }
-                    try { if (_pictureBox != null) _pictureBox.DragOver += ViewerForm_DragOver; } catch { }
-                    try { this.DragDrop += ViewerForm_DragDrop; } catch { }
-                    try { if (_pictureBox != null) _pictureBox.DragDrop += ViewerForm_DragDrop; } catch { }
-                }
+                this.AllowDrop = true;
+                _pictureBox.AllowDrop = true;
+                this.DragEnter += ViewerForm_DragEnter;
+                _pictureBox.DragEnter += ViewerForm_DragEnter;
+                this.DragOver += ViewerForm_DragOver;
+                _pictureBox.DragOver += ViewerForm_DragOver;
+                this.DragDrop += ViewerForm_DragDrop;
+                _pictureBox.DragDrop += ViewerForm_DragDrop;
             }
             catch { }
         }
@@ -1127,7 +947,7 @@ namespace BigLineconnect
                                     if (!string.IsNullOrEmpty(lanIp) && lanIp != Program.GetLocalLanIPAddress())
                                     {
                                         _remoteLanIp = lanIp;
-                                        _ = Task.Run(() => ProbeRemoteLanDirectAsync(lanIp));
+                                        StartP2pAndLanProbe();
                                     }
                                 }
 
@@ -1184,19 +1004,6 @@ namespace BigLineconnect
                                         this.BeginInvoke(new Action(() =>
                                         {
                                             ShowFloatingClipboardButton(fileList);
-                                            _activeBatchTargetFolder = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-                                            _ = Task.Run(async () =>
-                                            {
-                                                var sb = new StringBuilder();
-                                                sb.Append($"{{\"type\":\"trigger_host_clipboard_send\",\"targetFolder\":\"DESKTOP\",\"files\":[");
-                                                for (int i = 0; i < fileList.Count; i++)
-                                                {
-                                                    sb.Append($"\"{EscapeJson(fileList[i])}\"");
-                                                    if (i < fileList.Count - 1) sb.Append(",");
-                                                }
-                                                sb.Append("]}");
-                                                await SendJsonAsync(sb.ToString());
-                                            });
                                         }));
                                     }
                                     else if (type == "chat")
@@ -1623,28 +1430,24 @@ namespace BigLineconnect
             {
                 _btnFloatingClipboard = new Button
                 {
-                    Size = new Size(340, 50),
-                    BackColor = Color.FromArgb(0, 150, 255),
-                    ForeColor = Color.White,
+                    Size = new Size(260, 42),
+                    BackColor = Color.FromArgb(10, 11, 16),
+                    ForeColor = Color.FromArgb(0, 229, 255), // Cyan glowing text
                     FlatStyle = FlatStyle.Flat,
-                    Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
+                    Font = new Font("Segoe UI", 9F, FontStyle.Bold),
                     Cursor = Cursors.Hand
                 };
-                _btnFloatingClipboard.FlatAppearance.BorderColor = Color.White;
-                _btnFloatingClipboard.FlatAppearance.BorderSize = 2;
-                _btnFloatingClipboard.Location = new Point(Math.Max(20, this.ClientSize.Width - 360), Math.Max(50, this.ClientSize.Height - 70));
-                _btnFloatingClipboard.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+                _btnFloatingClipboard.FlatAppearance.BorderColor = Color.FromArgb(0, 229, 255);
+                _btnFloatingClipboard.FlatAppearance.BorderSize = 1;
+                _btnFloatingClipboard.Location = new Point((this.ClientSize.Width - _btnFloatingClipboard.Width) / 2, 45);
+                _btnFloatingClipboard.Anchor = AnchorStyles.Top;
                 _btnFloatingClipboard.Click += BtnFloatingClipboard_Click;
 
                 this.Controls.Add(_btnFloatingClipboard);
                 _btnFloatingClipboard.BringToFront();
             }
 
-            string firstFileName = fileList.Count > 0 ? Path.GetFileName(fileList[0]) : "Dosya";
-            if (firstFileName.Length > 20) firstFileName = firstFileName.Substring(0, 17) + "...";
-
-            _btnFloatingClipboard.Text = $"📥 Uzaktan Kopyalandı: {firstFileName}\r\nTıkla ve Bu Bilgisayara İndir ({fileList.Count} Öğe)";
-            _btnFloatingClipboard.Location = new Point(Math.Max(20, this.ClientSize.Width - 360), Math.Max(50, this.ClientSize.Height - 70));
+            _btnFloatingClipboard.Text = $"Uzak Panodan İndir ({fileList.Count} Öğe)";
             _btnFloatingClipboard.Visible = true;
             _btnFloatingClipboard.BringToFront();
         }
@@ -1653,19 +1456,30 @@ namespace BigLineconnect
         {
             if (_btnFloatingClipboard != null) _btnFloatingClipboard.Visible = false;
             
-            _activeBatchTargetFolder = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+            using (var fbd = new FolderBrowserDialog())
+            {
+                fbd.Description = "Uzak bilgisayardan indirilecek dosyaların kaydedileceği yerel dizini seçin:";
+                fbd.ShowNewFolderButton = true;
+                if (fbd.ShowDialog(this) == DialogResult.OK)
+                {
+                    _activeBatchTargetFolder = fbd.SelectedPath;
+                }
+                else
+                {
+                    return; // Canceled
+                }
+            }
 
             if (_lastRemoteClipboardFiles != null && _lastRemoteClipboardFiles.Count > 0)
             {
                 var sb = new StringBuilder();
-                sb.Append($"{{\"type\":\"trigger_host_clipboard_send\",\"targetFolder\":\"DESKTOP\",\"files\":[");
+                sb.Append("{\"type\":\"trigger_host_clipboard_send\",\"files\":[");
                 for (int i = 0; i < _lastRemoteClipboardFiles.Count; i++)
                 {
                     sb.Append($"\"{EscapeJson(_lastRemoteClipboardFiles[i])}\"");
                     if (i < _lastRemoteClipboardFiles.Count - 1) sb.Append(",");
                 }
                 sb.Append("]}");
-
                 await SendJsonAsync(sb.ToString());
             }
         }
@@ -2798,51 +2612,6 @@ namespace BigLineconnect
             }
         }
 
-        public void PromptSendFilesToRemote()
-        {
-            try
-            {
-                using var ofd = new OpenFileDialog
-                {
-                    Title = "Karşı Bilgisayara Gönderilecek Dosyaları Seçin",
-                    Multiselect = true,
-                    Filter = "Tüm Dosyalar (*.*)|*.*"
-                };
-
-                if (ofd.ShowDialog(this) == DialogResult.OK && ofd.FileNames.Length > 0)
-                {
-                    var fileList = new System.Collections.Generic.List<string>(ofd.FileNames);
-                    _ = Task.Run(async () => await SendPathsBatchAsync(fileList));
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Dosya seçme hatası: {ex.Message}", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
-
-        public void PromptSendFolderToRemote()
-        {
-            try
-            {
-                using var fbd = new FolderBrowserDialog
-                {
-                    Description = "Karşı Bilgisayara Gönderilecek Klasörü Seçin:",
-                    ShowNewFolderButton = false
-                };
-
-                if (fbd.ShowDialog(this) == DialogResult.OK && !string.IsNullOrEmpty(fbd.SelectedPath))
-                {
-                    var folderList = new System.Collections.Generic.List<string> { fbd.SelectedPath };
-                    _ = Task.Run(async () => await SendPathsBatchAsync(folderList));
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Klasör seçme hatası: {ex.Message}", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
-
         private void OpenChat()
         {
             if (_clientChatForm == null || _clientChatForm.IsDisposed)
@@ -2859,6 +2628,7 @@ namespace BigLineconnect
             {
                 _fileManagerForm = new FileManagerForm(this);
             }
+            _fileManagerForm.TopMost = true;
             _fileManagerForm.Show(this);
             _fileManagerForm.BringToFront();
             _fileManagerForm.Activate();
@@ -3577,45 +3347,20 @@ namespace BigLineconnect
                 Size = new Size(435, 120),
                 BorderStyle = BorderStyle.FixedSingle,
                 BackColor = Color.FromArgb(17, 19, 24),
-                Cursor = Cursors.Hand
+                AllowDrop = true
             };
-            try
-            {
-                if (System.Threading.Thread.CurrentThread.GetApartmentState() == System.Threading.ApartmentState.STA)
-                {
-                    panelDropZone.AllowDrop = true;
-                }
-            }
-            catch { }
             panelDropZone.DragEnter += PanelDropZone_DragEnter;
             panelDropZone.DragDrop += PanelDropZone_DragDrop;
-            panelDropZone.Click += (s, e) => AddFiles();
 
             lblDropHint = new Label
             {
-                Text = "📁 Dosyaları veya Klasörleri Buraya Sürükleyin\nveya Tıklayarak Bu Bilgisayardan (C:\\ / D:\\) Seçin",
+                Text = "📁 Dosyaları veya Klasörleri Buraya Sürükleyin\nveya Aşağıdaki Butonları Kullanarak Seçin",
                 Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
                 ForeColor = Color.FromArgb(180, 180, 180),
                 TextAlign = ContentAlignment.MiddleCenter,
-                Dock = DockStyle.Fill,
-                Cursor = Cursors.Hand
+                Dock = DockStyle.Fill
             };
             lblDropHint.Click += (s, e) => AddFiles();
-            lblDropHint.MouseEnter += (s, e) => { panelDropZone.BackColor = Color.FromArgb(30, 35, 45); lblDropHint.ForeColor = Color.FromArgb(0, 229, 255); };
-            lblDropHint.MouseLeave += (s, e) => { panelDropZone.BackColor = Color.FromArgb(17, 19, 24); lblDropHint.ForeColor = Color.FromArgb(180, 180, 180); };
-            panelDropZone.MouseEnter += (s, e) => { panelDropZone.BackColor = Color.FromArgb(30, 35, 45); lblDropHint.ForeColor = Color.FromArgb(0, 229, 255); };
-            panelDropZone.MouseLeave += (s, e) => { panelDropZone.BackColor = Color.FromArgb(17, 19, 24); lblDropHint.ForeColor = Color.FromArgb(180, 180, 180); };
-
-            try
-            {
-                if (System.Threading.Thread.CurrentThread.GetApartmentState() == System.Threading.ApartmentState.STA)
-                {
-                    lblDropHint.AllowDrop = true;
-                }
-            }
-            catch { }
-            lblDropHint.DragEnter += PanelDropZone_DragEnter;
-            lblDropHint.DragDrop += PanelDropZone_DragDrop;
             panelDropZone.Controls.Add(lblDropHint);
 
             lbSenderFiles = new ListBox
@@ -3625,26 +3370,6 @@ namespace BigLineconnect
                 BackColor = Color.FromArgb(17, 19, 24),
                 ForeColor = Color.White,
                 BorderStyle = BorderStyle.None
-            };
-            try
-            {
-                if (System.Threading.Thread.CurrentThread.GetApartmentState() == System.Threading.ApartmentState.STA)
-                {
-                    lbSenderFiles.AllowDrop = true;
-                }
-            }
-            catch { }
-            lbSenderFiles.DragEnter += PanelDropZone_DragEnter;
-            lbSenderFiles.DragDrop += PanelDropZone_DragDrop;
-            lbSenderFiles.DoubleClick += (s, e) =>
-            {
-                if (lbSenderFiles.SelectedItem != null)
-                {
-                    string selected = lbSenderFiles.SelectedItem.ToString() ?? "";
-                    _sendPaths.Remove(selected);
-                    lbSenderFiles.Items.Remove(selected);
-                    if (lblSendStatus != null) lblSendStatus.Text = $"{_sendPaths.Count} öğe listede kaldı.";
-                }
             };
 
             btnAddFiles = new Button
@@ -3780,7 +3505,6 @@ namespace BigLineconnect
                             var item = new ListViewItem(driveName);
                             item.SubItems.Add(driveLabel);
                             item.SubItems.Add("");
-                            item.Tag = driveName;
                             lvReceivedFiles.Items.Add(item);
                         }
                     }
@@ -3793,32 +3517,23 @@ namespace BigLineconnect
                         string folderName = f.GetString() ?? "";
                         if (!string.IsNullOrEmpty(folderName))
                         {
-                            string rawFolderPath = folderName;
-                            string displayName = folderName;
-
-                            if (folderName.StartsWith("Masaüstü (") && folderName.EndsWith(")"))
+                            if (folderName.StartsWith("Masaüstü"))
                             {
-                                rawFolderPath = folderName.Substring(10, folderName.Length - 11);
-                                displayName = "🖥️ Masaüstü";
-                                cbRemoteTargetFolder.Items.Insert(0, $"🖥️ Karşı Masaüstü ({rawFolderPath})");
+                                cbRemoteTargetFolder.Items.Insert(0, $"🖥️ Karşı {folderName}");
                             }
-                            else if (folderName.StartsWith("İndirilenler (") && folderName.EndsWith(")"))
+                            else if (folderName.StartsWith("İndirilenler"))
                             {
-                                rawFolderPath = folderName.Substring(14, folderName.Length - 15);
-                                displayName = "📥 İndirilenler";
-                                cbRemoteTargetFolder.Items.Insert(Math.Min(1, cbRemoteTargetFolder.Items.Count), $"📥 Karşı İndirilenler ({rawFolderPath})");
+                                cbRemoteTargetFolder.Items.Insert(Math.Min(1, cbRemoteTargetFolder.Items.Count), $"📥 Karşı {folderName}");
                             }
                             else
                             {
-                                rawFolderPath = !string.IsNullOrEmpty(currentPath) ? Path.Combine(currentPath, folderName) : folderName;
-                                displayName = "📁 " + folderName;
                                 cbRemoteTargetFolder.Items.Add($"📁 {folderName}");
                             }
 
-                            var item = new ListViewItem(displayName);
+                            string fullFolderPath = !string.IsNullOrEmpty(currentPath) ? Path.Combine(currentPath, folderName) : folderName;
+                            var item = new ListViewItem(fullFolderPath);
                             item.SubItems.Add(folderLabel);
                             item.SubItems.Add("");
-                            item.Tag = rawFolderPath;
                             lvReceivedFiles.Items.Add(item);
                         }
                     }
@@ -3832,11 +3547,10 @@ namespace BigLineconnect
                         long size = f.TryGetProperty("size", out var sProp) ? sProp.GetInt64() : 0;
                         string modified = f.TryGetProperty("modified", out var mProp) ? (mProp.GetString() ?? "") : "";
 
-                        string rawFilePath = !string.IsNullOrEmpty(currentPath) ? Path.Combine(currentPath, name) : name;
-                        var item = new ListViewItem("📄 " + name);
+                        string fullFilePath = !string.IsNullOrEmpty(currentPath) ? Path.Combine(currentPath, name) : name;
+                        var item = new ListViewItem(fullFilePath);
                         item.SubItems.Add(FormatSize(size));
                         item.SubItems.Add(modified);
-                        item.Tag = rawFilePath;
                         lvReceivedFiles.Items.Add(item);
                     }
                 }
@@ -3863,25 +3577,29 @@ namespace BigLineconnect
             return $"{val:0.##} {suffixes[i]}";
         }
 
+        private bool _isNavigatingFolder = false;
         private void LvReceivedFiles_DoubleClick(object? sender, EventArgs e)
         {
-            if (lvReceivedFiles == null || lvReceivedFiles.SelectedItems.Count == 0) return;
+            if (_isNavigatingFolder) return;
+            if (lvReceivedFiles.SelectedItems.Count == 0) return;
+            
+            _isNavigatingFolder = true;
+            Task.Delay(400).ContinueWith(_ => _isNavigatingFolder = false);
 
             var item = lvReceivedFiles.SelectedItems[0];
             string name = item.Text;
             string type = item.SubItems[1].Text;
-            string rawPath = item.Tag?.ToString() ?? name;
 
             if (name.Contains("Üst Klasör"))
             {
-                string parentPath = item.SubItems.Count > 2 ? item.SubItems[2].Text : "";
+                string parentPath = item.SubItems[2].Text;
                 _parent.SendJson($"{{\"type\":\"fs_list\",\"path\":\"{ViewerForm.EscapeJson(parentPath)}\"}}");
                 return;
             }
 
             if (type.Contains("Sürücü") || type.Contains("Drive") || type.Contains("Klasör") || type.Contains("Folder"))
             {
-                _parent.SendJson($"{{\"type\":\"fs_list\",\"path\":\"{ViewerForm.EscapeJson(rawPath)}\"}}");
+                _parent.SendJson($"{{\"type\":\"fs_list\",\"path\":\"{ViewerForm.EscapeJson(name)}\"}}");
             }
             else
             {
@@ -3917,70 +3635,34 @@ namespace BigLineconnect
             }
         }
 
-        private void PromptAddFilesOrFolders()
-        {
-            try
-            {
-                var menu = new ContextMenuStrip();
-                var itemFile = new ToolStripMenuItem("📄 Dosya Seç ve Ekle", null, (s, e) => AddFiles());
-                var itemFolder = new ToolStripMenuItem("📁 Klasör Seç ve Ekle", null, (s, e) => AddFolder());
-                menu.Items.Add(itemFile);
-                menu.Items.Add(itemFolder);
-                menu.Show(Cursor.Position);
-            }
-            catch
-            {
-                AddFiles();
-            }
-        }
-
         private void AddFiles()
         {
-            try
+            using var ofd = new OpenFileDialog { Multiselect = true };
+            if (ofd.ShowDialog() == DialogResult.OK)
             {
-                using var ofd = new OpenFileDialog
+                foreach (var f in ofd.FileNames)
                 {
-                    Multiselect = true,
-                    Title = "Karşı Bilgisayara Gönderilecek Dosyaları Seçin (Bu Bilgisayar - C:\\ / D:\\)",
-                    InitialDirectory = @"C:\"
-                };
-                if (ofd.ShowDialog(this) == DialogResult.OK)
-                {
-                    foreach (var f in ofd.FileNames)
+                    if (!_sendPaths.Contains(f))
                     {
-                        if (!string.IsNullOrEmpty(f) && !_sendPaths.Contains(f))
-                        {
-                            _sendPaths.Add(f);
-                            if (lbSenderFiles != null) lbSenderFiles.Items.Add(f);
-                        }
+                        _sendPaths.Add(f);
+                        lbSenderFiles.Items.Add(f);
                     }
-                    if (lblSendStatus != null) lblSendStatus.Text = $"{_sendPaths.Count} öğe gönderilmek üzere eklendi.";
                 }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Dosya seçim penceresi hatası: {ex.Message}", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                lblSendStatus.Text = $"{_sendPaths.Count} öğe gönderilmek üzere eklendi.";
             }
         }
 
         private void AddFolder()
         {
-            try
+            using var fbd = new FolderBrowserDialog();
+            if (fbd.ShowDialog() == DialogResult.OK)
             {
-                using var fbd = new FolderBrowserDialog { Description = "Karşı Bilgisayara Gönderilecek Klasörü Seçin" };
-                if (fbd.ShowDialog(this) == DialogResult.OK)
+                if (!_sendPaths.Contains(fbd.SelectedPath))
                 {
-                    if (!string.IsNullOrEmpty(fbd.SelectedPath) && !_sendPaths.Contains(fbd.SelectedPath))
-                    {
-                        _sendPaths.Add(fbd.SelectedPath);
-                        if (lbSenderFiles != null) lbSenderFiles.Items.Add(fbd.SelectedPath);
-                    }
-                    if (lblSendStatus != null) lblSendStatus.Text = $"{_sendPaths.Count} öğe gönderilmek üzere eklendi.";
+                    _sendPaths.Add(fbd.SelectedPath);
+                    lbSenderFiles.Items.Add(fbd.SelectedPath);
                 }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Klasör seçim penceresi hatası: {ex.Message}", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                lblSendStatus.Text = $"{_sendPaths.Count} öğe gönderilmek üzere eklendi.";
             }
         }
 
@@ -4055,18 +3737,46 @@ namespace BigLineconnect
             var item = lvReceivedFiles.SelectedItems[0];
             string name = item.Text;
             string type = item.SubItems[1].Text;
-            string rawPath = item.Tag?.ToString() ?? name;
-            if (rawPath.StartsWith("📄 ") || rawPath.StartsWith("📁 ")) rawPath = rawPath.Substring(2).Trim();
 
             if (type.Contains("Sürücü") || type.Contains("Drive")) return;
 
             bool isFolder = type.Contains("Klasör") || type.Contains("Folder");
-            string fileNameOnly = Path.GetFileName(rawPath);
+            string fileNameOnly = Path.GetFileName(name);
             if (string.IsNullOrEmpty(fileNameOnly)) fileNameOnly = "download";
             string suggestedName = isFolder ? (fileNameOnly.EndsWith(".zip", StringComparison.OrdinalIgnoreCase) ? fileNameOnly : fileNameOnly + ".zip") : fileNameOnly;
 
-            _parent.SendJson($"{{\"type\":\"trigger_host_clipboard_send\",\"targetFolder\":\"DESKTOP\",\"files\":[\"{ViewerForm.EscapeJson(rawPath)}\"]}}");
-            MessageBox.Show($"'{fileNameOnly}' dosyası karşı taraftan Masaüstünüze indiriliyor...", "İndirme Başlatıldı", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            using var sfd = new SaveFileDialog { FileName = suggestedName, InitialDirectory = _currentSavePath };
+            if (sfd.ShowDialog(this) == DialogResult.OK)
+            {
+                _downloadFileName = sfd.FileName;
+                try
+                {
+                    if (_downloadStream != null)
+                    {
+                        _downloadStream.Close();
+                        _downloadStream.Dispose();
+                        _downloadStream = null;
+                    }
+                    _downloadStream = new FileStream(_downloadFileName, FileMode.Create, FileAccess.Write);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Dosya yazma hatası: {ex.Message}", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                btnDownloadSelected.Enabled = false;
+                btnDownloadSelected.Text = "Hazırlanıyor...";
+
+                if (isFolder)
+                {
+                    _parent.SendJson($"{{\"type\":\"folder_download_req\",\"path\":\"{ViewerForm.EscapeJson(name)}\"}}");
+                }
+                else
+                {
+                    _parent.SendJson($"{{\"type\":\"file_download_req\",\"path\":\"{ViewerForm.EscapeJson(name)}\"}}");
+                }
+            }
         }
 
         public void StartIncomingDownload(string name, long totalSize = 0)
@@ -4507,8 +4217,6 @@ namespace BigLineconnect
 
     public class DoubleBufferedPictureBox : PictureBox
     {
-        public Action<System.Collections.Generic.List<string>>? OnFilesDropped;
-
         public DoubleBufferedPictureBox()
         {
             this.DoubleBuffered = true;
@@ -4519,11 +4227,7 @@ namespace BigLineconnect
         protected override void OnHandleCreated(EventArgs e)
         {
             base.OnHandleCreated(e);
-            try
-            {
-                ViewerForm.DragAcceptFiles(this.Handle, true);
-            }
-            catch { }
+            try { ViewerForm.DragAcceptFiles(this.Handle, true); } catch { }
         }
 
         protected override void WndProc(ref Message m)
@@ -4548,9 +4252,12 @@ namespace BigLineconnect
                     }
                     ViewerForm.DragFinish(hDrop);
 
-                    if (fileList.Count > 0 && OnFilesDropped != null)
+                    if (fileList.Count > 0)
                     {
-                        OnFilesDropped(fileList);
+                        if (this.FindForm() is ViewerForm vf)
+                        {
+                            _ = Task.Run(async () => await vf.SendPathsBatchAsync(fileList));
+                        }
                     }
                 }
                 catch { }

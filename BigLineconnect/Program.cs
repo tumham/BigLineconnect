@@ -277,20 +277,6 @@ namespace BigLineconnect
         }
 
         [STAThread]
-        public static bool IsAdministrator()
-        {
-            try
-            {
-                using var identity = System.Security.Principal.WindowsIdentity.GetCurrent();
-                var principal = new System.Security.Principal.WindowsPrincipal(identity);
-                return principal.IsInRole(System.Security.Principal.WindowsBuiltInRole.Administrator);
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
         public static void Main(string[] args)
         {
             try { Application.OleRequired(); } catch { }
@@ -390,25 +376,6 @@ namespace BigLineconnect
                 return;
             }
 
-            // AUTO UAC ELEVATION: Force High-Integrity Administrator execution to bypass Alpemix/AnyDesk/TeamViewer UIPI mouse locks
-            if (!isService && !isHelper && !IsAdministrator())
-            {
-                try
-                {
-                    string exePath = Process.GetCurrentProcess().MainModule?.FileName ?? Application.ExecutablePath;
-                    var psi = new ProcessStartInfo
-                    {
-                        FileName = exePath,
-                        Arguments = string.Join(" ", args.Select(a => $"\"{a}\"")),
-                        UseShellExecute = true,
-                        Verb = "runas"
-                    };
-                    Process.Start(psi);
-                    return;
-                }
-                catch { }
-            }
-
             // Run as Windows Service if requested or if not running interactively
             if (isService || !Environment.UserInteractive)
             {
@@ -429,28 +396,6 @@ namespace BigLineconnect
             // Initialize Windows Forms
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-
-            // Global Exception Handler to suppress non-critical WinForms UI & DragDrop OLE exceptions
-            Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException, true);
-            Application.ThreadException += (s, e) =>
-            {
-                try
-                {
-                    LogHelper($"[Global Thread Exception Suppressed] {e.Exception?.Message}");
-                }
-                catch { }
-            };
-            AppDomain.CurrentDomain.UnhandledException += (s, e) =>
-            {
-                try
-                {
-                    if (e.ExceptionObject is Exception ex)
-                    {
-                        LogHelper($"[Global Domain Exception Suppressed] {ex.Message}");
-                    }
-                }
-                catch { }
-            };
 
             LoadSecuritySettings();
             LoadAdvancedSettings();
@@ -2420,7 +2365,7 @@ namespace BigLineconnect
                 uint sessionId = WtsHelper.GetActiveSessionId();
                 if (sessionId != 0 && sessionId != 0xFFFFFFFF && WtsHelper.WTSQueryUserToken(sessionId, ref hToken))
                 {
-                    if (WtsHelper.SHGetKnownFolderPath(WtsHelper.FOLDERID_Desktop, 0, hToken, out string desktopPath) == 0 && !string.IsNullOrEmpty(desktopPath) && Directory.Exists(desktopPath))
+                    if (WtsHelper.SHGetKnownFolderPath(WtsHelper.FOLDERID_Desktop, 0, hToken, out string desktopPath) == 0 && !string.IsNullOrEmpty(desktopPath))
                     {
                         return desktopPath;
                     }
@@ -2434,21 +2379,10 @@ namespace BigLineconnect
 
             try
             {
-                string userDesktop = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-                if (!string.IsNullOrEmpty(userDesktop) && Directory.Exists(userDesktop))
+                string publicDesktop = Environment.GetFolderPath(Environment.SpecialFolder.CommonDesktopDirectory);
+                if (!string.IsNullOrEmpty(publicDesktop) && Directory.Exists(publicDesktop))
                 {
-                    return userDesktop;
-                }
-            }
-            catch { }
-
-            try
-            {
-                string username = WtsHelper.GetActiveSessionUsername();
-                if (!string.IsNullOrEmpty(username) && username != "SYSTEM")
-                {
-                    string path = Path.Combine(@"C:\Users", username, "Desktop");
-                    if (Directory.Exists(path)) return path;
+                    return publicDesktop;
                 }
             }
             catch { }
@@ -2464,7 +2398,7 @@ namespace BigLineconnect
                 uint sessionId = WtsHelper.GetActiveSessionId();
                 if (sessionId != 0 && sessionId != 0xFFFFFFFF && WtsHelper.WTSQueryUserToken(sessionId, ref hToken))
                 {
-                    if (WtsHelper.SHGetKnownFolderPath(WtsHelper.FOLDERID_Downloads, 0, hToken, out string downloadsPath) == 0 && !string.IsNullOrEmpty(downloadsPath) && Directory.Exists(downloadsPath))
+                    if (WtsHelper.SHGetKnownFolderPath(WtsHelper.FOLDERID_Downloads, 0, hToken, out string downloadsPath) == 0 && !string.IsNullOrEmpty(downloadsPath))
                     {
                         return downloadsPath;
                     }
@@ -2478,23 +2412,9 @@ namespace BigLineconnect
 
             try
             {
-                string username = WtsHelper.GetActiveSessionUsername();
-                if (!string.IsNullOrEmpty(username) && username != "SYSTEM")
-                {
-                    string path = Path.Combine(@"C:\Users", username, "Downloads");
-                    if (Directory.Exists(path)) return path;
-                }
-            }
-            catch { }
-
-            try
-            {
-                string userProfile = Environment.GetEnvironmentVariable("USERPROFILE") ?? "";
-                if (!string.IsNullOrEmpty(userProfile))
-                {
-                    string path = Path.Combine(userProfile, "Downloads");
-                    if (Directory.Exists(path)) return path;
-                }
+                string home = Environment.GetEnvironmentVariable("USERPROFILE") ?? @"C:\Users\Default";
+                string path = Path.Combine(home, "Downloads");
+                if (Directory.Exists(path)) return path;
             }
             catch { }
 
@@ -2524,7 +2444,7 @@ namespace BigLineconnect
 
         public static async Task SendJsonMessageAsync(object obj)
         {
-            WebSocket? targetWs = (WebSocket?)StreamWebSocketClient ?? (WebSocket?)WebSocketClient;
+            WebSocket? targetWs = (WebSocket?)WebSocketClient ?? (WebSocket?)StreamWebSocketClient;
             if (targetWs != null && targetWs.State == WebSocketState.Open)
             {
                 try
@@ -2617,176 +2537,154 @@ namespace BigLineconnect
         {
             try
             {
+                var drives = new List<string>();
+                var folders = new List<string>();
+                var files = new List<FileItemInfo>();
+
                 Log($"[FS_LIST] İstek işleniyor. Path: '{path}'");
 
-                var listTask = Task.Run(() =>
+                if (string.IsNullOrEmpty(path))
                 {
-                    var drives = new List<string>();
-                    var folders = new List<string>();
-                    var files = new List<FileItemInfo>();
-
-                    if (string.IsNullOrEmpty(path))
+                    // 1. Sürücüleri al
+                    try
                     {
-                        // 1. Sürücüleri al
+                        string[] logicalDrives = Directory.GetLogicalDrives();
+                        foreach (var d in logicalDrives)
+                        {
+                            if (!string.IsNullOrEmpty(d)) drives.Add(d);
+                        }
+                    }
+                    catch { }
+
+                    if (drives.Count == 0)
+                    {
                         try
                         {
-                            string[] logicalDrives = Directory.GetLogicalDrives();
-                            foreach (var d in logicalDrives)
+                            foreach (var drive in DriveInfo.GetDrives())
                             {
-                                if (!string.IsNullOrEmpty(d)) drives.Add(d);
-                            }
-                        }
-                        catch { }
-
-                        if (drives.Count == 0)
-                        {
-                            try
-                            {
-                                foreach (var drive in DriveInfo.GetDrives())
-                                {
-                                    try { if (drive.IsReady) drives.Add(drive.Name); } catch { }
-                                }
-                            }
-                            catch { }
-                        }
-
-                        if (drives.Count == 0)
-                        {
-                            drives.Add(@"C:\");
-                            drives.Add(@"D:\");
-                        }
-
-                        // 2. Masaüstü ve İndirilenler klasörlerini al
-                        try
-                        {
-                            string desktop = GetUserDesktopPath();
-                            if (!string.IsNullOrEmpty(desktop) && Directory.Exists(desktop))
-                            {
-                                folders.Add("Masaüstü (" + desktop + ")");
-                            }
-                        }
-                        catch { }
-
-                        try
-                        {
-                            string downloads = GetUserDownloadsPath();
-                            if (!string.IsNullOrEmpty(downloads) && Directory.Exists(downloads))
-                            {
-                                folders.Add("İndirilenler (" + downloads + ")");
+                                try { drives.Add(drive.Name); } catch { }
                             }
                         }
                         catch { }
                     }
-                    else
+
+                    if (drives.Count == 0)
                     {
-                        string targetPath = path;
-                        if (targetPath.StartsWith("Masaüstü (") && targetPath.EndsWith(")"))
-                        {
-                            targetPath = targetPath.Substring(10, targetPath.Length - 11);
-                        }
-                        else if (targetPath.StartsWith("İndirilenler (") && targetPath.EndsWith(")"))
-                        {
-                            targetPath = targetPath.Substring(14, targetPath.Length - 15);
-                        }
-
-                        if (Directory.Exists(targetPath))
-                        {
-                            try
-                            {
-                                foreach (var dir in Directory.GetDirectories(targetPath))
-                                {
-                                    try
-                                    {
-                                        var di = new DirectoryInfo(dir);
-                                        if ((di.Attributes & FileAttributes.Hidden) != FileAttributes.Hidden)
-                                        {
-                                            folders.Add(di.Name);
-                                        }
-                                    }
-                                    catch
-                                    {
-                                        folders.Add(Path.GetFileName(dir));
-                                    }
-                                }
-                            }
-                            catch { }
-
-                            try
-                            {
-                                foreach (var file in Directory.GetFiles(targetPath))
-                                {
-                                    try
-                                    {
-                                        var fi = new FileInfo(file);
-                                        if ((fi.Attributes & FileAttributes.Hidden) != FileAttributes.Hidden)
-                                        {
-                                            files.Add(new FileItemInfo
-                                            {
-                                                Name = fi.Name,
-                                                Size = fi.Length,
-                                                Modified = fi.LastWriteTime.ToString("yyyy-MM-dd HH:mm:ss")
-                                            });
-                                        }
-                                    }
-                                    catch
-                                    {
-                                        files.Add(new FileItemInfo
-                                        {
-                                            Name = Path.GetFileName(file),
-                                            Size = 0L,
-                                            Modified = ""
-                                        });
-                                    }
-                                }
-                            }
-                            catch { }
-                        }
+                        drives.Add(@"C:\");
+                        drives.Add(@"D:\");
                     }
 
-                    return (drives, folders, files);
-                });
+                    // 2. Masaüstü ve İndirilenler klasörlerini al
+                    try
+                    {
+                        string desktop = GetUserDesktopPath();
+                        if (!string.IsNullOrEmpty(desktop) && Directory.Exists(desktop))
+                        {
+                            folders.Add("Masaüstü (" + desktop + ")");
+                        }
+                    }
+                    catch { }
 
-                List<string> resDrives;
-                List<string> resFolders;
-                List<FileItemInfo> resFiles;
-
-                if (await Task.WhenAny(listTask, Task.Delay(2000)).ConfigureAwait(false) == listTask)
-                {
-                    (resDrives, resFolders, resFiles) = listTask.Result;
+                    try
+                    {
+                        string downloads = GetUserDownloadsPath();
+                        if (!string.IsNullOrEmpty(downloads) && Directory.Exists(downloads))
+                        {
+                            folders.Add("İndirilenler (" + downloads + ")");
+                        }
+                    }
+                    catch { }
                 }
                 else
                 {
-                    Log("[FS_LIST] Zaman aşımı! Varsayılan liste döndürülüyor.");
-                    resDrives = new List<string> { @"C:\", @"D:\" };
-                    resFolders = new List<string> { "Masaüstü (" + GetUserDesktopPath() + ")", "İndirilenler (" + GetUserDownloadsPath() + ")" };
-                    resFiles = new List<FileItemInfo>();
+                    if (path.StartsWith("Masaüstü (") && path.EndsWith(")"))
+                    {
+                        path = path.Substring(10, path.Length - 11);
+                    }
+                    else if (path.StartsWith("İndirilenler (") && path.EndsWith(")"))
+                    {
+                        path = path.Substring(14, path.Length - 15);
+                    }
+
+                    if (Directory.Exists(path))
+                    {
+                        try
+                        {
+                            foreach (var dir in Directory.GetDirectories(path))
+                            {
+                                try
+                                {
+                                    var di = new DirectoryInfo(dir);
+                                    if ((di.Attributes & FileAttributes.Hidden) != FileAttributes.Hidden)
+                                    {
+                                        folders.Add(di.Name);
+                                    }
+                                }
+                                catch
+                                {
+                                    folders.Add(Path.GetFileName(dir));
+                                }
+                            }
+                        }
+                        catch { }
+
+                        try
+                        {
+                            foreach (var file in Directory.GetFiles(path))
+                            {
+                                try
+                                {
+                                    var fi = new FileInfo(file);
+                                    if ((fi.Attributes & FileAttributes.Hidden) != FileAttributes.Hidden)
+                                    {
+                                        files.Add(new FileItemInfo
+                                        {
+                                            Name = fi.Name,
+                                            Size = fi.Length,
+                                            Modified = fi.LastWriteTime.ToString("yyyy-MM-dd HH:mm:ss")
+                                        });
+                                    }
+                                }
+                                catch
+                                {
+                                    files.Add(new FileItemInfo
+                                    {
+                                        Name = Path.GetFileName(file),
+                                        Size = 0L,
+                                        Modified = ""
+                                    });
+                                }
+                            }
+                        }
+                        catch { }
+                    }
                 }
 
-                Log($"[FS_LIST] Yanıt hazır: {resDrives.Count} sürücü, {resFolders.Count} klasör, {resFiles.Count} dosya.");
+                Log($"[FS_LIST] Yanıt hazır: {drives.Count} sürücü, {folders.Count} klasör, {files.Count} dosya.");
 
                 var sbRes = new StringBuilder();
                 sbRes.Append($"{{\"type\":\"fs_list_res\",\"path\":\"{EscapeJson(path)}\",\"drives\":[");
-                for (int i = 0; i < resDrives.Count; i++)
+                for (int i = 0; i < drives.Count; i++)
                 {
-                    sbRes.Append($"\"{EscapeJson(resDrives[i])}\"");
-                    if (i < resDrives.Count - 1) sbRes.Append(",");
+                    sbRes.Append($"\"{EscapeJson(drives[i])}\"");
+                    if (i < drives.Count - 1) sbRes.Append(",");
                 }
                 sbRes.Append("],\"folders\":[");
-                for (int i = 0; i < resFolders.Count; i++)
+                for (int i = 0; i < folders.Count; i++)
                 {
-                    sbRes.Append($"\"{EscapeJson(resFolders[i])}\"");
-                    if (i < resFolders.Count - 1) sbRes.Append(",");
+                    sbRes.Append($"\"{EscapeJson(folders[i])}\"");
+                    if (i < folders.Count - 1) sbRes.Append(",");
                 }
                 sbRes.Append("],\"files\":[");
-                for (int i = 0; i < resFiles.Count; i++)
+                for (int i = 0; i < files.Count; i++)
                 {
-                    var f = resFiles[i];
+                    var f = files[i];
                     sbRes.Append($"{{\"name\":\"{EscapeJson(f.Name)}\",\"size\":{f.Size},\"modified\":\"{EscapeJson(f.Modified)}\"}}");
-                    if (i < resFiles.Count - 1) sbRes.Append(",");
+                    if (i < files.Count - 1) sbRes.Append(",");
                 }
                 sbRes.Append("]}");
 
-                await SendJsonMessageAsync(sbRes.ToString()).ConfigureAwait(false);
+                await SendJsonMessageAsync(sbRes.ToString());
             }
             catch (Exception ex)
             {
@@ -3133,39 +3031,23 @@ namespace BigLineconnect
 
                 string serviceExe = File.Exists(targetExe) ? targetExe : currentExe;
 
-                // Check if service already exists
-                bool serviceExists = false;
-                try
+                // 3. Create new service pointing to permanent system path
+                var psiSvc = new ProcessStartInfo("cmd.exe", $"/c sc.exe delete BigLineconnectSvc & sc.exe create BigLineconnectSvc binPath= \"\\\"{serviceExe}\\\" --service\" DisplayName= \"BigLineconnect Background Service\" start= auto")
                 {
-                    using (var sc = new ServiceController("BigLineconnectSvc"))
-                    {
-                        var status = sc.Status;
-                        serviceExists = true;
-                    }
-                }
-                catch { }
+                    CreateNoWindow = true,
+                    UseShellExecute = false
+                };
+                var process = Process.Start(psiSvc);
+                process?.WaitForExit();
 
-                ProcessStartInfo psiSvc;
-                Process? process;
-
-                if (!serviceExists)
+                // 4. Set description
+                psiSvc = new ProcessStartInfo("sc.exe", "description BigLineconnectSvc \"BigLineconnect Modern Uzaktan Kontrol Servisi\"")
                 {
-                    psiSvc = new ProcessStartInfo("cmd.exe", $"/c sc.exe create BigLineconnectSvc binPath= \"\\\"{serviceExe}\\\" --service\" DisplayName= \"BigLineconnect Background Service\" start= auto")
-                    {
-                        CreateNoWindow = true,
-                        UseShellExecute = false
-                    };
-                    process = Process.Start(psiSvc);
-                    process?.WaitForExit();
-
-                    psiSvc = new ProcessStartInfo("sc.exe", "description BigLineconnectSvc \"BigLineconnect Modern Uzaktan Kontrol Servisi\"")
-                    {
-                        CreateNoWindow = true,
-                        UseShellExecute = false
-                    };
-                    process = Process.Start(psiSvc);
-                    process?.WaitForExit();
-                }
+                    CreateNoWindow = true,
+                    UseShellExecute = false
+                };
+                process = Process.Start(psiSvc);
+                process?.WaitForExit();
 
                 // 4.5. Set recovery options on failure
                 psiSvc = new ProcessStartInfo("sc.exe", "failure BigLineconnectSvc reset= 86400 actions= restart/60000/restart/60000/restart/60000")
@@ -3929,18 +3811,6 @@ namespace BigLineconnect
 
             LogService("Fallback: defaulting to Session 1");
             return 1;
-        }
-
-        public static string GetActiveSessionUsername()
-        {
-            try
-            {
-                string user = Environment.UserName;
-                if (!string.IsNullOrEmpty(user) && user != "SYSTEM") return user;
-            }
-            catch { }
-
-            return "";
         }
 
         public static bool IsWorkstationLocked(uint sessionId)
