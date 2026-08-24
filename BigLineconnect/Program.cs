@@ -724,13 +724,15 @@ namespace BigLineconnect
 
                         _ = Task.Run(async () =>
                         {
+                            System.Net.WebSockets.WebSocket ws = null;
                             try
                             {
                                 var stream = client.GetStream();
                                 if (await PerformWebSocketServerHandshakeAsync(stream).ConfigureAwait(false))
                                 {
-                                    var ws = System.Net.WebSockets.WebSocket.CreateFromStream(stream, isServer: true, subProtocol: null, keepAliveInterval: TimeSpan.FromSeconds(30));
+                                    ws = System.Net.WebSockets.WebSocket.CreateFromStream(stream, isServer: true, subProtocol: null, keepAliveInterval: TimeSpan.FromSeconds(30));
                                     Log("Yerel Ağdan (LAN Direct 0.5ms NoDelay) hızlı bağlantı kabul edildi!");
+                                    ActiveLanWebSocket = ws;
                                     SetStreamActive(true);
 
                                     var cts = new CancellationTokenSource();
@@ -740,6 +742,10 @@ namespace BigLineconnect
                                 }
                             }
                             catch { }
+                            finally
+                            {
+                                if (ActiveLanWebSocket == ws) ActiveLanWebSocket = null;
+                            }
                         });
                     }
                 }
@@ -2442,9 +2448,14 @@ namespace BigLineconnect
             await SendJsonMessageAsync(new { type = "chat", message = text, sender = sender });
         }
 
+        public static WebSocket? ActiveLanWebSocket;
+
         public static async Task SendJsonMessageAsync(object obj)
         {
-            WebSocket? targetWs = (WebSocket?)WebSocketClient ?? (WebSocket?)StreamWebSocketClient;
+            WebSocket? targetWs = (ActiveLanWebSocket != null && ActiveLanWebSocket.State == WebSocketState.Open)
+                ? ActiveLanWebSocket
+                : ((WebSocket?)WebSocketClient ?? (WebSocket?)StreamWebSocketClient);
+
             if (targetWs != null && targetWs.State == WebSocketState.Open)
             {
                 try
