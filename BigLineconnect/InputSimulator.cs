@@ -279,25 +279,21 @@ namespace BigLineconnect
                     SetCursorPos(actualX, actualY);
                 }
 
-                // Batch 4 hardware mouse events in ONE atomic SendInput system call (Instant 10ms double-click on remote host)
-                INPUT[] inputs = new INPUT[4];
-                inputs[0] = new INPUT { type = INPUT_MOUSE, U = new InputUnion { mi = new MOUSEINPUT { dwFlags = downFlag } } };
-                inputs[1] = new INPUT { type = INPUT_MOUSE, U = new InputUnion { mi = new MOUSEINPUT { dwFlags = upFlag } } };
-                inputs[2] = new INPUT { type = INPUT_MOUSE, U = new InputUnion { mi = new MOUSEINPUT { dwFlags = downFlag } } };
-                inputs[3] = new INPUT { type = INPUT_MOUSE, U = new InputUnion { mi = new MOUSEINPUT { dwFlags = upFlag } } };
-
-                SendInput(4, inputs, Marshal.SizeOf<INPUT>());
-
-                // Fallback dual-engine mouse_event
+                // Hardware mouse_event double click with exact Windows OS double click timing (15ms click hold + 35ms inter-click delay)
                 mouse_event(downFlag, 0, 0, 0, (UIntPtr)0);
+                Thread.Sleep(15);
                 mouse_event(upFlag, 0, 0, 0, (UIntPtr)0);
-                Thread.Sleep(10);
+
+                Thread.Sleep(35);
+
                 mouse_event(downFlag, 0, 0, 0, (UIntPtr)0);
+                Thread.Sleep(15);
                 mouse_event(upFlag, 0, 0, 0, (UIntPtr)0);
 
                 _isLeftMouseDown = false;
                 _isRightMouseDown = false;
 
+                Program.TriggerInstantCapture(2);
             }
             catch { }
         }

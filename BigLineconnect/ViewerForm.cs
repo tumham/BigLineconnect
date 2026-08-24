@@ -376,7 +376,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.67.4 (Commercial PRO License & 10-Minute Free Session Limits Engine)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.67.5 (Commercial PRO License & 10-Minute Free Session Limits Engine)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
@@ -1781,7 +1781,7 @@ namespace BigLineconnect
 
         private void PictureBox_MouseDown(object? sender, MouseEventArgs e)
         {
-            if (_pictureBox == null) return;
+            if (_pictureBox == null || e.Clicks > 1) return;
             
             // Focus form to ensure key capture works
             this.Focus();
@@ -1798,7 +1798,7 @@ namespace BigLineconnect
 
         private void PictureBox_MouseUp(object? sender, MouseEventArgs e)
         {
-            if (_pictureBox == null) return;
+            if (_pictureBox == null || e.Clicks > 1) return;
 
             var (x, y) = GetNormalizedMousePos(e, _pictureBox);
 

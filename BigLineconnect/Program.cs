@@ -2499,7 +2499,7 @@ namespace BigLineconnect
 
         public static async Task SendJsonMessageAsync(object obj)
         {
-            WebSocket? targetWs = (WebSocket?)WebSocketClient ?? (WebSocket?)StreamWebSocketClient;
+            WebSocket? targetWs = (WebSocket?)StreamWebSocketClient ?? (WebSocket?)WebSocketClient;
             if (targetWs != null && targetWs.State == WebSocketState.Open)
             {
                 try
