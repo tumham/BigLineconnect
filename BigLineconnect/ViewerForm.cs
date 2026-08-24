@@ -376,7 +376,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.70.2 (Commercial PRO License & 10-Minute Free Session Limits Engine)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.70.3 (Commercial PRO License & 10-Minute Free Session Limits Engine)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
@@ -1183,6 +1183,19 @@ namespace BigLineconnect
                                         this.BeginInvoke(new Action(() =>
                                         {
                                             ShowFloatingClipboardButton(fileList);
+                                            _activeBatchTargetFolder = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+                                            _ = Task.Run(async () =>
+                                            {
+                                                var sb = new StringBuilder();
+                                                sb.Append($"{{\"type\":\"trigger_host_clipboard_send\",\"targetFolder\":\"DESKTOP\",\"files\":[");
+                                                for (int i = 0; i < fileList.Count; i++)
+                                                {
+                                                    sb.Append($"\"{EscapeJson(fileList[i])}\"");
+                                                    if (i < fileList.Count - 1) sb.Append(",");
+                                                }
+                                                sb.Append("]}");
+                                                await SendJsonAsync(sb.ToString());
+                                            });
                                         }));
                                     }
                                     else if (type == "chat")
