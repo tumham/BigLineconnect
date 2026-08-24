@@ -259,7 +259,12 @@ namespace BigLineconnect
             {
                 ReleaseCapture();
                 DesktopHelper.AttachToInputDesktop();
-                mouse_event(MOUSEEVENTF_LEFTUP | MOUSEEVENTF_RIGHTUP, 0, 0, 0, (UIntPtr)0);
+
+                uint downFlag = button.Equals("right", StringComparison.OrdinalIgnoreCase) ? MOUSEEVENTF_RIGHTDOWN : MOUSEEVENTF_LEFTDOWN;
+                uint upFlag = button.Equals("right", StringComparison.OrdinalIgnoreCase) ? MOUSEEVENTF_RIGHTUP : MOUSEEVENTF_LEFTUP;
+
+                // Ensure any stuck mouse buttons are released first
+                mouse_event(upFlag, 0, 0, 0, (UIntPtr)0);
                 _isLeftMouseDown = false;
                 _isRightMouseDown = false;
 
@@ -272,26 +277,27 @@ namespace BigLineconnect
                     int actualY = bounds.Y + Math.Min(bounds.Height - 1, (int)(yPercent.Value * bounds.Height));
 
                     SetCursorPos(actualX, actualY);
-                    mouse_event(MOUSEEVENTF_MOVE, 0, 0, 0, (UIntPtr)0);
                 }
 
-                uint downFlag = button.Equals("right", StringComparison.OrdinalIgnoreCase) ? MOUSEEVENTF_RIGHTDOWN : MOUSEEVENTF_LEFTDOWN;
-                uint upFlag = button.Equals("right", StringComparison.OrdinalIgnoreCase) ? MOUSEEVENTF_RIGHTUP : MOUSEEVENTF_LEFTUP;
+                // Batch 4 hardware mouse events in ONE atomic SendInput system call (Instant 10ms double-click on remote host)
+                INPUT[] inputs = new INPUT[4];
+                inputs[0] = new INPUT { type = INPUT_MOUSE, U = new InputUnion { mi = new MOUSEINPUT { dwFlags = downFlag } } };
+                inputs[1] = new INPUT { type = INPUT_MOUSE, U = new InputUnion { mi = new MOUSEINPUT { dwFlags = upFlag } } };
+                inputs[2] = new INPUT { type = INPUT_MOUSE, U = new InputUnion { mi = new MOUSEINPUT { dwFlags = downFlag } } };
+                inputs[3] = new INPUT { type = INPUT_MOUSE, U = new InputUnion { mi = new MOUSEINPUT { dwFlags = upFlag } } };
 
-                // 1st Click (Instant down/up)
+                SendInput(4, inputs, Marshal.SizeOf<INPUT>());
+
+                // Fallback dual-engine mouse_event
                 mouse_event(downFlag, 0, 0, 0, (UIntPtr)0);
                 mouse_event(upFlag, 0, 0, 0, (UIntPtr)0);
-
-                Thread.Sleep(15);
-
-                // 2nd Click (Instant down/up)
+                Thread.Sleep(10);
                 mouse_event(downFlag, 0, 0, 0, (UIntPtr)0);
                 mouse_event(upFlag, 0, 0, 0, (UIntPtr)0);
 
                 _isLeftMouseDown = false;
                 _isRightMouseDown = false;
 
-                Program.TriggerInstantCapture(2);
             }
             catch { }
         }

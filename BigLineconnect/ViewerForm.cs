@@ -376,7 +376,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.67.2 (Commercial PRO License & 10-Minute Free Session Limits Engine)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.67.3 (Commercial PRO License & 10-Minute Free Session Limits Engine)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
@@ -3497,7 +3497,14 @@ namespace BigLineconnect
                 BorderStyle = BorderStyle.FixedSingle,
                 BackColor = Color.FromArgb(17, 19, 24)
             };
-            try { panelDropZone.AllowDrop = true; } catch { }
+            try
+            {
+                if (System.Threading.Thread.CurrentThread.GetApartmentState() == System.Threading.ApartmentState.STA)
+                {
+                    panelDropZone.AllowDrop = true;
+                }
+            }
+            catch { }
             panelDropZone.DragEnter += PanelDropZone_DragEnter;
             panelDropZone.DragDrop += PanelDropZone_DragDrop;
 
