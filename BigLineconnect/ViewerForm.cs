@@ -376,7 +376,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.69.3 (Commercial PRO License & 10-Minute Free Session Limits Engine)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.70.0 (Commercial PRO License & 10-Minute Free Session Limits Engine)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
@@ -1586,24 +1586,28 @@ namespace BigLineconnect
             {
                 _btnFloatingClipboard = new Button
                 {
-                    Size = new Size(260, 42),
-                    BackColor = Color.FromArgb(10, 11, 16),
-                    ForeColor = Color.FromArgb(0, 229, 255), // Cyan glowing text
+                    Size = new Size(340, 50),
+                    BackColor = Color.FromArgb(0, 150, 255),
+                    ForeColor = Color.White,
                     FlatStyle = FlatStyle.Flat,
-                    Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                    Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
                     Cursor = Cursors.Hand
                 };
-                _btnFloatingClipboard.FlatAppearance.BorderColor = Color.FromArgb(0, 229, 255);
-                _btnFloatingClipboard.FlatAppearance.BorderSize = 1;
-                _btnFloatingClipboard.Location = new Point((this.ClientSize.Width - _btnFloatingClipboard.Width) / 2, 45);
-                _btnFloatingClipboard.Anchor = AnchorStyles.Top;
+                _btnFloatingClipboard.FlatAppearance.BorderColor = Color.White;
+                _btnFloatingClipboard.FlatAppearance.BorderSize = 2;
+                _btnFloatingClipboard.Location = new Point(Math.Max(20, this.ClientSize.Width - 360), Math.Max(50, this.ClientSize.Height - 70));
+                _btnFloatingClipboard.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
                 _btnFloatingClipboard.Click += BtnFloatingClipboard_Click;
 
                 this.Controls.Add(_btnFloatingClipboard);
                 _btnFloatingClipboard.BringToFront();
             }
 
-            _btnFloatingClipboard.Text = $"Uzak Panodan İndir ({fileList.Count} Öğe)";
+            string firstFileName = fileList.Count > 0 ? Path.GetFileName(fileList[0]) : "Dosya";
+            if (firstFileName.Length > 20) firstFileName = firstFileName.Substring(0, 17) + "...";
+
+            _btnFloatingClipboard.Text = $"📥 Uzaktan Kopyalandı: {firstFileName}\r\nTıkla ve Bu Bilgisayara İndir ({fileList.Count} Öğe)";
+            _btnFloatingClipboard.Location = new Point(Math.Max(20, this.ClientSize.Width - 360), Math.Max(50, this.ClientSize.Height - 70));
             _btnFloatingClipboard.Visible = true;
             _btnFloatingClipboard.BringToFront();
         }
@@ -1612,30 +1616,19 @@ namespace BigLineconnect
         {
             if (_btnFloatingClipboard != null) _btnFloatingClipboard.Visible = false;
             
-            using (var fbd = new FolderBrowserDialog())
-            {
-                fbd.Description = "Uzak bilgisayardan indirilecek dosyaların kaydedileceği yerel dizini seçin:";
-                fbd.ShowNewFolderButton = true;
-                if (fbd.ShowDialog(this) == DialogResult.OK)
-                {
-                    _activeBatchTargetFolder = fbd.SelectedPath;
-                }
-                else
-                {
-                    return; // Canceled
-                }
-            }
+            _activeBatchTargetFolder = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
 
             if (_lastRemoteClipboardFiles != null && _lastRemoteClipboardFiles.Count > 0)
             {
                 var sb = new StringBuilder();
-                sb.Append("{\"type\":\"trigger_host_clipboard_send\",\"files\":[");
+                sb.Append($"{{\"type\":\"trigger_host_clipboard_send\",\"targetFolder\":\"DESKTOP\",\"files\":[");
                 for (int i = 0; i < _lastRemoteClipboardFiles.Count; i++)
                 {
                     sb.Append($"\"{EscapeJson(_lastRemoteClipboardFiles[i])}\"");
                     if (i < _lastRemoteClipboardFiles.Count - 1) sb.Append(",");
                 }
                 sb.Append("]}");
+
                 await SendJsonAsync(sb.ToString());
             }
         }
