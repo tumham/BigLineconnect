@@ -376,7 +376,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.70.4 (Commercial PRO License & 10-Minute Free Session Limits Engine)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.71.0 (Commercial PRO License & 10-Minute Free Session Limits Engine)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
@@ -2241,49 +2241,13 @@ namespace BigLineconnect
             base.WndProc(ref m);
         }
 
-        private static System.Collections.Specialized.StringCollection? _lastLocalFileDropList;
-
         private void OnLocalClipboardChanged()
         {
             if (_ws != null && _ws.State == WebSocketState.Open)
             {
                 try
                 {
-                    if (Clipboard.ContainsFileDropList())
-                    {
-                        var files = Clipboard.GetFileDropList();
-                        if (files != null && files.Count > 0)
-                        {
-                            bool isNew = false;
-                            if (_lastLocalFileDropList == null || _lastLocalFileDropList.Count != files.Count)
-                            {
-                                isNew = true;
-                            }
-                            else
-                            {
-                                for (int i = 0; i < files.Count; i++)
-                                {
-                                    if (_lastLocalFileDropList[i] != files[i]) { isNew = true; break; }
-                                }
-                            }
-
-                            if (isNew)
-                            {
-                                _lastLocalFileDropList = files;
-                                var fileList = new System.Collections.Generic.List<string>();
-                                foreach (var f in files)
-                                {
-                                    if (!string.IsNullOrEmpty(f)) fileList.Add(f);
-                                }
-
-                                if (fileList.Count > 0)
-                                {
-                                    _ = Task.Run(async () => await SendPathsBatchAsync(fileList));
-                                }
-                            }
-                        }
-                    }
-                    else if (Clipboard.ContainsText())
+                    if (Clipboard.ContainsText())
                     {
                         string text = Clipboard.GetText();
                         if (text != _lastClipboardText && !string.IsNullOrEmpty(text))
