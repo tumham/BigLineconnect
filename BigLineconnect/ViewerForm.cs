@@ -163,11 +163,16 @@ namespace BigLineconnect
             if (string.IsNullOrEmpty(remoteLanIp) || _isLanDirectActive) return;
             try
             {
-                using var tcp = new System.Net.Sockets.TcpClient();
-                var connectTask = tcp.ConnectAsync(remoteLanIp, 18888);
-                if (await Task.WhenAny(connectTask, Task.Delay(1000)) == connectTask && tcp.Connected)
+                var lanWs = new ClientWebSocket();
+                lanWs.Options.SetBuffer(64 * 1024, 64 * 1024);
+                using var cts = new CancellationTokenSource(1500);
+                await lanWs.ConnectAsync(new Uri($"ws://{remoteLanIp}:18888/connect-stream"), cts.Token);
+                if (lanWs.State == WebSocketState.Open)
                 {
+                    var oldWs = _ws;
+                    _ws = lanWs;
                     _isLanDirectActive = true;
+
                     this.BeginInvoke(new Action(() =>
                     {
                         if (_lblConnModeBadge != null && !_lblConnModeBadge.IsDisposed)
@@ -177,6 +182,9 @@ namespace BigLineconnect
                             _lblConnModeBadge.ForeColor = Color.Black;
                         }
                     }));
+
+                    _ = Task.Run(() => ReceiveLoop(_ws, _cts.Token));
+                    try { oldWs?.Dispose(); } catch { }
                 }
             }
             catch { }
@@ -254,7 +262,7 @@ namespace BigLineconnect
         }
         private void InitializeComponent()
         {
-            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.71.1 (Commercial PRO License & 10-Minute Free Session Limits Engine)";
+            this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.71.2 (Commercial PRO License & 10-Minute Free Session Limits Engine)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.Black;
