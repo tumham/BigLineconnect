@@ -164,6 +164,8 @@ namespace BigLineconnect
 
             this.Shown += async (s, e) =>
             {
+                StartIpcPipeServer();
+
                 if (Program.WebSocketClient == null || Program.WebSocketClient.State != System.Net.WebSockets.WebSocketState.Open)
                 {
                     AppendLog("[Otomatik Bağlantı] Bulut sunucusuna otomatik kaydolunuyor...");
@@ -177,6 +179,57 @@ namespace BigLineconnect
                     ConnectButton_Click(this, EventArgs.Empty);
                 }
             };
+        }
+
+        private void StartIpcPipeServer()
+        {
+            Task.Run(async () =>
+            {
+                while (true)
+                {
+                    try
+                    {
+                        using var server = new System.IO.Pipes.NamedPipeServerStream("BigLineconnect_IPC_Pipe", System.IO.Pipes.PipeDirection.In);
+                        await server.WaitForConnectionAsync().ConfigureAwait(false);
+                        using var reader = new StreamReader(server, Encoding.UTF8);
+                        string? line = await reader.ReadLineAsync().ConfigureAwait(false);
+                        if (!string.IsNullOrWhiteSpace(line))
+                        {
+                            this.BeginInvoke(new Action(() =>
+                            {
+                                HandleExternalConnectCommand(line);
+                            }));
+                        }
+                    }
+                    catch { await Task.Delay(1000).ConfigureAwait(false); }
+                }
+            });
+        }
+
+        public void HandleExternalConnectCommand(string commandLine)
+        {
+            try
+            {
+                string[] args = commandLine.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                Program.AutoConnectId = "";
+                Program.AutoConnectPassword = "";
+                Program.ParseCommandLineArgs(args);
+
+                if (!string.IsNullOrEmpty(Program.AutoConnectId) && _remoteIdTextBox != null)
+                {
+                    if (this.WindowState == FormWindowState.Minimized)
+                    {
+                        this.WindowState = FormWindowState.Normal;
+                    }
+                    this.BringToFront();
+                    this.Activate();
+
+                    _remoteIdTextBox.Text = Program.AutoConnectId;
+                    AppendLog($"[Dış Komut / ERP] Otomatik bağlantı tetiklendi (ID: {Program.AutoConnectId})...");
+                    ConnectButton_Click(this, EventArgs.Empty);
+                }
+            }
+            catch { }
         }
 
         private void InitializeComponent()

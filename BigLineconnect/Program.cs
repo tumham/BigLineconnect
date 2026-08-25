@@ -310,46 +310,9 @@ namespace BigLineconnect
                 if (arg.Equals("--service", StringComparison.OrdinalIgnoreCase)) isService = true;
                 if (arg.Equals("--session-helper", StringComparison.OrdinalIgnoreCase)) isHelper = true;
                 if (arg.Equals("--setup", StringComparison.OrdinalIgnoreCase) || arg.Equals("--install-service", StringComparison.OrdinalIgnoreCase) || arg.Equals("--install", StringComparison.OrdinalIgnoreCase)) isSetup = true;
-
-                if (arg.Equals("--connect", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
-                {
-                    AutoConnectId = args[i + 1].Replace(" ", "").Trim();
-                    i++;
-                }
-                else if (arg.Equals("--password", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
-                {
-                    AutoConnectPassword = args[i + 1].Trim();
-                    i++;
-                }
-                else if (arg.StartsWith("bigline://", StringComparison.OrdinalIgnoreCase))
-                {
-                    try
-                    {
-                        var uri = new Uri(arg);
-                        var query = uri.Query;
-                        if (!string.IsNullOrEmpty(query))
-                        {
-                            var parts = query.TrimStart('?').Split('&');
-                            foreach (var part in parts)
-                            {
-                                var kv = part.Split('=');
-                                if (kv.Length == 2)
-                                {
-                                    if (kv[0].Equals("id", StringComparison.OrdinalIgnoreCase))
-                                    {
-                                        AutoConnectId = kv[1].Replace(" ", "").Trim();
-                                    }
-                                    else if (kv[0].Equals("password", StringComparison.OrdinalIgnoreCase))
-                                    {
-                                        AutoConnectPassword = Uri.UnescapeDataString(kv[1].Trim());
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    catch { }
-                }
             }
+
+            ParseCommandLineArgs(args);
 
             if (args.Any(a => a.Equals("--silent-update", StringComparison.OrdinalIgnoreCase)))
             {
@@ -383,10 +346,22 @@ namespace BigLineconnect
                 return;
             }
 
-            // Prevent duplicate GUI instances in the same user session
+            // Prevent duplicate GUI instances in the same user session and pass connection arguments to running instance
             using var singleInstanceMutex = new Mutex(true, "Global\\BigLineconnectSingleInstanceMutex_" + (isHelper ? "Helper" : "Gui"), out bool isNewInstance);
             if (!isNewInstance && !isHelper)
             {
+                if (args.Length > 0)
+                {
+                    try
+                    {
+                        using var client = new System.IO.Pipes.NamedPipeClientStream(".", "BigLineconnect_IPC_Pipe", System.IO.Pipes.PipeDirection.Out);
+                        client.Connect(1000);
+                        using var writer = new StreamWriter(client, Encoding.UTF8);
+                        writer.WriteLine(string.Join(" ", args));
+                        writer.Flush();
+                    }
+                    catch { }
+                }
                 return;
             }
 
@@ -2292,8 +2267,7 @@ namespace BigLineconnect
                     }
                     if (lines.Length >= 2)
                     {
-                        string raw = lines[1].Trim();
-                        AccessPassword = new string(raw.Where(char.IsDigit).ToArray());
+                        AccessPassword = lines[1].Trim();
                     }
                 }
             }
@@ -3115,6 +3089,97 @@ namespace BigLineconnect
                 }
             }
             catch { }
+        }
+
+        public static void ParseCommandLineArgs(string[] args)
+        {
+            if (args == null || args.Length == 0) return;
+
+            for (int i = 0; i < args.Length; i++)
+            {
+                string arg = args[i].Trim();
+                if (string.IsNullOrEmpty(arg)) continue;
+
+                if (arg.StartsWith("bigline://", StringComparison.OrdinalIgnoreCase))
+                {
+                    try
+                    {
+                        var uri = new Uri(arg);
+                        var query = uri.Query;
+                        if (!string.IsNullOrEmpty(query))
+                        {
+                            var parts = query.TrimStart('?').Split('&');
+                            foreach (var part in parts)
+                            {
+                                var kv = part.Split('=');
+                                if (kv.Length == 2)
+                                {
+                                    if (kv[0].Equals("id", StringComparison.OrdinalIgnoreCase)) AutoConnectId = kv[1].Replace(" ", "").Trim();
+                                    else if (kv[0].Equals("password", StringComparison.OrdinalIgnoreCase) || kv[0].Equals("pass", StringComparison.OrdinalIgnoreCase) || kv[0].Equals("p", StringComparison.OrdinalIgnoreCase)) AutoConnectPassword = Uri.UnescapeDataString(kv[1].Trim());
+                                }
+                            }
+                        }
+                    }
+                    catch { }
+                    continue;
+                }
+
+                if (arg.Contains(":") && !arg.StartsWith("-") && !arg.StartsWith("/"))
+                {
+                    var parts = arg.Split(':');
+                    if (parts.Length == 2)
+                    {
+                        AutoConnectId = parts[0].Replace(" ", "").Trim();
+                        AutoConnectPassword = parts[1].Trim();
+                        continue;
+                    }
+                }
+
+                if (arg.Equals("--connect", StringComparison.OrdinalIgnoreCase) || arg.Equals("-connect", StringComparison.OrdinalIgnoreCase) || arg.Equals("/connect", StringComparison.OrdinalIgnoreCase) || arg.Equals("-id", StringComparison.OrdinalIgnoreCase) || arg.Equals("--id", StringComparison.OrdinalIgnoreCase) || arg.Equals("/id", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (i + 1 < args.Length)
+                    {
+                        AutoConnectId = args[i + 1].Replace(" ", "").Trim();
+                        i++;
+                    }
+                    continue;
+                }
+
+                if (arg.Equals("--password", StringComparison.OrdinalIgnoreCase) || arg.Equals("-password", StringComparison.OrdinalIgnoreCase) || arg.Equals("/password", StringComparison.OrdinalIgnoreCase) || arg.Equals("-pass", StringComparison.OrdinalIgnoreCase) || arg.Equals("--pass", StringComparison.OrdinalIgnoreCase) || arg.Equals("/pass", StringComparison.OrdinalIgnoreCase) || arg.Equals("-p", StringComparison.OrdinalIgnoreCase) || arg.Equals("--p", StringComparison.OrdinalIgnoreCase) || arg.Equals("/p", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (i + 1 < args.Length)
+                    {
+                        AutoConnectPassword = args[i + 1].Trim();
+                        i++;
+                    }
+                    continue;
+                }
+
+                if (arg.StartsWith("-connect:", StringComparison.OrdinalIgnoreCase) || arg.StartsWith("--connect:", StringComparison.OrdinalIgnoreCase) || arg.StartsWith("/connect:", StringComparison.OrdinalIgnoreCase) || arg.StartsWith("-id:", StringComparison.OrdinalIgnoreCase) || arg.StartsWith("--id:", StringComparison.OrdinalIgnoreCase) || arg.StartsWith("/id:", StringComparison.OrdinalIgnoreCase))
+                {
+                    AutoConnectId = arg.Substring(arg.IndexOf(':') + 1).Replace(" ", "").Trim();
+                    continue;
+                }
+
+                if (arg.StartsWith("-pass:", StringComparison.OrdinalIgnoreCase) || arg.StartsWith("--pass:", StringComparison.OrdinalIgnoreCase) || arg.StartsWith("/pass:", StringComparison.OrdinalIgnoreCase) || arg.StartsWith("-password:", StringComparison.OrdinalIgnoreCase) || arg.StartsWith("--password:", StringComparison.OrdinalIgnoreCase) || arg.StartsWith("/password:", StringComparison.OrdinalIgnoreCase) || arg.StartsWith("-p:", StringComparison.OrdinalIgnoreCase) || arg.StartsWith("--p:", StringComparison.OrdinalIgnoreCase) || arg.StartsWith("/p:", StringComparison.OrdinalIgnoreCase))
+                {
+                    AutoConnectPassword = arg.Substring(arg.IndexOf(':') + 1).Trim();
+                    continue;
+                }
+
+                // Positional arguments: 1st positional arg = ID, 2nd positional arg = Password
+                if (!arg.StartsWith("-") && !arg.StartsWith("/"))
+                {
+                    if (string.IsNullOrEmpty(AutoConnectId))
+                    {
+                        AutoConnectId = arg.Replace(" ", "").Trim();
+                    }
+                    else if (string.IsNullOrEmpty(AutoConnectPassword))
+                    {
+                        AutoConnectPassword = arg.Trim();
+                    }
+                }
+            }
         }
 
         public static void EnsureAutoStartPersistence(string exePath)
