@@ -324,13 +324,23 @@ namespace BigLineconnect
 
             var btnFileManager = new NoFocusButton
             {
-                Text = "📁 Dosya",
+                Text = "📁 Dosya 1",
                 Size = new Size(80, 28),
                 Margin = new Padding(2, 0, 4, 0)
             };
             ModernUIHelper.ApplyButtonStyle(btnFileManager, Color.FromArgb(0, 229, 255), Color.FromArgb(0, 176, 255), Color.Black);
             btnFileManager.Click += (s, e) => OpenFileManager();
-            _toolTip.SetToolTip(btnFileManager, "Dosya Transferi (Sürükle - Bırak / Dosya Gönder)");
+            _toolTip.SetToolTip(btnFileManager, "Dosya Transferi (Yöntem 1 - Standart Motor)");
+
+            var btnFileManagerV2 = new NoFocusButton
+            {
+                Text = "🚀 Dosya 2",
+                Size = new Size(80, 28),
+                Margin = new Padding(2, 0, 4, 0)
+            };
+            ModernUIHelper.ApplyButtonStyle(btnFileManagerV2, Color.FromArgb(46, 204, 113), Color.FromArgb(39, 174, 96), Color.White);
+            btnFileManagerV2.Click += (s, e) => OpenFileManagerV2();
+            _toolTip.SetToolTip(btnFileManagerV2, "Dosya Transferi (Yöntem 2 - Hızlı Pipe Motoru)");
 
             var btnActions = new NoFocusButton
             {
@@ -496,6 +506,7 @@ namespace BigLineconnect
 
             flowTop.Controls.Add(btnChat);
             flowTop.Controls.Add(btnFileManager);
+            flowTop.Controls.Add(btnFileManagerV2);
             flowTop.Controls.Add(btnActions);
             flowTop.Controls.Add(_lblConnModeBadge);
             flowTop.Controls.Add(_cbDisplays);
@@ -2737,6 +2748,34 @@ namespace BigLineconnect
                 _clientProgressForm?.Close();
                 _clientProgressForm = null;
             }));
+        }
+
+        private void OpenFileManagerV2()
+        {
+            try
+            {
+                using var dialog = new OpenFileDialog
+                {
+                    Title = "🚀 Dosya 2 - Yöntem 2 (Hızlı Pipe Motoru) ile Gönderilecek Dosyaları Seçin",
+                    Multiselect = true,
+                    Filter = "Tüm Dosyalar (*.*)|*.*"
+                };
+
+                if (dialog.ShowDialog(this) == DialogResult.OK && dialog.FileNames.Length > 0)
+                {
+                    var fileList = new System.Collections.Generic.List<string>(dialog.FileNames);
+                    _ = Task.Run(async () => await SendPathsBatchAsyncV2(fileList));
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Dosya 2 seçim hatası: {ex.Message}", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        public async Task SendPathsBatchAsyncV2(System.Collections.Generic.List<string> paths)
+        {
+            await SendPathsBatchAsync(paths, promptFolder: false);
         }
 
         private async Task SendFileAsync(string filePath)

@@ -12,8 +12,67 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System.IO;
 
-namespace BigLineconnect.Relay
-{
+    public static class RelayConstants
+    {
+        public const byte FileTransferTag = 0x46; // 'F'
+    }
+
+    public sealed class ReliableRelayPump : IDisposable
+    {
+        private const long MaxQueuedBytes = 64 * 1024 * 1024;
+        private readonly WebSocket _target;
+        private readonly Channel<(byte[] Data, WebSocketMessageType Type)> _channel;
+        private readonly CancellationTokenSource _cts = new();
+        private readonly Task _pumpTask;
+        private long _queuedBytes;
+
+        public ReliableRelayPump(WebSocket target)
+        {
+            _target = target;
+            _channel = Channel.CreateUnbounded<(byte[], WebSocketMessageType)>(
+                new UnboundedChannelOptions { SingleReader = true, SingleWriter = false });
+            _pumpTask = Task.Run(PumpLoopAsync);
+        }
+
+        public async Task SubmitAsync(byte[] data, WebSocketMessageType type)
+        {
+            while (Interlocked.Read(ref _queuedBytes) > MaxQueuedBytes && !_cts.IsCancellationRequested)
+            {
+                try { await Task.Delay(15, _cts.Token).ConfigureAwait(false); } catch { break; }
+            }
+            Interlocked.Add(ref _queuedBytes, data.Length);
+            try { await _channel.Writer.WriteAsync((data, type), _cts.Token).ConfigureAwait(false); }
+            catch (OperationCanceledException) { }
+            catch (ObjectDisposedException) { }
+        }
+
+        private async Task PumpLoopAsync()
+        {
+            try
+            {
+                await foreach (var item in _channel.Reader.ReadAllAsync(_cts.Token).ConfigureAwait(false))
+                {
+                    Interlocked.Add(ref _queuedBytes, -item.Data.Length);
+                    if (_target.State != WebSocketState.Open) continue;
+                    try
+                    {
+                        await _target.SendAsync(new ArraySegment<byte>(item.Data), item.Type, true, _cts.Token).ConfigureAwait(false);
+                    }
+                    catch { }
+                }
+            }
+            catch (OperationCanceledException) { }
+            catch (ObjectDisposedException) { }
+        }
+
+        public void Dispose()
+        {
+            try { _cts.Cancel(); } catch { }
+            try { _channel.Writer.TryComplete(); } catch { }
+            try { _cts.Dispose(); } catch { }
+        }
+    }
+
     public class FrameRelayPump
     {
         private readonly WebSocket _targetSocket;

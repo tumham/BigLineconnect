@@ -236,6 +236,47 @@ namespace BigLineconnect
         [DllImport("user32.dll", SetLastError = true)]
         private static extern bool SetProcessDPIAware();
 
+        public const byte FileTransferTag = 0x46; // 'F'
+
+        public static void HandleIncomingFileChunkBinary(byte[] pkt)
+        {
+            try
+            {
+                if (_incomingFileStream == null || pkt.Length <= 1) return;
+                int len = pkt.Length - 1;
+                _incomingFileStream.Write(pkt, 1, len);
+
+                _currentFileBytesProcessed += len;
+                _batchCurrentSizeProcessed += len;
+
+                if (_hostProgressForm != null && MainWindow.Instance != null)
+                {
+                    MainWindow.Instance.BeginInvoke((MethodInvoker)delegate
+                    {
+                        _hostProgressForm?.UpdateProgress(
+                            Path.Combine(_activeBatchTargetFolder ?? GetUserDesktopPath(), _incomingFileName ?? ""),
+                            _incomingFileName ?? "",
+                            _batchCurrentFileIndex + 1,
+                            _batchTotalFiles,
+                            _currentFileBytesProcessed,
+                            _currentFileTotalBytes,
+                            _batchCurrentSizeProcessed,
+                            _batchTotalSize
+                        );
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                MainWindow.Instance?.AppendLog($"Dosya paketi yazilamadi: {ex.Message}");
+                if (_incomingFileStream != null)
+                {
+                    try { _incomingFileStream.Close(); _incomingFileStream.Dispose(); } catch { }
+                    _incomingFileStream = null;
+                }
+            }
+        }
+
         [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
         private static extern uint SetThreadExecutionState(uint esFlags);
 
@@ -920,11 +961,18 @@ namespace BigLineconnect
                                 }
                             }
                         }
-                        else if (result.MessageType == WebSocketMessageType.Binary && ms.Length >= 5)
+                        else if (result.MessageType == WebSocketMessageType.Binary && ms.Length >= 1)
                         {
                             _lastViewerActivityTime = DateTime.Now;
                             byte[] binPkt = ms.ToArray();
-                            ProcessBinaryRemoteInput(binPkt);
+                            if (binPkt.Length > 1 && binPkt[0] == FileTransferTag)
+                            {
+                                HandleIncomingFileChunkBinary(binPkt);
+                            }
+                            else if (binPkt.Length >= 5)
+                            {
+                                ProcessBinaryRemoteInput(binPkt);
+                            }
                         }
                     }
                 }
