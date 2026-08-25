@@ -56,13 +56,22 @@ namespace BigLineconnect
             {
                 _remoteEndpoint = new IPEndPoint(IPAddress.Parse(remoteIp), remotePort);
                 byte[] pingPacket = Encoding.UTF8.GetBytes("P2P_PING");
+                CancellationToken token = _cts?.Token ?? CancellationToken.None;
 
-                // Send 5 UDP ping packets to punch NAT hole
-                for (int i = 0; i < 5; i++)
+                _ = Task.Run(async () =>
                 {
-                    await _udpClient.SendAsync(pingPacket, pingPacket.Length, _remoteEndpoint);
-                    await Task.Delay(50);
-                }
+                    while (!token.IsCancellationRequested && _udpClient != null)
+                    {
+                        try
+                        {
+                            await _udpClient.SendAsync(pingPacket, pingPacket.Length, _remoteEndpoint).ConfigureAwait(false);
+                        }
+                        catch { }
+
+                        int delay = _isP2pConnected ? 5000 : 1000;
+                        await Task.Delay(delay, token).ConfigureAwait(false);
+                    }
+                }, token);
             }
             catch { }
         }
