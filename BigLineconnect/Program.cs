@@ -827,6 +827,7 @@ namespace BigLineconnect
         public static async Task ConnectToRelayAsync(string url)
         {
             StartLocalLanServer();
+            try { P2pDirectEngine.Initialize(18888); } catch { }
             url = SanitizeRelayUrl(url);
             _currentRelayUrl = url;
             
