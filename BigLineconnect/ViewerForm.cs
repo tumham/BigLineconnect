@@ -166,7 +166,8 @@ namespace BigLineconnect
                 var lanWs = new ClientWebSocket();
                 lanWs.Options.SetBuffer(64 * 1024, 64 * 1024);
                 using var cts = new CancellationTokenSource(1500);
-                await lanWs.ConnectAsync(new Uri($"ws://{remoteLanIp}:18888/connect-stream"), cts.Token);
+                string targetIdParam = !string.IsNullOrEmpty(_targetId) ? _targetId.Replace(" ", "").Trim() : "";
+                await lanWs.ConnectAsync(new Uri($"ws://{remoteLanIp}:18888/connect-stream?id={targetIdParam}"), cts.Token);
                 if (lanWs.State == WebSocketState.Open)
                 {
                     var oldWs = _ws;

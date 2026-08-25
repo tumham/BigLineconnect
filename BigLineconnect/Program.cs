@@ -601,23 +601,33 @@ namespace BigLineconnect
 
                 // Strictly enforce target ID match to prevent wrong local host redirection
                 string myHostId = CurrentHostId != null ? CurrentHostId.Trim().Replace(" ", "") : "";
-                if (!string.IsNullOrEmpty(myHostId) && headerStr.Contains("id="))
+                if (!string.IsNullOrEmpty(myHostId))
                 {
-                    int idIdx = headerStr.IndexOf("id=");
-                    if (idIdx >= 0)
+                    if (headerStr.Contains("id="))
                     {
-                        int idStart = idIdx + 3;
-                        int idEnd = headerStr.IndexOfAny(new char[] { '&', ' ', '\r', '\n' }, idStart);
-                        if (idEnd < 0) idEnd = headerStr.Length;
-                        string reqId = headerStr.Substring(idStart, idEnd - idStart).Trim().Replace(" ", "");
-                        if (!string.IsNullOrEmpty(reqId) && reqId != myHostId && !reqId.Contains("."))
+                        int idIdx = headerStr.IndexOf("id=");
+                        if (idIdx >= 0)
                         {
-                            // Target ID does not match our local Host ID! Reject connection!
-                            string forbiddenResp = "HTTP/1.1 403 Forbidden\r\nContent-Type: text/plain\r\nConnection: close\r\n\r\nID Mismatch\r\n";
-                            byte[] fBytes = Encoding.UTF8.GetBytes(forbiddenResp);
-                            await stream.WriteAsync(fBytes, 0, fBytes.Length).ConfigureAwait(false);
-                            return false;
+                            int idStart = idIdx + 3;
+                            int idEnd = headerStr.IndexOfAny(new char[] { '&', ' ', '\r', '\n' }, idStart);
+                            if (idEnd < 0) idEnd = headerStr.Length;
+                            string reqId = headerStr.Substring(idStart, idEnd - idStart).Trim().Replace(" ", "");
+                            if (!string.IsNullOrEmpty(reqId) && reqId != myHostId && !reqId.Contains("."))
+                            {
+                                string forbiddenResp = "HTTP/1.1 403 Forbidden\r\nContent-Type: text/plain\r\nConnection: close\r\n\r\nID Mismatch\r\n";
+                                byte[] fBytes = Encoding.UTF8.GetBytes(forbiddenResp);
+                                await stream.WriteAsync(fBytes, 0, fBytes.Length).ConfigureAwait(false);
+                                return false;
+                            }
                         }
+                    }
+                    else if (headerStr.Contains("connect-stream"))
+                    {
+                        // Incoming LAN Direct stream connection without explicit Target ID! Reject to prevent wrong local redirection!
+                        string forbiddenResp = "HTTP/1.1 403 Forbidden\r\nContent-Type: text/plain\r\nConnection: close\r\n\r\nID Required\r\n";
+                        byte[] fBytes = Encoding.UTF8.GetBytes(forbiddenResp);
+                        await stream.WriteAsync(fBytes, 0, fBytes.Length).ConfigureAwait(false);
+                        return false;
                     }
                 }
 
