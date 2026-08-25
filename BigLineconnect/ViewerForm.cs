@@ -579,14 +579,8 @@ namespace BigLineconnect
             // Bind Drag and Drop events
             try
             {
-                this.AllowDrop = true;
-                _pictureBox.AllowDrop = true;
-                this.DragEnter += ViewerForm_DragEnter;
-                _pictureBox.DragEnter += ViewerForm_DragEnter;
-                this.DragOver += ViewerForm_DragOver;
-                _pictureBox.DragOver += ViewerForm_DragOver;
-                this.DragDrop += ViewerForm_DragDrop;
-                _pictureBox.DragDrop += ViewerForm_DragDrop;
+                BindDragDropToAllControls(this);
+                this.ControlAdded += (s, ev) => { if (ev.Control != null) BindDragDropToAllControls(ev.Control); };
             }
             catch { }
         }
@@ -2405,11 +2399,75 @@ namespace BigLineconnect
             }
         }
 
+        private Label? _lblDragDropOverlay = null;
+
+        private void BindDragDropToAllControls(Control parent)
+        {
+            try
+            {
+                parent.AllowDrop = true;
+                parent.DragEnter -= ViewerForm_DragEnter;
+                parent.DragEnter += ViewerForm_DragEnter;
+                parent.DragOver -= ViewerForm_DragOver;
+                parent.DragOver += ViewerForm_DragOver;
+                parent.DragLeave -= ViewerForm_DragLeave;
+                parent.DragLeave += ViewerForm_DragLeave;
+                parent.DragDrop -= ViewerForm_DragDrop;
+                parent.DragDrop += ViewerForm_DragDrop;
+
+                foreach (Control child in parent.Controls)
+                {
+                    BindDragDropToAllControls(child);
+                }
+            }
+            catch { }
+        }
+
+        private void ShowDragDropOverlay()
+        {
+            if (this.InvokeRequired)
+            {
+                this.BeginInvoke(new Action(ShowDragDropOverlay));
+                return;
+            }
+            if (_lblDragDropOverlay == null || _lblDragDropOverlay.IsDisposed)
+            {
+                _lblDragDropOverlay = new Label
+                {
+                    Text = "📥 DOSYAYI UZAK BİLGİSAYARA GÖNDERMEK İÇİN BIRAKIN (BigLineTransfer v2.0)",
+                    Font = new Font("Segoe UI", 11.5F, FontStyle.Bold),
+                    ForeColor = Color.White,
+                    BackColor = Color.FromArgb(220, 0, 150, 136),
+                    TextAlign = ContentAlignment.MiddleCenter,
+                    Dock = DockStyle.Top,
+                    Height = 42,
+                    Visible = false
+                };
+                this.Controls.Add(_lblDragDropOverlay);
+            }
+            _lblDragDropOverlay.Visible = true;
+            _lblDragDropOverlay.BringToFront();
+        }
+
+        private void HideDragDropOverlay()
+        {
+            if (this.InvokeRequired)
+            {
+                this.BeginInvoke(new Action(HideDragDropOverlay));
+                return;
+            }
+            if (_lblDragDropOverlay != null && !_lblDragDropOverlay.IsDisposed)
+            {
+                _lblDragDropOverlay.Visible = false;
+            }
+        }
+
         private void ViewerForm_DragEnter(object? sender, DragEventArgs e)
         {
             if (e.Data != null && e.Data.GetDataPresent(DataFormats.FileDrop))
             {
                 e.Effect = DragDropEffects.Copy;
+                ShowDragDropOverlay();
             }
             else
             {
@@ -2429,12 +2487,18 @@ namespace BigLineconnect
             }
         }
 
+        private void ViewerForm_DragLeave(object? sender, EventArgs e)
+        {
+            HideDragDropOverlay();
+        }
+
         private void ViewerForm_DragDrop(object? sender, DragEventArgs e)
         {
+            HideDragDropOverlay();
             if (e.Data != null && e.Data.GetDataPresent(DataFormats.FileDrop))
             {
-                string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
-                if (files.Length > 0)
+                string[]? files = (string[]?)e.Data.GetData(DataFormats.FileDrop);
+                if (files != null && files.Length > 0)
                 {
                     _ = Task.Run(async () => await SendPathsBatchAsync(new System.Collections.Generic.List<string>(files)));
                 }
