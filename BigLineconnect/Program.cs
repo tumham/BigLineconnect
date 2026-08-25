@@ -1429,9 +1429,9 @@ namespace BigLineconnect
                     string senderId = root.TryGetProperty("senderId", out var senderProp) ? (senderProp.GetString() ?? "") : "";
                     string targetFolder = root.TryGetProperty("targetFolder", out var tfProp) ? (tfProp.GetString() ?? "") : "";
                     
-                    if (string.IsNullOrEmpty(targetFolder) || targetFolder == "DESKTOP")
+                    if (string.IsNullOrEmpty(targetFolder) || targetFolder == "DESKTOP" || targetFolder.Equals("Bigus_Uzman", StringComparison.OrdinalIgnoreCase))
                     {
-                        _activeBatchTargetFolder = GetUserDesktopPath();
+                        _activeBatchTargetFolder = GetBigusUzmanDesktopPath();
                     }
                     else if (targetFolder == "DOWNLOADS")
                     {
@@ -1451,7 +1451,7 @@ namespace BigLineconnect
                     }
                     catch
                     {
-                        _activeBatchTargetFolder = GetUserDesktopPath();
+                        _activeBatchTargetFolder = GetBigusUzmanDesktopPath();
                     }
 
                     _batchCurrentFileIndex = 0;
@@ -2386,6 +2386,24 @@ namespace BigLineconnect
                 return false;
             }
         }
+        public static string GetBigusUzmanDesktopPath()
+        {
+            string baseDesktop = GetUserDesktopPath();
+            string bigusUzmanPath = Path.Combine(baseDesktop, "Bigus_Uzman");
+            try
+            {
+                if (!Directory.Exists(bigusUzmanPath))
+                {
+                    Directory.CreateDirectory(bigusUzmanPath);
+                }
+                return bigusUzmanPath;
+            }
+            catch
+            {
+                return baseDesktop;
+            }
+        }
+
         public static string GetUserDesktopPath()
         {
             IntPtr hToken = IntPtr.Zero;

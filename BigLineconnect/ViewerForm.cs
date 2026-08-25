@@ -2472,10 +2472,10 @@ namespace BigLineconnect
             {
                 _lblDragDropOverlay = new Label
                 {
-                    Text = "📥 DOSYAYI UZAK BİLGİSAYARA GÖNDERMEK İÇİN BIRAKIN (BigLineTransfer v2.0)",
+                    Text = "🚀 DOSYA 2 (HIZLI PIPE MOTORU) - DOSYALARI UZAK BİLGİSAYARA GÖNDERMEK İÇİN BIRAKIN",
                     Font = new Font("Segoe UI", 11.5F, FontStyle.Bold),
                     ForeColor = Color.White,
-                    BackColor = Color.FromArgb(220, 0, 150, 136),
+                    BackColor = Color.FromArgb(230, 39, 174, 96),
                     TextAlign = ContentAlignment.MiddleCenter,
                     Dock = DockStyle.Top,
                     Height = 42,
@@ -2536,11 +2536,34 @@ namespace BigLineconnect
             if (e.Data != null && e.Data.GetDataPresent(DataFormats.FileDrop))
             {
                 string[]? files = (string[]?)e.Data.GetData(DataFormats.FileDrop);
-                if (files != null && files.Length > 0)
-                {
-                    _ = Task.Run(async () => await SendPathsBatchAsync(new System.Collections.Generic.List<string>(files)));
-                }
+                HandleDroppedFilePaths(files, "OLE DragDrop");
             }
+        }
+
+        private void HandleDroppedFilePaths(string[]? files, string source)
+        {
+            if (files == null || files.Length == 0) return;
+
+            var validPaths = new System.Collections.Generic.List<string>();
+            foreach (var f in files)
+            {
+                if (string.IsNullOrWhiteSpace(f)) continue;
+                if (File.Exists(f) || Directory.Exists(f)) validPaths.Add(f);
+            }
+
+            if (validPaths.Count == 0) return;
+
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await SendPathsBatchAsyncV2(validPaths).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    Program.Log($"[DragDrop V2 Error]: {ex.Message}");
+                }
+            });
         }
 
         private bool _cancelActiveTransfer = false;
