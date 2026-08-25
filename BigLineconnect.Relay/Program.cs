@@ -1061,7 +1061,7 @@ using System.IO;
                         // Send host_info JSON packet to viewer so viewer can auto-upgrade to 0.5ms LAN Direct if on same subnet
                         if (!string.IsNullOrEmpty(session.LanIp))
                         {
-                            string hostInfoJson = $"{{\"type\":\"host_info\",\"id\":\"{targetId}\",\"lan_ip\":\"{session.LanIp}\",\"computer\":\"{session.ComputerName}\"}}";
+                            string hostInfoJson = $"{{\"type\":\"host_info\",\"id\":\"{targetId}\",\"lan_ip\":\"{session.LanIp}\",\"public_ip\":\"{session.IpAddress}\",\"public_port\":18888,\"computer\":\"{session.ComputerName}\"}}";
                             byte[] hostInfoBytes = Encoding.UTF8.GetBytes(hostInfoJson);
                             try { _ = clientSocket.SendAsync(new ArraySegment<byte>(hostInfoBytes), WebSocketMessageType.Text, true, CancellationToken.None); } catch { }
                         }

@@ -1064,6 +1064,19 @@ namespace BigLineconnect
                                                 _ = Task.Run(() => TryConnectLanDirectAsync(lanIp));
                                             }
                                         }
+                                        if (root.TryGetProperty("public_ip", out var pubIpProp))
+                                        {
+                                            string pubIp = pubIpProp.GetString() ?? "";
+                                            int pubPort = root.TryGetProperty("public_port", out var pubPortProp) ? pubPortProp.GetInt32() : 18888;
+                                            if (!string.IsNullOrEmpty(pubIp) && pubIp != Program.GetLocalLanIPAddress())
+                                            {
+                                                _ = Task.Run(async () =>
+                                                {
+                                                    P2pDirectEngine.Initialize();
+                                                    await P2pDirectEngine.PunchHoleAndConnectAsync(pubIp, pubPort);
+                                                });
+                                            }
+                                        }
                                     }
                                     else if (type == "clipboard")
                                     {
