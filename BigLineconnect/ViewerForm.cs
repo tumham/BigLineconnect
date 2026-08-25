@@ -2133,7 +2133,31 @@ namespace BigLineconnect
             {
                 try
                 {
-                    if (Clipboard.ContainsText())
+                    if (Clipboard.ContainsFileDropList())
+                    {
+                        var files = Clipboard.GetFileDropList();
+                        if (files != null && files.Count > 0)
+                        {
+                            var fileList = new System.Collections.Generic.List<string>();
+                            foreach (string? f in files)
+                            {
+                                if (!string.IsNullOrEmpty(f) && (File.Exists(f) || Directory.Exists(f)))
+                                {
+                                    fileList.Add(f);
+                                }
+                            }
+                            if (fileList.Count > 0)
+                            {
+                                string batchKey = string.Join("|", fileList);
+                                if (batchKey != _lastClipboardFileBatchKey)
+                                {
+                                    _lastClipboardFileBatchKey = batchKey;
+                                    _ = Task.Run(async () => await SendPathsBatchAsync(fileList));
+                                }
+                            }
+                        }
+                    }
+                    else if (Clipboard.ContainsText())
                     {
                         string text = Clipboard.GetText();
                         if (text != _lastClipboardText && !string.IsNullOrEmpty(text))
@@ -2146,6 +2170,8 @@ namespace BigLineconnect
                 catch { }
             }
         }
+
+        private string _lastClipboardFileBatchKey = "";
 
         private int _sessionDurationSeconds = 0;
         private int _heartbeatTickCounter = 0;
