@@ -1785,7 +1785,7 @@ namespace BigLineconnect
                             }
                             if (files.Count > 0)
                             {
-                                _ = Task.Run(async () => await SendPathsBatchAsync(files));
+                                _ = Task.Run(async () => await SendPathsBatchAsyncV2(files));
                                 SendJson("{\"type\":\"key\",\"key\":\"control\",\"action\":\"up\"}");
                                 return;
                             }
@@ -2158,31 +2158,7 @@ namespace BigLineconnect
             {
                 try
                 {
-                    if (Clipboard.ContainsFileDropList())
-                    {
-                        var files = Clipboard.GetFileDropList();
-                        if (files != null && files.Count > 0)
-                        {
-                            var fileList = new System.Collections.Generic.List<string>();
-                            foreach (string? f in files)
-                            {
-                                if (!string.IsNullOrEmpty(f) && (File.Exists(f) || Directory.Exists(f)))
-                                {
-                                    fileList.Add(f);
-                                }
-                            }
-                            if (fileList.Count > 0)
-                            {
-                                string batchKey = string.Join("|", fileList);
-                                if (batchKey != _lastClipboardFileBatchKey)
-                                {
-                                    _lastClipboardFileBatchKey = batchKey;
-                                    _ = Task.Run(async () => await SendPathsBatchAsync(fileList));
-                                }
-                            }
-                        }
-                    }
-                    else if (Clipboard.ContainsText())
+                    if (Clipboard.ContainsText())
                     {
                         string text = Clipboard.GetText();
                         if (text != _lastClipboardText && !string.IsNullOrEmpty(text))
