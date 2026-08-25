@@ -191,7 +191,7 @@ namespace BigLineconnect
                 if (displayIndex < 0 || displayIndex >= screens.Length) displayIndex = 0;
                 var bounds = screens[displayIndex].Bounds;
 
-                if (xPercent.HasValue && yPercent.HasValue && isDown)
+                if (xPercent.HasValue && yPercent.HasValue)
                 {
                     int actualX = bounds.X + Math.Min(bounds.Width - 1, (int)(xPercent.Value * bounds.Width));
                     int actualY = bounds.Y + Math.Min(bounds.Height - 1, (int)(yPercent.Value * bounds.Height));
@@ -544,6 +544,7 @@ namespace BigLineconnect
         public static void SimulateChar(char ch)
         {
             DesktopHelper.AttachToInputDesktop();
+            ReleaseAllModifiers();
 
             short scan = VkKeyScan(ch);
             if (scan != -1)

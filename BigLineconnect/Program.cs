@@ -1120,10 +1120,11 @@ namespace BigLineconnect
                         bool isDuplicate = (frameHash != 0 && frameHash == _lastSentFrameHash);
                         bool isInitialBurst = initialFrameCount < 5;
                         bool isForcedBurst = _forcedRefreshCount > 0;
+                        bool isHeartbeat = (DateTime.Now - _lastSentFrameTime).TotalMilliseconds >= 200;
                         if (isForcedBurst) _forcedRefreshCount--;
 
-                        // 2. KOTA KORUMASI: Yalnızca ekran pikselleri gerçekten değiştiğinde kare gönder (Statik ekranda 0 KB/sn!)
-                        if (!isDuplicate || isInitialBurst || isForcedBurst)
+                        // 2. KOTA KORUMASI: Ekran değiştiğinde veya 200ms heartbeat zaman aşımında kare gönder (Statik ekranda 0 KB/sn!)
+                        if (!isDuplicate || isInitialBurst || isForcedBurst || isHeartbeat)
                         {
                             // Dynamic frame pacing based on Quality mode
                             int minIntervalMs = (CurrentQuality <= 38) ? 50 : ((CurrentQuality <= 48) ? 25 : 16);
