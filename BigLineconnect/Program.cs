@@ -1021,18 +1021,21 @@ namespace BigLineconnect
                     int q = CurrentQuality;
                     int maxDim = CurrentMaxDimension;
                     byte[] frame = ScreenCapturer.Capture(quality: q, maxDimension: maxDim);
+                    ulong hash = ScreenCapturer.LastCapturedFrameHash;
                     
                     if (frame != null && frame.Length > 0)
                     {
                         lock (FrameLock)
                         {
                             _latestFrame = frame;
+                            _latestFrameHash = hash;
                         }
                     }
                     else
                     {
                         // Reset frame cache so next frame is immediately sent upon recovery
                         _lastSentFrameBytes = null;
+                        _lastSentFrameHash = 0;
                     }
 
                     // Wait up to 16ms (60 FPS max speed) OR wake up INSTANTLY (0ms) on mouse/key click!
@@ -1052,6 +1055,9 @@ namespace BigLineconnect
                 SetStreamActive(false);
             }
         }
+
+        private static ulong _latestFrameHash = 0;
+        private static ulong _lastSentFrameHash = 0;
 
         private static bool AreByteArraysEqual(byte[]? a, byte[]? b)
         {
@@ -1076,6 +1082,7 @@ namespace BigLineconnect
             {
                 Log("Görüntü gönderim döngüsü başladı.");
                 _lastSentFrameBytes = null;
+                _lastSentFrameHash = 0;
                 BigLineRtEngine.Reset();
                 _lastSentFrameTime = DateTime.MinValue;
                 _isSendingFrame = false;
@@ -1101,23 +1108,25 @@ namespace BigLineconnect
                     }
 
                     byte[]? frameToSend = null;
+                    ulong frameHash = 0;
                     lock (FrameLock)
                     {
                         frameToSend = _latestFrame;
+                        frameHash = _latestFrameHash;
                     }
                     
                     if (frameToSend != null && frameToSend.Length > 0)
                     {
-                        bool isDuplicate = AreByteArraysEqual(frameToSend, _lastSentFrameBytes);
+                        bool isDuplicate = (frameHash != 0 && frameHash == _lastSentFrameHash);
                         bool isInitialBurst = initialFrameCount < 5;
                         bool isForcedBurst = _forcedRefreshCount > 0;
                         if (isForcedBurst) _forcedRefreshCount--;
 
-                        // 2. KOTA KORUMASI: Yalnızca ekran değiştiğinde, ilk açılışta veya tıklamada kare gönder (Statik ekranda 0 KB/sn!)
+                        // 2. KOTA KORUMASI: Yalnızca ekran pikselleri gerçekten değiştiğinde kare gönder (Statik ekranda 0 KB/sn!)
                         if (!isDuplicate || isInitialBurst || isForcedBurst)
                         {
-                            // Enforce dynamic frame interval pacing to prevent TCP socket buffer congestion
-                            int minIntervalMs = (CurrentQuality <= 48) ? 25 : 16; // 40 FPS pacing on Düşük mode preserves 0ms latency!
+                            // Dynamic frame pacing based on Quality mode
+                            int minIntervalMs = (CurrentQuality <= 38) ? 50 : ((CurrentQuality <= 48) ? 25 : 16);
                             if (isInitialBurst || isForcedBurst || (DateTime.Now - _lastSentFrameTime).TotalMilliseconds >= minIntervalMs)
                             {
                                 _isSendingFrame = true;
@@ -1139,19 +1148,12 @@ namespace BigLineconnect
                                     double sendMs = (DateTime.Now - sendStart).TotalMilliseconds;
                                     if (sendMs > 35)
                                     {
-                                        // Low bandwidth (3G / 5 Mbps / Mobile Hotspot) detected (>35ms socket send time).
-                                        // Auto-tune frame size to 12 KB - 15 KB mode for instant 0.1s response matching Alpemix!
-                                        CurrentQuality = Math.Min(CurrentQuality, 38);
+                                        CurrentQuality = Math.Min(CurrentQuality, 35);
                                         CurrentMaxDimension = Math.Min(CurrentMaxDimension, 1080);
-                                    }
-                                    else if (sendMs < 20 && CurrentQuality < 55)
-                                    {
-                                        // Fast network restored (<20ms socket send time). Gradually restore high sharpness.
-                                        CurrentQuality = Math.Min(55, CurrentQuality + 2);
-                                        CurrentMaxDimension = Math.Min(1440, CurrentMaxDimension + 100);
                                     }
 
                                     _lastSentFrameBytes = frameToSend;
+                                    _lastSentFrameHash = frameHash;
                                     _lastSentFrameTime = DateTime.Now;
                                     initialFrameCount++;
                                 }

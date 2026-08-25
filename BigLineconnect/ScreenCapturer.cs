@@ -272,6 +272,8 @@ namespace BigLineconnect
             {
                 using (bmp)
                 {
+                    LastCapturedFrameHash = CalculateFastScreenHash(bmp);
+
                     if (UseH264Mode)
                     {
                         if (_h264Encoder == null)
@@ -292,6 +294,53 @@ namespace BigLineconnect
             }
 
             return Array.Empty<byte>();
+        }
+
+        public static ulong LastCapturedFrameHash { get; private set; } = 0;
+
+        public static ulong CalculateFastScreenHash(Bitmap bmp)
+        {
+            try
+            {
+                int w = bmp.Width;
+                int h = bmp.Height;
+                if (w <= 0 || h <= 0) return 0;
+
+                BitmapData data = bmp.LockBits(new Rectangle(0, 0, w, h), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
+                try
+                {
+                    unsafe
+                    {
+                        ulong hash = 14695981039346656037UL;
+                        byte* ptr = (byte*)data.Scan0;
+                        int stride = data.Stride;
+
+                        int stepX = Math.Max(1, w / 8);
+                        int stepY = Math.Max(1, h / 8);
+
+                        for (int y = 0; y < h; y += stepY)
+                        {
+                            byte* row = ptr + (y * stride);
+                            for (int x = 0; x < w; x += stepX)
+                            {
+                                int idx = x * 4;
+                                uint val = *(uint*)(row + idx);
+                                hash ^= val;
+                                hash *= 1099511628211UL;
+                            }
+                        }
+                        return hash;
+                    }
+                }
+                finally
+                {
+                    bmp.UnlockBits(data);
+                }
+            }
+            catch
+            {
+                return (ulong)DateTime.Now.Ticks;
+            }
         }
 
         private static bool IsBitmapBlack(Bitmap bmp)
