@@ -655,18 +655,7 @@ namespace BigLineconnect
             try
             {
                 DesktopHelper.EnsureRdpRegistrySettings();
-
-                string exePath = System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName ?? System.Windows.Forms.Application.ExecutablePath;
-                if (string.IsNullOrEmpty(exePath)) return;
-
-                string cmd = $"advfirewall firewall add rule name=\"BigLineconnect Remote Desktop\" dir=in action=allow program=\"{exePath}\" enable=yes profile=any";
-                var psi = new System.Diagnostics.ProcessStartInfo("netsh", cmd)
-                {
-                    CreateNoWindow = true,
-                    UseShellExecute = false,
-                    WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden
-                };
-                System.Diagnostics.Process.Start(psi);
+                FirewallHelper.EnsureUdpInboundRuleAsync();
             }
             catch { }
         }

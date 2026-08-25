@@ -1,12 +1,13 @@
 using System;
 using System.Diagnostics;
+using System.IO;
 using System.Threading.Tasks;
 
 namespace BigLineconnect
 {
     /// <summary>
-    /// BigLineconnect Windows Defender Firewall Auto UDP Rule Inbound Engine
-    /// Automatically ensures Inbound UDP rule exists on Windows Firewall with 0ms UI impact and silent failsafe.
+    /// BigLineconnect Windows Defender Firewall Auto Rule Registration Engine
+    /// Automatically ensures Inbound and Outbound Firewall rules exist on Windows Firewall with 0ms UI impact.
     /// </summary>
     public static class FirewallHelper
     {
@@ -21,23 +22,50 @@ namespace BigLineconnect
             {
                 try
                 {
-                    // Execute netsh command silently in background to add UDP Inbound Rule
-                    ProcessStartInfo psi = new ProcessStartInfo
+                    string currentExe = Process.GetCurrentProcess().MainModule?.FileName ?? "";
+                    string[] pathsToProtect = new string[]
                     {
-                        FileName = "netsh.exe",
-                        Arguments = "advfirewall firewall add rule name=\"BigLineconnect UDP\" dir=in action=allow protocol=UDP localport=any",
-                        UseShellExecute = false,
-                        CreateNoWindow = true,
-                        WindowStyle = ProcessWindowStyle.Hidden
+                        currentExe,
+                        @"C:\yoldas\biglineconnect.exe",
+                        @"C:\ProgramData\BigLineconnect\BigLineconnect.exe",
+                        @"C:\Program Files\Bigus Bilisim\BigLineconnect\BigLineconnect_App.exe"
                     };
 
-                    using (Process? p = Process.Start(psi))
+                    foreach (var exePath in pathsToProtect)
                     {
-                        p?.WaitForExit(1000);
+                        if (string.IsNullOrWhiteSpace(exePath)) continue;
+
+                        string ruleName = "BigLineconnect (" + Path.GetFileName(exePath) + ")";
+                        
+                        // Add Inbound Rule (TCP & UDP, All Profiles)
+                        RunNetshCommand($"advfirewall firewall add rule name=\"{ruleName}\" dir=in action=allow program=\"{exePath}\" enable=yes profile=any");
+                        
+                        // Add Outbound Rule (TCP & UDP, All Profiles)
+                        RunNetshCommand($"advfirewall firewall add rule name=\"{ruleName}\" dir=out action=allow program=\"{exePath}\" enable=yes profile=any");
                     }
                 }
                 catch { }
             });
+        }
+
+        private static void RunNetshCommand(string arguments)
+        {
+            try
+            {
+                ProcessStartInfo psi = new ProcessStartInfo
+                {
+                    FileName = "netsh.exe",
+                    Arguments = arguments,
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    WindowStyle = ProcessWindowStyle.Hidden
+                };
+                using (Process? p = Process.Start(psi))
+                {
+                    p?.WaitForExit(500);
+                }
+            }
+            catch { }
         }
     }
 }
