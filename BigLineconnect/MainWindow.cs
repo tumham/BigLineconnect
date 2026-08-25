@@ -866,6 +866,8 @@ namespace BigLineconnect
             _addressBookListView.Columns.Add("İsim", 140);
             _addressBookListView.Columns.Add("ID", 110);
             _addressBookListView.DoubleClick += AddressBookListView_DoubleClick;
+            _addressBookListView.MouseDoubleClick += (s, e) => AddressBookListView_DoubleClick(s, e);
+            _addressBookListView.ItemActivate += (s, e) => AddressBookListView_DoubleClick(s, e);
             _addressBookListView.MouseClick += AddressBookListView_MouseClick;
             _addressBookListView.ColumnClick += AddressBookListView_ColumnClick;
             _addressBookGroup.Controls.Add(_addressBookListView);
@@ -2361,34 +2363,27 @@ namespace BigLineconnect
 
                     if (_currentTabMode == 1 && item.Tag is SupportTicket ticket)
                     {
-                        bool isConnected = _connectedTicketIds.Contains(ticket.Id) || (!string.IsNullOrEmpty(ticket.Token) && _connectedTicketIds.Contains(ticket.Token));
-
-                        var itemConnect = new ToolStripMenuItem("🔌 Uzaktan Bağlan (Çift Tık)");
+                        var itemConnect = new ToolStripMenuItem("⚡ Talebe Bağlan (Şifresiz Bağlan)")
+                        {
+                            Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
+                            ForeColor = Color.FromArgb(0, 150, 136)
+                        };
                         itemConnect.Click += (s, ev) => AddressBookListView_DoubleClick(sender, e);
                         cms.Items.Add(itemConnect);
 
-                        if (isConnected)
-                        {
-                            cms.Items.Add(new ToolStripSeparator());
+                        cms.Items.Add(new ToolStripSeparator());
 
-                            var itemResolve = new ToolStripMenuItem("✅ Çözüldü – Sorun yok");
-                            itemResolve.Click += (s, ev) => ResolveTicketWithStatus(ticket, "Çözüldü");
-                            cms.Items.Add(itemResolve);
+                        var itemResolve = new ToolStripMenuItem("✅ Çözüldü – Sorun yok");
+                        itemResolve.Click += (s, ev) => ResolveTicketWithStatus(ticket, "Çözüldü");
+                        cms.Items.Add(itemResolve);
 
-                            var itemFailed = new ToolStripMenuItem("❌ Çözülmedi");
-                            itemFailed.Click += (s, ev) => ResolveTicketWithStatus(ticket, "Çözülmedi");
-                            cms.Items.Add(itemFailed);
+                        var itemFailed = new ToolStripMenuItem("❌ Çözülmedi");
+                        itemFailed.Click += (s, ev) => ResolveTicketWithStatus(ticket, "Çözülmedi");
+                        cms.Items.Add(itemFailed);
 
-                            var itemPending = new ToolStripMenuItem("⏳ Talep incelenip dönülecek");
-                            itemPending.Click += (s, ev) => ResolveTicketWithStatus(ticket, "Bekliyor / İnceleniyor");
-                            cms.Items.Add(itemPending);
-                        }
-                        else
-                        {
-                            cms.Items.Add(new ToolStripSeparator());
-                            var itemDisabled = new ToolStripMenuItem("🔒 Önce Çift Tıklayıp Karşıya Bağlanın") { Enabled = false };
-                            cms.Items.Add(itemDisabled);
-                        }
+                        var itemPending = new ToolStripMenuItem("⏳ Talep incelenip dönülecek");
+                        itemPending.Click += (s, ev) => ResolveTicketWithStatus(ticket, "Bekliyor / İnceleniyor");
+                        cms.Items.Add(itemPending);
 
                         cms.Items.Add(new ToolStripSeparator());
 
