@@ -1,0 +1,46 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package Name="BigLineconnect Enterprise" 
+           Manufacturer="BIGUS BILISIM GELISTIRME VE UYGULAMA SISTEMLERI LIMITED SIRKETI" 
+           Version="3.71.2" 
+           UpgradeCode="78152ce7-273b-42a9-b2b3-6a4a5c4c9e69" 
+           Scope="perMachine">
+
+    <MajorUpgrade DowngradeErrorMessage="BigLineconnect uygulamasının daha yeni bir sürümü zaten yüklü." />
+
+    <MediaTemplate EmbedCab="yes" />
+
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="CompanyFolder" Name="Bigus Bilisim">
+        <Directory Id="INSTALLFOLDER" Name="BigLineconnect">
+          <Component Id="MainExecutableComponent" Guid="a1b2c3d4-e5f6-4789-abcd-0123456789ab">
+            <File Id="MainExecutable" Source="c:\Projev17YD\DUZ_V17_STD\standalone_publish\BigLineconnect.exe" KeyPath="yes">
+              <Shortcut Id="DesktopShortcut"
+                        Directory="DesktopFolder"
+                        Name="BigLineconnect 🚀"
+                        Description="BigLineconnect Uzaktan Kontrol ve Dosya Transferi"
+                        WorkingDirectory="INSTALLFOLDER"
+                        Icon="AppIcon.ico"
+                        Advertise="yes" />
+              <Shortcut Id="StartMenuShortcut"
+                        Directory="ProgramMenuFolder"
+                        Name="BigLineconnect Uzaktan Kontrol"
+                        Description="BigLineconnect Uzaktan Kontrol ve Dosya Transferi"
+                        WorkingDirectory="INSTALLFOLDER"
+                        Icon="AppIcon.ico"
+                        Advertise="yes" />
+            </File>
+          </Component>
+        </Directory>
+      </Directory>
+    </StandardDirectory>
+
+    <StandardDirectory Id="DesktopFolder" />
+    <StandardDirectory Id="ProgramMenuFolder" />
+
+    <Icon Id="AppIcon.ico" SourceFile="c:\Projev17YD\DUZ_V17_STD\BigLineconnect\icon.ico" />
+
+    <Feature Id="MainFeature" Title="BigLineconnect Enterprise" Level="1">
+      <ComponentRef Id="MainExecutableComponent" />
+    </Feature>
+  </Package>
+</Wix>
