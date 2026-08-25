@@ -224,6 +224,10 @@ namespace BigLineconnect
         private ushort _latestMouseUy = 0;
         private bool _hasUnsentMouseMove = false;
 
+        private Image? _latestDecodedImage = null;
+        private readonly object _decodedImageLock = new object();
+        private int _isUiPaintPending = 0;
+
         private static ulong FastBufferHash(byte[] buffer, int count)
         {
             unchecked
@@ -816,24 +820,55 @@ namespace BigLineconnect
 
                                             if (newImg != null && _pictureBox != null && !_pictureBox.IsDisposed)
                                             {
-                                                _pictureBox.BeginInvoke(new Action(() =>
+                                                Image? oldUnpainted = null;
+                                                lock (_decodedImageLock)
                                                 {
-                                                    try
+                                                    oldUnpainted = _latestDecodedImage;
+                                                    _latestDecodedImage = newImg;
+                                                }
+                                                if (oldUnpainted != null && oldUnpainted != newImg)
+                                                {
+                                                    try { oldUnpainted.Dispose(); } catch { }
+                                                }
+
+                                                if (Interlocked.CompareExchange(ref _isUiPaintPending, 1, 0) == 0)
+                                                {
+                                                    if (_pictureBox != null && !_pictureBox.IsDisposed)
                                                     {
-                                                        if (this.WindowState != FormWindowState.Minimized && _pictureBox != null && !_pictureBox.IsDisposed)
+                                                        _pictureBox.BeginInvoke(new Action(() =>
                                                         {
-                                                            var oldImg = _pictureBox.Image;
-                                                            _pictureBox.Image = newImg;
-                                                            _pictureBox.Invalidate();
-                                                            if (oldImg != null && oldImg != newImg) oldImg.Dispose();
-                                                        }
-                                                        else
-                                                        {
-                                                            if (newImg != null) newImg.Dispose();
-                                                        }
+                                                            try
+                                                            {
+                                                                Image? frameToDraw = null;
+                                                                lock (_decodedImageLock)
+                                                                {
+                                                                    frameToDraw = _latestDecodedImage;
+                                                                    _latestDecodedImage = null;
+                                                                }
+
+                                                                if (frameToDraw != null && this.WindowState != FormWindowState.Minimized && _pictureBox != null && !_pictureBox.IsDisposed)
+                                                                {
+                                                                    var oldImg = _pictureBox.Image;
+                                                                    _pictureBox.Image = frameToDraw;
+                                                                    _pictureBox.Invalidate();
+                                                                    if (oldImg != null && oldImg != frameToDraw)
+                                                                    {
+                                                                        try { oldImg.Dispose(); } catch { }
+                                                                    }
+                                                                }
+                                                                else if (frameToDraw != null)
+                                                                {
+                                                                    try { frameToDraw.Dispose(); } catch { }
+                                                                }
+                                                            }
+                                                            catch { }
+                                                            finally
+                                                            {
+                                                                Interlocked.Exchange(ref _isUiPaintPending, 0);
+                                                            }
+                                                        }));
                                                     }
-                                                    catch { }
-                                                }));
+                                                }
                                             }
                                         }
                                     }

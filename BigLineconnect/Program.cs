@@ -1141,7 +1141,7 @@ namespace BigLineconnect
                         }
                     }
 
-                    await Task.Delay(10, token).ConfigureAwait(false);
+                    await Task.Delay(1, token).ConfigureAwait(false);
                 }
                 Log("Görüntü gönderim döngüsü sonlandı.");
             }
