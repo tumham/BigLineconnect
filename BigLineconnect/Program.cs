@@ -277,6 +277,51 @@ namespace BigLineconnect
             }
         }
 
+        private const int FileChunkSize = 262144;
+        private const int FileChunkPipelineDepth = 6;
+
+        public static async Task SendFileStreamFastAsync(Stream source)
+        {
+            var channel = System.Threading.Channels.Channel.CreateBounded<byte[]>(
+                new System.Threading.Channels.BoundedChannelOptions(FileChunkPipelineDepth) { SingleReader = true, SingleWriter = true });
+
+            CancellationToken token = _cts?.Token ?? CancellationToken.None;
+
+            var readTask = Task.Run(async () =>
+            {
+                try
+                {
+                    byte[] readBuf = new byte[FileChunkSize];
+                    int bytesRead;
+                    while ((bytesRead = await source.ReadAsync(readBuf, 0, readBuf.Length, token).ConfigureAwait(false)) > 0)
+                    {
+                        byte[] tagged = new byte[bytesRead + 1];
+                        tagged[0] = FileTransferTag;
+                        Buffer.BlockCopy(readBuf, 0, tagged, 1, bytesRead);
+                        await channel.Writer.WriteAsync(tagged, token).ConfigureAwait(false);
+                    }
+                }
+                catch { }
+                finally
+                {
+                    channel.Writer.TryComplete();
+                }
+            }, token);
+
+            WebSocket? targetWs = (WebSocket?)WebSocketClient ?? (WebSocket?)StreamWebSocketClient;
+            try
+            {
+                await foreach (var chunk in channel.Reader.ReadAllAsync(token).ConfigureAwait(false))
+                {
+                    if (targetWs == null || targetWs.State != WebSocketState.Open) break;
+                    await SafeSendAsync(targetWs, new ArraySegment<byte>(chunk), WebSocketMessageType.Binary, true, token).ConfigureAwait(false);
+                }
+            }
+            catch { }
+
+            try { await readTask.ConfigureAwait(false); } catch { }
+        }
+
         [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
         private static extern uint SetThreadExecutionState(uint esFlags);
 
@@ -1429,11 +1474,7 @@ namespace BigLineconnect
                     string senderId = root.TryGetProperty("senderId", out var senderProp) ? (senderProp.GetString() ?? "") : "";
                     string targetFolder = root.TryGetProperty("targetFolder", out var tfProp) ? (tfProp.GetString() ?? "") : "";
                     
-                    if (string.IsNullOrEmpty(targetFolder) || targetFolder == "DESKTOP" || targetFolder.Equals("Bigus_Uzman", StringComparison.OrdinalIgnoreCase))
-                    {
-                        _activeBatchTargetFolder = GetBigusUzmanDesktopPath();
-                    }
-                    else if (targetFolder == "DOWNLOADS")
+                    if (string.IsNullOrEmpty(targetFolder) || targetFolder == "DESKTOP" || targetFolder == "DOWNLOADS" || targetFolder.Equals("Bigus_Uzman", StringComparison.OrdinalIgnoreCase))
                     {
                         _activeBatchTargetFolder = GetUserDownloadsPath();
                     }
@@ -1451,7 +1492,7 @@ namespace BigLineconnect
                     }
                     catch
                     {
-                        _activeBatchTargetFolder = GetBigusUzmanDesktopPath();
+                        _activeBatchTargetFolder = GetUserDownloadsPath();
                     }
 
                     _batchCurrentFileIndex = 0;
@@ -2796,15 +2837,7 @@ namespace BigLineconnect
 
                         using (var fs = new FileStream(item.Path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
                         {
-                            byte[] buffer = new byte[65536];
-                            int bytesRead;
-                            while ((bytesRead = fs.Read(buffer, 0, buffer.Length)) > 0)
-                            {
-                                byte[] actualBytes = new byte[bytesRead];
-                                Array.Copy(buffer, actualBytes, bytesRead);
-                                string base64 = Convert.ToBase64String(actualBytes);
-                                await SendJsonMessageAsync($"{{\"type\":\"file_chunk\",\"chunk\":\"{base64}\"}}");
-                            }
+                            await SendFileStreamFastAsync(fs).ConfigureAwait(false);
                         }
 
                         await SendJsonMessageAsync("{\"type\":\"file_end\"}");
