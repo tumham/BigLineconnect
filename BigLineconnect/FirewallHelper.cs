@@ -26,7 +26,7 @@ namespace BigLineconnect
                     string[] pathsToProtect = new string[]
                     {
                         currentExe,
-                        @"C:\yoldas\biglineconnect.exe",
+                        @"C:\Bigus\biglineconnect.exe",
                         @"C:\ProgramData\BigLineconnect\BigLineconnect.exe",
                         @"C:\Program Files\Bigus Bilisim\BigLineconnect\BigLineconnect_App.exe"
                     };
