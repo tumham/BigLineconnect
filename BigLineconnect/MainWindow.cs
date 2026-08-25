@@ -3821,11 +3821,9 @@ namespace BigLineconnect
 
                     try
                     {
-                        File.WriteAllText(LicenseSystem.LicenseFilePath, keyText);
-                        LicenseSystem.Initialize();
-                        if (LicenseSystem.IsLicenseActive)
+                        if (LicenseSystem.ActivateKey(keyText))
                         {
-                            MessageBox.Show("BigLineconnect Pro başarıyla etkinleştirildi! Teşekkür ederiz.", "Lisans Başarılı", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            MessageBox.Show("🎉 BigLineconnect Commercial PRO başarıyla etkinleştirildi! 1 Yıllık Tam Sürüm Aktif.", "Lisans Başarılı", MessageBoxButtons.OK, MessageBoxIcon.Information);
                             CheckLicensingOnLoad();
                         }
                         else

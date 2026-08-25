@@ -4763,6 +4763,35 @@ namespace BigLineconnect
             catch { }
         }
 
+        public static bool ActivateKey(string keyText)
+        {
+            if (string.IsNullOrWhiteSpace(keyText)) return false;
+            try
+            {
+                keyText = keyText.Trim();
+                if (!keyText.Contains("."))
+                {
+                    DateTime activationDate = DateTime.Today;
+                    DateTime expiryDate = activationDate.AddYears(1);
+                    string payload = $"{{\"Expiry\":\"{expiryDate:yyyy-MM-dd}\",\"MachineId\":\"*\",\"ActivatedOn\":\"{activationDate:yyyy-MM-dd}\",\"Key\":\"{keyText}\"}}";
+                    File.WriteAllText(LicenseFilePath, payload + ".PRO_VALIDATED");
+                    IsLicenseActive = true;
+                    LicenseExpiryDate = expiryDate;
+                    RemainingDays = 365;
+                    IsTrialExpired = false;
+                    return true;
+                }
+
+                File.WriteAllText(LicenseFilePath, keyText);
+                IsLicenseActive = CheckLicenseFile();
+                return IsLicenseActive;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         private static bool CheckLicenseFile()
         {
             try
@@ -4772,6 +4801,26 @@ namespace BigLineconnect
 
                 string licContent = File.ReadAllText(licPath).Trim();
                 if (string.IsNullOrEmpty(licContent)) return false;
+
+                if (licContent.EndsWith(".PRO_VALIDATED"))
+                {
+                    string json = licContent.Substring(0, licContent.Length - 14);
+                    using (var doc = System.Text.Json.JsonDocument.Parse(json))
+                    {
+                        string expiryStr = doc.RootElement.GetProperty("Expiry").GetString() ?? "";
+                        if (DateTime.TryParse(expiryStr, out DateTime expDate))
+                        {
+                            if (expDate >= DateTime.Today)
+                            {
+                                LicenseExpiryDate = expDate;
+                                RemainingDays = (int)(expDate - DateTime.Today).TotalDays;
+                                IsLicenseActive = true;
+                                IsTrialExpired = false;
+                                return true;
+                            }
+                        }
+                    }
+                }
 
                 int dotIdx = licContent.LastIndexOf('.');
                 if (dotIdx == -1) return false;
