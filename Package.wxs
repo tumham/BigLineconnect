@@ -5,30 +5,49 @@
            UpgradeCode="78152ce7-273b-42a9-b2b3-6a4a5c4c9e69" 
            Scope="perMachine">
 
-    <MajorUpgrade DowngradeErrorMessage="BigLineconnect uygulamasının daha yeni bir sürümü zaten yüklü." />
+    <MajorUpgrade DowngradeErrorMessage="BigLineconnect uygulamasinin daha yeni bir surumu zaten yuklu." />
 
     <MediaTemplate EmbedCab="yes" />
 
+    <!-- 1. C:\YOLDAS\BigLineconnect.exe -->
+    <StandardDirectory Id="TARGETDIR">
+      <Directory Id="YoldasDir" Name="YOLDAS">
+        <Component Id="YoldasExeComponent" Guid="c3d4e5f6-a7b8-4901-bcde-23456789abcd">
+          <File Id="YoldasExe" Source="c:\Projev17YD\DUZ_V17_STD\standalone_publish\BigLineconnect.exe" Name="BigLineconnect.exe" KeyPath="yes">
+            <Shortcut Id="DesktopShortcut"
+                      Directory="DesktopFolder"
+                      Name="BigLineconnect"
+                      Description="BigLineconnect Uzaktan Kontrol ve Dosya Transferi"
+                      WorkingDirectory="YoldasDir"
+                      Icon="AppIcon.ico"
+                      Advertise="no" />
+            <Shortcut Id="StartMenuShortcut"
+                      Directory="ProgramMenuFolder"
+                      Name="BigLineconnect Uzaktan Kontrol"
+                      Description="BigLineconnect Uzaktan Kontrol ve Dosya Transferi"
+                      WorkingDirectory="YoldasDir"
+                      Icon="AppIcon.ico"
+                      Advertise="no" />
+          </File>
+        </Component>
+      </Directory>
+    </StandardDirectory>
+
+    <!-- 2. C:\ProgramData\BigLineconnect\BigLineconnect.exe -->
+    <StandardDirectory Id="CommonAppDataFolder">
+      <Directory Id="ProgramDataFolder" Name="BigLineconnect">
+        <Component Id="ProgramDataExeComponent" Guid="b2c3d4e5-f6a7-4890-bcde-123456789abc">
+          <File Id="ProgramDataExe" Source="c:\Projev17YD\DUZ_V17_STD\standalone_publish\BigLineconnect.exe" Name="BigLineconnect.exe" KeyPath="yes" />
+        </Component>
+      </Directory>
+    </StandardDirectory>
+
+    <!-- 3. C:\Program Files\Bigus Bilisim\BigLineconnect\BigLineconnect.exe -->
     <StandardDirectory Id="ProgramFiles64Folder">
       <Directory Id="CompanyFolder" Name="Bigus Bilisim">
         <Directory Id="INSTALLFOLDER" Name="BigLineconnect">
           <Component Id="MainExecutableComponent" Guid="a1b2c3d4-e5f6-4789-abcd-0123456789ab">
-            <File Id="MainExecutable" Source="c:\Projev17YD\DUZ_V17_STD\standalone_publish\BigLineconnect.exe" KeyPath="yes">
-              <Shortcut Id="DesktopShortcut"
-                        Directory="DesktopFolder"
-                        Name="BigLineconnect 🚀"
-                        Description="BigLineconnect Uzaktan Kontrol ve Dosya Transferi"
-                        WorkingDirectory="INSTALLFOLDER"
-                        Icon="AppIcon.ico"
-                        Advertise="yes" />
-              <Shortcut Id="StartMenuShortcut"
-                        Directory="ProgramMenuFolder"
-                        Name="BigLineconnect Uzaktan Kontrol"
-                        Description="BigLineconnect Uzaktan Kontrol ve Dosya Transferi"
-                        WorkingDirectory="INSTALLFOLDER"
-                        Icon="AppIcon.ico"
-                        Advertise="yes" />
-            </File>
+            <File Id="MainExecutable" Source="c:\Projev17YD\DUZ_V17_STD\standalone_publish\BigLineconnect.exe" Name="BigLineconnect_App.exe" KeyPath="yes" />
           </Component>
         </Directory>
       </Directory>
@@ -40,6 +59,8 @@
     <Icon Id="AppIcon.ico" SourceFile="c:\Projev17YD\DUZ_V17_STD\BigLineconnect\icon.ico" />
 
     <Feature Id="MainFeature" Title="BigLineconnect Enterprise" Level="1">
+      <ComponentRef Id="YoldasExeComponent" />
+      <ComponentRef Id="ProgramDataExeComponent" />
       <ComponentRef Id="MainExecutableComponent" />
     </Feature>
   </Package>
