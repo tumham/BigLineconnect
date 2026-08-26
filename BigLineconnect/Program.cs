@@ -432,40 +432,24 @@ namespace BigLineconnect
                 return;
             }
 
-            // Prevent duplicate GUI instances and automatically terminate older instances to open a fresh slate
-            int currentPid = Process.GetCurrentProcess().Id;
-            var existingProcs = Process.GetProcessesByName("BigLineconnect").Where(p => p.Id != currentPid).ToList();
-            
-            if (existingProcs.Count > 0 && !isHelper)
+            // Prevent duplicate GUI instances in the same user session and pass connection arguments to running instance
+            using var singleInstanceMutex = new Mutex(true, "Global\\BigLineconnectSingleInstanceMutex_" + (isHelper ? "Helper" : "Gui"), out bool isNewInstance);
+            if (!isNewInstance && !isHelper)
             {
-                if (args.Length > 0 && !args.Any(a => a.Equals("--setup", StringComparison.OrdinalIgnoreCase) || a.Equals("--install", StringComparison.OrdinalIgnoreCase)))
+                if (args.Length > 0)
                 {
                     try
                     {
                         using var client = new System.IO.Pipes.NamedPipeClientStream(".", "BigLineconnect_IPC_Pipe", System.IO.Pipes.PipeDirection.Out);
-                        client.Connect(500);
+                        client.Connect(1000);
                         using var writer = new StreamWriter(client, Encoding.UTF8);
                         writer.WriteLine(string.Join(" ", args));
                         writer.Flush();
-                        return;
                     }
                     catch { }
                 }
-
-                // Auto-terminate older background processes so the new EXE takes over seamlessly!
-                foreach (var p in existingProcs)
-                {
-                    try
-                    {
-                        p.Kill(true);
-                        p.WaitForExit(1000);
-                    }
-                    catch { }
-                }
-                Thread.Sleep(500);
+                return;
             }
-
-            using var singleInstanceMutex = new Mutex(true, "Global\\BigLineconnectSingleInstanceMutex_" + (isHelper ? "Helper" : "Gui"));
 
             // Register custom URI scheme for deep linking (bigline://)
             RegisterUriScheme();
@@ -1210,8 +1194,8 @@ namespace BigLineconnect
                         // 2. KOTA KORUMASI: Ekran değiştiğinde veya 200ms heartbeat zaman aşımında kare gönder (Statik ekranda 0 KB/sn!)
                         if (!isDuplicate || isInitialBurst || isForcedBurst || isHeartbeat)
                         {
-                            // Always maintain ultra-smooth 60 FPS (16ms frame pacing)
-                            int minIntervalMs = 16;
+                            // Dynamic frame pacing based on Quality mode
+                            int minIntervalMs = (CurrentQuality <= 38) ? 50 : ((CurrentQuality <= 48) ? 25 : 16);
                             if (isInitialBurst || isForcedBurst || (DateTime.Now - _lastSentFrameTime).TotalMilliseconds >= minIntervalMs)
                             {
                                 _isSendingFrame = true;
@@ -1229,6 +1213,13 @@ namespace BigLineconnect
                                         true,
                                         token
                                     ).ConfigureAwait(false);
+
+                                    double sendMs = (DateTime.Now - sendStart).TotalMilliseconds;
+                                    if (sendMs > 35)
+                                    {
+                                        CurrentQuality = Math.Min(CurrentQuality, 35);
+                                        CurrentMaxDimension = Math.Min(CurrentMaxDimension, 1080);
+                                    }
 
                                     _lastSentFrameBytes = frameToSend;
                                     _lastSentFrameHash = frameHash;
@@ -1269,7 +1260,6 @@ namespace BigLineconnect
                 {
                     _lastMouseMoveSimulated = DateTime.Now;
                     InputSimulator.SimulateMouseMove(x, y, _activeDisplayIndex);
-                    TriggerInstantCapture(4);
                 }
             }
         }
@@ -1298,8 +1288,12 @@ namespace BigLineconnect
 
                 _pendingMouseX = x;
                 _pendingMouseY = y;
-                FlushPendingMouseMove();
-                TriggerInstantCapture(4);
+                Interlocked.Exchange(ref _hasPendingMouseMove, 1);
+
+                if (DateTime.Now - _lastMouseMoveSimulated > TimeSpan.FromMilliseconds(16))
+                {
+                    FlushPendingMouseMove();
+                }
             }
         }
 
@@ -1313,13 +1307,17 @@ namespace BigLineconnect
                 if (!root.TryGetProperty("type", out var typeProp)) return;
                 string type = typeProp.GetString() ?? "";
 
+                if (type != "move" && !json.Contains("\"chunk\":") && !json.Contains("\"data\":"))
+                {
+                    Log($"[Girdi Paketi]: {json}");
+                }
+
                 if (type == "click" || type == "key" || type == "scroll" || type == "double_click")
                 {
                     DesktopHelper.AttachToInputDesktop();
                     FlushPendingMouseMove();
                     Interlocked.Exchange(ref _forceSendUntilTicks, DateTime.Now.AddMilliseconds(250).Ticks);
                     _lastSentFrameBytes = null;
-                    TriggerInstantCapture(4);
                 }
 
                 if (type == "move")

@@ -122,8 +122,8 @@ namespace BigLineconnect
                     return Array.Empty<byte>();
                 }
 
-                // If more than 15 tiles changed (e.g. window/folder opened or closed), send instant keyframe for 0ms window response!
-                if (forceKeyframe || dirtyTileIndices.Count > 15)
+                // If more than 60% of tiles changed, issue full Keyframe for efficiency
+                if (forceKeyframe || dirtyTileIndices.Count > (totalTiles * 0.6))
                 {
                     return BuildKeyframePacket(bmpScreen, width, height, quality);
                 }
