@@ -864,6 +864,10 @@ namespace BigLineconnect
 
                                                                 if (frameToDraw != null && this.WindowState != FormWindowState.Minimized && _pictureBox != null && !_pictureBox.IsDisposed)
                                                                 {
+                                                                    if (frameToDraw is Bitmap bmpToDraw)
+                                                                    {
+                                                                        RenderFrameDirectHardwareGpu(bmpToDraw);
+                                                                    }
                                                                     var oldImg = _pictureBox.Image;
                                                                     _pictureBox.Image = frameToDraw;
                                                                     _pictureBox.Invalidate();
@@ -2069,6 +2073,90 @@ namespace BigLineconnect
                 SendJson("{\"type\":\"key\",\"key\":\"control\",\"action\":\"up\"}");
                 SendJson("{\"type\":\"key\",\"key\":\"shift\",\"action\":\"up\"}");
                 SendJson("{\"type\":\"key\",\"key\":\"alt\",\"action\":\"up\"}");
+            }
+            catch { }
+        }
+
+        [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+        public struct BITMAPINFOHEADER
+        {
+            public uint biSize;
+            public int biWidth;
+            public int biHeight;
+            public ushort biPlanes;
+            public ushort biBitCount;
+            public uint biCompression;
+            public uint biSizeImage;
+            public int biXPelsPerMeter;
+            public int biYPelsPerMeter;
+            public uint biClrUsed;
+            public uint biClrImportant;
+        }
+
+        [System.Runtime.InteropServices.DllImport("gdi32.dll", SetLastError = true)]
+        public static extern int StretchDIBits(
+            IntPtr hdc,
+            int XDest, int YDest, int nDestWidth, int nDestHeight,
+            int XSrc, int YSrc, int nSrcWidth, int nSrcHeight,
+            IntPtr lpBits,
+            IntPtr lpBitsInfo,
+            uint iUsage,
+            uint dwRop
+        );
+
+        private void RenderFrameDirectHardwareGpu(Bitmap bmp)
+        {
+            if (_pictureBox == null || _pictureBox.IsDisposed || this.WindowState == FormWindowState.Minimized) return;
+            try
+            {
+                int w = bmp.Width;
+                int h = bmp.Height;
+                System.Drawing.Imaging.BitmapData data = bmp.LockBits(new Rectangle(0, 0, w, h), System.Drawing.Imaging.ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+                try
+                {
+                    using (Graphics g = _pictureBox.CreateGraphics())
+                    {
+                        IntPtr hdc = g.GetHdc();
+                        try
+                        {
+                            BITMAPINFOHEADER bmi = new BITMAPINFOHEADER
+                            {
+                                biSize = (uint)System.Runtime.InteropServices.Marshal.SizeOf(typeof(BITMAPINFOHEADER)),
+                                biWidth = w,
+                                biHeight = -h,
+                                biPlanes = 1,
+                                biBitCount = 32,
+                                biCompression = 0
+                            };
+                            IntPtr ptrBmi = System.Runtime.InteropServices.Marshal.AllocHGlobal(System.Runtime.InteropServices.Marshal.SizeOf(bmi));
+                            try
+                            {
+                                System.Runtime.InteropServices.Marshal.StructureToPtr(bmi, ptrBmi, false);
+                                StretchDIBits(
+                                    hdc,
+                                    0, 0, _pictureBox.Width, _pictureBox.Height,
+                                    0, 0, w, h,
+                                    data.Scan0,
+                                    ptrBmi,
+                                    0,
+                                    0x00CC0020
+                                );
+                            }
+                            finally
+                            {
+                                System.Runtime.InteropServices.Marshal.FreeHGlobal(ptrBmi);
+                            }
+                        }
+                        finally
+                        {
+                            g.ReleaseHdc(hdc);
+                        }
+                    }
+                }
+                finally
+                {
+                    bmp.UnlockBits(data);
+                }
             }
             catch { }
         }
