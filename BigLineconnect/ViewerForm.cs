@@ -504,11 +504,24 @@ namespace BigLineconnect
             };
             _toolTip.SetToolTip(_lblFpsStats, "Anlık Canlı Akış Hızı ve Bağlantı Gecikmesi");
 
+            var lblRedM = new Label
+            {
+                Text = "🔴 M",
+                Font = new Font("Segoe UI", 10F, FontStyle.Bold),
+                ForeColor = Color.White,
+                BackColor = Color.FromArgb(220, 53, 69),
+                AutoSize = true,
+                Padding = new Padding(4, 2, 4, 2),
+                Margin = new Padding(4, 3, 2, 0)
+            };
+            _toolTip.SetToolTip(lblRedM, "BigLineconnect v3.71.3 - 120 FPS Ultra Speed Engine Active!");
+
             flowTop.Controls.Add(btnChat);
             flowTop.Controls.Add(btnFileManager);
             flowTop.Controls.Add(btnFileManagerV2);
             flowTop.Controls.Add(btnActions);
             flowTop.Controls.Add(_lblConnModeBadge);
+            flowTop.Controls.Add(lblRedM);
             flowTop.Controls.Add(_cbDisplays);
             flowTop.Controls.Add(btnQuality);
             flowTop.Controls.Add(btnWallpaper);
@@ -817,11 +830,8 @@ namespace BigLineconnect
                                             }
                                             else
                                             {
-                                                using (var ms = new MemoryStream(frameToDecode, 0, frameToDecode.Length))
-                                                using (var tempImg = Image.FromStream(ms))
-                                                {
-                                                    newImg = new Bitmap(tempImg);
-                                                }
+                                                var ms = new MemoryStream(frameToDecode, 0, frameToDecode.Length);
+                                                newImg = Image.FromStream(ms);
                                             }
 
                                             if (newImg != null && _pictureBox != null && !_pictureBox.IsDisposed)

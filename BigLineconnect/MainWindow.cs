@@ -126,6 +126,7 @@ namespace BigLineconnect
             _instance = this;
             try { Program.SetStreamActive(false); } catch { }
             InitializeComponent();
+            this.Text = "BigLineconnect v3.71.3 🔴 M (120 FPS Ultra Motor)";
             LoadLogoAndIcon();
 
             // Populate connection logs that occurred during splash screen connection

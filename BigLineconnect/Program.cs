@@ -1106,8 +1106,8 @@ namespace BigLineconnect
                         _lastSentFrameHash = 0;
                     }
 
-                    // Wait up to 16ms (60 FPS max speed) OR wake up INSTANTLY (0ms) on mouse/key click!
-                    _instantCaptureEvent.WaitOne(16);
+                    // Wait up to 8ms (120 FPS max speed) OR wake up INSTANTLY (0ms) on mouse/key click!
+                    _instantCaptureEvent.WaitOne(8);
                 }
                 ScreenCapturer.SuppressWallpaper(false);
                 ApplySleepPrevention(false);
@@ -1195,7 +1195,7 @@ namespace BigLineconnect
                         if (!isDuplicate || isInitialBurst || isForcedBurst || isHeartbeat)
                         {
                             // Dynamic frame pacing based on Quality mode
-                            int minIntervalMs = (CurrentQuality <= 38) ? 50 : ((CurrentQuality <= 48) ? 25 : 16);
+                            int minIntervalMs = (CurrentQuality <= 38) ? 33 : 0;
                             if (isInitialBurst || isForcedBurst || (DateTime.Now - _lastSentFrameTime).TotalMilliseconds >= minIntervalMs)
                             {
                                 _isSendingFrame = true;
