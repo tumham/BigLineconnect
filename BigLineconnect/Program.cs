@@ -1288,12 +1288,7 @@ namespace BigLineconnect
 
                 _pendingMouseX = x;
                 _pendingMouseY = y;
-                Interlocked.Exchange(ref _hasPendingMouseMove, 1);
-
-                if (DateTime.Now - _lastMouseMoveSimulated > TimeSpan.FromMilliseconds(16))
-                {
-                    FlushPendingMouseMove();
-                }
+                FlushPendingMouseMove();
             }
         }
 

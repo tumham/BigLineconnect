@@ -315,8 +315,8 @@ namespace BigLineconnect
                         byte* ptr = (byte*)data.Scan0;
                         int stride = data.Stride;
 
-                        int stepX = Math.Max(1, w / 32);
-                        int stepY = Math.Max(1, h / 32);
+                        int stepX = Math.Max(1, w / 64);
+                        int stepY = Math.Max(1, h / 64);
 
                         for (int y = 0; y < h; y += stepY)
                         {
