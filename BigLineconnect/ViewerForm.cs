@@ -827,7 +827,11 @@ namespace BigLineconnect
                                             {
                                                 lock (_rtCanvasLock)
                                                 {
-                                                    newImg = BigLineRtEngine.ProcessRtPacket(frameToDecode, ref _rtCanvas);
+                                                    var rawBmp = BigLineRtEngine.ProcessRtPacket(frameToDecode, ref _rtCanvas);
+                                                    if (rawBmp != null)
+                                                    {
+                                                        newImg = (Image)rawBmp.Clone();
+                                                    }
                                                 }
                                             }
                                             else if (H264Decoder.IsH264Packet(frameToDecode))
