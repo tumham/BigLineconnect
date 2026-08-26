@@ -823,7 +823,14 @@ namespace BigLineconnect
 
                                             Image? newImg = null;
 
-                                            if (H264Decoder.IsH264Packet(frameToDecode))
+                                            if (BigLineRtEngine.IsBigLineRtPacket(frameToDecode))
+                                            {
+                                                lock (_rtCanvasLock)
+                                                {
+                                                    newImg = BigLineRtEngine.ProcessRtPacket(frameToDecode, ref _rtCanvas);
+                                                }
+                                            }
+                                            else if (H264Decoder.IsH264Packet(frameToDecode))
                                             {
                                                 if (_h264Decoder == null) _h264Decoder = new H264Decoder();
                                                 newImg = _h264Decoder.DecodeNalUnit(frameToDecode);

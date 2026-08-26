@@ -138,8 +138,8 @@ namespace BigLineconnect
             _jpegEncoder = GetEncoder(ImageFormat.Jpeg);
         }
 
-        public static bool UseRtTileEngine { get; set; } = false;
-        public static bool UseH264Mode { get; set; } = true; // Default to Ultra-Fast H.264 Mode for 60 FPS sub-10ms performance
+        public static bool UseRtTileEngine { get; set; } = true;
+        public static bool UseH264Mode { get; set; } = false;
         public static bool ForceKeyframeRequested { get; set; } = false;
         private static H264Encoder? _h264Encoder;
 
