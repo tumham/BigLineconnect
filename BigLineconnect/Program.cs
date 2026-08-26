@@ -432,24 +432,40 @@ namespace BigLineconnect
                 return;
             }
 
-            // Prevent duplicate GUI instances in the same user session and pass connection arguments to running instance
-            using var singleInstanceMutex = new Mutex(true, "Global\\BigLineconnectSingleInstanceMutex_" + (isHelper ? "Helper" : "Gui"), out bool isNewInstance);
-            if (!isNewInstance && !isHelper)
+            // Prevent duplicate GUI instances and automatically terminate older instances to open a fresh slate
+            int currentPid = Process.GetCurrentProcess().Id;
+            var existingProcs = Process.GetProcessesByName("BigLineconnect").Where(p => p.Id != currentPid).ToList();
+            
+            if (existingProcs.Count > 0 && !isHelper)
             {
-                if (args.Length > 0)
+                if (args.Length > 0 && !args.Any(a => a.Equals("--setup", StringComparison.OrdinalIgnoreCase) || a.Equals("--install", StringComparison.OrdinalIgnoreCase)))
                 {
                     try
                     {
                         using var client = new System.IO.Pipes.NamedPipeClientStream(".", "BigLineconnect_IPC_Pipe", System.IO.Pipes.PipeDirection.Out);
-                        client.Connect(1000);
+                        client.Connect(500);
                         using var writer = new StreamWriter(client, Encoding.UTF8);
                         writer.WriteLine(string.Join(" ", args));
                         writer.Flush();
+                        return;
                     }
                     catch { }
                 }
-                return;
+
+                // Auto-terminate older background processes so the new EXE takes over seamlessly!
+                foreach (var p in existingProcs)
+                {
+                    try
+                    {
+                        p.Kill(true);
+                        p.WaitForExit(1000);
+                    }
+                    catch { }
+                }
+                Thread.Sleep(500);
             }
+
+            using var singleInstanceMutex = new Mutex(true, "Global\\BigLineconnectSingleInstanceMutex_" + (isHelper ? "Helper" : "Gui"));
 
             // Register custom URI scheme for deep linking (bigline://)
             RegisterUriScheme();
