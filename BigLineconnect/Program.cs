@@ -1210,8 +1210,8 @@ namespace BigLineconnect
                         // 2. KOTA KORUMASI: Ekran değiştiğinde veya 200ms heartbeat zaman aşımında kare gönder (Statik ekranda 0 KB/sn!)
                         if (!isDuplicate || isInitialBurst || isForcedBurst || isHeartbeat)
                         {
-                            // Dynamic frame pacing based on Quality mode
-                            int minIntervalMs = (CurrentQuality <= 38) ? 33 : 16;
+                            // Always maintain ultra-smooth 60 FPS (16ms frame pacing)
+                            int minIntervalMs = 16;
                             if (isInitialBurst || isForcedBurst || (DateTime.Now - _lastSentFrameTime).TotalMilliseconds >= minIntervalMs)
                             {
                                 _isSendingFrame = true;
@@ -1229,13 +1229,6 @@ namespace BigLineconnect
                                         true,
                                         token
                                     ).ConfigureAwait(false);
-
-                                    double sendMs = (DateTime.Now - sendStart).TotalMilliseconds;
-                                    if (sendMs > 35)
-                                    {
-                                        CurrentQuality = Math.Min(CurrentQuality, 35);
-                                        CurrentMaxDimension = Math.Min(CurrentMaxDimension, 1080);
-                                    }
 
                                     _lastSentFrameBytes = frameToSend;
                                     _lastSentFrameHash = frameHash;

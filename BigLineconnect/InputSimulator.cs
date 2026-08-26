@@ -17,6 +17,9 @@ namespace BigLineconnect
         private static extern void mouse_event(uint dwFlags, uint dx, uint dy, uint dwData, UIntPtr dwExtraInfo);
 
         [DllImport("user32.dll")]
+        private static extern int GetSystemMetrics(int nIndex);
+
+        [DllImport("user32.dll")]
         private static extern bool ReleaseCapture();
 
         private static uint SendInput(uint nInputs, INPUT[] pInputs, int cbSize)
@@ -83,6 +86,7 @@ namespace BigLineconnect
         private const uint MOUSEEVENTF_MIDDLEDOWN = 0x0020;
         private const uint MOUSEEVENTF_MIDDLEUP = 0x0040;
         private const uint MOUSEEVENTF_WHEEL = 0x0800;
+        private const uint MOUSEEVENTF_VIRTUALDESK = 0x4000;
         private const uint MOUSEEVENTF_ABSOLUTE = 0x8000;
 
         private const uint KEYEVENTF_KEYDOWN = 0x0000;
@@ -140,7 +144,18 @@ namespace BigLineconnect
                 int actualY = bounds.Y + Math.Min(bounds.Height - 1, (int)(yPercent * bounds.Height));
 
                 SetCursorPos(actualX, actualY);
-                mouse_event(MOUSEEVENTF_MOVE, 0, 0, 0, (UIntPtr)0); // Force Windows mouse subsystem to dispatch input
+
+                int virtualLeft = GetSystemMetrics(76); // SM_XVIRTUALSCREEN
+                int virtualTop = GetSystemMetrics(77);  // SM_YVIRTUALSCREEN
+                int virtualWidth = GetSystemMetrics(78); // SM_CXVIRTUALSCREEN
+                int virtualHeight = GetSystemMetrics(79); // SM_CYVIRTUALSCREEN
+                if (virtualWidth <= 0) virtualWidth = SystemInformation.VirtualScreen.Width;
+                if (virtualHeight <= 0) virtualHeight = SystemInformation.VirtualScreen.Height;
+
+                int absX = (int)(((double)(actualX - virtualLeft) * 65535.0) / Math.Max(1, virtualWidth));
+                int absY = (int)(((double)(actualY - virtualTop) * 65535.0) / Math.Max(1, virtualHeight));
+
+                mouse_event(MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_VIRTUALDESK, (uint)absX, (uint)absY, 0, (UIntPtr)0);
             }
             catch { }
         }
