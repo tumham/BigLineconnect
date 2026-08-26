@@ -269,7 +269,7 @@ namespace BigLineconnect
 
             _titleLabel = new Label
             {
-                Text = "BigLineconnect v3.71.2 🚀",
+                Text = "BigLineconnect",
                 Location = new Point(105, 15),
                 Size = new Size(330, 42),
                 Font = new Font("Segoe UI", 20F, FontStyle.Bold),
@@ -280,11 +280,11 @@ namespace BigLineconnect
 
             var subtitleLabel = new Label
             {
-                Text = "v3.71.2",
+                Text = "v3.71.3 🔴 M (120 FPS Ultra Motor)",
                 Location = new Point(108, 58),
                 Size = new Size(450, 20),
-                Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
-                ForeColor = Color.FromArgb(74, 90, 120),
+                Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(220, 53, 69),
                 BackColor = Color.Transparent
             };
             this.Controls.Add(subtitleLabel);
