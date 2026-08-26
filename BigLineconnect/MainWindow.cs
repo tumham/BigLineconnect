@@ -429,9 +429,9 @@ namespace BigLineconnect
             _idLabel = new Label
             {
                 Text = "--- --- ---",
-                Location = new Point(10, 12),
-                Size = new Size(225, 42),
-                Font = new Font("Segoe UI", 20F, FontStyle.Bold),
+                Location = new Point(5, 12),
+                Size = new Size(235, 42),
+                Font = new Font("Segoe UI", 16.5F, FontStyle.Bold),
                 ForeColor = Color.FromArgb(38, 40, 45),
                 BackColor = Color.Transparent,
                 TextAlign = ContentAlignment.MiddleCenter,

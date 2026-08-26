@@ -174,9 +174,9 @@ namespace BigLineconnect
         {
             try
             {
-                if ((DateTime.Now - _lastAttachTime).TotalMilliseconds < 3000)
+                if ((DateTime.Now - _lastAttachTime).TotalMilliseconds < 250)
                 {
-                    return; // Throttle heavy kernel Win32 desktop switching to eliminate 30ms capture lag!
+                    return;
                 }
                 _lastAttachTime = DateTime.Now;
 
@@ -186,6 +186,14 @@ namespace BigLineconnect
                 if (hDesk == IntPtr.Zero)
                 {
                     hDesk = OpenInputDesktop(0, false, MAXIMUM_ALLOWED);
+                }
+                if (hDesk == IntPtr.Zero)
+                {
+                    hDesk = OpenDesktop("ConsentDesktop", 0, false, MAXIMUM_ALLOWED);
+                }
+                if (hDesk == IntPtr.Zero)
+                {
+                    hDesk = OpenDesktop("Winlogon", 0, false, MAXIMUM_ALLOWED);
                 }
                 if (hDesk == IntPtr.Zero)
                 {
