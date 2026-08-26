@@ -1276,6 +1276,7 @@ namespace BigLineconnect
                 {
                     _lastMouseMoveSimulated = DateTime.Now;
                     InputSimulator.SimulateMouseMove(x, y, _activeDisplayIndex);
+                    TriggerInstantCapture(4);
                 }
             }
         }
@@ -1305,6 +1306,7 @@ namespace BigLineconnect
                 _pendingMouseX = x;
                 _pendingMouseY = y;
                 FlushPendingMouseMove();
+                TriggerInstantCapture(4);
             }
         }
 
@@ -1318,17 +1320,13 @@ namespace BigLineconnect
                 if (!root.TryGetProperty("type", out var typeProp)) return;
                 string type = typeProp.GetString() ?? "";
 
-                if (type != "move" && !json.Contains("\"chunk\":") && !json.Contains("\"data\":"))
-                {
-                    Log($"[Girdi Paketi]: {json}");
-                }
-
                 if (type == "click" || type == "key" || type == "scroll" || type == "double_click")
                 {
                     DesktopHelper.AttachToInputDesktop();
                     FlushPendingMouseMove();
                     Interlocked.Exchange(ref _forceSendUntilTicks, DateTime.Now.AddMilliseconds(250).Ticks);
                     _lastSentFrameBytes = null;
+                    TriggerInstantCapture(4);
                 }
 
                 if (type == "move")
