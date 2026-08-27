@@ -174,7 +174,7 @@ namespace BigLineconnect
         {
             try
             {
-                if ((DateTime.Now - _lastAttachTime).TotalMilliseconds < 250)
+                if ((DateTime.Now - _lastAttachTime).TotalMilliseconds < 1000)
                 {
                     return;
                 }

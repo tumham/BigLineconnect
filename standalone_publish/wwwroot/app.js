@@ -209,9 +209,17 @@ function connectToHost(id) {
             const fallbackImg = document.getElementById('screen-img');
 
             let frameBytes = ev.data;
-            if (frameBytes && frameBytes.byteLength > 8) {
+            if (frameBytes && frameBytes.byteLength > 12) {
                 const u8 = new Uint8Array(frameBytes);
-                for (let i = 0; i < Math.min(16, u8.length - 1); i++) {
+                if (u8.length >= 20) {
+                    const dv = new DataView(frameBytes);
+                    const seq = dv.getUint32(8, true);
+                    const ackPkt = new Uint8Array([0x41, seq & 0xFF, (seq >> 8) & 0xFF, (seq >> 16) & 0xFF, (seq >> 24) & 0xFF]);
+                    if (socket && socket.readyState === WebSocket.OPEN) {
+                        try { socket.send(ackPkt.buffer); } catch (e) {}
+                    }
+                }
+                for (let i = 0; i < Math.min(24, u8.length - 1); i++) {
                     if (u8[i] === 0xFF && u8[i + 1] === 0xD8) {
                         if (i > 0) frameBytes = frameBytes.slice(i);
                         break;
@@ -263,62 +271,6 @@ function connectToHost(id) {
         showToast('Bağlantı sonlandırıldı.', 'info');
         socket = null;
     };
-}
-                    const btnElem = document.getElementById('submit-password-btn');
-                    if (btnElem) {
-                        btnElem.disabled = false;
-                        btnElem.innerHTML = 'Doğrula & Bağlan <i class="fa-solid fa-arrow-right-to-bracket"></i>';
-                    }
-                    if (passwordModal) {
-                        passwordModal.classList.add('hidden');
-                        passwordModal.style.display = 'none';
-                        passwordModal.style.pointerEvents = 'none';
-                    }
-                    if (hiddenKeyboardInput) hiddenKeyboardInput.disabled = false;
-                    showToast('Bağlantı başarılı! Ekran yükleniyor...', 'success');
-                } else if (event.data === 'AUTH_FAILED') {
-                    const btnElem = document.getElementById('submit-password-btn');
-                    if (btnElem) {
-                        btnElem.disabled = false;
-                        btnElem.innerHTML = 'Doğrula & Bağlan <i class="fa-solid fa-arrow-right-to-bracket"></i>';
-                    }
-                    showToast('❌ Hatalı Erişim Şifresi! Lütfen doğru şifreyi giriniz.', 'error');
-                    let errLabel = document.getElementById('password-error-label');
-                    if (!errLabel) {
-                        errLabel = document.createElement('div');
-                        errLabel.id = 'password-error-label';
-                        errLabel.style.cssText = 'color:#e74c3c;font-weight:700;font-size:13px;margin-top:12px;padding:10px;background:rgba(231,76,60,0.15);border-radius:10px;border:1px solid rgba(231,76,60,0.3);';
-                        const container = document.querySelector('#password-modal .glass-card');
-                        if (container) container.appendChild(errLabel);
-                    }
-                    if (errLabel) {
-                        errLabel.textContent = '❌ Hatalı Şifre! Lütfen karşı bilgisayarın ekranındaki 6 haneli şifreyi doğru girdiğinizden emin olun.';
-                    }
-                    if (accessPasswordInput) {
-                        accessPasswordInput.value = '';
-                        accessPasswordInput.focus();
-                    }
-                } else if (event.data === 'AUTH_REJECTED') {
-                    customCloseReason = 'Bağlantı isteği kullanıcı tarafından reddedildi!';
-                    if (passwordModal) passwordModal.classList.add('hidden');
-                    if (hiddenKeyboardInput) hiddenKeyboardInput.disabled = false;
-                    socket.close();
-                } else if (event.data.startsWith('{')) {
-                    try {
-                        const json = JSON.parse(event.data);
-                        if (json.type === 'clipboard') {
-                            navigator.clipboard.writeText(json.text).then(() => {
-                                showToast('Pano Eşitlendi', 'success');
-                            }).catch(err => {});
-                        }
-                    } catch (e) {}
-                }
-            }
-        };
-    } catch (e) {
-        showToast('Bağlantı hatası!', 'error');
-        console.error(e);
-    }
 }
 
 // Fullscreen Button
@@ -1219,3 +1171,143 @@ window.submitOnlineCheckout = submitOnlineCheckout;
 window.checkoutViaWhatsApp = checkoutViaWhatsApp;
 window.extendFreeSessionTimer = extendFreeSessionTimer;
 window.startFreeSessionTimer = startFreeSessionTimer;
+
+
+// --- FILE TRANSFER CHUNKING INTEGRATION ---
+let fileUploadInProgress = false;
+
+function triggerFileTransfer() {
+    if (!connected || !socket || socket.readyState !== WebSocket.OPEN) {
+        showToast('LÃ¼tfen Ã¶nce bir cihaza baÄŸlanÄ±n.', 'error');
+        return;
+    }
+    if (fileUploadInProgress) {
+        showToast('Zaten aktif bir dosya gÃ¶nderimi var.', 'warning');
+        return;
+    }
+    let fileInput = document.getElementById('file-transfer-input');
+    if (!fileInput) {
+        fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.id = 'file-transfer-input';
+        fileInput.style.display = 'none';
+        fileInput.addEventListener('change', handleFileSelected);
+        document.body.appendChild(fileInput);
+    }
+    fileInput.click();
+}
+
+async function handleFileSelected(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    fileUploadInProgress = true;
+    
+    const progressContainer = document.getElementById('upload-progress-container');
+    const progressText = document.getElementById('upload-progress-text');
+    const progressBar = document.getElementById('upload-progress-bar');
+    
+    if (progressContainer) {
+        progressContainer.style.setProperty('display', 'flex', 'important');
+    }
+    if (progressText) {
+        progressText.innerText = 'Dosya GÃ¶nderiliyor: %0';
+    }
+    if (progressBar) {
+        progressBar.style.width = '0%';
+    }
+
+    try {
+        const totalSize = file.size;
+        const fileName = file.name;
+        const chunkSize = 64 * 1024; // 64KB chunks
+        
+        // 1. Send batch_start
+        const batchStart = {
+            type: "batch_start",
+            totalFiles: 1,
+            totalSize: totalSize,
+            senderId: "WebClient",
+            targetFolder: "DOWNLOADS"
+        };
+        socket.send(JSON.stringify(batchStart));
+        
+        // 2. Send file_start
+        const fileStart = {
+            type: "file_start",
+            name: fileName,
+            size: totalSize,
+            isFolder: false
+        };
+        socket.send(JSON.stringify(fileStart));
+        
+        // Let host process headers
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        let offset = 0;
+        
+        while (offset < totalSize) {
+            const currentChunkSize = Math.min(chunkSize, totalSize - offset);
+            const blobSlice = file.slice(offset, offset + currentChunkSize);
+            
+            const arrayBuffer = await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsArrayBuffer(blobSlice);
+            });
+            
+            // Format packet: 0x46 ('F') byte followed by chunk bytes
+            const packet = new Uint8Array(1 + currentChunkSize);
+            packet[0] = 0x46; // FileTransferTag
+            packet.set(new Uint8Array(arrayBuffer), 1);
+            
+            socket.send(packet.buffer);
+            
+            offset += currentChunkSize;
+            
+            const percent = Math.round((offset / totalSize) * 100);
+            if (progressText) {
+                progressText.innerText = 'Dosya GÃ¶nderiliyor: %' + percent;
+            }
+            if (progressBar) {
+                progressBar.style.width = percent + '%';
+            }
+            
+            await new Promise(resolve => setTimeout(resolve, 5));
+        }
+        
+        // 3. Send file_end
+        const fileEnd = {
+            type: "file_end"
+        };
+        socket.send(JSON.stringify(fileEnd));
+        
+        // 4. Send batch_end
+        const batchEnd = {
+            type: "batch_end"
+        };
+        socket.send(JSON.stringify(batchEnd));
+        
+        showToast('"' + fileName + '" baÅŸarÄ±yla gÃ¶nderildi!', 'success');
+        
+    } catch (e) {
+        console.error('File upload error:', e);
+        showToast('Dosya gÃ¶nderiminde hata oluÅŸtu!', 'error');
+        try {
+            socket.send(JSON.stringify({ type: "transfer_cancel" }));
+        } catch (_) {}
+    } finally {
+        fileUploadInProgress = false;
+        if (event.target) event.target.value = '';
+        
+        setTimeout(() => {
+            if (!fileUploadInProgress && progressContainer) {
+                progressContainer.style.setProperty('display', 'none', 'important');
+            }
+        }, 2000);
+    }
+}
+
+window.triggerFileTransfer = triggerFileTransfer;
+window.handleFileSelected = handleFileSelected;

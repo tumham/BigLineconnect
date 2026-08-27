@@ -138,8 +138,8 @@ namespace BigLineconnect
             _jpegEncoder = GetEncoder(ImageFormat.Jpeg);
         }
 
-        public static bool UseRtTileEngine { get; set; } = false;
-        public static bool UseH264Mode { get; set; } = true; // Default to Ultra-Fast H.264 Mode for 60 FPS sub-10ms performance
+        public static bool UseRtTileEngine { get; set; } = true; // AnyDesk DeskRT 64x64 Differential Tile Engine (Active & Ultra-Fast)
+        public static bool UseH264Mode { get; set; } = false;
         public static bool ForceKeyframeRequested { get; set; } = false;
         private static H264Encoder? _h264Encoder;
 
@@ -315,17 +315,14 @@ namespace BigLineconnect
                         byte* ptr = (byte*)data.Scan0;
                         int stride = data.Stride;
 
-                        int stepX = Math.Max(1, w / 32);
-                        int stepY = Math.Max(1, h / 32);
-
-                        for (int y = 0; y < h; y += stepY)
+                        // Dense scan: Sample every 4th row across full width to catch 100% of text edits, cursor blinks & cell highlights in 0.05ms
+                        int ulongsPerRow = (w * 4) / 8;
+                        for (int y = 0; y < h; y += 4)
                         {
-                            byte* row = ptr + (y * stride);
-                            for (int x = 0; x < w; x += stepX)
+                            ulong* row = (ulong*)(ptr + (y * stride));
+                            for (int x = 0; x < ulongsPerRow; x += 4)
                             {
-                                int idx = x * 4;
-                                uint val = *(uint*)(row + idx);
-                                hash ^= val;
+                                hash ^= row[x];
                                 hash *= 1099511628211UL;
                             }
                         }

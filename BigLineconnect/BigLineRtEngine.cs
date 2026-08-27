@@ -234,68 +234,74 @@ namespace BigLineconnect
             return header == MAGIC_HEADER;
         }
 
+        private static readonly object _canvasLock = new object();
+
         public static Bitmap? ProcessRtPacket(byte[] packet, ref Bitmap? currentCanvas)
         {
             if (!IsBigLineRtPacket(packet)) return null;
 
-            using (var ms = new MemoryStream(packet))
-            using (var reader = new BinaryReader(ms))
+            lock (_canvasLock)
             {
-                uint magic = reader.ReadUInt32();
-                byte flag = reader.ReadByte();
-                ushort width = reader.ReadUInt16();
-                ushort height = reader.ReadUInt16();
-
-                if (flag == FLAG_KEYFRAME)
+                using (var ms = new MemoryStream(packet))
+                using (var reader = new BinaryReader(ms))
                 {
-                    int length = reader.ReadInt32();
-                    byte[] jpegData = reader.ReadBytes(length);
+                    uint magic = reader.ReadUInt32();
+                    byte flag = reader.ReadByte();
+                    ushort width = reader.ReadUInt16();
+                    ushort height = reader.ReadUInt16();
 
-                    using (var jpegMs = new MemoryStream(jpegData))
+                    if (flag == FLAG_KEYFRAME)
                     {
-                        var fullBmp = new Bitmap(jpegMs);
-                        currentCanvas?.Dispose();
-                        currentCanvas = new Bitmap(fullBmp);
-                        return currentCanvas;
-                    }
-                }
-                else if (flag == FLAG_TILES)
-                {
-                    ushort tileCount = reader.ReadUInt16();
-                    if (currentCanvas == null || currentCanvas.Width != width || currentCanvas.Height != height)
-                    {
-                        currentCanvas?.Dispose();
-                        currentCanvas = new Bitmap(width, height, PixelFormat.Format32bppArgb);
-                    }
+                        int length = reader.ReadInt32();
+                        byte[] jpegData = reader.ReadBytes(length);
 
-                    using (Graphics g = Graphics.FromImage(currentCanvas))
-                    {
-                        g.CompositingMode = CompositingMode.SourceCopy;
-                        g.InterpolationMode = InterpolationMode.NearestNeighbor;
-
-                        for (int i = 0; i < tileCount; i++)
+                        using (var jpegMs = new MemoryStream(jpegData))
                         {
-                            ushort col = reader.ReadUInt16();
-                            ushort row = reader.ReadUInt16();
-                            int dataLen = reader.ReadInt32();
-                            byte[] tileJpeg = reader.ReadBytes(dataLen);
+                            var fullBmp = new Bitmap(jpegMs);
+                            currentCanvas?.Dispose();
+                            currentCanvas = new Bitmap(fullBmp);
+                        }
+                    }
+                    else if (flag == FLAG_TILES)
+                    {
+                        ushort tileCount = reader.ReadUInt16();
+                        if (currentCanvas == null || currentCanvas.Width != width || currentCanvas.Height != height)
+                        {
+                            currentCanvas?.Dispose();
+                            currentCanvas = new Bitmap(width, height, PixelFormat.Format32bppArgb);
+                        }
 
-                            int x = col * TILE_SIZE;
-                            int y = row * TILE_SIZE;
+                        using (Graphics g = Graphics.FromImage(currentCanvas))
+                        {
+                            g.CompositingMode = CompositingMode.SourceCopy;
+                            g.InterpolationMode = InterpolationMode.NearestNeighbor;
 
-                            using (var tileMs = new MemoryStream(tileJpeg))
-                            using (var tileBmp = new Bitmap(tileMs))
+                            for (int i = 0; i < tileCount; i++)
                             {
-                                g.DrawImage(tileBmp, x, y);
+                                ushort col = reader.ReadUInt16();
+                                ushort row = reader.ReadUInt16();
+                                int dataLen = reader.ReadInt32();
+                                byte[] tileJpeg = reader.ReadBytes(dataLen);
+
+                                int x = col * TILE_SIZE;
+                                int y = row * TILE_SIZE;
+
+                                using (var tileMs = new MemoryStream(tileJpeg))
+                                using (var tileBmp = new Bitmap(tileMs))
+                                {
+                                    g.DrawImage(tileBmp, x, y);
+                                }
                             }
                         }
                     }
 
-                    return currentCanvas;
+                    if (currentCanvas != null)
+                    {
+                        return (Bitmap)currentCanvas.Clone();
+                    }
+                    return null;
                 }
             }
-
-            return null;
         }
     }
 }

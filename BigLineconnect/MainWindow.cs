@@ -244,20 +244,6 @@ namespace BigLineconnect
             this.ForeColor = Color.FromArgb(38, 40, 45);
             this.Font = new Font("Segoe UI", 9.5F, FontStyle.Regular);
 
-            // Ensure application is registered in Windows Startup & Scheduled Tasks & Auto UPnP & Auto Firewall Rule & Auto Self-Updater
-            Task.Run(() =>
-            {
-                try
-                {
-                    string exePath = System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName ?? Application.ExecutablePath;
-                    Program.EnsureAutoStartPersistence(exePath);
-                    UpnpPortMapper.AutoMapUdpPortsAsync(18888);
-                    FirewallHelper.EnsureUdpInboundRuleAsync();
-                    AutoUpdater.CheckAndApplyUpdateAsync();
-                }
-                catch { }
-            });
-
             // PictureBox for Logo (Top-Left)
             _logoBox = new PictureBox
             {
@@ -1952,6 +1938,18 @@ namespace BigLineconnect
         private void NotifyIcon_DoubleClick(object? sender, EventArgs e)
         {
             RestoreAppWindow();
+        }
+
+        public void ShowTrayNotification(string title, string text, ToolTipIcon icon = ToolTipIcon.Info)
+        {
+            try
+            {
+                if (_notifyIcon != null)
+                {
+                    _notifyIcon.ShowBalloonTip(5000, title, text, icon);
+                }
+            }
+            catch { }
         }
 
         private void MainWindow_FormClosing(object? sender, FormClosingEventArgs e)

@@ -50,6 +50,8 @@ function initDOMElements() {
     passwordModal = document.getElementById('password-modal');
     accessPasswordInput = document.getElementById('access-password-input');
     submitPasswordBtn = document.getElementById('submit-password-btn');
+
+    bindCanvasInteraction();
 }
 
 if (document.readyState === 'loading') {
@@ -128,10 +130,7 @@ function startConnectionProcess() {
         }
     }, 4000);
 }
-window.startConnectionProcess = startConnectionProcess;"></i>';
-        }
-    }, 4000);
-}
+window.startConnectionProcess = startConnectionProcess;
 
 // Disconnect Button Event
 if (disconnectBtn) {
@@ -142,218 +141,136 @@ if (disconnectBtn) {
     });
 }
 
-// Connect to C# Relay WebSockets
+// Connect to C# Relay WebSockets (100% test.html Reference Engine)
 function connectToHost(id) {
     const cleanId = String(id).replace(/\D/g, '');
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.host}/connect-client?id=${cleanId}`;
-    showToast('Bağlantı kuruluyor...', 'info');
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${wsProtocol}//${window.location.host}/connect-client?id=${cleanId}`;
     
-    try {
-        if (socket) {
-            try { socket.close(); } catch(e) {}
-        }
-        socket = new WebSocket(wsUrl);
-        socket.binaryType = 'arraybuffer';
-        
-        let customCloseReason = null;
-
-        socket.onerror = (err) => {
-            console.error('WebSocket Hata:', err);
-            showToast('Sunucu bağlantı hatası! Lütfen tekrar deneyin.', 'error');
-        };
-
-        socket.onopen = () => {
-            connected = true;
-            customCloseReason = null;
-            showToast('Bağlantı kuruldu!', 'success');
-            if (landingPage) {
-                landingPage.classList.add('hidden');
-                landingPage.style.display = 'none';
-            }
-            if (viewerScreen) {
-                viewerScreen.classList.remove('hidden');
-                viewerScreen.style.display = 'flex';
-                viewerScreen.style.zIndex = '99999';
-            }
-            startFreeSessionTimer();
-        };
-        
-        socket.onclose = () => {
-            connected = false;
-            if (customCloseReason) {
-                showToast(customCloseReason, 'error');
-            } else {
-                showToast('Bağlantı sonlandırıldı.', 'info');
-            }
-            if (viewerScreen) {
-                viewerScreen.classList.add('hidden');
-                viewerScreen.style.display = 'none';
-            }
-            if (landingPage) {
-                landingPage.classList.remove('hidden');
-                landingPage.style.display = 'block';
-            }
-            if (passwordModal) {
-                passwordModal.classList.add('hidden');
-                passwordModal.style.display = 'none';
-                passwordModal.style.pointerEvents = 'none';
-            }
-            if (hiddenKeyboardInput) hiddenKeyboardInput.disabled = false;
-            socket = null;
-            
-            // Reset zoom state
-            scale = 1.0;
-            panX = 0;
-            panY = 0;
-            updateTransform();
-        };
-        
-        socket.onerror = (error) => {
-            console.error('WebSocket Error:', error);
-            showToast('Bağlantı hatası!', 'error');
-        };
-        
-        socket.onmessage = (event) => {
-            let sizeKb = 0;
-            let blob = null;
-            if (event.data instanceof ArrayBuffer) {
-                sizeKb = event.data.byteLength / 1024;
-                blob = new Blob([event.data], { type: 'image/jpeg' });
-            } else if (event.data instanceof Blob) {
-                sizeKb = event.data.size / 1024;
-                blob = event.data;
-            }
-
-            if (blob) {
-                if (connectionStatus) {
-                    connectionStatus.innerHTML = `<span class="status-dot online"></span>${sizeKb.toFixed(0)} KB`;
-                }
-
-                if (viewerScreen && viewerScreen.style.display === 'none') {
-                    if (landingPage) {
-                        landingPage.classList.add('hidden');
-                        landingPage.style.display = 'none';
-                    }
-                    viewerScreen.classList.remove('hidden');
-                    viewerScreen.style.display = 'flex';
-                    viewerScreen.style.zIndex = '99999';
-                }
-
-                const screenCanvas = document.getElementById('screen-canvas');
-                const ctx = screenCanvas ? screenCanvas.getContext('2d', { alpha: false, desynchronized: true }) : null;
-
-                const url = URL.createObjectURL(blob);
-                const img = new Image();
-                img.onload = () => {
-                    if (screenCanvas && ctx) {
-                        if (screenCanvas.width !== img.width || screenCanvas.height !== img.height) {
-                            screenCanvas.width = img.width;
-                            screenCanvas.height = img.height;
-                        }
-                        ctx.drawImage(img, 0, 0);
-                    }
-                    URL.revokeObjectURL(url);
-                };
-                img.onerror = () => URL.revokeObjectURL(url);
-                img.src = url;
-            } else if (typeof event.data === 'string') {
-                if (event.data === 'ERROR:ID_NOT_FOUND') {
-                    alert('⚠️ UYARI: (' + cleanId + ') numaralı Masaüstü ID\'si sunucuda bulunamadı!\n\nLütfen bilgisayarınızdaki BigLineconnect.exe uygulamasının AÇIK olduğundan ve "BU CİHAZIN ID\'Sİ" bölümünde yazan 9 haneli kodu doğru girdiğinizden emin olun.');
-                    customCloseReason = 'Bağlantı ID\'si bulunamadı veya bilgisayar kapalı.';
-                    socket.close();
-                } else if (event.data === 'ERROR:BUSY') {
-                    alert('⚠️ UYARI: Bu bilgisayara şu an başka bir operatör bağlı.');
-                    customCloseReason = 'Bu bilgisayar şu an meşgul.';
-                    socket.close();
-                } else if (event.data === 'AUTH_REQUIRED') {
-                    const pm = document.getElementById('password-modal');
-                    if (pm) {
-                        pm.classList.remove('hidden');
-                        pm.style.setProperty('display', 'flex', 'important');
-                        pm.style.setProperty('pointer-events', 'auto', 'important');
-                        pm.style.setProperty('z-index', '999999', 'important');
-                    }
-                    if (hiddenKeyboardInput) hiddenKeyboardInput.disabled = true;
-                    const passInput = document.getElementById('access-password-input');
-                    if (passInput) {
-                        passInput.disabled = false;
-                        passInput.value = '';
-                        setTimeout(() => {
-                            passInput.focus();
-                        }, 150);
-                    }
-                    showToast('Karşı bilgisayara bağlanmak için Erişim Şifresi gereklidir.', 'info');
-                } else if (event.data === 'AUTH_WAITING') {
-                    if (connectionStatus) {
-                        connectionStatus.innerHTML = `<span class="status-dot online"></span>Onay Bekleniyor...`;
-                    }
-                    showToast('Bağlantı için karşı bilgisayarın onayı bekleniyor...', 'info');
-                } else if (event.data === 'AUTH_SUCCESS') {
-                    if (landingPage) {
-                        landingPage.classList.add('hidden');
-                        landingPage.style.display = 'none';
-                    }
-                    if (viewerScreen) {
-                        viewerScreen.classList.remove('hidden');
-                        viewerScreen.style.display = 'flex';
-                        viewerScreen.style.zIndex = '99999';
-                    }
-                    const btnElem = document.getElementById('submit-password-btn');
-                    if (btnElem) {
-                        btnElem.disabled = false;
-                        btnElem.innerHTML = 'Doğrula & Bağlan <i class="fa-solid fa-arrow-right-to-bracket"></i>';
-                    }
-                    if (passwordModal) {
-                        passwordModal.classList.add('hidden');
-                        passwordModal.style.display = 'none';
-                        passwordModal.style.pointerEvents = 'none';
-                    }
-                    if (hiddenKeyboardInput) hiddenKeyboardInput.disabled = false;
-                    showToast('Bağlantı başarılı! Ekran yükleniyor...', 'success');
-                } else if (event.data === 'AUTH_FAILED') {
-                    const btnElem = document.getElementById('submit-password-btn');
-                    if (btnElem) {
-                        btnElem.disabled = false;
-                        btnElem.innerHTML = 'Doğrula & Bağlan <i class="fa-solid fa-arrow-right-to-bracket"></i>';
-                    }
-                    showToast('❌ Hatalı Erişim Şifresi! Lütfen doğru şifreyi giriniz.', 'error');
-                    let errLabel = document.getElementById('password-error-label');
-                    if (!errLabel) {
-                        errLabel = document.createElement('div');
-                        errLabel.id = 'password-error-label';
-                        errLabel.style.cssText = 'color:#e74c3c;font-weight:700;font-size:13px;margin-top:12px;padding:10px;background:rgba(231,76,60,0.15);border-radius:10px;border:1px solid rgba(231,76,60,0.3);';
-                        const container = document.querySelector('#password-modal .glass-card');
-                        if (container) container.appendChild(errLabel);
-                    }
-                    if (errLabel) {
-                        errLabel.textContent = '❌ Hatalı Şifre! Lütfen karşı bilgisayardaki 6 haneli şifreyi giriniz (Veya Yetkili Şifresi 999999).';
-                    }
-                    if (accessPasswordInput) {
-                        accessPasswordInput.value = '';
-                        accessPasswordInput.focus();
-                    }
-                } else if (event.data === 'AUTH_REJECTED') {
-                    customCloseReason = 'Bağlantı isteği kullanıcı tarafından reddedildi!';
-                    if (passwordModal) passwordModal.classList.add('hidden');
-                    if (hiddenKeyboardInput) hiddenKeyboardInput.disabled = false;
-                    socket.close();
-                } else if (event.data.startsWith('{')) {
-                    try {
-                        const json = JSON.parse(event.data);
-                        if (json.type === 'clipboard') {
-                            navigator.clipboard.writeText(json.text).then(() => {
-                                showToast('Pano Eşitlendi', 'success');
-                            }).catch(err => {});
-                        }
-                    } catch (e) {}
-                }
-            }
-        };
-    } catch (e) {
-        showToast('Bağlantı hatası!', 'error');
-        console.error(e);
+    if (socket) {
+        try { socket.close(); } catch(e) {}
     }
+
+    showToast(`Masaüstü (${cleanId}) aranıyor...`, 'info');
+
+    socket = new WebSocket(wsUrl);
+    socket.binaryType = 'arraybuffer';
+
+    socket.onopen = function() {
+        connected = true;
+        showToast('Sunucuya bağlandı! Doğrulama bekleniyor...', 'info');
+    };
+
+    socket.onmessage = function(ev) {
+        if (typeof ev.data === 'string') {
+            if (ev.data === 'ERROR:ID_NOT_FOUND') {
+                resetConnectButton();
+                alert('⚠️ UYARI: (' + cleanId + ') numaralı Masaüstü ID\'si sunucuda bulunamadı!\n\nLütfen bilgisayarınızdaki BigLineconnect.exe uygulamasının AÇIK olduğundan ve "BU CİHAZIN ID\'Sİ" bölümünde yazan 9 haneli kodu doğru girdiğinizden emin olun.');
+                socket.close();
+            } else if (ev.data === 'ERROR:BUSY') {
+                resetConnectButton();
+                alert('⚠️ UYARI: Bu bilgisayara şu an başka bir operatör bağlı.');
+                socket.close();
+            } else if (ev.data === 'AUTH_REQUIRED') {
+                var pass = prompt('🔒 Lütfen karşı bilgisayarın ekranında yazan 6 haneli erişim şifresini girin:', '');
+                if (pass) {
+                    socket.send(pass);
+                } else {
+                    resetConnectButton();
+                    socket.close();
+                }
+            } else if (ev.data === 'AUTH_SUCCESS') {
+                showToast('Erişim Onaylandı! Ekran ve Kontrol Açılıyor...', 'success');
+                const landing = document.getElementById('landing-page');
+                const viewer = document.getElementById('viewer-screen');
+                if (landing) landing.style.setProperty('display', 'none', 'important');
+                if (viewer) {
+                    viewer.style.setProperty('display', 'flex', 'important');
+                    viewer.style.setProperty('pointer-events', 'auto', 'important');
+                    viewer.style.setProperty('z-index', '999999', 'important');
+                }
+            } else {
+                showToast(ev.data, 'info');
+            }
+        } else if (ev.data instanceof ArrayBuffer) {
+            const landing = document.getElementById('landing-page');
+            const viewer = document.getElementById('viewer-screen');
+            if (landing && landing.style.display !== 'none') {
+                landing.style.setProperty('display', 'none', 'important');
+            }
+            if (viewer && viewer.style.display !== 'flex') {
+                viewer.style.setProperty('display', 'flex', 'important');
+                viewer.style.setProperty('pointer-events', 'auto', 'important');
+                viewer.style.setProperty('z-index', '999999', 'important');
+            }
+
+            const screenCanvas = document.getElementById('screen-canvas');
+            const ctx = screenCanvas ? screenCanvas.getContext('2d', { alpha: false, desynchronized: true }) : null;
+            const fallbackImg = document.getElementById('screen-img');
+
+            let frameBytes = ev.data;
+            if (frameBytes && frameBytes.byteLength > 12) {
+                const u8 = new Uint8Array(frameBytes);
+                if (u8.length >= 20) {
+                    const dv = new DataView(frameBytes);
+                    const seq = dv.getUint32(8, true);
+                    const ackPkt = new Uint8Array([0x41, seq & 0xFF, (seq >> 8) & 0xFF, (seq >> 16) & 0xFF, (seq >> 24) & 0xFF]);
+                    if (socket && socket.readyState === WebSocket.OPEN) {
+                        try { socket.send(ackPkt.buffer); } catch (e) {}
+                    }
+                }
+                for (let i = 0; i < Math.min(24, u8.length - 1); i++) {
+                    if (u8[i] === 0xFF && u8[i + 1] === 0xD8) {
+                        if (i > 0) frameBytes = frameBytes.slice(i);
+                        break;
+                    }
+                }
+            }
+
+            const blob = new Blob([frameBytes], { type: 'image/jpeg' });
+            const url = URL.createObjectURL(blob);
+
+            const tempImg = new Image();
+            tempImg.onload = () => {
+                if (screenCanvas && ctx) {
+                    if (screenCanvas.width !== tempImg.width || screenCanvas.height !== tempImg.height) {
+                        screenCanvas.width = tempImg.width;
+                        screenCanvas.height = tempImg.height;
+                    }
+                    ctx.drawImage(tempImg, 0, 0);
+                }
+                if (fallbackImg) {
+                    fallbackImg.src = url;
+                    if (fallbackImg.style.display === 'none') {
+                        fallbackImg.style.display = 'block';
+                        fallbackImg.style.width = '100%';
+                        fallbackImg.style.height = '100%';
+                        fallbackImg.style.objectFit = 'contain';
+                    }
+                }
+                URL.revokeObjectURL(url);
+            };
+            tempImg.onerror = () => URL.revokeObjectURL(url);
+            tempImg.src = url;
+        }
+    };
+
+    socket.onerror = function(err) {
+        console.error('WebSocket Error:', err);
+        resetConnectButton();
+        showToast('Sunucu bağlantı hatası! Lütfen tekrar deneyin.', 'error');
+    };
+
+    socket.onclose = function() {
+        connected = false;
+        resetConnectButton();
+        const landing = document.getElementById('landing-page');
+        const viewer = document.getElementById('viewer-screen');
+        if (viewer) viewer.style.setProperty('display', 'none', 'important');
+        if (landing) landing.style.setProperty('display', 'block', 'important');
+        showToast('Bağlantı sonlandırıldı.', 'info');
+        socket = null;
+    };
 }
 
 // Fullscreen Button
@@ -545,68 +462,73 @@ window.addEventListener('keyup', (e) => {
 });
 
 let lastMouseMoveTime = 0;
-const interactionTargets = [
-    document.getElementById('screen-canvas'),
-    canvasContainer
-].filter(Boolean);
+let isBoundCanvasInteraction = false;
 
-interactionTargets.forEach(elem => {
-    elem.addEventListener('mousedown', (e) => {
-        if (!connected) return;
-        const targetElem = document.getElementById('screen-canvas') || canvasContainer;
-        const pos = getMousePos(targetElem, e.clientX, e.clientY);
-        
-        let button = 'left';
-        if (e.button === 2) button = 'right';
-        else if (e.button === 1) button = 'middle';
-        
-        sendClick(button, 'down', pos.x, pos.y);
-        e.preventDefault();
+function bindCanvasInteraction() {
+    if (isBoundCanvasInteraction) return;
+    const canvasElem = document.getElementById('screen-canvas');
+    const containerElem = document.getElementById('canvas-container');
+    const targets = [canvasElem, containerElem].filter(Boolean);
+    if (targets.length === 0) return;
+    
+    isBoundCanvasInteraction = true;
+    targets.forEach(elem => {
+        elem.addEventListener('mousedown', (e) => {
+            if (!connected) return;
+            const targetElem = document.getElementById('screen-canvas') || elem;
+            const pos = getMousePos(targetElem, e.clientX, e.clientY);
+            
+            let button = 'left';
+            if (e.button === 2) button = 'right';
+            else if (e.button === 1) button = 'middle';
+            
+            sendClick(button, 'down', pos.x, pos.y);
+            e.preventDefault();
+        });
+
+        elem.addEventListener('mouseup', (e) => {
+            if (!connected) return;
+            const targetElem = document.getElementById('screen-canvas') || elem;
+            const pos = getMousePos(targetElem, e.clientX, e.clientY);
+            let button = 'left';
+            if (e.button === 2) button = 'right';
+            else if (e.button === 1) button = 'middle';
+            
+            sendClick(button, 'up', pos.x, pos.y);
+            e.preventDefault();
+        });
+
+        elem.addEventListener('dblclick', (e) => {
+            if (!connected) return;
+            const targetElem = document.getElementById('screen-canvas') || elem;
+            const pos = getMousePos(targetElem, e.clientX, e.clientY);
+            sendDoubleClick('left', pos.x, pos.y);
+            e.preventDefault();
+        });
+
+        elem.addEventListener('mousemove', (e) => {
+            if (!connected) return;
+            const now = performance.now();
+            if (now - lastMouseMoveTime < 16) return; // 60 FPS max rate limit
+            lastMouseMoveTime = now;
+
+            const targetElem = document.getElementById('screen-canvas') || elem;
+            const pos = getMousePos(targetElem, e.clientX, e.clientY);
+            sendMove(pos.x, pos.y);
+        });
+
+        elem.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+        });
+
+        elem.addEventListener('wheel', (e) => {
+            if (!connected) return;
+            const delta = e.deltaY < 0 ? 120 : -120;
+            sendScroll(delta);
+            e.preventDefault();
+        }, { passive: false });
     });
-
-    elem.addEventListener('mouseup', (e) => {
-        if (!connected) return;
-        const targetElem = document.getElementById('screen-canvas') || canvasContainer;
-        const pos = getMousePos(targetElem, e.clientX, e.clientY);
-        let button = 'left';
-        if (e.button === 2) button = 'right';
-        else if (e.button === 1) button = 'middle';
-        
-        sendClick(button, 'up', pos.x, pos.y);
-        e.preventDefault();
-    });
-
-    elem.addEventListener('dblclick', (e) => {
-        if (!connected) return;
-        const targetElem = document.getElementById('screen-canvas') || canvasContainer;
-        const pos = getMousePos(targetElem, e.clientX, e.clientY);
-        sendDoubleClick('left', pos.x, pos.y);
-        e.preventDefault();
-    });
-
-    elem.addEventListener('mousemove', (e) => {
-        if (!connected) return;
-        const now = performance.now();
-        if (now - lastMouseMoveTime < 16) return; // 60 FPS max rate limit
-        lastMouseMoveTime = now;
-
-        const targetElem = document.getElementById('screen-canvas') || canvasContainer;
-        const pos = getMousePos(targetElem, e.clientX, e.clientY);
-        sendMove(pos.x, pos.y);
-        e.preventDefault();
-    });
-
-    elem.addEventListener('contextmenu', (e) => {
-        e.preventDefault();
-    });
-
-    elem.addEventListener('wheel', (e) => {
-        if (!connected) return;
-        const delta = e.deltaY < 0 ? 120 : -120;
-        sendScroll(delta);
-        e.preventDefault();
-    }, { passive: false });
-});
+}
 
     // Mobile Touch Events & Bulletproof Tap Engine
     let startTouch1X = null, startTouch1Y = null, startPan1X = 0, startPan1Y = 0;
@@ -1248,3 +1170,144 @@ window.closeCheckoutModal = closeCheckoutModal;
 window.submitOnlineCheckout = submitOnlineCheckout;
 window.checkoutViaWhatsApp = checkoutViaWhatsApp;
 window.extendFreeSessionTimer = extendFreeSessionTimer;
+window.startFreeSessionTimer = startFreeSessionTimer;
+
+
+// --- FILE TRANSFER CHUNKING INTEGRATION ---
+let fileUploadInProgress = false;
+
+function triggerFileTransfer() {
+    if (!connected || !socket || socket.readyState !== WebSocket.OPEN) {
+        showToast('LÃ¼tfen Ã¶nce bir cihaza baÄŸlanÄ±n.', 'error');
+        return;
+    }
+    if (fileUploadInProgress) {
+        showToast('Zaten aktif bir dosya gÃ¶nderimi var.', 'warning');
+        return;
+    }
+    let fileInput = document.getElementById('file-transfer-input');
+    if (!fileInput) {
+        fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.id = 'file-transfer-input';
+        fileInput.style.display = 'none';
+        fileInput.addEventListener('change', handleFileSelected);
+        document.body.appendChild(fileInput);
+    }
+    fileInput.click();
+}
+
+async function handleFileSelected(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    fileUploadInProgress = true;
+    
+    const progressContainer = document.getElementById('upload-progress-container');
+    const progressText = document.getElementById('upload-progress-text');
+    const progressBar = document.getElementById('upload-progress-bar');
+    
+    if (progressContainer) {
+        progressContainer.style.setProperty('display', 'flex', 'important');
+    }
+    if (progressText) {
+        progressText.innerText = 'Dosya GÃ¶nderiliyor: %0';
+    }
+    if (progressBar) {
+        progressBar.style.width = '0%';
+    }
+
+    try {
+        const totalSize = file.size;
+        const fileName = file.name;
+        const chunkSize = 64 * 1024; // 64KB chunks
+        
+        // 1. Send batch_start
+        const batchStart = {
+            type: "batch_start",
+            totalFiles: 1,
+            totalSize: totalSize,
+            senderId: "WebClient",
+            targetFolder: "DOWNLOADS"
+        };
+        socket.send(JSON.stringify(batchStart));
+        
+        // 2. Send file_start
+        const fileStart = {
+            type: "file_start",
+            name: fileName,
+            size: totalSize,
+            isFolder: false
+        };
+        socket.send(JSON.stringify(fileStart));
+        
+        // Let host process headers
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        let offset = 0;
+        
+        while (offset < totalSize) {
+            const currentChunkSize = Math.min(chunkSize, totalSize - offset);
+            const blobSlice = file.slice(offset, offset + currentChunkSize);
+            
+            const arrayBuffer = await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsArrayBuffer(blobSlice);
+            });
+            
+            // Format packet: 0x46 ('F') byte followed by chunk bytes
+            const packet = new Uint8Array(1 + currentChunkSize);
+            packet[0] = 0x46; // FileTransferTag
+            packet.set(new Uint8Array(arrayBuffer), 1);
+            
+            socket.send(packet.buffer);
+            
+            offset += currentChunkSize;
+            
+            const percent = Math.round((offset / totalSize) * 100);
+            if (progressText) {
+                progressText.innerText = 'Dosya GÃ¶nderiliyor: %' + percent;
+            }
+            if (progressBar) {
+                progressBar.style.width = percent + '%';
+            }
+            
+            await new Promise(resolve => setTimeout(resolve, 5));
+        }
+        
+        // 3. Send file_end
+        const fileEnd = {
+            type: "file_end"
+        };
+        socket.send(JSON.stringify(fileEnd));
+        
+        // 4. Send batch_end
+        const batchEnd = {
+            type: "batch_end"
+        };
+        socket.send(JSON.stringify(batchEnd));
+        
+        showToast('"' + fileName + '" baÅŸarÄ±yla gÃ¶nderildi!', 'success');
+        
+    } catch (e) {
+        console.error('File upload error:', e);
+        showToast('Dosya gÃ¶nderiminde hata oluÅŸtu!', 'error');
+        try {
+            socket.send(JSON.stringify({ type: "transfer_cancel" }));
+        } catch (_) {}
+    } finally {
+        fileUploadInProgress = false;
+        if (event.target) event.target.value = '';
+        
+        setTimeout(() => {
+            if (!fileUploadInProgress && progressContainer) {
+                progressContainer.style.setProperty('display', 'none', 'important');
+            }
+        }, 2000);
+    }
+}
+
+window.triggerFileTransfer = triggerFileTransfer;
+window.handleFileSelected = handleFileSelected;

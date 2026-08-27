@@ -618,8 +618,8 @@ namespace BigLineconnect
             {
                 await _ws.ConnectAsync(new Uri(_wsUrl), CancellationToken.None);
                 
-                // Enforce default Düşük quality mode (Native res / Q=48) for razor-sharp fonts and 0ms latency
-                SendJson("{\"type\":\"set_quality\",\"quality\":48,\"maxDim\":0}");
+                // Enforce default quality mode (Native res / Q=75) for razor-sharp fonts and crystal-clear text
+                SendJson("{\"type\":\"set_quality\",\"quality\":75,\"maxDim\":0}");
 
                 // Launch immediate parallel LAN Direct probe for 0ms local socket auto-switch
                 StartP2pAndLanProbe();
@@ -681,8 +681,25 @@ namespace BigLineconnect
                     {
                         int frameDataOffset = 0;
                         int frameDataLength = totalReceived;
+                        uint receivedSeq = 0;
 
-                        if (totalReceived >= 16)
+                        if (totalReceived >= 20)
+                        {
+                            long frameTicks = BitConverter.ToInt64(_receiveBuffer, 0);
+                            if (frameTicks > 630000000000000000L && frameTicks < 700000000000000000L)
+                            {
+                                receivedSeq = BitConverter.ToUInt32(_receiveBuffer, 8);
+                                frameDataOffset = 12;
+                                frameDataLength = totalReceived - 12;
+
+                                // 0ms Frame ACK back to Host for zero-backlog flow control
+                                byte[] ackPkt = new byte[5];
+                                ackPkt[0] = 0x41; // 'A'
+                                BitConverter.TryWriteBytes(new Span<byte>(ackPkt, 1, 4), receivedSeq);
+                                SendBinaryInput(ackPkt);
+                            }
+                        }
+                        else if (totalReceived >= 16)
                         {
                             long frameTicks = BitConverter.ToInt64(_receiveBuffer, 0);
                             if (frameTicks > 630000000000000000L && frameTicks < 700000000000000000L)
@@ -810,7 +827,11 @@ namespace BigLineconnect
 
                                             Image? newImg = null;
 
-                                            if (H264Decoder.IsH264Packet(frameToDecode))
+                                            if (BigLineRtEngine.IsBigLineRtPacket(frameToDecode))
+                                            {
+                                                newImg = BigLineRtEngine.ProcessRtPacket(frameToDecode, ref _rtCanvas);
+                                            }
+                                            else if (H264Decoder.IsH264Packet(frameToDecode))
                                             {
                                                 if (_h264Decoder == null) _h264Decoder = new H264Decoder();
                                                 newImg = _h264Decoder.DecodeNalUnit(frameToDecode);
@@ -818,9 +839,8 @@ namespace BigLineconnect
                                             else
                                             {
                                                 using (var ms = new MemoryStream(frameToDecode, 0, frameToDecode.Length))
-                                                using (var tempImg = Image.FromStream(ms))
                                                 {
-                                                    newImg = new Bitmap(tempImg);
+                                                    newImg = new Bitmap(ms);
                                                 }
                                             }
 
