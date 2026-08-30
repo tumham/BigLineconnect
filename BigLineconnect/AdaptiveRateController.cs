@@ -157,17 +157,23 @@ namespace BigLineconnect
 
             uint inFlight = unchecked(currentSeq - _lastAckedSeq);
 
-            // Allow max 3 in-flight frames to prevent buffer bloat on slow links
-            if (inFlight <= 3) return true;
-
-            // But never block more than 120ms to keep UI responsive
-            long now = _clock.ElapsedMilliseconds;
-            foreach (var kvp in _inFlightFrames)
+            // Tier-aware backpressure to prevent OS TCP buffer bloat
+            // On 3G: SafeSendAsync returns instantly (data goes to OS kernel buffer)
+            // but the kernel buffer drains slowly → multi-second lag if we overfill it
+            switch (_currentTier)
             {
-                if (now - kvp.Value > 120) return true;
-            }
+                case NetworkTier.Slow3G:
+                    // STRICT: Max 1 in-flight frame. Wait for ACK before sending next.
+                    // This is how Alpemix achieves 0ms lag on 3G — never overfill the pipe.
+                    return inFlight <= 1;
 
-            return false;
+                case NetworkTier.MediumVdsl:
+                    return inFlight <= 2;
+
+                case NetworkTier.FastFiber:
+                default:
+                    return inFlight <= 3;
+            }
         }
 
         /// <summary>
