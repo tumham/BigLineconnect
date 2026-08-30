@@ -172,26 +172,29 @@ namespace BigLineconnect
 
         /// <summary>
         /// Returns minimum frame interval in milliseconds based on current network tier.
-        /// Tier 1 (3G): 8-12 FPS -> Text readable, pipe never bloats
-        /// Tier 2 (VDSL): 25-30 FPS
-        /// Tier 3 (Fiber): 50-60 FPS
+        /// With Delta Encoding active, frames are 10-20x smaller so FPS can be much higher on all tiers.
+        /// Tier 1 (3G): 25-30 FPS (delta patches are only 2-5 KB!)
+        /// Tier 2 (VDSL): 40-50 FPS
+        /// Tier 3 (Fiber): 60 FPS
         /// </summary>
         public static int GetTargetIntervalMs()
         {
             switch (_currentTier)
             {
                 case NetworkTier.Slow3G:
-                    return _isMotionActive ? 80 : 120; // 8-12 FPS, native res, text readable
+                    return _isMotionActive ? 33 : 50; // 20-30 FPS — delta patches fit 3G pipe easily
                 case NetworkTier.MediumVdsl:
-                    return _isMotionActive ? 33 : 40; // 25-30 FPS
+                    return _isMotionActive ? 20 : 25; // 40-50 FPS
                 case NetworkTier.FastFiber:
                 default:
-                    return _isMotionActive ? 16 : 20; // 50-60 FPS
+                    return _isMotionActive ? 16 : 16; // 60 FPS full speed
             }
         }
 
         /// <summary>
-        /// Computes optimal JPEG compression quality and downscale dimensions for current network tier.
+        /// Computes optimal JPEG compression quality for delta encoding mode.
+        /// Since BigLineRtEngine sends only changed pixel regions (2-5 KB patches instead of 40-80 KB full frames),
+        /// we can use MUCH higher quality while consuming LESS bandwidth than before.
         /// </summary>
         public static int GetOptimalQuality(int baseQuality, out int maxDimension)
         {
@@ -203,34 +206,32 @@ namespace BigLineconnect
 
             int targetQ;
 
-            // CRITICAL: Never downscale resolution! Text readability requires NATIVE 1080p.
-            // Instead, reduce FPS and quality moderately to fit 3G pipe.
-            maxDimension = 0; // Always native resolution for text clarity
+            // Native resolution always — delta encoding makes downscaling unnecessary
+            maxDimension = 0;
 
             switch (_currentTier)
             {
                 case NetworkTier.Slow3G:
-                    // 3G Mode: Native res + moderate quality + low FPS = readable text, no bloat
-                    // 1080p @ 42% quality = ~30-40 KB per frame
-                    // At 10 FPS = ~350 KB/s total bandwidth (fits 3G upload)
+                    // Delta Mode 3G: High quality is FREE because patches are tiny (2-5 KB)
+                    // SubFrame at 55% quality = ~3 KB. At 25 FPS = ~75 KB/s total. Fits 3G perfectly!
                     if (_isMotionActive)
                     {
-                        targetQ = 38; // Motion: slightly lower but still readable
+                        targetQ = 50; // Motion: still very readable, patches are small
                     }
                     else
                     {
-                        targetQ = (motionAge > 300 && motionAge < 2000) ? 65 : 45;
+                        targetQ = (motionAge > 300 && motionAge < 2000) ? 72 : 58;
                     }
                     break;
 
                 case NetworkTier.MediumVdsl:
                     if (_isMotionActive)
                     {
-                        targetQ = 48;
+                        targetQ = 58;
                     }
                     else
                     {
-                        targetQ = (motionAge > 300 && motionAge < 2000) ? 72 : 55;
+                        targetQ = (motionAge > 300 && motionAge < 2000) ? 78 : 62;
                     }
                     break;
 
@@ -238,11 +239,11 @@ namespace BigLineconnect
                 default:
                     if (_isMotionActive)
                     {
-                        targetQ = 55;
+                        targetQ = 65;
                     }
                     else
                     {
-                        targetQ = (motionAge > 300 && motionAge < 2000) ? 80 : 65;
+                        targetQ = (motionAge > 300 && motionAge < 2000) ? 85 : 72;
                     }
                     break;
             }
