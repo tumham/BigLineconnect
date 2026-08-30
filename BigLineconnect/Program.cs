@@ -1420,7 +1420,7 @@ namespace BigLineconnect
 
                         if (!isDuplicate || isInitialBurst || isForcedBurst || isHeartbeat)
                         {
-                            int minIntervalMs = AdaptiveRateController.IsMotionActive ? 16 : 25; // Dynamic pacing
+                            int minIntervalMs = AdaptiveRateController.GetTargetIntervalMs(); // Dynamic Auto-Tiering pacing
                             if (isInitialBurst || isForcedBurst || (DateTime.Now - _lastSentFrameTime).TotalMilliseconds >= minIntervalMs)
                             {
                                 _isSendingFrame = true;

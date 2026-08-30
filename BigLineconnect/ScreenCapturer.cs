@@ -138,7 +138,7 @@ namespace BigLineconnect
             _jpegEncoder = GetEncoder(ImageFormat.Jpeg);
         }
 
-        public static bool UseRtTileEngine { get; set; } = true; // AnyDesk DeskRT 64x64 Differential Tile Engine (Active & Ultra-Fast)
+        public static bool UseRtTileEngine { get; set; } = false; // Pure DXGI Hardware Accelerated Full-Frame Streaming
         public static bool UseH264Mode { get; set; } = false;
         public static bool ForceKeyframeRequested { get; set; } = false;
         private static H264Encoder? _h264Encoder;
@@ -284,7 +284,9 @@ namespace BigLineconnect
                     }
                     else if (UseRtTileEngine)
                     {
-                        return BigLineRtEngine.EncodeFrame(bmp, quality);
+                        bool forceKf = ForceKeyframeRequested;
+                        ForceKeyframeRequested = false;
+                        return BigLineRtEngine.EncodeFrame(bmp, quality, forceKf);
                     }
                     else
                     {
@@ -472,7 +474,7 @@ namespace BigLineconnect
                 int originalW = bmpScreen.Width;
                 int originalH = bmpScreen.Height;
 
-                if (quality > 35 && maxDimension > 0 && (originalW > maxDimension || originalH > maxDimension))
+                if (maxDimension > 0 && (originalW > maxDimension || originalH > maxDimension))
                 {
                     double scale = Math.Min((double)maxDimension / originalW, (double)maxDimension / originalH);
                     int newW = (int)(originalW * scale);
