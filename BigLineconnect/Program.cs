@@ -422,6 +422,15 @@ namespace BigLineconnect
 
             ParseCommandLineArgs(args);
 
+            if (args.Any(a => a.Equals("--clean", StringComparison.OrdinalIgnoreCase) ||
+                              a.Equals("--repair", StringComparison.OrdinalIgnoreCase) ||
+                              a.Equals("--clean-safe", StringComparison.OrdinalIgnoreCase) ||
+                              a.Equals("--reset-cache", StringComparison.OrdinalIgnoreCase)))
+            {
+                PerformSafeDeepCleanup(showUiDialog: true);
+                return;
+            }
+
             if (args.Any(a => a.Equals("--silent-update", StringComparison.OrdinalIgnoreCase)))
             {
                 try
@@ -736,6 +745,128 @@ namespace BigLineconnect
                 catch { }
             }
             catch { }
+        }
+
+        public static (int processesKilled, int filesDeleted, string message) PerformSafeDeepCleanup(bool showUiDialog = false)
+        {
+            int killedCount = 0;
+            int deletedCount = 0;
+            try
+            {
+                int currentPid = Environment.ProcessId;
+
+                // 1. Terminate orphaned / stuck helper, transfer or setup processes from previous sessions
+                string[] orphanProcessNames = new[] { "BigLineTransfer", "EastDesktop", "LightConnect", "setup_modern", "BigLineCleaner" };
+                foreach (var name in orphanProcessNames)
+                {
+                    try
+                    {
+                        foreach (var p in Process.GetProcessesByName(name))
+                        {
+                            if (p.Id != currentPid)
+                            {
+                                try { p.Kill(); killedCount++; } catch { }
+                            }
+                        }
+                    }
+                    catch { }
+                }
+
+                // Also terminate other BigLineconnect instances if run specifically for standalone cleaning
+                if (showUiDialog)
+                {
+                    try
+                    {
+                        foreach (var p in Process.GetProcessesByName("BigLineconnect"))
+                        {
+                            if (p.Id != currentPid)
+                            {
+                                try { p.Kill(); killedCount++; } catch { }
+                            }
+                        }
+                    }
+                    catch { }
+                }
+
+                // 2. Clean temporary files in %TEMP%\*BigLine* and %TEMP%\*deskrt*
+                try
+                {
+                    string tempPath = Path.GetTempPath();
+                    var tempDir = new DirectoryInfo(tempPath);
+                    foreach (var file in tempDir.GetFiles("*BigLine*"))
+                    {
+                        try { file.Delete(); deletedCount++; } catch { }
+                    }
+                    foreach (var file in tempDir.GetFiles("*deskrt*"))
+                    {
+                        try { file.Delete(); deletedCount++; } catch { }
+                    }
+                    foreach (var dir in tempDir.GetDirectories("*BigLine*"))
+                    {
+                        try { dir.Delete(true); deletedCount++; } catch { }
+                    }
+                }
+                catch { }
+
+                // 3. Clean temporary cache in ProgramData while 100% STRICTLY PROTECTING all user data
+                try
+                {
+                    string programData = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "BigLineconnect");
+                    if (Directory.Exists(programData))
+                    {
+                        var dirInfo = new DirectoryInfo(programData);
+                        foreach (var f in dirInfo.GetFiles())
+                        {
+                            string fname = f.Name.ToLowerInvariant();
+                            // PROTECTED FILES: NEVER TOUCH THESE!
+                            if (fname == "host_id.txt" ||
+                                fname == "connections.json" ||
+                                fname == "rehber_yedek.txt" ||
+                                fname == "crm_history.json" ||
+                                fname == "license.key" ||
+                                fname == "pro_license.key" ||
+                                fname == "config.txt" ||
+                                fname == "security.txt" ||
+                                fname == "advanced_settings.txt" ||
+                                fname == "company.txt" ||
+                                fname == "uzman.txt" ||
+                                fname == "role.txt" ||
+                                fname == "bayi.txt" ||
+                                fname == "unattended_pwd.dat" ||
+                                fname == "security.json" ||
+                                fname == "free_target_ids.json" ||
+                                fname == "daily_free_usage.json")
+                            {
+                                continue; // 100% PRESERVED & PROTECTED
+                            }
+
+                            // Purge temporary files, chunk parts, crash dumps, locks
+                            if (fname.EndsWith(".tmp") || fname.EndsWith(".part") || fname.EndsWith(".dmp") ||
+                                fname.StartsWith("temp_") || fname.EndsWith(".log") || fname == "gui_pid.txt.tmp")
+                            {
+                                try { f.Delete(); deletedCount++; } catch { }
+                            }
+                        }
+                    }
+                }
+                catch { }
+
+                string summary = $"Sistem ve Önbellek Temizliği Tamamlandı:\n• Kapatılan kilitli/artık işlem sayısı: {killedCount}\n• Temizlenen geçici dosya/önbellek sayısı: {deletedCount}\n\n✅ Kayıtlı ID'leriniz (Rehber), Lisans ve Ayarlarınız başarıyla korundu!";
+                if (showUiDialog)
+                {
+                    MessageBox.Show(summary, "BigLineconnect Güvenli Temizleyici & Onarıcı", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                return (killedCount, deletedCount, summary);
+            }
+            catch (Exception ex)
+            {
+                string errMsg = $"Temizleme sırasında hata oluştu: {ex.Message}";
+                if (showUiDialog)
+                {
+                    MessageBox.Show(errMsg, "Temizlik Hatası", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+                return (killedCount, deletedCount, errMsg);
+            }
         }
 
         public static string GetLocalLanIPAddress()
@@ -1132,7 +1263,7 @@ namespace BigLineconnect
             }
         }
 
-        public static int CurrentQuality { get; set; } = 75;
+        public static int CurrentQuality { get; set; } = 55;
         public static int CurrentMaxDimension { get; set; } = 0; // 0 = 100% Native Pixel-Perfect Resolution (No Blurring/Downscaling)
         public static bool SuppressWallpaperEnabled { get; set; } = true;
 
@@ -1178,8 +1309,7 @@ namespace BigLineconnect
                         ApplySleepPrevention(true);
                     }
 
-                    int q = CurrentQuality;
-                    int maxDim = CurrentMaxDimension;
+                    int q = AdaptiveRateController.GetOptimalQuality(CurrentQuality, out int maxDim);
                     byte[] frame = ScreenCapturer.Capture(quality: q, maxDimension: maxDim);
                     ulong hash = ScreenCapturer.LastCapturedFrameHash;
                     
@@ -1244,11 +1374,12 @@ namespace BigLineconnect
             StreamWebSocketClient = ws;
             try
             {
-                Log("Görüntü gönderim döngüsü başladı.");
+                Log("Görüntü gönderim döngüsü başladı (TURBO_v5 Adaptive Rate Kontrol Aktif).");
                 _lastSentFrameBytes = null;
                 _lastSentFrameHash = 0;
                 _currentFrameSeq = 0;
                 _lastAckedFrameSeq = 0;
+                AdaptiveRateController.Reset();
                 BigLineRtEngine.Reset();
                 _lastSentFrameTime = DateTime.MinValue;
                 _isSendingFrame = false;
@@ -1264,17 +1395,10 @@ namespace BigLineconnect
                         _lastViewerActivityTime = DateTime.Now;
                     }
 
-                    // 1-IN-FLIGHT BACKPRESSURE: If previous frame is still in transit over network, DO NOT PUSH new frames into TCP buffer!
-                    // This mathematically guarantees zero buffer bloat and zero 3-7s queue buildup!
-                    if (_currentFrameSeq > _lastAckedFrameSeq && (DateTime.Now - _lastFrameSendTime).TotalMilliseconds < 150)
+                    // ZERO BUFFER BLOAT FLOW CONTROL: Drop/wait if socket is still processing previous frame on slow 3G/5Mbps link
+                    if (_isSendingFrame || !AdaptiveRateController.CanSendNextFrame(_currentFrameSeq, out _))
                     {
-                        await Task.Delay(2, token).ConfigureAwait(false);
-                        continue;
-                    }
-
-                    if (_isSendingFrame)
-                    {
-                        await Task.Delay(2, token).ConfigureAwait(false);
+                        await Task.Delay(1, token).ConfigureAwait(false);
                         continue;
                     }
 
@@ -1296,7 +1420,7 @@ namespace BigLineconnect
 
                         if (!isDuplicate || isInitialBurst || isForcedBurst || isHeartbeat)
                         {
-                            int minIntervalMs = 16; // 60 FPS maximum pacing
+                            int minIntervalMs = AdaptiveRateController.IsMotionActive ? 16 : 25; // Dynamic pacing
                             if (isInitialBurst || isForcedBurst || (DateTime.Now - _lastSentFrameTime).TotalMilliseconds >= minIntervalMs)
                             {
                                 _isSendingFrame = true;
@@ -1309,6 +1433,8 @@ namespace BigLineconnect
                                     Buffer.BlockCopy(BitConverter.GetBytes(DateTime.UtcNow.Ticks), 0, stampedPayload, 0, 8);
                                     Buffer.BlockCopy(BitConverter.GetBytes(seq), 0, stampedPayload, 8, 4);
                                     Buffer.BlockCopy(frameToSend, 0, stampedPayload, 12, frameToSend.Length);
+
+                                    AdaptiveRateController.RecordFrameSent(seq, stampedPayload.Length);
 
                                     await SafeSendAsync(
                                         ws,
@@ -1355,11 +1481,13 @@ namespace BigLineconnect
                 {
                     _lastAckedFrameSeq = ackSeq;
                 }
+                AdaptiveRateController.RecordAck(ackSeq);
                 return;
             }
 
             if (pkt[0] == BinaryInputProtocol.MAGIC_BYTE && pkt.Length >= 9)
             {
+                AdaptiveRateController.NotifyUserActivity(isContinuousMotion: (pkt[1] == BinaryInputProtocol.CMD_MOUSE_MOVE || pkt[1] == BinaryInputProtocol.CMD_MOUSE_SCROLL));
                 InputSimulator.SimulateBinaryInput(pkt, _activeDisplayIndex);
                 TriggerInstantCapture(2);
                 return;
@@ -1367,6 +1495,7 @@ namespace BigLineconnect
 
             if (pkt[0] == 0x4D) // 'M' for fast mouse move (0ms instant hardware dispatch)
             {
+                AdaptiveRateController.NotifyUserActivity(isContinuousMotion: true);
                 _lastMouseMoveTime = DateTime.Now;
                 ushort ux = BitConverter.ToUInt16(pkt, 1);
                 ushort uy = BitConverter.ToUInt16(pkt, 3);
@@ -1387,9 +1516,21 @@ namespace BigLineconnect
                 if (!root.TryGetProperty("type", out var typeProp)) return;
                 string type = typeProp.GetString() ?? "";
 
-                if (type != "move" && !json.Contains("\"chunk\":") && !json.Contains("\"data\":"))
+                if (type != "move" && type != "frame_ack" && !json.Contains("\"chunk\":") && !json.Contains("\"data\":"))
                 {
                     Log($"[Girdi Paketi]: {json}");
+                }
+
+                AdaptiveRateController.NotifyUserActivity(isContinuousMotion: (type == "move" || type == "scroll"));
+
+                if (type == "frame_ack")
+                {
+                    if (root.TryGetProperty("seq", out var seqProp))
+                    {
+                        uint seq = seqProp.GetUInt32();
+                        AdaptiveRateController.RecordAck(seq);
+                    }
+                    return;
                 }
 
                 if (type == "click" || type == "key" || type == "scroll" || type == "double_click")
@@ -1502,12 +1643,15 @@ namespace BigLineconnect
                 else if (type == "set_quality")
                 {
                     int q = root.GetProperty("quality").GetInt32();
-                    int maxDim = root.GetProperty("maxDim").GetInt32();
+                    int maxDim = root.TryGetProperty("maxDim", out var md) ? md.GetInt32() : 0;
                     CurrentQuality = q;
                     CurrentMaxDimension = maxDim;
-                    _lastSentFrameBytes = null; // Instantly flush old frame cache so new quality applies in 0ms!
-                    TriggerInstantCapture(2);
-                    Log($"Görüntü kalitesi değiştirildi: %{q}, MaxDim: {maxDim}");
+                    _lastSentFrameBytes = null;
+                    _lastSentFrameHash = 0;
+                    BigLineRtEngine.Reset(); // Wipe tile hash cache so EVERY tile is immediately re-encoded with the new chosen quality!
+                    ScreenCapturer.ForceKeyframeRequested = true;
+                    TriggerInstantCapture(5);
+                    Log($"[BigLine-RT] Görüntü kalitesi anında devreye alındı: %{q} (MaxDim: {maxDim})");
                 }
                 else if (type == "toggle_wallpaper")
                 {

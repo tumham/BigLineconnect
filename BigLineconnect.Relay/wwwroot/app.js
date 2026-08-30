@@ -274,11 +274,25 @@ function connectToHost(id) {
                         return;
                     }
                 }
+            }
 
-                for (let i = 0; i < Math.min(24, u8.length - 1); i++) {
-                    if (u8[i] === 0xFF && u8[i + 1] === 0xD8) {
-                        if (i > 0) frameBytes = frameBytes.slice(i);
-                        break;
+            let receivedSeq = 0;
+            if (frameBytes && frameBytes.byteLength >= 12) {
+                const u8 = new Uint8Array(frameBytes);
+                if (u8[12] === 0xFF && u8[13] === 0xD8) {
+                    const dv = new DataView(frameBytes);
+                    receivedSeq = dv.getUint32(8, true);
+                    frameBytes = frameBytes.slice(12);
+                } else {
+                    for (let i = 0; i < Math.min(16, u8.length - 1); i++) {
+                        if (u8[i] === 0xFF && u8[i + 1] === 0xD8) {
+                            if (i === 12) {
+                                const dv = new DataView(frameBytes);
+                                receivedSeq = dv.getUint32(8, true);
+                            }
+                            if (i > 0) frameBytes = frameBytes.slice(i);
+                            break;
+                        }
                     }
                 }
             }
@@ -305,6 +319,17 @@ function connectToHost(id) {
                     }
                 }
                 URL.revokeObjectURL(url);
+
+                // Send 0ms Frame ACK to Host for 3G/5Mbps backpressure control
+                if (receivedSeq > 0 && socket && socket.readyState === WebSocket.OPEN) {
+                    const ackPkt = new Uint8Array(5);
+                    ackPkt[0] = 0x41; // 'A'
+                    ackPkt[1] = receivedSeq & 0xFF;
+                    ackPkt[2] = (receivedSeq >> 8) & 0xFF;
+                    ackPkt[3] = (receivedSeq >> 16) & 0xFF;
+                    ackPkt[4] = (receivedSeq >> 24) & 0xFF;
+                    try { socket.send(ackPkt.buffer); } catch (e) {}
+                }
             };
             tempImg.onerror = () => URL.revokeObjectURL(url);
             tempImg.src = url;

@@ -110,8 +110,23 @@ namespace BigLineconnect
         private readonly object _pendingFrameLock = new object();
         private bool _isAuthFailureClosing = false;
         private bool _isPromptOpen = false;
+        private bool _isProgrammaticClose = false;
+        private bool _isSessionEstablished = false;
         private long _minDeltaTicks = long.MaxValue;
         private DateTime _lastDeltaResetTime = DateTime.UtcNow;
+
+        private void CloseProgrammatically()
+        {
+            _isProgrammaticClose = true;
+            if (this.InvokeRequired)
+            {
+                this.BeginInvoke(new Action(() => this.Close()));
+            }
+            else
+            {
+                this.Close();
+            }
+        }
 
         private bool IsTrueLanDirect()
         {
@@ -173,6 +188,10 @@ namespace BigLineconnect
                     var oldWs = _ws;
                     _ws = lanWs;
                     _isLanDirectActive = true;
+
+                    // Send default quality mode on the new direct socket
+                    byte[] qPkt = Encoding.UTF8.GetBytes("{\"type\":\"set_quality\",\"quality\":55,\"maxDim\":0}");
+                    try { await _ws.SendAsync(new ArraySegment<byte>(qPkt), WebSocketMessageType.Text, true, CancellationToken.None); } catch { }
 
                     this.BeginInvoke(new Action(() =>
                     {
@@ -318,7 +337,7 @@ namespace BigLineconnect
                 Size = new Size(85, 28),
                 Margin = new Padding(2, 0, 4, 0)
             };
-            ModernUIHelper.ApplyButtonStyle(btnChat, Color.FromArgb(0, 229, 255), Color.FromArgb(0, 176, 255), Color.Black);
+            ModernUIHelper.ApplyToolbarButtonStyle(btnChat);
             btnChat.Click += (s, e) => OpenChat();
             _toolTip.SetToolTip(btnChat, "Canlı Sohbet / Mesajlaşma (Ctrl+Shift+C)");
 
@@ -328,7 +347,7 @@ namespace BigLineconnect
                 Size = new Size(80, 28),
                 Margin = new Padding(2, 0, 4, 0)
             };
-            ModernUIHelper.ApplyButtonStyle(btnFileManager, Color.FromArgb(0, 229, 255), Color.FromArgb(0, 176, 255), Color.Black);
+            ModernUIHelper.ApplyToolbarButtonStyle(btnFileManager);
             btnFileManager.Click += (s, e) => OpenFileManager();
             _toolTip.SetToolTip(btnFileManager, "Dosya Transferi (Yöntem 1 - Standart Motor)");
 
@@ -338,7 +357,7 @@ namespace BigLineconnect
                 Size = new Size(80, 28),
                 Margin = new Padding(2, 0, 4, 0)
             };
-            ModernUIHelper.ApplyButtonStyle(btnFileManagerV2, Color.FromArgb(46, 204, 113), Color.FromArgb(39, 174, 96), Color.White);
+            ModernUIHelper.ApplyToolbarButtonStyle(btnFileManagerV2);
             btnFileManagerV2.Click += (s, e) => OpenFileManagerV2();
             _toolTip.SetToolTip(btnFileManagerV2, "Dosya Transferi (Yöntem 2 - Hızlı Pipe Motoru)");
 
@@ -348,7 +367,7 @@ namespace BigLineconnect
                 Size = new Size(95, 28),
                 Margin = new Padding(2, 0, 6, 0)
             };
-            ModernUIHelper.ApplyButtonStyle(btnActions, Color.FromArgb(231, 76, 60), Color.FromArgb(192, 57, 43), Color.White);
+            ModernUIHelper.ApplyToolbarButtonStyle(btnActions);
             _toolTip.SetToolTip(btnActions, "Gelişmiş Eylemler (Ctrl+Alt+Del / Oturumu Kapat / Kilitle)");
 
             var cmsActions = new ContextMenuStrip();
@@ -372,10 +391,10 @@ namespace BigLineconnect
             _lblConnModeBadge = new Label
             {
                 Text = " ☁️ BULUT TÜNELİ ",
-                Size = new Size(150, 28),
+                Size = new Size(145, 28),
                 Font = new Font("Segoe UI", 9F, FontStyle.Bold),
                 ForeColor = Color.Black,
-                BackColor = Color.FromArgb(255, 193, 7),
+                BackColor = Color.FromArgb(255, 179, 0),
                 TextAlign = ContentAlignment.MiddleCenter,
                 Margin = new Padding(2, 0, 6, 0),
                 Cursor = Cursors.Hand
@@ -403,10 +422,10 @@ namespace BigLineconnect
             {
                 Size = new Size(120, 28),
                 DropDownStyle = ComboBoxStyle.DropDownList,
-                BackColor = Color.FromArgb(15, 16, 22),
+                BackColor = Color.FromArgb(36, 40, 50),
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
-                Font = new Font("Segoe UI", 9f, FontStyle.Regular),
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
                 TabStop = false,
                 Margin = new Padding(0, 0, 6, 0)
             };
@@ -417,29 +436,67 @@ namespace BigLineconnect
 
             var btnQuality = new NoFocusButton
             {
-                Text = "🎨 Düşük",
-                Size = new Size(95, 28),
+                Text = "🎨 İyi (HD)",
+                Size = new Size(105, 28),
                 Margin = new Padding(2, 0, 4, 0)
             };
-            ModernUIHelper.ApplyButtonStyle(btnQuality, Color.FromArgb(156, 39, 176), Color.FromArgb(123, 31, 162), Color.White);
-            _toolTip.SetToolTip(btnQuality, "Görüntü Kalitesi Seçimi (Düşük / İyi / En İyi)");
+            ModernUIHelper.ApplyToolbarButtonStyle(btnQuality);
+            _toolTip.SetToolTip(btnQuality, "Görüntü Kalitesi Seçimi (Düşük / İyi / En İyi / Otomatik)");
             
-            var cmsQuality = new ContextMenuStrip();
-            var itemLow = new ToolStripMenuItem("⚡ Düşük (Net Yazı & Ultra Hızlı)", null, (s, e) => {
-                btnQuality.Text = "🎨 Düşük";
-                SendJson("{\"type\":\"set_quality\",\"quality\":48,\"maxDim\":0}");
-            });
-            var itemMid = new ToolStripMenuItem("🎨 İyi (Dengeli HD)", null, (s, e) => {
-                btnQuality.Text = "🎨 İyi";
-                SendJson("{\"type\":\"set_quality\",\"quality\":60,\"maxDim\":1280}");
-            });
-            var itemHigh = new ToolStripMenuItem("💎 En İyi (Full HD 1080p)", null, (s, e) => {
-                btnQuality.Text = "🎨 En İyi";
-                SendJson("{\"type\":\"set_quality\",\"quality\":78,\"maxDim\":1920}");
-            });
+            var cmsQuality = new ContextMenuStrip
+            {
+                BackColor = Color.FromArgb(245, 245, 246),
+                ForeColor = Color.FromArgb(38, 40, 45),
+                ShowImageMargin = true,
+                Font = new Font("Segoe UI", 9.5F, FontStyle.Regular)
+            };
+
+            ToolStripMenuItem? itemLow = null;
+            ToolStripMenuItem? itemMid = null;
+            ToolStripMenuItem? itemHigh = null;
+            ToolStripMenuItem? itemAuto = null;
+
+            void SetQualityMode(string mode, bool sendPacket = true)
+            {
+                if (itemLow != null) itemLow.Checked = (mode == "low");
+                if (itemMid != null) itemMid.Checked = (mode == "mid");
+                if (itemHigh != null) itemHigh.Checked = (mode == "high");
+                if (itemAuto != null) itemAuto.Checked = (mode == "auto");
+
+                if (mode == "low")
+                {
+                    btnQuality.Text = "⚡ Düşük";
+                    if (sendPacket) SendJson("{\"type\":\"set_quality\",\"quality\":35,\"maxDim\":0}");
+                }
+                else if (mode == "mid")
+                {
+                    btnQuality.Text = "🎨 İyi (HD)";
+                    if (sendPacket) SendJson("{\"type\":\"set_quality\",\"quality\":52,\"maxDim\":0}");
+                }
+                else if (mode == "high")
+                {
+                    btnQuality.Text = "💎 En İyi";
+                    if (sendPacket) SendJson("{\"type\":\"set_quality\",\"quality\":65,\"maxDim\":0}");
+                }
+                else if (mode == "auto")
+                {
+                    btnQuality.Text = "🚀 Otomatik";
+                    if (sendPacket) SendJson("{\"type\":\"set_quality\",\"quality\":55,\"maxDim\":0}");
+                }
+            }
+
+            itemLow = new ToolStripMenuItem("⚡ Düşük (Ultra Hızlı / Bant Tasarrufu)", null, (s, e) => SetQualityMode("low"));
+            itemMid = new ToolStripMenuItem("🎨 İyi (Dengeli HD - Varsayılan)", null, (s, e) => SetQualityMode("mid"));
+            itemHigh = new ToolStripMenuItem("💎 En İyi (Ultra HD Kristal Netlik)", null, (s, e) => SetQualityMode("high"));
+            itemAuto = new ToolStripMenuItem("🚀 Otomatik (Akıllı Ağ Uyarlamalı)", null, (s, e) => SetQualityMode("auto"));
+
+            itemMid.Checked = true;
+
             cmsQuality.Items.Add(itemLow);
             cmsQuality.Items.Add(itemMid);
             cmsQuality.Items.Add(itemHigh);
+            cmsQuality.Items.Add(new ToolStripSeparator());
+            cmsQuality.Items.Add(itemAuto);
             btnQuality.Click += (s, e) => cmsQuality.Show(btnQuality, new Point(0, btnQuality.Height));
 
             bool wallpaperEnabled = false;
@@ -449,20 +506,20 @@ namespace BigLineconnect
                 Size = new Size(85, 28),
                 Margin = new Padding(2, 0, 4, 0)
             };
-            ModernUIHelper.ApplyButtonStyle(btnWallpaper, Color.FromArgb(76, 175, 80), Color.FromArgb(56, 142, 60), Color.White);
+            ModernUIHelper.ApplyToolbarButtonStyle(btnWallpaper);
             _toolTip.SetToolTip(btnWallpaper, "Masaüstü Duvar Kağıdını Göster / Bastır");
             btnWallpaper.Click += (s, e) => {
                 wallpaperEnabled = !wallpaperEnabled;
                 if (wallpaperEnabled)
                 {
                     btnWallpaper.Text = "🖼️ Canlı";
-                    ModernUIHelper.ApplyButtonStyle(btnWallpaper, Color.FromArgb(255, 152, 0), Color.FromArgb(245, 124, 0), Color.White);
+                    ModernUIHelper.ApplyToolbarButtonStyle(btnWallpaper, isActive: true);
                     SendJson("{\"type\":\"toggle_wallpaper\",\"enable\":true}");
                 }
                 else
                 {
                     btnWallpaper.Text = "⬛ Siyah";
-                    ModernUIHelper.ApplyButtonStyle(btnWallpaper, Color.FromArgb(76, 175, 80), Color.FromArgb(56, 142, 60), Color.White);
+                    ModernUIHelper.ApplyToolbarButtonStyle(btnWallpaper, isActive: false);
                     SendJson("{\"type\":\"toggle_wallpaper\",\"enable\":false}");
                 }
             };
@@ -474,7 +531,7 @@ namespace BigLineconnect
                 Size = new Size(85, 28),
                 Margin = new Padding(2, 0, 6, 0)
             };
-            ModernUIHelper.ApplyButtonStyle(btnDisplayMode, Color.FromArgb(0, 188, 212), Color.FromArgb(0, 151, 167), Color.White);
+            ModernUIHelper.ApplyToolbarButtonStyle(btnDisplayMode);
             _toolTip.SetToolTip(btnDisplayMode, "Görüntü Ölçeği (Pencereye Sığdır / 1:1 Gerçek Boyut)");
 
             btnDisplayMode.Click += (s, e) => {
@@ -483,13 +540,13 @@ namespace BigLineconnect
                 {
                     btnDisplayMode.Text = "🔍 1:1 Net";
                     if (_pictureBox != null) _pictureBox.SizeMode = PictureBoxSizeMode.CenterImage;
-                    ModernUIHelper.ApplyButtonStyle(btnDisplayMode, Color.FromArgb(233, 30, 99), Color.FromArgb(194, 24, 91), Color.White);
+                    ModernUIHelper.ApplyToolbarButtonStyle(btnDisplayMode, isActive: true);
                 }
                 else
                 {
                     btnDisplayMode.Text = "📐 Sığdır";
                     if (_pictureBox != null) _pictureBox.SizeMode = PictureBoxSizeMode.Zoom;
-                    ModernUIHelper.ApplyButtonStyle(btnDisplayMode, Color.FromArgb(0, 188, 212), Color.FromArgb(0, 151, 167), Color.White);
+                    ModernUIHelper.ApplyToolbarButtonStyle(btnDisplayMode, isActive: false);
                 }
             };
 
@@ -498,7 +555,7 @@ namespace BigLineconnect
                 Text = "⚡ -- FPS | -- ms",
                 Size = new Size(130, 28),
                 ForeColor = Color.FromArgb(0, 229, 255),
-                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
                 TextAlign = ContentAlignment.MiddleLeft,
                 Margin = new Padding(4, 4, 2, 0)
             };
@@ -525,9 +582,10 @@ namespace BigLineconnect
             // Custom Paint event to enforce high quality interpolation and render modern overlay when image is null
             _pictureBox.Paint += (s, pe) =>
             {
-                pe.Graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.Bilinear;
-                pe.Graphics.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.HighSpeed;
-                pe.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighSpeed;
+                pe.Graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+                pe.Graphics.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.Half;
+                pe.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighQuality;
+                pe.Graphics.CompositingQuality = System.Drawing.Drawing2D.CompositingQuality.HighQuality;
 
                 if (_pictureBox.Image == null)
                 {
@@ -618,8 +676,8 @@ namespace BigLineconnect
             {
                 await _ws.ConnectAsync(new Uri(_wsUrl), CancellationToken.None);
                 
-                // Enforce default quality mode (Native res / Q=75) for razor-sharp fonts and crystal-clear text
-                SendJson("{\"type\":\"set_quality\",\"quality\":75,\"maxDim\":0}");
+                // Enforce default quality mode (Native res / Q=55 HD) for razor-sharp fonts and crystal-clear text
+                SendJson("{\"type\":\"set_quality\",\"quality\":55,\"maxDim\":0}");
 
                 // Launch immediate parallel LAN Direct probe for 0ms local socket auto-switch
                 StartP2pAndLanProbe();
@@ -633,7 +691,7 @@ namespace BigLineconnect
             catch (Exception ex)
             {
                 MessageBox.Show($"Bağlantı kurulamadı: {ex.Message}", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                this.Close();
+                CloseProgrammatically();
             }
         }
 
@@ -737,17 +795,17 @@ namespace BigLineconnect
                             if (IsTrueLanDirect())
                             {
                                 connModeText = " ⚡ LAN DIRECT (0.5ms) ";
-                                connModeColor = Color.FromArgb(0, 230, 118); // Bright Green
+                                connModeColor = Color.FromArgb(0, 230, 118); // Bright Emerald Green
                             }
                             else if (P2pDirectEngine.IsP2pConnected)
                             {
                                 connModeText = " 🌐 P2P DIRECT (UDP) ";
-                                connModeColor = Color.FromArgb(0, 230, 118); // Bright Green
+                                connModeColor = Color.FromArgb(0, 229, 255); // Cyan
                             }
                             else
                             {
                                 connModeText = " ☁️ BULUT TÜNELİ ";
-                                connModeColor = Color.FromArgb(255, 193, 7); // Yellow/Gold
+                                connModeColor = Color.FromArgb(255, 179, 0); // Vibrant Amber
                             }
 
                             this.BeginInvoke(new Action(() =>
@@ -923,7 +981,7 @@ namespace BigLineconnect
                             else
                             {
                                 MessageBox.Show(LanguageManager.Get("msg_remote_busy"), "Hata", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                                this.BeginInvoke(new Action(this.Close));
+                                CloseProgrammatically();
                             }
                         }
                         else if (message.Contains("ERROR:ID_NOT_FOUND"))
@@ -940,7 +998,7 @@ namespace BigLineconnect
                             else
                             {
                                 MessageBox.Show(LanguageManager.Get("msg_id_not_found"), "Hata", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                                this.BeginInvoke(new Action(this.Close));
+                                CloseProgrammatically();
                             }
                         }
                         else if (message == "AUTH_REQUIRED")
@@ -960,7 +1018,7 @@ namespace BigLineconnect
                                     if (string.IsNullOrEmpty(_savedPassword))
                                     {
                                         _isAuthFailureClosing = true;
-                                        this.Close();
+                                        CloseProgrammatically();
                                         return;
                                     }
                                 }
@@ -983,6 +1041,7 @@ namespace BigLineconnect
                         else if (message == "AUTH_SUCCESS")
                         {
                             _hasConnectedOnce = true;
+                            _isSessionEstablished = true;
                             _connectionStatusText = "⚡ Bağlantı doğrulandı, canlı ekran karesi aktarılıyor...";
                             _ = Task.Run(async () => {
                                 await Task.Delay(1500);
@@ -1006,7 +1065,7 @@ namespace BigLineconnect
                                     if (string.IsNullOrEmpty(_savedPassword))
                                     {
                                         _isAuthFailureClosing = true;
-                                        this.Close();
+                                        CloseProgrammatically();
                                         return;
                                     }
                                     byte[] passBytes = Encoding.UTF8.GetBytes("AUTH_PASS:" + _savedPassword);
@@ -1020,12 +1079,12 @@ namespace BigLineconnect
                         else if (message == "AUTH_REJECTED")
                         {
                             MessageBox.Show(LanguageManager.Get("auth_rejected"), LanguageManager.Get("msg_connection_failed"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                            this.BeginInvoke(new Action(this.Close));
+                            CloseProgrammatically();
                         }
                         else if (message == "AUTH_TRIAL_EXPIRED")
                         {
                             MessageBox.Show("Uzak bilgisayarın 30 günlük ücretsiz deneme süresi dolmuştur.\r\nBağlantı kurmak için uzak bilgisayardan lisans anahtarını etkinleştirmeniz gerekmektedir.", "Deneme Süresi Doldu", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                            this.BeginInvoke(new Action(this.Close));
+                            CloseProgrammatically();
                         }
                         else if (message.StartsWith("{"))
                         {
@@ -1392,20 +1451,28 @@ namespace BigLineconnect
             catch (Exception) { }
             finally
             {
-                if (_hasConnectedOnce && !token.IsCancellationRequested)
+                // Only handle reconnection or close if this is still the active socket
+                if (_ws == ws || _ws == null || (_ws.State != WebSocketState.Open && _ws.State != WebSocketState.Connecting))
                 {
-                    StartReconnectionLoop();
-                }
-                else
-                {
-                    this.BeginInvoke(new Action(this.Close));
+                    if (_hasConnectedOnce && !token.IsCancellationRequested && !_isProgrammaticClose)
+                    {
+                        StartReconnectionLoop();
+                    }
+                    else
+                    {
+                        CloseProgrammatically();
+                    }
                 }
             }
         }
 
         private async void StartReconnectionLoop()
         {
-            if (_isReconnecting) return;
+            if (_isReconnecting || _isProgrammaticClose || _cts.IsCancellationRequested) return;
+            
+            // If active socket is already open (e.g. switched to LAN Direct), no need to reconnect
+            if (_ws != null && _ws.State == WebSocketState.Open) return;
+
             _isReconnecting = true;
 
             if (_activeRestartDialog != null)
@@ -1423,7 +1490,7 @@ namespace BigLineconnect
                 this.Text = $"Masaüstü Bağlantısı - ID: {_targetId} (Bağlantı koptu, yeniden bağlanılıyor...)";
             }));
 
-            while (!_cts.Token.IsCancellationRequested)
+            while (!_cts.Token.IsCancellationRequested && !_isProgrammaticClose)
             {
                 try
                 {
@@ -1439,6 +1506,16 @@ namespace BigLineconnect
                     this.BeginInvoke(new Action(() => {
                         this.Text = $"Masaüstü Bağlantısı - ID: {_targetId}";
                     }));
+
+                    // Re-send quality mode
+                    SendJson("{\"type\":\"set_quality\",\"quality\":55,\"maxDim\":0}");
+
+                    // If we have saved password, re-authenticate automatically
+                    if (!string.IsNullOrEmpty(_savedPassword))
+                    {
+                        byte[] passBytes = Encoding.UTF8.GetBytes("AUTH_PASS:" + _savedPassword);
+                        await _ws.SendAsync(new ArraySegment<byte>(passBytes), WebSocketMessageType.Text, true, CancellationToken.None);
+                    }
 
                     _isReconnecting = false;
                     _ = Task.Run(async () => {
@@ -2212,7 +2289,7 @@ namespace BigLineconnect
                     {
                         try
                         {
-                            this.Close();
+                            CloseProgrammatically();
                             using var dlg = new ProLicenseDialog("⚠️ 10 Dakikalık Ücretsiz Oturum Süreniz Dolmuştur.\r\nSınırsız, kesintisiz ve çoklu bağlantı için PRO Lisansa yükseltin.");
                             dlg.ShowDialog();
                         }
@@ -2239,7 +2316,7 @@ namespace BigLineconnect
 
         private void ViewerForm_FormClosing(object? sender, FormClosingEventArgs e)
         {
-            if (_isAuthFailureClosing)
+            if (_isProgrammaticClose || _isAuthFailureClosing)
             {
                 _cts.Cancel();
                 if (_ws != null)
@@ -2249,7 +2326,8 @@ namespace BigLineconnect
                 return;
             }
 
-            if (e.CloseReason == CloseReason.UserClosing && _ws != null && (_ws.State == WebSocketState.Open || _ws.State == WebSocketState.Connecting))
+            // Sadece kullanıcı gerçekten aktif oturum penceresini (X butonuna basarak / Alt+F4 ile) kapatmak istediğinde sor
+            if (e.CloseReason == CloseReason.UserClosing && _isSessionEstablished && _ws != null && (_ws.State == WebSocketState.Open || _ws.State == WebSocketState.Connecting))
             {
                 var result = MessageBox.Show(
                     "Uzaktan masaüstü bağlantısını kapatmak ve oturumu sonlandırmak istediğinizden emin misiniz?\n\n(Ekranı gizlemek / alta almak istiyorsanız 'Hayır'ı seçip '-' (Simge Durumuna Küçült) butonuna basabilirsiniz.)",
@@ -2263,13 +2341,8 @@ namespace BigLineconnect
                     e.Cancel = true;
                     return;
                 }
-
-                try
-                {
-                    MessageBox.Show("⚠️ Uzaktan Masaüstü Bağlantısı Sonlandırıldı / Koparıldı.", "Bağlantı Sonlandı", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                }
-                catch { }
             }
+
             if (_clipboardTimer != null)
             {
                 _clipboardTimer.Stop();
@@ -4135,6 +4208,31 @@ namespace BigLineconnect
 
     public static class ModernUIHelper
     {
+        public static void ApplyToolbarButtonStyle(Button btn, bool isActive = false)
+        {
+            Color normalBg = isActive ? Color.FromArgb(48, 54, 68) : Color.FromArgb(36, 40, 50);
+            Color hoverBg = isActive ? Color.FromArgb(58, 66, 82) : Color.FromArgb(48, 54, 68);
+            Color borderCol = isActive ? Color.FromArgb(0, 229, 255) : Color.FromArgb(58, 64, 78);
+            Color textCol = Color.FromArgb(240, 243, 246);
+
+            btn.FlatStyle = FlatStyle.Flat;
+            btn.BackColor = normalBg;
+            btn.ForeColor = textCol;
+            btn.Cursor = Cursors.Hand;
+            btn.FlatAppearance.BorderSize = 1;
+            btn.FlatAppearance.BorderColor = borderCol;
+            btn.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            btn.Tag = normalBg;
+
+            // Only attach hover handlers once
+            if (btn.AccessibleDescription != "tb_styled")
+            {
+                btn.AccessibleDescription = "tb_styled";
+                btn.MouseEnter += (s, e) => { if (s is Button b) b.BackColor = hoverBg; };
+                btn.MouseLeave += (s, e) => { if (s is Button b && b.Tag is Color c) b.BackColor = c; };
+            }
+        }
+
         public static void ApplyButtonStyle(Button btn, Color normalBg, Color hoverBg, Color textCol)
         {
             btn.FlatStyle = FlatStyle.Flat;
