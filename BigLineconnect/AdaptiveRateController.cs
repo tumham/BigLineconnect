@@ -6,9 +6,9 @@ using System.Threading;
 namespace BigLineconnect
 {
     /// <summary>
-    /// TURBO_v5: Alpemix/AnyDesk-Class Adaptive Rate Controller & Zero Buffer Bloat Engine.
+    /// TURBO_v6: High-Performance Adaptive Rate Controller & Zero Buffer Bloat Engine.
     /// Manages client-ACK flow control, dynamic motion-downsampling, and network bandwidth adaptation
-    /// to guarantee 0ms latency on 5 Mbps ADSL, 3G/4.5G mobile connections.
+    /// to guarantee instant 0ms response during Excel drag selection and instant window closure.
     /// </summary>
     public static class AdaptiveRateController
     {
@@ -16,7 +16,7 @@ namespace BigLineconnect
         private static volatile uint _lastAckedSeq = 0;
         private static long _lastMotionTicks = 0;
         private static volatile int _currentQuality = 55;
-        private static volatile int _measuredRttMs = 25;
+        private static volatile int _measuredRttMs = 20;
         private static volatile bool _isMotionActive = false;
 
         private static readonly ConcurrentDictionary<uint, long> _inFlightFrames = new ConcurrentDictionary<uint, long>();
@@ -31,7 +31,7 @@ namespace BigLineconnect
             _lastAckedSeq = 0;
             Interlocked.Exchange(ref _lastMotionTicks, 0);
             _currentQuality = 55;
-            _measuredRttMs = 25;
+            _measuredRttMs = 20;
             _isMotionActive = false;
             _inFlightFrames.Clear();
         }
@@ -52,12 +52,12 @@ namespace BigLineconnect
             long now = _clock.ElapsedMilliseconds;
             _inFlightFrames[seq] = now;
 
-            // Purge old untracked frames older than 5 seconds to avoid memory growth
-            if (_inFlightFrames.Count > 100)
+            // Purge old untracked frames older than 2 seconds to keep memory minimal
+            if (_inFlightFrames.Count > 40)
             {
                 foreach (var kvp in _inFlightFrames)
                 {
-                    if (now - kvp.Value > 5000)
+                    if (now - kvp.Value > 2000)
                     {
                         _inFlightFrames.TryRemove(kvp.Key, out _);
                     }
@@ -67,53 +67,78 @@ namespace BigLineconnect
 
         public static void RecordAck(uint seq)
         {
-            _lastAckedSeq = seq;
-            long now = _clock.ElapsedMilliseconds;
+            if (seq > _lastAckedSeq)
+            {
+                _lastAckedSeq = seq;
+            }
 
+            long now = _clock.ElapsedMilliseconds;
             if (_inFlightFrames.TryRemove(seq, out long sendTime))
             {
                 int rtt = (int)(now - sendTime);
-                if (rtt > 0 && rtt < 10000)
+                if (rtt > 0 && rtt < 5000)
                 {
-                    // Exponential Moving Average (EMA) smoothing for RTT
                     _measuredRttMs = (int)(_measuredRttMs * 0.7 + rtt * 0.3);
+                }
+            }
+
+            // Remove all frames older than acknowledged sequence
+            foreach (var kvp in _inFlightFrames)
+            {
+                if (kvp.Key <= seq)
+                {
+                    _inFlightFrames.TryRemove(kvp.Key, out _);
                 }
             }
         }
 
         /// <summary>
         /// Decides whether a new frame should be sent or dropped/delayed based on socket queue backpressure.
-        /// If client has not ACKed previous frame, we do NOT bloat the TCP socket.
+        /// Never stalls window closing or active inputs for more than 80ms.
         /// </summary>
         public static bool CanSendNextFrame(uint currentSeq, out int waitMs)
         {
             waitMs = 1;
+            if (_lastAckedSeq == 0) return true;
+
             uint inFlight = unchecked(currentSeq - _lastAckedSeq);
 
-            // If only 0 or 1 frame in flight, proceed immediately
-            if (inFlight <= 1 || _lastAckedSeq == 0)
+            // Allow up to 2 frames in flight on fast/normal pipelines
+            if (inFlight <= 2)
             {
                 return true;
             }
 
-            // If 2 or more frames are in flight, check how long the oldest frame has been waiting
-            if (_inFlightFrames.TryGetValue(_lastAckedSeq + 1, out long oldestSendTime))
+            // Find oldest inflight timestamp
+            long oldestSendTime = 0;
+            foreach (var kvp in _inFlightFrames)
+            {
+                if (oldestSendTime == 0 || kvp.Value < oldestSendTime)
+                {
+                    oldestSendTime = kvp.Value;
+                }
+            }
+
+            if (oldestSendTime > 0)
             {
                 long age = _clock.ElapsedMilliseconds - oldestSendTime;
-                // If it's been waiting longer than 350ms, assume packet drop and let next frame through
-                if (age > 350)
+                // If oldest frame has been in flight for > 80ms, allow next frame so screen never freezes
+                if (age > 80)
                 {
                     return true;
                 }
             }
+            else
+            {
+                return true;
+            }
 
-            // Socket is still transmitting previous frame over slow link; drop/wait to prevent 10s lag
             return false;
         }
 
         /// <summary>
         /// Computes optimal JPEG compression quality and downscale factors adaptively.
-        /// Dynamic Motion: Fast & light during drag/scroll (30-38%), Crystal Clear on rest (65-75%).
+        /// Dynamic Motion: Fast & light during drag/scroll (32-38%), Crystal Clear on rest (65-75%).
         /// </summary>
         public static int GetOptimalQuality(int baseQuality, out int maxDimension)
         {
@@ -131,20 +156,20 @@ namespace BigLineconnect
 
             if (_isMotionActive)
             {
-                // During fast motion on slow link, lower quality to 32-38% for ~15 KB frame size
-                if (_measuredRttMs > 80)
+                // During fast motion / Excel dragging, lower quality to 32-36% for ultra-light ~15 KB frame size
+                if (_measuredRttMs > 60)
                 {
                     targetQ = Math.Min(targetQ, 32);
                 }
                 else
                 {
-                    targetQ = Math.Min(targetQ, 40);
+                    targetQ = Math.Min(targetQ, 38);
                 }
             }
             else
             {
                 // User stopped moving! Send high-definition crystal clear rest frame
-                if (motionAge > 400 && motionAge < 2000)
+                if (motionAge > 300 && motionAge < 2000)
                 {
                     targetQ = Math.Max(targetQ, 70);
                 }

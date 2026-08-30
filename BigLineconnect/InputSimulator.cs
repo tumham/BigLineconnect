@@ -17,11 +17,15 @@ namespace BigLineconnect
         private static extern void mouse_event(uint dwFlags, uint dx, uint dy, uint dwData, UIntPtr dwExtraInfo);
 
         [DllImport("user32.dll")]
+        private static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, UIntPtr dwExtraInfo);
+
+        [DllImport("user32.dll")]
         private static extern bool ReleaseCapture();
 
         private static uint SendInput(uint nInputs, INPUT[] pInputs, int cbSize)
         {
-            return NativeSendInput(nInputs, pInputs, cbSize);
+            uint result = NativeSendInput(nInputs, pInputs, cbSize);
+            return result;
         }
 
         [DllImport("user32.dll")]
@@ -131,7 +135,6 @@ namespace BigLineconnect
         {
             try
             {
-                DesktopHelper.AttachToInputDesktop();
                 var screens = System.Windows.Forms.Screen.AllScreens;
                 if (displayIndex < 0 || displayIndex >= screens.Length) displayIndex = 0;
 
@@ -163,9 +166,6 @@ namespace BigLineconnect
         {
             try
             {
-                // Force release any foreign mouse capture held by Alpemix/AnyDesk hooks
-                ReleaseCapture();
-                DesktopHelper.AttachToInputDesktop();
                 uint flags = 0;
                 bool isDown = action.Equals("down", StringComparison.OrdinalIgnoreCase);
 
@@ -230,7 +230,7 @@ namespace BigLineconnect
         {
             try
             {
-                DesktopHelper.AttachToInputDesktop();
+                DesktopHelper.AttachToInputDesktop(true);
                 INPUT[] inputs = new INPUT[1];
                 inputs[0] = new INPUT
                 {
@@ -260,7 +260,7 @@ namespace BigLineconnect
             try
             {
                 ReleaseCapture();
-                DesktopHelper.AttachToInputDesktop();
+                DesktopHelper.AttachToInputDesktop(true);
 
                 uint downFlag = button.Equals("right", StringComparison.OrdinalIgnoreCase) ? MOUSEEVENTF_RIGHTDOWN : MOUSEEVENTF_LEFTDOWN;
                 uint upFlag = button.Equals("right", StringComparison.OrdinalIgnoreCase) ? MOUSEEVENTF_RIGHTUP : MOUSEEVENTF_LEFTUP;
@@ -353,7 +353,11 @@ namespace BigLineconnect
                             }
                         }
                     };
-                    SendInput(1, inputs, Marshal.SizeOf<INPUT>());
+                    uint res = SendInput(1, inputs, Marshal.SizeOf<INPUT>());
+                    if (res == 0)
+                    {
+                        keybd_event((byte)vk, (byte)scanCode, flags, UIntPtr.Zero);
+                    }
                 }
                 catch { }
             }
@@ -361,7 +365,7 @@ namespace BigLineconnect
 
         public static void SimulateKeyStroke(string key, bool shift = false, bool ctrl = false, bool alt = false)
         {
-            DesktopHelper.AttachToInputDesktop();
+            DesktopHelper.AttachToInputDesktop(true);
 
             ushort vkCode = 0;
             if (SpecialKeyMap.TryGetValue(key, out ushort mappedVk))
@@ -399,7 +403,18 @@ namespace BigLineconnect
             if (alt) inputs.Add(CreateKeyInput(0x12, 0, KEYEVENTF_KEYUP));
             if (ctrl) inputs.Add(CreateKeyInput(0x11, 0, KEYEVENTF_KEYUP));
 
-            SendInput((uint)inputs.Count, inputs.ToArray(), Marshal.SizeOf<INPUT>());
+            uint res = SendInput((uint)inputs.Count, inputs.ToArray(), Marshal.SizeOf<INPUT>());
+            if (res == 0)
+            {
+                if (ctrl) keybd_event(0x11, 0, 0, UIntPtr.Zero);
+                if (alt) keybd_event(0x12, 0, 0, UIntPtr.Zero);
+                if (shift) keybd_event(0x10, 0, 0, UIntPtr.Zero);
+                keybd_event((byte)vkCode, (byte)scanCode, extFlag, UIntPtr.Zero);
+                keybd_event((byte)vkCode, (byte)scanCode, extFlag | KEYEVENTF_KEYUP, UIntPtr.Zero);
+                if (shift) keybd_event(0x10, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+                if (alt) keybd_event(0x12, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+                if (ctrl) keybd_event(0x11, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+            }
             Program.TriggerInstantCapture();
         }
 
@@ -412,7 +427,7 @@ namespace BigLineconnect
                 return;
             }
 
-            DesktopHelper.AttachToInputDesktop();
+            DesktopHelper.AttachToInputDesktop(true);
 
             ushort vkCode = 0;
             if (SpecialKeyMap.TryGetValue(key, out ushort mappedVk))

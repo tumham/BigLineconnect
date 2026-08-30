@@ -1489,7 +1489,10 @@ namespace BigLineconnect
             {
                 AdaptiveRateController.NotifyUserActivity(isContinuousMotion: (pkt[1] == BinaryInputProtocol.CMD_MOUSE_MOVE || pkt[1] == BinaryInputProtocol.CMD_MOUSE_SCROLL));
                 InputSimulator.SimulateBinaryInput(pkt, _activeDisplayIndex);
-                TriggerInstantCapture(2);
+                if (pkt[1] != BinaryInputProtocol.CMD_MOUSE_MOVE)
+                {
+                    TriggerInstantCapture(2);
+                }
                 return;
             }
 
