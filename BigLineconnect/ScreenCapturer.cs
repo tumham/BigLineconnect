@@ -138,7 +138,7 @@ namespace BigLineconnect
             _jpegEncoder = GetEncoder(ImageFormat.Jpeg);
         }
 
-        public static bool UseRtTileEngine { get; set; } = true; // BigLineRtEngine Delta Encoding: Only send changed pixels (Alpemix architecture)
+        public static bool UseRtTileEngine { get; set; } = false; // Golden Master: Pure DXGI Hardware Accelerated Full-Frame Streaming
         public static bool UseH264Mode { get; set; } = false;
         public static bool ForceKeyframeRequested { get; set; } = false;
         private static H264Encoder? _h264Encoder;

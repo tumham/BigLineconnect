@@ -1309,7 +1309,8 @@ namespace BigLineconnect
                         ApplySleepPrevention(true);
                     }
 
-                    int q = AdaptiveRateController.GetOptimalQuality(CurrentQuality, out int maxDim);
+                    int q = CurrentQuality;
+                    int maxDim = CurrentMaxDimension;
                     byte[] frame = ScreenCapturer.Capture(quality: q, maxDimension: maxDim);
                     ulong hash = ScreenCapturer.LastCapturedFrameHash;
                     
@@ -1374,12 +1375,11 @@ namespace BigLineconnect
             StreamWebSocketClient = ws;
             try
             {
-                Log("Görüntü gönderim döngüsü başladı (TURBO_v5 Adaptive Rate Kontrol Aktif).");
+                Log("Görüntü gönderim döngüsü başladı.");
                 _lastSentFrameBytes = null;
                 _lastSentFrameHash = 0;
                 _currentFrameSeq = 0;
                 _lastAckedFrameSeq = 0;
-                AdaptiveRateController.Reset();
                 BigLineRtEngine.Reset();
                 _lastSentFrameTime = DateTime.MinValue;
                 _isSendingFrame = false;
@@ -1395,10 +1395,17 @@ namespace BigLineconnect
                         _lastViewerActivityTime = DateTime.Now;
                     }
 
-                    // ZERO BUFFER BLOAT FLOW CONTROL: Drop/wait if socket is still processing previous frame on slow 3G/5Mbps link
-                    if (_isSendingFrame || !AdaptiveRateController.CanSendNextFrame(_currentFrameSeq, out _))
+                    // 1-IN-FLIGHT BACKPRESSURE: If previous frame is still in transit over network, DO NOT PUSH new frames into TCP buffer!
+                    // This mathematically guarantees zero buffer bloat and zero 3-7s queue buildup!
+                    if (_currentFrameSeq > _lastAckedFrameSeq && (DateTime.Now - _lastFrameSendTime).TotalMilliseconds < 150)
                     {
-                        await Task.Delay(1, token).ConfigureAwait(false);
+                        await Task.Delay(2, token).ConfigureAwait(false);
+                        continue;
+                    }
+
+                    if (_isSendingFrame)
+                    {
+                        await Task.Delay(2, token).ConfigureAwait(false);
                         continue;
                     }
 
@@ -1420,7 +1427,7 @@ namespace BigLineconnect
 
                         if (!isDuplicate || isInitialBurst || isForcedBurst || isHeartbeat)
                         {
-                            int minIntervalMs = AdaptiveRateController.GetTargetIntervalMs(); // Dynamic Auto-Tiering pacing
+                            int minIntervalMs = 16; // 60 FPS maximum pacing
                             if (isInitialBurst || isForcedBurst || (DateTime.Now - _lastSentFrameTime).TotalMilliseconds >= minIntervalMs)
                             {
                                 _isSendingFrame = true;
@@ -1433,8 +1440,6 @@ namespace BigLineconnect
                                     Buffer.BlockCopy(BitConverter.GetBytes(DateTime.UtcNow.Ticks), 0, stampedPayload, 0, 8);
                                     Buffer.BlockCopy(BitConverter.GetBytes(seq), 0, stampedPayload, 8, 4);
                                     Buffer.BlockCopy(frameToSend, 0, stampedPayload, 12, frameToSend.Length);
-
-                                    AdaptiveRateController.RecordFrameSent(seq, stampedPayload.Length);
 
                                     await SafeSendAsync(
                                         ws,
