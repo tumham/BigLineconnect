@@ -935,6 +935,7 @@ namespace BigLineconnect
                                                                     var oldImg = _pictureBox.Image;
                                                                     _pictureBox.Image = frameToDraw;
                                                                     _pictureBox.Invalidate();
+                                                                    _pictureBox.Update();
                                                                     if (oldImg != null && oldImg != frameToDraw)
                                                                     {
                                                                         try { oldImg.Dispose(); } catch { }
