@@ -153,23 +153,37 @@ namespace BigLineconnect
         public static bool CanSendNextFrame(uint currentSeq, out int waitMs)
         {
             waitMs = 1;
-            return true;
+            if (_lastAckedSeq == 0) return true;
+
+            uint inFlight = unchecked(currentSeq - _lastAckedSeq);
+
+            // Allow max 3 in-flight frames to prevent buffer bloat on slow links
+            if (inFlight <= 3) return true;
+
+            // But never block more than 120ms to keep UI responsive
+            long now = _clock.ElapsedMilliseconds;
+            foreach (var kvp in _inFlightFrames)
+            {
+                if (now - kvp.Value > 120) return true;
+            }
+
+            return false;
         }
 
         /// <summary>
         /// Returns minimum frame interval in milliseconds based on current network tier.
-        /// Tier 1 (3G): 20 FPS (~50ms) -> Prevents 3G pipe congestion!
-        /// Tier 2 (VDSL): 30 FPS (~33ms)
-        /// Tier 3 (Fiber): 60 FPS (~16ms)
+        /// Tier 1 (3G): 8-12 FPS -> Text readable, pipe never bloats
+        /// Tier 2 (VDSL): 25-30 FPS
+        /// Tier 3 (Fiber): 50-60 FPS
         /// </summary>
         public static int GetTargetIntervalMs()
         {
             switch (_currentTier)
             {
                 case NetworkTier.Slow3G:
-                    return _isMotionActive ? 45 : 60; // 18-22 FPS for 3G
+                    return _isMotionActive ? 80 : 120; // 8-12 FPS, native res, text readable
                 case NetworkTier.MediumVdsl:
-                    return _isMotionActive ? 25 : 33; // 30-40 FPS
+                    return _isMotionActive ? 33 : 40; // 25-30 FPS
                 case NetworkTier.FastFiber:
                 default:
                     return _isMotionActive ? 16 : 20; // 50-60 FPS
@@ -189,36 +203,39 @@ namespace BigLineconnect
 
             int targetQ;
 
+            // CRITICAL: Never downscale resolution! Text readability requires NATIVE 1080p.
+            // Instead, reduce FPS and quality moderately to fit 3G pipe.
+            maxDimension = 0; // Always native resolution for text clarity
+
             switch (_currentTier)
             {
                 case NetworkTier.Slow3G:
-                    // 3G Mode: Downscale to 1280 (720p) or 960p so frame is ~10-12 KB
-                    maxDimension = (_measuredRttMs > 130) ? 960 : 1280;
+                    // 3G Mode: Native res + moderate quality + low FPS = readable text, no bloat
+                    // 1080p @ 42% quality = ~30-40 KB per frame
+                    // At 10 FPS = ~350 KB/s total bandwidth (fits 3G upload)
                     if (_isMotionActive)
                     {
-                        targetQ = 28; // Ultra-light ~10 KB frame for instant motion
+                        targetQ = 38; // Motion: slightly lower but still readable
                     }
                     else
                     {
-                        targetQ = (motionAge > 300 && motionAge < 2000) ? 60 : 35;
+                        targetQ = (motionAge > 300 && motionAge < 2000) ? 65 : 45;
                     }
                     break;
 
                 case NetworkTier.MediumVdsl:
-                    maxDimension = 1600;
                     if (_isMotionActive)
                     {
-                        targetQ = 38;
+                        targetQ = 48;
                     }
                     else
                     {
-                        targetQ = (motionAge > 300 && motionAge < 2000) ? 70 : 48;
+                        targetQ = (motionAge > 300 && motionAge < 2000) ? 72 : 55;
                     }
                     break;
 
                 case NetworkTier.FastFiber:
                 default:
-                    maxDimension = 0; // 100% Native 1080p
                     if (_isMotionActive)
                     {
                         targetQ = 55;
