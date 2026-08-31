@@ -672,6 +672,16 @@ namespace BigLineconnect
             catch { }
 
             _ws = new ClientWebSocket();
+            // FIREWALL BYPASS: Browser headers to pass Sophos/Fortinet/Palo Alto DPI
+            try
+            {
+                _ws.Options.SetRequestHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36");
+                _ws.Options.SetRequestHeader("Accept-Language", "tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7");
+                _ws.Options.SetRequestHeader("Cache-Control", "no-cache");
+                _ws.Options.SetRequestHeader("Pragma", "no-cache");
+                _ws.Options.KeepAliveInterval = TimeSpan.FromSeconds(30);
+            }
+            catch { }
             try
             {
                 await _ws.ConnectAsync(new Uri(_wsUrl), CancellationToken.None);
@@ -1501,6 +1511,16 @@ namespace BigLineconnect
                     }
                     _ws = new ClientWebSocket();
                     _ws.Options.Proxy = null;
+                    // FIREWALL BYPASS: Browser headers
+                    try
+                    {
+                        _ws.Options.SetRequestHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36");
+                        _ws.Options.SetRequestHeader("Accept-Language", "tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7");
+                        _ws.Options.SetRequestHeader("Cache-Control", "no-cache");
+                        _ws.Options.SetRequestHeader("Pragma", "no-cache");
+                        _ws.Options.KeepAliveInterval = TimeSpan.FromSeconds(30);
+                    }
+                    catch { }
 
                     await _ws.ConnectAsync(new Uri(_wsUrl), _cts.Token);
                     

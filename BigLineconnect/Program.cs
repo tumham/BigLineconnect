@@ -1069,6 +1069,22 @@ namespace BigLineconnect
             WebSocketClient = new ClientWebSocket();
             try { WebSocketClient.Options.Proxy = null; } catch { }
 
+            // ═══════════════════════════════════════════════════════════════
+            // FIREWALL BYPASS: Add standard browser headers to WebSocket handshake.
+            // Enterprise firewalls (Sophos, Fortinet, Palo Alto) inspect the HTTP Upgrade
+            // request and throttle/block connections without standard browser headers.
+            // These headers make our WebSocket look like a normal Chrome browser connection.
+            // ═══════════════════════════════════════════════════════════════
+            try
+            {
+                WebSocketClient.Options.SetRequestHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36");
+                WebSocketClient.Options.SetRequestHeader("Accept-Language", "tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7");
+                WebSocketClient.Options.SetRequestHeader("Cache-Control", "no-cache");
+                WebSocketClient.Options.SetRequestHeader("Pragma", "no-cache");
+                WebSocketClient.Options.KeepAliveInterval = TimeSpan.FromSeconds(30);
+            }
+            catch { }
+
             // Load saved host ID if exists
             string idPath = ConfigHelper.GetConfigPath("host_id.txt");
             string requestedId = "";
