@@ -2294,6 +2294,8 @@ namespace BigLineconnect
         private int _heartbeatTickCounter = 0;
         private void ClipboardTimer_Tick(object? sender, EventArgs e)
         {
+            if (!IsHandleCreated || IsDisposed) return;
+
             OnLocalClipboardChanged();
 
             _sessionDurationSeconds++;
