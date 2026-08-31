@@ -1309,8 +1309,10 @@ namespace BigLineconnect
                         ApplySleepPrevention(true);
                     }
 
-                    int q = CurrentQuality;
-                    int maxDim = CurrentMaxDimension;
+                    // 3G AUTO-DETECT: Use lower quality + smaller frames on slow links
+                    // Normal connections: use original CurrentQuality/CurrentMaxDimension (Golden Master)
+                    int q = _is3GSlowLink ? Math.Min(CurrentQuality, 35) : CurrentQuality;
+                    int maxDim = _is3GSlowLink ? Math.Min(CurrentMaxDimension > 0 ? CurrentMaxDimension : 1600, 1600) : CurrentMaxDimension;
                     byte[] frame = ScreenCapturer.Capture(quality: q, maxDimension: maxDim);
                     ulong hash = ScreenCapturer.LastCapturedFrameHash;
                     
@@ -1369,6 +1371,7 @@ namespace BigLineconnect
         private static uint _currentFrameSeq = 0;
         private static volatile uint _lastAckedFrameSeq = 0;
         private static DateTime _lastFrameSendTime = DateTime.MinValue;
+        private static volatile bool _is3GSlowLink = false; // Auto-detected from ACK latency in SendStreamLoop
 
         private static async Task SendStreamLoop(WebSocket ws, CancellationToken token)
         {
@@ -1387,6 +1390,16 @@ namespace BigLineconnect
                 Interlocked.Exchange(ref _forceSendUntilTicks, DateTime.Now.AddMilliseconds(2000).Ticks);
                 _lastViewerActivityTime = DateTime.Now;
 
+                // ═══════════════════════════════════════════════════════════════
+                // 3G AUTO-DETECT: Measure actual ACK round-trip to detect slow links.
+                // If ACK consistently takes >200ms → 3G/5Mbps mode (true stop-and-wait)
+                // Normal broadband/fiber: completely unchanged Golden Master behavior
+                // ═══════════════════════════════════════════════════════════════
+                int slowAckCount = 0;          // Count of consecutive slow ACKs
+                bool is3GMode = false;         // True when 3G/5Mbps detected
+                uint lastMeasuredAck = 0;      // Last ACK we measured latency for
+                int backpressureTimeoutMs = 150; // Golden Master default: 150ms
+
                 while (!token.IsCancellationRequested && _isStreaming && ws.State == WebSocketState.Open)
                 {
                     if ((DateTime.Now - _lastViewerActivityTime).TotalSeconds > 300)
@@ -1395,9 +1408,39 @@ namespace BigLineconnect
                         _lastViewerActivityTime = DateTime.Now;
                     }
 
-                    // 1-IN-FLIGHT BACKPRESSURE: If previous frame is still in transit over network, DO NOT PUSH new frames into TCP buffer!
-                    // This mathematically guarantees zero buffer bloat and zero 3-7s queue buildup!
-                    if (_currentFrameSeq > _lastAckedFrameSeq && (DateTime.Now - _lastFrameSendTime).TotalMilliseconds < 150)
+                    // ── 3G AUTO-DETECT: Measure ACK latency to detect slow links ──
+                    if (_lastAckedFrameSeq > lastMeasuredAck && _lastAckedFrameSeq > 5)
+                    {
+                        double ackLatencyMs = (DateTime.Now - _lastFrameSendTime).TotalMilliseconds;
+                        lastMeasuredAck = _lastAckedFrameSeq;
+
+                        if (ackLatencyMs > 200) // ACK took >200ms → slow link
+                        {
+                            slowAckCount = Math.Min(slowAckCount + 1, 20);
+                        }
+                        else
+                        {
+                            slowAckCount = Math.Max(slowAckCount - 2, 0); // Fast recovery
+                        }
+
+                        // Switch to 3G mode after 3 consecutive slow ACKs
+                        bool was3G = is3GMode;
+                        is3GMode = slowAckCount >= 3;
+                        _is3GSlowLink = is3GMode; // Share with CaptureLoop for quality reduction
+                        backpressureTimeoutMs = is3GMode ? 5000 : 150;
+
+                        if (is3GMode != was3G)
+                        {
+                            Log(is3GMode 
+                                ? $"[3G-MODE] Yavaş bağlantı algılandı (ACK: {ackLatencyMs:F0}ms). Tam stop-and-wait aktif."
+                                : $"[NORMAL-MODE] Hızlı bağlantı algılandı. Normal mod.");
+                        }
+                    }
+
+                    // ── BACKPRESSURE: Wait for ACK before sending next frame ──
+                    // Normal: wait max 150ms (Golden Master)
+                    // 3G: wait max 5000ms (true stop-and-wait, NEVER overfill TCP buffer)
+                    if (_currentFrameSeq > _lastAckedFrameSeq && (DateTime.Now - _lastFrameSendTime).TotalMilliseconds < backpressureTimeoutMs)
                     {
                         await Task.Delay(2, token).ConfigureAwait(false);
                         continue;
@@ -1427,7 +1470,9 @@ namespace BigLineconnect
 
                         if (!isDuplicate || isInitialBurst || isForcedBurst || isHeartbeat)
                         {
-                            int minIntervalMs = 16; // 60 FPS maximum pacing
+                            // 3G: 10 FPS max (100ms interval) to reduce frame count
+                            // Normal: 60 FPS (16ms interval) - Golden Master unchanged
+                            int minIntervalMs = is3GMode ? 100 : 16;
                             if (isInitialBurst || isForcedBurst || (DateTime.Now - _lastSentFrameTime).TotalMilliseconds >= minIntervalMs)
                             {
                                 _isSendingFrame = true;
