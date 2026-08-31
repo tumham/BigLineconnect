@@ -388,6 +388,27 @@ namespace BigLineconnect
 
             btnActions.Click += (s, e) => cmsActions.Show(btnActions, new Point(0, btnActions.Height));
 
+            // 📌 PIN / TOPMOST TOGGLE: Keep BigLineconnect on top of Alpemix during side-by-side testing
+            var btnPin = new Label
+            {
+                Text = "📌",
+                Size = new Size(32, 28),
+                Font = new Font("Segoe UI", 11F, FontStyle.Regular),
+                ForeColor = Color.White,
+                BackColor = Color.FromArgb(45, 45, 48),
+                TextAlign = ContentAlignment.MiddleCenter,
+                Margin = new Padding(2, 0, 2, 0),
+                Cursor = Cursors.Hand
+            };
+            _toolTip.SetToolTip(btnPin, "Pencereyi Üstte Sabitle / Serbest Bırak");
+            btnPin.Click += (s, e) =>
+            {
+                this.TopMost = !this.TopMost;
+                btnPin.BackColor = this.TopMost ? Color.FromArgb(0, 122, 204) : Color.FromArgb(45, 45, 48);
+                btnPin.Text = this.TopMost ? "📍" : "📌";
+                _toolTip.SetToolTip(btnPin, this.TopMost ? "Pencere Üstte Sabitlendi (Tıkla: Serbest Bırak)" : "Pencereyi Üstte Sabitle");
+            };
+
             _lblConnModeBadge = new Label
             {
                 Text = " ☁️ BULUT TÜNELİ ",
@@ -565,6 +586,7 @@ namespace BigLineconnect
             flowTop.Controls.Add(btnFileManager);
             flowTop.Controls.Add(btnFileManagerV2);
             flowTop.Controls.Add(btnActions);
+            flowTop.Controls.Add(btnPin);
             flowTop.Controls.Add(_lblConnModeBadge);
             flowTop.Controls.Add(_cbDisplays);
             flowTop.Controls.Add(btnQuality);
