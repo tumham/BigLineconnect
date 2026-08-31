@@ -1309,20 +1309,10 @@ namespace BigLineconnect
                         ApplySleepPrevention(true);
                     }
 
-                    // 3G AUTO-DETECT: quality & resolution adjustment
-                    // 3G + Delta: Use native res + quality 50% (delta patches are tiny, text stays readable)
+                    // 3G: quality 35% + max 1600px for smaller frames (~15-20KB instead of 60-80KB)
                     // Normal: Golden Master unchanged
-                    int q, maxDim;
-                    if (_is3GSlowLink)
-                    {
-                        q = 50;    // Delta patches: 2-5 KB at 50% quality (readable!)
-                        maxDim = 0; // Native resolution (no downscale, delta handles bandwidth)
-                    }
-                    else
-                    {
-                        q = CurrentQuality;
-                        maxDim = CurrentMaxDimension;
-                    }
+                    int q = _is3GSlowLink ? Math.Min(CurrentQuality, 35) : CurrentQuality;
+                    int maxDim = _is3GSlowLink ? 1600 : CurrentMaxDimension;
                     byte[] frame = ScreenCapturer.Capture(quality: q, maxDimension: maxDim);
                     ulong hash = ScreenCapturer.LastCapturedFrameHash;
                     
@@ -1401,14 +1391,14 @@ namespace BigLineconnect
                 _lastViewerActivityTime = DateTime.Now;
 
                 // ═══════════════════════════════════════════════════════════════
-                // 3G AUTO-DETECT: Measure actual ACK round-trip to detect slow links.
-                // If ACK consistently takes >200ms → 3G/5Mbps mode (true stop-and-wait)
-                // Normal broadband/fiber: completely unchanged Golden Master behavior
+                // 3G INSTANT DETECT: Measure ACK of the VERY FIRST frame.
+                // If first ACK > 300ms → 3G mode IMMEDIATELY (no initial burst flood!)
+                // Normal broadband: completely unchanged Golden Master behavior.
                 // ═══════════════════════════════════════════════════════════════
-                int slowAckCount = 0;          // Count of consecutive slow ACKs
-                bool is3GMode = false;         // True when 3G/5Mbps detected
-                uint lastMeasuredAck = 0;      // Last ACK we measured latency for
-                int backpressureTimeoutMs = 150; // Golden Master default: 150ms
+                bool is3GMode = false;
+                int backpressureTimeoutMs = 150; // Golden Master default
+                DateTime firstFrameSentAt = DateTime.MinValue;
+                bool speedProbeComplete = false;
 
                 while (!token.IsCancellationRequested && _isStreaming && ws.State == WebSocketState.Open)
                 {
@@ -1418,46 +1408,37 @@ namespace BigLineconnect
                         _lastViewerActivityTime = DateTime.Now;
                     }
 
-                    // ── 3G AUTO-DETECT: Measure ACK latency to detect slow links ──
-                    if (_lastAckedFrameSeq > lastMeasuredAck && _lastAckedFrameSeq > 5)
+                    // ── SPEED PROBE: Detect 3G from FIRST frame ACK ──
+                    if (!speedProbeComplete && _lastAckedFrameSeq >= 1)
                     {
-                        double ackLatencyMs = (DateTime.Now - _lastFrameSendTime).TotalMilliseconds;
-                        lastMeasuredAck = _lastAckedFrameSeq;
+                        double firstAckMs = (DateTime.Now - firstFrameSentAt).TotalMilliseconds;
+                        speedProbeComplete = true;
 
-                        if (ackLatencyMs > 200) // ACK took >200ms → slow link
+                        if (firstAckMs > 300)
                         {
-                            slowAckCount = Math.Min(slowAckCount + 1, 20);
+                            is3GMode = true;
+                            _is3GSlowLink = true;
+                            backpressureTimeoutMs = 3000;
+                            Log($"[3G-MODE] İlk kare ACK: {firstAckMs:F0}ms. Yavaş bağlantı → stop-and-wait aktif.");
                         }
                         else
                         {
-                            slowAckCount = Math.Max(slowAckCount - 2, 0); // Fast recovery
-                        }
-
-                        // Switch to 3G mode after 3 consecutive slow ACKs
-                        bool was3G = is3GMode;
-                        is3GMode = slowAckCount >= 3;
-                        _is3GSlowLink = is3GMode; // Share with CaptureLoop for quality reduction
-                        backpressureTimeoutMs = is3GMode ? 5000 : 150;
-
-                        // 3G MODE: Activate BigLineRtEngine delta encoding (2-5 KB patches vs 30-50 KB full frames)
-                        // NORMAL: Deactivate, use Golden Master full-frame
-                        if (is3GMode && !was3G)
-                        {
-                            ScreenCapturer.UseRtTileEngine = true;
-                            BigLineRtEngine.Reset();
-                            Log($"[3G-MODE] Yavaş bağlantı algılandı (ACK: {ackLatencyMs:F0}ms). Delta kodlama + stop-and-wait aktif.");
-                        }
-                        else if (!is3GMode && was3G)
-                        {
-                            ScreenCapturer.UseRtTileEngine = false;
-                            BigLineRtEngine.Reset();
-                            Log($"[NORMAL-MODE] Hızlı bağlantı algılandı. Golden Master mod.");
+                            Log($"[NORMAL-MODE] İlk kare ACK: {firstAckMs:F0}ms. Hızlı bağlantı.");
                         }
                     }
 
-                    // ── BACKPRESSURE: Wait for ACK before sending next frame ──
-                    // Normal: wait max 150ms (Golden Master)
-                    // 3G: wait max 5000ms (true stop-and-wait, NEVER overfill TCP buffer)
+                    // ── SPEED PROBE GUARD: Before probe complete, strict 1-frame-at-a-time ──
+                    // Prevents initial burst from flooding TCP buffer on 3G!
+                    if (!speedProbeComplete && _currentFrameSeq >= 1)
+                    {
+                        // Already sent 1 probe frame. Wait for its ACK before sending more.
+                        await Task.Delay(5, token).ConfigureAwait(false);
+                        continue;
+                    }
+
+                    // ── BACKPRESSURE ──
+                    // Normal: 150ms timeout (Golden Master)
+                    // 3G: 3000ms timeout (true stop-and-wait)
                     if (_currentFrameSeq > _lastAckedFrameSeq && (DateTime.Now - _lastFrameSendTime).TotalMilliseconds < backpressureTimeoutMs)
                     {
                         await Task.Delay(2, token).ConfigureAwait(false);
@@ -1481,15 +1462,14 @@ namespace BigLineconnect
                     if (frameToSend != null && frameToSend.Length > 0)
                     {
                         bool isDuplicate = (frameHash != 0 && frameHash == _lastSentFrameHash);
-                        bool isInitialBurst = initialFrameCount < 5;
+                        bool isInitialBurst = initialFrameCount < 5 && speedProbeComplete && !is3GMode;
                         bool isForcedBurst = _forcedRefreshCount > 0;
                         bool isHeartbeat = (DateTime.Now - _lastSentFrameTime).TotalMilliseconds >= 200;
                         if (isForcedBurst) _forcedRefreshCount--;
 
                         if (!isDuplicate || isInitialBurst || isForcedBurst || isHeartbeat)
                         {
-                            // 3G: 10 FPS max (100ms interval) to reduce frame count
-                            // Normal: 60 FPS (16ms interval) - Golden Master unchanged
+                            // 3G: 10 FPS max | Normal: 60 FPS (Golden Master unchanged)
                             int minIntervalMs = is3GMode ? 100 : 16;
                             if (isInitialBurst || isForcedBurst || (DateTime.Now - _lastSentFrameTime).TotalMilliseconds >= minIntervalMs)
                             {
@@ -1498,6 +1478,7 @@ namespace BigLineconnect
                                 {
                                     uint seq = unchecked(++_currentFrameSeq);
                                     _lastFrameSendTime = DateTime.Now;
+                                    if (seq == 1) firstFrameSentAt = DateTime.Now;
 
                                     byte[] stampedPayload = new byte[12 + frameToSend.Length];
                                     Buffer.BlockCopy(BitConverter.GetBytes(DateTime.UtcNow.Ticks), 0, stampedPayload, 0, 8);
