@@ -1309,10 +1309,20 @@ namespace BigLineconnect
                         ApplySleepPrevention(true);
                     }
 
-                    // 3G AUTO-DETECT: Use lower quality + smaller frames on slow links
-                    // Normal connections: use original CurrentQuality/CurrentMaxDimension (Golden Master)
-                    int q = _is3GSlowLink ? Math.Min(CurrentQuality, 35) : CurrentQuality;
-                    int maxDim = _is3GSlowLink ? Math.Min(CurrentMaxDimension > 0 ? CurrentMaxDimension : 1600, 1600) : CurrentMaxDimension;
+                    // 3G AUTO-DETECT: quality & resolution adjustment
+                    // 3G + Delta: Use native res + quality 50% (delta patches are tiny, text stays readable)
+                    // Normal: Golden Master unchanged
+                    int q, maxDim;
+                    if (_is3GSlowLink)
+                    {
+                        q = 50;    // Delta patches: 2-5 KB at 50% quality (readable!)
+                        maxDim = 0; // Native resolution (no downscale, delta handles bandwidth)
+                    }
+                    else
+                    {
+                        q = CurrentQuality;
+                        maxDim = CurrentMaxDimension;
+                    }
                     byte[] frame = ScreenCapturer.Capture(quality: q, maxDimension: maxDim);
                     ulong hash = ScreenCapturer.LastCapturedFrameHash;
                     
@@ -1429,11 +1439,19 @@ namespace BigLineconnect
                         _is3GSlowLink = is3GMode; // Share with CaptureLoop for quality reduction
                         backpressureTimeoutMs = is3GMode ? 5000 : 150;
 
-                        if (is3GMode != was3G)
+                        // 3G MODE: Activate BigLineRtEngine delta encoding (2-5 KB patches vs 30-50 KB full frames)
+                        // NORMAL: Deactivate, use Golden Master full-frame
+                        if (is3GMode && !was3G)
                         {
-                            Log(is3GMode 
-                                ? $"[3G-MODE] Yavaş bağlantı algılandı (ACK: {ackLatencyMs:F0}ms). Tam stop-and-wait aktif."
-                                : $"[NORMAL-MODE] Hızlı bağlantı algılandı. Normal mod.");
+                            ScreenCapturer.UseRtTileEngine = true;
+                            BigLineRtEngine.Reset();
+                            Log($"[3G-MODE] Yavaş bağlantı algılandı (ACK: {ackLatencyMs:F0}ms). Delta kodlama + stop-and-wait aktif.");
+                        }
+                        else if (!is3GMode && was3G)
+                        {
+                            ScreenCapturer.UseRtTileEngine = false;
+                            BigLineRtEngine.Reset();
+                            Log($"[NORMAL-MODE] Hızlı bağlantı algılandı. Golden Master mod.");
                         }
                     }
 
