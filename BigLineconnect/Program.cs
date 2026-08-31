@@ -365,6 +365,38 @@ namespace BigLineconnect
         [STAThread]
         public static void Main(string[] args)
         {
+            // ═══ AUTO-ELEVATION: Ensure we ALWAYS run as Administrator ═══
+            // Required for: SendSAS (Ctrl+Alt+Del), registry writes, desktop attachment
+            try
+            {
+                using (var identity = System.Security.Principal.WindowsIdentity.GetCurrent())
+                {
+                    var principal = new System.Security.Principal.WindowsPrincipal(identity);
+                    if (!principal.IsInRole(System.Security.Principal.WindowsBuiltInRole.Administrator))
+                    {
+                        // Not admin → relaunch with UAC elevation
+                        var exePath = Process.GetCurrentProcess().MainModule?.FileName 
+                                      ?? Application.ExecutablePath;
+                        var startInfo = new ProcessStartInfo
+                        {
+                            FileName = exePath,
+                            UseShellExecute = true,
+                            Verb = "runas" // Triggers UAC prompt
+                        };
+                        if (args.Length > 0)
+                            startInfo.Arguments = string.Join(" ", args);
+                        
+                        try
+                        {
+                            Process.Start(startInfo);
+                        }
+                        catch { } // User cancelled UAC — exit silently
+                        return; // Exit non-admin instance
+                    }
+                }
+            }
+            catch { }
+
             try
             {
                 Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
