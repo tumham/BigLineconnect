@@ -1613,21 +1613,19 @@ namespace BigLineconnect
             if (data == null || data.Length == 0) return;
             if (_ws == null || _ws.State != WebSocketState.Open) return;
 
-            Task.Run(async () =>
+            // CRITICAL: Mouse clicks and keyboard events MUST NOT wait in the semaphore queue!
+            // AnyDesk dispatches clicks instantly — we must do the same.
+            // Fire-and-forget: send immediately without waiting for mouse move semaphore.
+            _ = Task.Run(async () =>
             {
-                await _sendSemaphore.WaitAsync();
                 try
                 {
                     if (_ws != null && _ws.State == WebSocketState.Open)
                     {
-                        await _ws.SendAsync(new ArraySegment<byte>(data), WebSocketMessageType.Binary, true, CancellationToken.None);
+                        await _ws.SendAsync(new ArraySegment<byte>(data), WebSocketMessageType.Binary, true, CancellationToken.None).ConfigureAwait(false);
                     }
                 }
                 catch { }
-                finally
-                {
-                    _sendSemaphore.Release();
-                }
             });
         }
 
