@@ -801,81 +801,99 @@ using System.IO;
                     byte[] idMessage = Encoding.UTF8.GetBytes($"ID:{formattedId}");
                     await webSocket.SendAsync(new ArraySegment<byte>(idMessage), WebSocketMessageType.Text, true, CancellationToken.None);
 
-                    var buffer = new byte[1024 * 64];
+                    var buffer = new byte[1024 * 256]; // 256KB buffer for zero-copy single-fragment relay
                     try
                     {
                         while (webSocket.State == WebSocketState.Open)
                         {
-                            using (var ms = new MemoryStream())
+                            // ZERO-COPY FAST PATH: Most frames (especially delta SubFrames at 1-5 KB)
+                            // arrive in a single WebSocket fragment. Avoid MemoryStream + ToArray() allocation!
+                            var firstResult = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+                            if (firstResult.MessageType == WebSocketMessageType.Close) break;
+                            
+                            byte[] msgBytes;
+                            WebSocketMessageType msgType = firstResult.MessageType;
+                            
+                            if (firstResult.EndOfMessage)
                             {
-                                WebSocketReceiveResult result;
-                                do
+                                // FAST PATH: Single fragment — direct slice, no MemoryStream needed!
+                                msgBytes = new byte[firstResult.Count];
+                                Buffer.BlockCopy(buffer, 0, msgBytes, 0, firstResult.Count);
+                            }
+                            else
+                            {
+                                // SLOW PATH: Multi-fragment (rare, large keyframes only)
+                                using (var ms = new MemoryStream(firstResult.Count * 2))
                                 {
-                                    result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
-                                    if (result.MessageType == WebSocketMessageType.Close) break;
-                                    ms.Write(buffer, 0, result.Count);
-                                }
-                                while (!result.EndOfMessage);
-
-                                if (result.MessageType == WebSocketMessageType.Close) break;
-
-                                if (ms.Length > 0)
-                                {
-                                    byte[] msgBytes = ms.ToArray();
-                                    
-                                    if (result.MessageType == WebSocketMessageType.Binary)
+                                    ms.Write(buffer, 0, firstResult.Count);
+                                    WebSocketReceiveResult result;
+                                    do
                                     {
-                                        // Newest Frame Wins via FrameRelayPump:
-                                        // Host receive loop NEVER blocks! If viewer is slow, stale frames are dropped in 0ms!
-                                        if (session.ClientSocket != null && session.ClientSocket.State == WebSocketState.Open)
-                                        {
-                                            if (session.FramePump == null)
-                                            {
-                                                session.FramePump = new FrameRelayPump(session.ClientSocket, session.Cts.Token);
-                                            }
-                                            session.FramePump.EnqueueFrame(msgBytes);
-                                        }
+                                        result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+                                        if (result.MessageType == WebSocketMessageType.Close) break;
+                                        ms.Write(buffer, 0, result.Count);
                                     }
-                                    else
+                                    while (!result.EndOfMessage);
+                                    
+                                    if (result.MessageType == WebSocketMessageType.Close) break;
+                                    msgBytes = ms.ToArray();
+                                }
+                            }
+
+                            if (msgBytes.Length > 0)
+                            {
+                                if (msgType == WebSocketMessageType.Binary)
+                                {
+                                    // Newest Frame Wins via FrameRelayPump:
+                                    // Host receive loop NEVER blocks! If viewer is slow, stale frames are dropped in 0ms!
+                                    if (session.ClientSocket != null && session.ClientSocket.State == WebSocketState.Open)
                                     {
-                                        // Text/Control messages MUST remain sequential and reliable
-                                        if (session.ClientSocket != null && session.ClientSocket.State == WebSocketState.Open)
+                                        if (session.FramePump == null)
+                                        {
+                                            session.FramePump = new FrameRelayPump(session.ClientSocket, session.Cts.Token);
+                                        }
+                                        session.FramePump.EnqueueFrame(msgBytes);
+                                    }
+                                }
+                                else
+                                {
+                                    // Text/Control messages MUST remain sequential and reliable
+                                    if (session.ClientSocket != null && session.ClientSocket.State == WebSocketState.Open)
+                                    {
+                                        try
+                                        {
+                                            await session.ClientSocket.SendAsync(
+                                                new ArraySegment<byte>(msgBytes),
+                                                msgType,
+                                                true,
+                                                CancellationToken.None
+                                            );
+                                        }
+                                        catch { }
+                                    }
+                                }
+
+                                lock (session.ViewOnlyClients)
+                                {
+                                    for (int j = session.ViewOnlyClients.Count - 1; j >= 0; j--)
+                                    {
+                                        var soc = session.ViewOnlyClients[j];
+                                        if (soc.State == WebSocketState.Open)
                                         {
                                             try
                                             {
-                                                await session.ClientSocket.SendAsync(
+                                                _ = soc.SendAsync(
                                                     new ArraySegment<byte>(msgBytes),
-                                                    result.MessageType,
+                                                    msgType,
                                                     true,
                                                     CancellationToken.None
                                                 );
                                             }
                                             catch { }
                                         }
-                                    }
-
-                                    lock (session.ViewOnlyClients)
-                                    {
-                                        for (int j = session.ViewOnlyClients.Count - 1; j >= 0; j--)
+                                        else
                                         {
-                                            var soc = session.ViewOnlyClients[j];
-                                            if (soc.State == WebSocketState.Open)
-                                            {
-                                                try
-                                                {
-                                                    _ = soc.SendAsync(
-                                                        new ArraySegment<byte>(msgBytes),
-                                                        result.MessageType,
-                                                        true,
-                                                        CancellationToken.None
-                                                    );
-                                                }
-                                                catch { }
-                                            }
-                                            else
-                                            {
-                                                session.ViewOnlyClients.RemoveAt(j);
-                                            }
+                                            session.ViewOnlyClients.RemoveAt(j);
                                         }
                                     }
                                 }
@@ -1169,6 +1187,20 @@ using System.IO;
                     };
                     string reqKey = !string.IsNullOrEmpty(dto.Token) ? dto.Token : dto.Id;
                     ActiveSupportRequests[reqKey] = req;
+
+                    // 📱 Telegram Push Notification — destek uzmanının telefonuna bildirim gönder
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            await TelegramNotifier.NotifySupportRequestAsync(
+                                req.Name, req.Issue, req.Priority, req.Id, req.TenantId);
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"[Telegram] Bildirim hatası: {ex.Message}");
+                        }
+                    });
 
                     // Immediately log new ticket into Support History CRM
                     try
@@ -3081,6 +3113,10 @@ using System.IO;
                     await context.Response.WriteAsync("Error: " + ex.Message);
                 }
             });
+
+            // 📱 Telegram Destek Bot — Başlat
+            TelegramNotifier.Initialize();
+            _ = Task.Run(() => TelegramNotifier.ProcessBotUpdatesAsync());
 
             // Start server
             app.Run();
