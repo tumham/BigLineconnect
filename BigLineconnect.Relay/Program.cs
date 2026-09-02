@@ -1120,7 +1120,7 @@ using System.IO;
                                     string operatorName = context.Request.Query["computer_name"].ToString();
                                     if (string.IsNullOrEmpty(operatorName)) operatorName = "Destek Uzmanı";
                                     await TelegramNotifier.NotifySupportConnectedAsync(
-                                        ticket.Name, ticket.Issue, ticket.Id, operatorName);
+                                        ticket.Name, ticket.Issue, ticket.Id, operatorName, ticket.TenantId);
                                 }
                                 catch { }
                             });
@@ -1372,8 +1372,9 @@ using System.IO;
                     {
                         try
                         {
+                            string resolvedTenant = existingEntry != null ? existingEntry.TenantId : (ticket != null ? ticket.TenantId : tenantId);
                             await TelegramNotifier.NotifyTicketResolvedAsync(
-                                resolvedName, resolvedIssue, status, notes, resolvedHostId);
+                                resolvedName, resolvedIssue, status, notes, resolvedHostId, resolvedTenant);
                         }
                         catch { }
                     });
