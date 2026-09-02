@@ -86,6 +86,83 @@ _BigLineconnect'i açarak bağlanabilirsiniz_
     }
 
     /// <summary>
+    /// Destek uzmanı bir talebe bağlandığında ekibe bildirim gönderir.
+    /// </summary>
+    public static async Task NotifySupportConnectedAsync(string customerName, string issue, string hostId, string operatorInfo)
+    {
+        if (string.IsNullOrEmpty(_botToken) || _registeredChatIds.Count == 0)
+            return;
+
+        string message = $"""
+🟢 *DESTEK BAĞLANTISI KURULDU*
+
+📋 Firma: *{EscapeMarkdown(customerName)}*
+🎯 Konu: {EscapeMarkdown(issue)}
+💻 Bilgisayar ID: `{hostId}`
+👨‍💻 Bağlanan: *{EscapeMarkdown(operatorInfo)}*
+⏰ Zaman: {DateTime.Now:dd.MM.yyyy HH:mm}
+
+_Destek uzmanı müşteriye bağlandı_
+""";
+
+        await BroadcastAsync(message);
+    }
+
+    /// <summary>
+    /// Destek talebi çözüldüğünde ekibe bildirim gönderir.
+    /// </summary>
+    public static async Task NotifyTicketResolvedAsync(string customerName, string issue, string status, string notes, string hostId)
+    {
+        if (string.IsNullOrEmpty(_botToken) || _registeredChatIds.Count == 0)
+            return;
+
+        string statusEmoji = status switch
+        {
+            _ when status.Contains("Çözüldü") => "✅",
+            _ when status.Contains("İptal") => "❌",
+            _ => "📋"
+        };
+
+        string notesLine = !string.IsNullOrEmpty(notes) ? $"\n📝 Not: _{EscapeMarkdown(notes)}_" : "";
+
+        string message = $"""
+{statusEmoji} *TALEP KAPATILDI*
+
+📋 Firma: *{EscapeMarkdown(customerName)}*
+🎯 Konu: {EscapeMarkdown(issue)}
+💻 Bilgisayar ID: `{hostId}`
+📊 Durum: *{EscapeMarkdown(status)}*{notesLine}
+⏰ Zaman: {DateTime.Now:dd.MM.yyyy HH:mm}
+""";
+
+        await BroadcastAsync(message);
+    }
+
+    /// <summary>
+    /// Tüm kayıtlı destek uzmanlarına mesaj gönderir.
+    /// </summary>
+    private static async Task BroadcastAsync(string message)
+    {
+        List<long> chatIds;
+        lock (_lock)
+        {
+            chatIds = new List<long>(_registeredChatIds);
+        }
+
+        foreach (var chatId in chatIds)
+        {
+            try
+            {
+                await SendMessageAsync(chatId, message);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[Telegram] ❌ Bildirim gönderilemedi (ChatID: {chatId}): {ex.Message}");
+            }
+        }
+    }
+
+    /// <summary>
     /// Telegram bot'a gelen /start mesajlarını işler. 
     /// Yeni destek uzmanını kayıt eder.
     /// </summary>

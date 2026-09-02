@@ -1110,6 +1110,22 @@ using System.IO;
                         byte[] startCmd = Encoding.UTF8.GetBytes(startCmdText);
                         await session.HostSocket.SendAsync(new ArraySegment<byte>(startCmd), WebSocketMessageType.Text, true, CancellationToken.None);
 
+                        // 📱 Telegram: Destek uzmanı bağlandı bildirimi
+                        if (ticket != null)
+                        {
+                            _ = Task.Run(async () =>
+                            {
+                                try
+                                {
+                                    string operatorName = context.Request.Query["computer_name"].ToString();
+                                    if (string.IsNullOrEmpty(operatorName)) operatorName = "Destek Uzmanı";
+                                    await TelegramNotifier.NotifySupportConnectedAsync(
+                                        ticket.Name, ticket.Issue, ticket.Id, operatorName);
+                                }
+                                catch { }
+                            });
+                        }
+
                         var clientToHostTask = TunnelClientToHost(session);
 
                         try
@@ -1347,6 +1363,20 @@ using System.IO;
                         });
                     }
                     SaveSupportHistory(history);
+
+                    // 📱 Telegram: Talep çözüldü bildirimi
+                    string resolvedName = existingEntry != null ? existingEntry.Name : (ticket != null ? ticket.Name : "Müşteri");
+                    string resolvedIssue = existingEntry != null ? existingEntry.Issue : (ticket != null ? ticket.Issue : "Genel Destek");
+                    string resolvedHostId = ticket != null ? ticket.Id : id;
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            await TelegramNotifier.NotifyTicketResolvedAsync(
+                                resolvedName, resolvedIssue, status, notes, resolvedHostId);
+                        }
+                        catch { }
+                    });
 
                     string hostTargetId = ticket != null ? ticket.Id : id;
                     if (!string.IsNullOrEmpty(hostTargetId) && ActiveHosts.TryGetValue(hostTargetId, out var session) && session.HostSocket != null && session.HostSocket.State == System.Net.WebSockets.WebSocketState.Open)
