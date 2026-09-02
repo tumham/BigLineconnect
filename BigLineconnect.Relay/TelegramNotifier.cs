@@ -54,6 +54,8 @@ public static class TelegramNotifier
             _ => "⚪"
         };
 
+        string connectUrl = $"https://biglineconnect.bigus.com.tr/?id={hostId}";
+
         string message = $"""
 🔔 *YENİ DESTEK TALEBİ*
 
@@ -65,7 +67,7 @@ public static class TelegramNotifier
 ⏰ Zaman: {DateTime.Now:dd.MM.yyyy HH:mm}
 
 ━━━━━━━━━━━━━━━━
-_BigLineconnect'i açarak bağlanabilirsiniz_
+🔗 [Hemen Bağlan — BigLineconnect]({connectUrl})
 """;
 
         await BroadcastToTenantAsync(tenantId, message);
