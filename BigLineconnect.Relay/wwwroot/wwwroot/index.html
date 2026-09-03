@@ -789,7 +789,7 @@
                 if (typeof ev.data === 'string') {
                     if (ev.data === 'ERROR:ID_NOT_FOUND') {
                         resetConnectButton();
-                        alert('⚠️ UYARI: (' + id + ') numaralı Masaüstü ID\'si bulunamadı!\nLütfen BigLineconnect uygulamasının açık olduğundan emin olun.');
+                        alert('⚠️ UYARI: (' + cleanId + ') numaralı Masaüstü ID\'si bulunamadı!\nLütfen BigLineconnect uygulamasının açık olduğundan emin olun.');
                         ws.close();
                     } else if (ev.data === 'ERROR:BUSY') {
                         resetConnectButton();
