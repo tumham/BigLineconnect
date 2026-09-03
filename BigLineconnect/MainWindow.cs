@@ -83,7 +83,7 @@ namespace BigLineconnect
         private System.Windows.Forms.Timer? _ticketsTimer;
         private Button? _btnSupport;
         private Button? _btnMyTickets;
-        private bool _hasActiveSubmittedTicket = false;
+        public bool _hasActiveSubmittedTicket = false;
         private bool _hasAutoMinimizedForRemoteSession = false;
         private static RemoteOverlayBannerForm? _overlayBannerForm = null;
         public static bool IsBannerDismissedByUser = false;
@@ -126,7 +126,7 @@ namespace BigLineconnect
             _instance = this;
             try { Program.SetStreamActive(false); } catch { }
             InitializeComponent();
-            this.Text = "BigLineconnect v3.71.3 🔴 M (120 FPS Ultra Motor)";
+            this.Text = "B-Connect v3.73 🔴 M (120 FPS Ultra Motor)";
             LoadLogoAndIcon();
 
             // Populate connection logs that occurred during splash screen connection
@@ -244,32 +244,22 @@ namespace BigLineconnect
             this.ForeColor = Color.FromArgb(38, 40, 45);
             this.Font = new Font("Segoe UI", 9.5F, FontStyle.Regular);
 
-            // PictureBox for Logo (Top-Left)
+            // PictureBox for B-Connect Cyber Logo Banner (Exact Black Background Artwork)
             _logoBox = new PictureBox
             {
-                Location = new Point(25, 15),
-                Size = new Size(70, 70),
-                SizeMode = PictureBoxSizeMode.Zoom
+                Location = new Point(25, 8),
+                Size = new Size(215, 48),
+                SizeMode = PictureBoxSizeMode.Zoom,
+                BackColor = Color.Transparent
             };
             this.Controls.Add(_logoBox);
 
-            _titleLabel = new Label
-            {
-                Text = "BigLineconnect",
-                Location = new Point(105, 15),
-                Size = new Size(330, 42),
-                Font = new Font("Segoe UI", 20F, FontStyle.Bold),
-                ForeColor = Color.FromArgb(38, 40, 45),
-                BackColor = Color.Transparent
-            };
-            this.Controls.Add(_titleLabel);
-
             var subtitleLabel = new Label
             {
-                Text = "v3.71.3 🔴 M (120 FPS Ultra Motor)",
-                Location = new Point(108, 58),
-                Size = new Size(450, 20),
-                Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
+                Text = "v3.72 🔴 M (120 FPS Ultra Motor)",
+                Location = new Point(28, 60),
+                Size = new Size(380, 18),
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
                 ForeColor = Color.FromArgb(220, 53, 69),
                 BackColor = Color.Transparent
             };
@@ -304,8 +294,7 @@ namespace BigLineconnect
                 Cursor = Cursors.Hand
             };
             _btnHelp.LinkClicked += (s, e) => ShowHelpManual();
-            _titleLabel.MouseDoubleClick += (s, e) => ToggleSpecialistMode();
-            _logoBox.MouseDoubleClick += (s, e) => ToggleSpecialistMode();
+            if (_logoBox != null) _logoBox.MouseDoubleClick += (s, e) => ToggleSpecialistMode();
 
             this.KeyPreview = true;
             this.KeyDown += (s, e) =>
@@ -407,7 +396,7 @@ namespace BigLineconnect
             _thisDeskGroup = new Panel
             {
                 Location = new Point(20, 193),
-                Size = new Size(245, 90),
+                Size = new Size(245, 105),
                 BackColor = Color.Transparent
             };
             this.Controls.Add(_thisDeskGroup);
@@ -415,8 +404,8 @@ namespace BigLineconnect
             _idLabel = new Label
             {
                 Text = "--- --- ---",
-                Location = new Point(5, 12),
-                Size = new Size(235, 42),
+                Location = new Point(5, 6),
+                Size = new Size(235, 40),
                 Font = new Font("Segoe UI", 16.5F, FontStyle.Bold),
                 ForeColor = Color.FromArgb(38, 40, 45),
                 BackColor = Color.Transparent,
@@ -429,12 +418,13 @@ namespace BigLineconnect
             var copyIdBtn = new Button
             {
                 Text = "📋 ID'yi Kopyala",
-                Location = new Point(50, 56),
-                Size = new Size(145, 26),
+                Location = new Point(45, 48),
+                Size = new Size(155, 32),
                 FlatStyle = FlatStyle.Flat,
                 BackColor = Color.FromArgb(20, 74, 90, 120),
                 ForeColor = Color.FromArgb(74, 90, 120),
-                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
+                TextAlign = ContentAlignment.MiddleCenter,
                 Cursor = Cursors.Hand
             };
             copyIdBtn.FlatAppearance.BorderColor = Color.FromArgb(74, 90, 120);
@@ -678,18 +668,43 @@ namespace BigLineconnect
             // 4. Log text
             _logLabel = new Label
             {
-                Text = "Bağlantı Günlüğü (Log) ve Sistem Teşhisi (WebSocket / TCP):",
-                Location = new Point(20, 575),
-                Size = new Size(410, 20),
+                Text = "Bağlantı Günlüğü (Log) ve Sistem Teşhisi:",
+                Location = new Point(20, 572),
+                Size = new Size(295, 22),
                 ForeColor = Color.FromArgb(74, 90, 120),
                 Font = new Font("Segoe UI", 9.5F, FontStyle.Bold)
             };
             this.Controls.Add(_logLabel);
 
+            var btnCleanSafe = new Button
+            {
+                Text = "🧹 Temizle",
+                Location = new Point(325, 568),
+                Size = new Size(95, 26),
+                BackColor = Color.FromArgb(240, 243, 248),
+                ForeColor = Color.FromArgb(41, 128, 185),
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                Cursor = Cursors.Hand
+            };
+            btnCleanSafe.FlatAppearance.BorderSize = 1;
+            btnCleanSafe.FlatAppearance.BorderColor = Color.FromArgb(180, 205, 235);
+            btnCleanSafe.Click += (s, ev) =>
+            {
+                if (_logTextBox != null)
+                {
+                    _logTextBox.Clear();
+                }
+                var res = Program.PerformSafeDeepCleanup(false);
+                Program.LogHelper(res.message.Replace("\n", " "));
+                MessageBox.Show(res.message, "BigLineconnect Güvenli Temizleyici & Onarıcı", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            };
+            this.Controls.Add(btnCleanSafe);
+
             _logTextBox = new TextBox
             {
-                Location = new Point(20, 595),
-                Size = new Size(410, 100),
+                Location = new Point(20, 598),
+                Size = new Size(405, 96),
                 Multiline = true,
                 ReadOnly = true,
                 ScrollBars = ScrollBars.Vertical,
@@ -697,7 +712,9 @@ namespace BigLineconnect
                 ForeColor = Color.FromArgb(74, 90, 120),
                 Font = new Font("Consolas", 9.5F)
             };
-            this.Controls.Add(CreateModernLogBoxWrapper(_logTextBox));
+            var logWrapper = CreateModernLogBoxWrapper(_logTextBox);
+            this.Controls.Add(logWrapper);
+            btnCleanSafe.BringToFront();
 
             // 4.5 Address Book Group
             _addressBookGroup = new Panel
@@ -922,6 +939,37 @@ namespace BigLineconnect
             _notifyIcon.Click += (s, e) => RestoreAppWindow();
             _notifyIcon.DoubleClick += (s, e) => RestoreAppWindow();
 
+            var trayMenu = new ContextMenuStrip
+            {
+                BackColor = Color.FromArgb(245, 245, 246),
+                ForeColor = Color.FromArgb(38, 40, 45),
+                ShowImageMargin = false,
+                Font = new Font("Segoe UI", 9.5F, FontStyle.Regular)
+            };
+
+            var itemRestore = new ToolStripMenuItem("🖥️ Göster / Aç");
+            itemRestore.Click += (s, e) => RestoreAppWindow();
+            trayMenu.Items.Add(itemRestore);
+
+            var itemCleanTray = new ToolStripMenuItem("🧹 Güvenli Önbellek Temizliği (Kayıtlar Korunur)");
+            itemCleanTray.Click += (s, e) =>
+            {
+                var res = Program.PerformSafeDeepCleanup(false);
+                MessageBox.Show(res.message, "BigLineconnect Güvenli Temizleyici & Onarıcı", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            };
+            trayMenu.Items.Add(itemCleanTray);
+
+            trayMenu.Items.Add(new ToolStripSeparator());
+
+            var itemExit = new ToolStripMenuItem("❌ Çıkış");
+            itemExit.Click += (s, e) =>
+            {
+                this.Close();
+            };
+            trayMenu.Items.Add(itemExit);
+
+            _notifyIcon.ContextMenuStrip = trayMenu;
+
             // Clipboard Monitoring Timer
             _clipboardTimer = new System.Windows.Forms.Timer { Interval = 100 };
             _clipboardTimer.Tick += ClipboardTimer_Tick;
@@ -949,64 +997,78 @@ namespace BigLineconnect
                     try { loadedIcon = new Icon(iconPath); } catch { }
                 }
 
-                var assembly = Assembly.GetExecutingAssembly();
-                using (Stream? stream = assembly.GetManifestResourceStream("BigLineconnect.wwwroot.logo_bc.png") ?? assembly.GetManifestResourceStream("BigLineconnect.wwwroot.logo.png"))
+                // 1. Primary: Load Exact Cyber Logo Banner from local disk/wwwroot
+                string cyberLogoPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "wwwroot", "b_connect_cyber_logo.png");
+                if (!File.Exists(cyberLogoPath))
                 {
-                    if (stream != null)
+                    cyberLogoPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "b_connect_cyber_logo.png");
+                }
+                if (!File.Exists(cyberLogoPath))
+                {
+                    cyberLogoPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Logo_Tasarimlari", "b_connect_cyber_logo.png");
+                }
+
+                if (File.Exists(cyberLogoPath) && _logoBox != null)
+                {
+                    try
                     {
-                        using (var bmp = new Bitmap(stream))
+                        using (var fs = new FileStream(cyberLogoPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                        using (var img = Image.FromStream(fs))
                         {
-                            if (_logoBox != null)
+                            _logoBox.Image = new Bitmap(img);
+                        }
+                    }
+                    catch { }
+                }
+
+                // 2. Embedded Resource fallback for Logo Banner
+                if (_logoBox != null && _logoBox.Image == null)
+                {
+                    var assembly = Assembly.GetExecutingAssembly();
+                    using (Stream? stream = assembly.GetManifestResourceStream("BigLineconnect.wwwroot.b_connect_cyber_logo.png") ?? assembly.GetManifestResourceStream("BigLineconnect.wwwroot.logo_bc.png") ?? assembly.GetManifestResourceStream("BigLineconnect.wwwroot.logo.png"))
+                    {
+                        if (stream != null)
+                        {
+                            using (var bmp = new Bitmap(stream))
                             {
                                 _logoBox.Image = new Bitmap(bmp);
-                            }
-
-                            if (loadedIcon == null)
-                            {
-                                try
-                                {
-                                    IntPtr hIcon = bmp.GetHicon();
-                                    loadedIcon = Icon.FromHandle(hIcon);
-                                }
-                                catch { }
                             }
                         }
                     }
                 }
 
-                // Fallback to disk wwwroot/logo.png if _logoBox.Image is still null
-                if (_logoBox != null && _logoBox.Image == null)
+                // 3. App Icon: Load from icon.ico or create icon from B-C cyber icon
+                if (loadedIcon == null)
                 {
-                    string localLogoPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "wwwroot", "logo.png");
-                    if (File.Exists(localLogoPath))
+                    string iconFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "wwwroot", "icon.ico");
+                    if (!File.Exists(iconFilePath)) iconFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "icon.ico");
+                    if (!File.Exists(iconFilePath)) iconFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Logo_Tasarimlari", "icon.ico");
+
+                    if (File.Exists(iconFilePath))
                     {
-                        try { _logoBox.Image = Image.FromFile(localLogoPath); } catch { }
+                        try { loadedIcon = new Icon(iconFilePath); } catch { }
                     }
                 }
 
-                // Ultimate fallback: Extract bitmap from loadedIcon or SystemIcons.Shield
+                if (loadedIcon == null && _logoBox != null && _logoBox.Image != null)
+                {
+                    try
+                    {
+                        using (var iconBmp = new Bitmap(_logoBox.Image, 32, 32))
+                        {
+                            IntPtr hIcon = iconBmp.GetHicon();
+                            loadedIcon = Icon.FromHandle(hIcon);
+                        }
+                    }
+                    catch { }
+                }
+
                 if (loadedIcon != null)
                 {
                     this.Icon = loadedIcon;
                     if (_notifyIcon != null)
                     {
                         _notifyIcon.Icon = loadedIcon;
-                    }
-                    if (_logoBox != null && _logoBox.Image == null)
-                    {
-                        try { _logoBox.Image = loadedIcon.ToBitmap(); } catch { }
-                    }
-                }
-                else
-                {
-                    this.Icon = SystemIcons.Shield;
-                    if (_notifyIcon != null)
-                    {
-                        _notifyIcon.Icon = SystemIcons.Shield;
-                    }
-                    if (_logoBox != null && _logoBox.Image == null)
-                    {
-                        try { _logoBox.Image = SystemIcons.Shield.ToBitmap(); } catch { }
                     }
                 }
             }
@@ -4273,6 +4335,7 @@ namespace BigLineconnect
                 var result = MessageBox.Show("Destek talebinizi iptal etmek istediğinizden emin misiniz?", "Talebi İptal Et", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                 if (result == DialogResult.Yes)
                 {
+                    string tokenToCancel = Program.ActiveSupportToken ?? "";
                     Task.Run(async () =>
                     {
                         try
@@ -4282,7 +4345,7 @@ namespace BigLineconnect
                             
                             using (var client = new System.Net.Http.HttpClient())
                             {
-                                var json = $"{{\"id\":\"{Program.EscapeJson(hostId)}\"}}";
+                                var json = $"{{\"id\":\"{Program.EscapeJson(hostId)}\",\"token\":\"{Program.EscapeJson(tokenToCancel)}\"}}";
                                 var content = new System.Net.Http.StringContent(json, Encoding.UTF8, "application/json");
                                 await client.PostAsync(httpUrl, content);
                             }
@@ -4302,6 +4365,21 @@ namespace BigLineconnect
                     AppendLog("[Destek] Destek talebi müşteri tarafından iptal edildi.");
                 }
                 return;
+            }
+
+            // ⚠️ Uzman zaten bağlı mı kontrolü (Ekran paylaşımı / oturum aktifse uyar)
+            if (Program._isStreaming)
+            {
+                var warnResult = MessageBox.Show(
+                    "Bilgisayarınıza şu anda bir destek uzmanı bağlı!\n\nYine de yeni bir destek talebi göndermek istiyor musunuz?",
+                    "Uzman Zaten Bağlı",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Question);
+
+                if (warnResult != DialogResult.Yes)
+                {
+                    return;
+                }
             }
 
             using (var dlg = new SupportRequestDialog())
@@ -5398,10 +5476,38 @@ namespace BigLineconnect
                     var res = MessageBox.Show($"'({t.Issue})' başlıklı talebinizi iptal etmek istiyor musunuz?", "Talep İptali", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                     if (res == DialogResult.Yes)
                     {
+                        // Sunucuya da iptal bildirimi gönder (Listeden ve Telegram'dan kaldırılsın)
+                        Task.Run(async () =>
+                        {
+                            try
+                            {
+                                string serverUrl = _main?._actualRelayUrl ?? "";
+                                if (!string.IsNullOrEmpty(serverUrl))
+                                {
+                                    string httpUrl = serverUrl.Replace("ws://", "http://").Replace("wss://", "https://").Replace("/register-host", "/api/support/cancel");
+                                    using (var client = new System.Net.Http.HttpClient())
+                                    {
+                                        var cancelJson = $"{{\"id\":\"{Program.EscapeJson(t.HostId)}\",\"token\":\"{Program.EscapeJson(t.Token)}\"}}";
+                                        var content = new System.Net.Http.StringContent(cancelJson, Encoding.UTF8, "application/json");
+                                        await client.PostAsync(httpUrl, content);
+                                    }
+                                }
+                            }
+                            catch { }
+                        });
+
                         var localList = LoadLocalSubmittedTickets();
                         localList.RemoveAll(x => x.Token == t.Token || x.Issue == t.Issue);
                         string json = System.Text.Json.JsonSerializer.Serialize(localList, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
                         File.WriteAllText(GetLocalSubmittedTicketsFilePath(), json);
+
+                        if (_main != null && Program.ActiveSupportToken == t.Token)
+                        {
+                            _main._hasActiveSubmittedTicket = false;
+                            Program.ActiveSupportToken = "";
+                            _main.ResetSupportButton();
+                        }
+
                         LoadAndRefreshTickets();
                         MessageBox.Show("Talebiniz iptal edildi.", "Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
@@ -6086,10 +6192,37 @@ namespace BigLineconnect
                     var res = MessageBox.Show($"'({t.Issue})' başlıklı talebinizi iptal etmek istiyor musunuz?", "Talep İptali", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                     if (res == DialogResult.Yes)
                     {
+                        Task.Run(async () =>
+                        {
+                            try
+                            {
+                                string serverUrl = MainWindow.Instance?._actualRelayUrl ?? "";
+                                if (!string.IsNullOrEmpty(serverUrl))
+                                {
+                                    string httpUrl = serverUrl.Replace("ws://", "http://").Replace("wss://", "https://").Replace("/register-host", "/api/support/cancel");
+                                    using (var client = new System.Net.Http.HttpClient())
+                                    {
+                                        var cancelJson = $"{{\"id\":\"{Program.EscapeJson(t.HostId)}\",\"token\":\"{Program.EscapeJson(t.Token)}\"}}";
+                                        var content = new System.Net.Http.StringContent(cancelJson, Encoding.UTF8, "application/json");
+                                        await client.PostAsync(httpUrl, content);
+                                    }
+                                }
+                            }
+                            catch { }
+                        });
+
                         var localList = MainWindow.LoadLocalSubmittedTickets();
                         localList.RemoveAll(x => x.Token == t.Token || x.Issue == t.Issue);
                         string json = System.Text.Json.JsonSerializer.Serialize(localList, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
                         File.WriteAllText(MainWindow.GetLocalSubmittedTicketsFilePath(), json);
+
+                        if (MainWindow.Instance != null && Program.ActiveSupportToken == t.Token)
+                        {
+                            MainWindow.Instance._hasActiveSubmittedTicket = false;
+                            Program.ActiveSupportToken = "";
+                            MainWindow.Instance.ResetSupportButton();
+                        }
+
                         LoadAndRefreshTickets();
                         MessageBox.Show("Talebiniz iptal edildi.", "Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }

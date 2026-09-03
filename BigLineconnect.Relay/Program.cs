@@ -1602,8 +1602,28 @@ using System.IO;
                     string body = await reader.ReadToEndAsync();
                     using var doc = System.Text.Json.JsonDocument.Parse(body);
                     var root = doc.RootElement;
-                    string id = root.GetProperty("id").GetString() ?? "";
-                    if (ActiveSupportRequests.TryRemove(id, out var ticket))
+                    string id = root.TryGetProperty("id", out var pId) ? pId.GetString() ?? "" : "";
+                    string token = root.TryGetProperty("token", out var pToken) ? pToken.GetString() ?? "" : "";
+
+                    string cleanId = id.Replace(" ", "").Trim();
+
+                    // Hem Key, hem Id, hem Token ile ara ve kaldır
+                    SupportRequest? ticket = null;
+                    var matchingKeys = ActiveSupportRequests
+                        .Where(kv => (!string.IsNullOrEmpty(token) && (kv.Key.Equals(token, StringComparison.OrdinalIgnoreCase) || kv.Value.Token.Equals(token, StringComparison.OrdinalIgnoreCase))) ||
+                                     (!string.IsNullOrEmpty(cleanId) && (kv.Key.Equals(cleanId, StringComparison.OrdinalIgnoreCase) || kv.Value.Id.Replace(" ", "").Trim().Equals(cleanId, StringComparison.OrdinalIgnoreCase))))
+                        .Select(kv => kv.Key)
+                        .ToList();
+
+                    foreach (var k in matchingKeys)
+                    {
+                        if (ActiveSupportRequests.TryRemove(k, out var removed))
+                        {
+                            ticket = removed;
+                        }
+                    }
+
+                    if (ticket != null)
                     {
                         var history = LoadSupportHistory();
                         history.Add(new SupportHistoryEntry
@@ -1620,12 +1640,28 @@ using System.IO;
                         });
                         SaveSupportHistory(history);
 
+                        // 📱 Telegram İptal Bildirimi
+                        _ = Task.Run(async () =>
+                        {
+                            try
+                            {
+                                await TelegramNotifier.NotifyTicketCancelledAsync(
+                                    ticket.Name, ticket.Issue, ticket.Id, ticket.TenantId);
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine($"[Telegram] İptal bildirim hatası: {ex.Message}");
+                            }
+                        });
+
                         context.Response.StatusCode = StatusCodes.Status200OK;
                         await context.Response.WriteAsync("Success");
                     }
                     else
                     {
-                        context.Response.StatusCode = StatusCodes.Status404NotFound;
+                        // Zaten listede yoksa veya daha önce silindiyse yine de OK ver
+                        context.Response.StatusCode = StatusCodes.Status200OK;
+                        await context.Response.WriteAsync("Not Found or Already Removed");
                     }
                 }
                 catch

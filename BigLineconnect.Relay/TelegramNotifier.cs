@@ -127,6 +127,30 @@ _Destek uzmanı müşteriye bağlandı_
     }
 
     /// <summary>
+    /// Müşteri destek talebini iptal ettiğinde ilgili tenant'ın ekibine bildirim gönderir.
+    /// </summary>
+    public static async Task NotifyTicketCancelledAsync(string customerName, string issue, string hostId, string tenantId = "BIGLINE")
+    {
+        if (string.IsNullOrEmpty(_botToken)) return;
+
+        string cleanHostId = (hostId ?? "").Replace(" ", "").Trim();
+
+        string message = $"""
+🚫 *DESTEK TALEBİ İPTAL EDİLDİ*
+
+📋 Firma: *{EscapeMarkdown(customerName)}*
+🎯 Konu: {EscapeMarkdown(issue)}
+💻 Bilgisayar ID: `{cleanHostId}`
+🏢 Tenant: {EscapeMarkdown(tenantId)}
+⏰ Zaman: {DateTime.Now:dd.MM.yyyy HH:mm}
+
+_Müşteri destek talebini kendi ekranından iptal etti._
+""";
+
+        await BroadcastToTenantAsync(tenantId, message);
+    }
+
+    /// <summary>
     /// Telegram bot'a gelen mesajları işler (/start, /stop, /durum).
     /// /start TENANT_ID ile tenant bazlı kayıt yapılır.
     /// </summary>
