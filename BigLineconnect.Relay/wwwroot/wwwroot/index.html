@@ -780,9 +780,16 @@
             ws = new WebSocket(wsProtocol + '//' + location.host + '/connect-client?id=' + encodeURIComponent(cleanId));
             ws.binaryType = 'arraybuffer';
 
+            var pingInterval = null;
             ws.onopen = function() {
                 console.log('[BigLine] WS Connected!');
                 isConnecting = false;
+                if (pingInterval) clearInterval(pingInterval);
+                pingInterval = setInterval(function() {
+                    if (ws && ws.readyState === WebSocket.OPEN) {
+                        try { ws.send(JSON.stringify({ type: 'ping' })); } catch(e) {}
+                    }
+                }, 5000);
             };
 
             ws.onmessage = function(ev) {
@@ -829,55 +836,123 @@
                         viewer.style.setProperty('z-index', '999999', 'important');
                     }
 
-                    var frameBytes = ev.data;
-                    if (frameBytes && frameBytes.byteLength > 8) {
-                        var u8 = new Uint8Array(frameBytes);
+                    var rawBuf = ev.data;
+                    if (!rawBuf || rawBuf.byteLength < 12) return;
+
+                    var view = new DataView(rawBuf);
+
+                    // 1. SEQUENCE & ACK: Host'a anında frame_ack gönder (Donmayı %100 önler!)
+                    var seq = view.getUint32(8, true); // Little endian
+                    if (ws && ws.readyState === WebSocket.OPEN) {
+                        try {
+                            ws.send(JSON.stringify({ type: 'frame_ack', seq: seq }));
+                        } catch(e) {}
+                    }
+
+                    var cv = document.getElementById('screen-canvas');
+                    var ctx = cv ? cv.getContext('2d', { alpha: false }) : null;
+                    var fallbackImg = document.getElementById('screen-img');
+
+                    // 2. PAYLOAD PARSER: 12. byte'tan sonrası
+                    var payloadOffset = 12;
+                    var payloadLen = rawBuf.byteLength - payloadOffset;
+                    if (payloadLen <= 4) return;
+
+                    var magic = view.getUint32(payloadOffset, true);
+                    var MAGIC_BLRT = 0x54524C42; // "BLRT" in little-endian
+
+                    if (magic === MAGIC_BLRT && payloadLen > 9) {
+                        // ── BIGLINE RT TILE PROTOCOL (BLRT) ──
+                        var flag = view.getUint8(payloadOffset + 4);
+                        var screenW = view.getUint16(payloadOffset + 5, true);
+                        var screenH = view.getUint16(payloadOffset + 7, true);
+
+                        if (cv && (cv.width !== screenW || cv.height !== screenH)) {
+                            cv.width = screenW;
+                            cv.height = screenH;
+                        }
+
+                        if (flag === 0x01) {
+                            // KEYFRAME: Tam ekran güncelleme
+                            var jpegLen = view.getInt32(payloadOffset + 9, true);
+                            var jpegStart = payloadOffset + 13;
+                            if (jpegStart + jpegLen <= rawBuf.byteLength) {
+                                var jpegBytes = rawBuf.slice(jpegStart, jpegStart + jpegLen);
+                                var blob = new Blob([jpegBytes], { type: 'image/jpeg' });
+                                var url = URL.createObjectURL(blob);
+                                var img = new Image();
+                                img.onload = function() {
+                                    if (ctx) ctx.drawImage(img, 0, 0);
+                                    URL.revokeObjectURL(url);
+                                    if (cv && cv.style.display !== 'block') cv.style.display = 'block';
+                                    if (fallbackImg && fallbackImg.style.display !== 'none') fallbackImg.style.display = 'none';
+                                };
+                                img.onerror = function() { URL.revokeObjectURL(url); };
+                                img.src = url;
+                            }
+                        } else if (flag === 0x02) {
+                            // SUBFRAME: Kısmi fayans güncellemesi
+                            var subX = view.getUint16(payloadOffset + 9, true);
+                            var subY = view.getUint16(payloadOffset + 11, true);
+                            var subW = view.getUint16(payloadOffset + 13, true);
+                            var subH = view.getUint16(payloadOffset + 15, true);
+                            var jpegLen = view.getInt32(payloadOffset + 17, true);
+                            var jpegStart = payloadOffset + 21;
+
+                            if (jpegStart + jpegLen <= rawBuf.byteLength) {
+                                var jpegBytes = rawBuf.slice(jpegStart, jpegStart + jpegLen);
+                                var blob = new Blob([jpegBytes], { type: 'image/jpeg' });
+                                var url = URL.createObjectURL(blob);
+                                (function(x, y, w, h, u) {
+                                    var img = new Image();
+                                    img.onload = function() {
+                                        if (ctx) ctx.drawImage(img, x, y, w, h);
+                                        URL.revokeObjectURL(u);
+                                    };
+                                    img.onerror = function() { URL.revokeObjectURL(u); };
+                                    img.src = u;
+                                })(subX, subY, subW, subH, url);
+                            }
+                        }
+                    } else {
+                        // ── STANDARD JPEG FALLBACK ──
+                        var jpegBytes = rawBuf.slice(payloadOffset);
+                        // Header check: 0xFF, 0xD8
+                        var u8 = new Uint8Array(jpegBytes);
                         for (var i = 0; i < Math.min(16, u8.length - 1); i++) {
                             if (u8[i] === 0xFF && u8[i + 1] === 0xD8) {
-                                if (i > 0) frameBytes = frameBytes.slice(i);
+                                if (i > 0) jpegBytes = jpegBytes.slice(i);
                                 break;
                             }
                         }
+
+                        var blob = new Blob([jpegBytes], { type: 'image/jpeg' });
+                        var url = URL.createObjectURL(blob);
+                        var tempImg = new Image();
+                        tempImg.onload = function() {
+                            if (cv && ctx) {
+                                if (cv.width !== tempImg.width || cv.height !== tempImg.height) {
+                                    cv.width = tempImg.width;
+                                    cv.height = tempImg.height;
+                                }
+                                ctx.drawImage(tempImg, 0, 0);
+                                if (cv.style.display !== 'block') cv.style.display = 'block';
+                                if (fallbackImg && fallbackImg.style.display !== 'none') fallbackImg.style.display = 'none';
+                            } else if (fallbackImg) {
+                                fallbackImg.src = url;
+                                if (fallbackImg.style.display !== 'block') fallbackImg.style.display = 'block';
+                            }
+                            URL.revokeObjectURL(url);
+                        };
+                        tempImg.onerror = function() { URL.revokeObjectURL(url); };
+                        tempImg.src = url;
                     }
-
-                    var blob = new Blob([frameBytes], {type: 'image/jpeg'});
-                    var url = URL.createObjectURL(blob);
-
-                    var cv = document.getElementById('screen-canvas');
-                    var ctx = cv ? cv.getContext('2d', { alpha: false, desynchronized: true }) : null;
-                    var fallbackImg = document.getElementById('screen-img');
-
-                    var tempImg = new Image();
-                    tempImg.onload = function() {
-                        if (cv && ctx) {
-                            if (cv.width !== tempImg.width || cv.height !== tempImg.height) {
-                                cv.width = tempImg.width;
-                                cv.height = tempImg.height;
-                            }
-                            ctx.drawImage(tempImg, 0, 0);
-                            if (cv.style.display !== 'block') cv.style.display = 'block';
-                            if (fallbackImg && fallbackImg.style.display !== 'none') fallbackImg.style.display = 'none';
-                        } else if (fallbackImg) {
-                            fallbackImg.src = url;
-                            if (fallbackImg.style.display !== 'block') {
-                                fallbackImg.style.display = 'block';
-                                fallbackImg.style.width = '100%';
-                                fallbackImg.style.height = '100%';
-                                fallbackImg.style.objectFit = 'contain';
-                            }
-                            if (cv && cv.style.display !== 'none') cv.style.display = 'none';
-                        }
-                        URL.revokeObjectURL(url);
-                    };
-                    tempImg.onerror = function() {
-                        URL.revokeObjectURL(url);
-                    };
-                    tempImg.src = url;
                 }
             };
 
             ws.onerror = function(err) {
                 console.error('WS Error:', err);
+                if (pingInterval) clearInterval(pingInterval);
                 isConnecting = false;
                 resetConnectButton();
                 var viewer = document.getElementById('viewer-screen');
@@ -888,6 +963,7 @@
             };
 
             ws.onclose = function() {
+                if (pingInterval) clearInterval(pingInterval);
                 isConnecting = false;
                 resetConnectButton();
                 var viewer = document.getElementById('viewer-screen');
@@ -1030,14 +1106,21 @@
             targetHost.style.touchAction = 'none';
 
             var lastMove = 0;
-            targetHost.addEventListener('mousemove', function(e) {
+            function safeSendMove(x, y) {
                 if (!ws || ws.readyState !== WebSocket.OPEN) return;
+                // Buffer koruması: Çıkış tamponu dolduysa gönderme (kopmayı %100 engeller!)
+                if (ws.bufferedAmount && ws.bufferedAmount > 32768) return;
                 var now = Date.now();
-                if (now - lastMove < 16) return;
+                if (now - lastMove < 20) return;
                 lastMove = now;
+                try {
+                    ws.send(JSON.stringify({ type: 'move', x: x, y: y }));
+                } catch(e) {}
+            }
 
+            targetHost.addEventListener('mousemove', function(e) {
                 var pos = getMousePos(e.clientX, e.clientY);
-                ws.send(JSON.stringify({ type: 'move', x: pos.x, y: pos.y }));
+                safeSendMove(pos.x, pos.y);
             });
 
             targetHost.addEventListener('mousedown', function(e) {
@@ -1103,7 +1186,7 @@
                     touchStartTime = Date.now();
                     isTouchDragging = false;
                     var pos = getMousePos(t.clientX, t.clientY);
-                    ws.send(JSON.stringify({ type: 'move', x: pos.x, y: pos.y }));
+                    safeSendMove(pos.x, pos.y);
                 }
             }, { passive: false });
 
@@ -1134,12 +1217,8 @@
                     var dy = Math.abs(t.clientY - touchStartY);
                     if (dx > 5 || dy > 5) {
                         isTouchDragging = true;
-                        var now = Date.now();
-                        if (now - lastMove >= 16) {
-                            lastMove = now;
-                            var pos = getMousePos(t.clientX, t.clientY);
-                            ws.send(JSON.stringify({ type: 'move', x: pos.x, y: pos.y }));
-                        }
+                        var pos = getMousePos(t.clientX, t.clientY);
+                        safeSendMove(pos.x, pos.y);
                     }
                     e.preventDefault();
                 }
