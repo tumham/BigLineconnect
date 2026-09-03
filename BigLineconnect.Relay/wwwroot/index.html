@@ -352,31 +352,175 @@
 
         <!-- Remote screen rendering canvas -->
         <div class="canvas-container" id="canvas-container">
+        <!-- Remote screen rendering canvas -->
+        <div class="canvas-container" id="canvas-container">
             <canvas id="screen-canvas" style="width: 100%; height: 100%; object-fit: contain; cursor: default; display: block; user-select: none;"></canvas>
             <img id="screen-img" style="display: none;">
         </div>
 
         <!-- Floating Controls for Mobile & Actions -->
-        <div class="floating-controls" style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(12px); padding: 8px 14px; border-radius: 30px; border: 1px solid rgba(0, 229, 255, 0.3); box-shadow: 0 10px 30px rgba(0,0,0,0.8); z-index: 999999;">
-            <button id="zoom-in-btn" type="button" onclick="zoomIn()" class="control-btn" title="Yakınlaştır" style="background: rgba(0,229,255,0.15); border: 1px solid #00e5ff; color: #00e5ff; border-radius: 20px; padding: 6px 12px; font-weight: 700; cursor: pointer;">
-                <i class="fa-solid fa-magnifying-glass-plus"></i>
+        <div class="floating-controls" style="position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(16px); padding: 6px 12px; border-radius: 30px; border: 1.5px solid rgba(0, 229, 255, 0.4); box-shadow: 0 10px 30px rgba(0,0,0,0.85); z-index: 999999; max-width: 96vw; overflow-x: auto;">
+            <!-- ERP Hızlı Numpad Tuşu -->
+            <button id="erp-numpad-btn" type="button" onclick="toggleErpNumpad()" class="control-btn" title="ERP Sayısal Tuş Takımı (123)" style="background: linear-gradient(135deg, rgba(0,229,255,0.3), rgba(59,130,246,0.3)); border: 1.5px solid #00e5ff; color: #fff; border-radius: 20px; padding: 6px 12px; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 4px; box-shadow: 0 0 10px rgba(0,229,255,0.3);">
+                <i class="fa-solid fa-calculator" style="color: #00e5ff;"></i> <span>123</span>
             </button>
-            <button id="zoom-out-btn" type="button" onclick="zoomOut()" class="control-btn" title="Uzaklaştır" style="background: rgba(0,229,255,0.15); border: 1px solid #00e5ff; color: #00e5ff; border-radius: 20px; padding: 6px 12px; font-weight: 700; cursor: pointer;">
-                <i class="fa-solid fa-magnifying-glass-minus"></i>
+
+            <!-- Hızlı TAB Tuşu (Kutudan Kutuya Atlama) -->
+            <button id="quick-tab-btn" type="button" onclick="sendRemoteSpecialKey('tab')" class="control-btn" title="Sonraki Kutuya Geç (TAB)" style="background: rgba(245, 158, 11, 0.2); border: 1.5px solid #f59e0b; color: #fbbf24; border-radius: 20px; padding: 6px 12px; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                <span>TAB ⇥</span>
             </button>
-            <button id="zoom-reset-btn" type="button" onclick="resetZoom()" class="control-btn" title="Sıfırla %100" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); color: #fff; border-radius: 20px; padding: 6px 10px; font-size: 0.75rem; font-weight: 700; cursor: pointer;">
-                100%
+
+            <!-- Hızlı Tarih Butonu -->
+            <button id="quick-date-btn" type="button" onclick="openDatePickerModal()" class="control-btn" title="Hızlı Tarih Gir" style="background: rgba(46, 204, 113, 0.2); border: 1.5px solid #2ecc71; color: #2ecc71; border-radius: 20px; padding: 6px 12px; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                <i class="fa-solid fa-calendar-day"></i> <span>Tarih</span>
             </button>
-            <button id="toggle-keyboard-btn" type="button" onclick="openMobileKeyboard()" class="control-btn" title="Klavyeyi Aç" style="background: rgba(0,229,255,0.2); border: 1px solid #00e5ff; color: #fff; border-radius: 20px; padding: 6px 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 4px;">
-                <i class="fa-solid fa-keyboard"></i> <span>Klavye</span>
+
+            <!-- Standart Klavye -->
+            <button id="toggle-keyboard-btn" type="button" onclick="openMobileKeyboard()" class="control-btn" title="Yazı Klavyesini Aç" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); color: #fff; border-radius: 20px; padding: 6px 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                <i class="fa-solid fa-keyboard"></i> <span>Yazı</span>
             </button>
-            <button id="mouse-mode-btn" type="button" onclick="toggleRightClickMode()" class="control-btn" title="Tıklama Modu" style="background: rgba(168, 85, 247, 0.2); border: 1px solid #a855f7; color: #e9d5ff; border-radius: 20px; padding: 6px 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+
+            <!-- Tıklama Modu (Sol / Çift / Sağ) -->
+            <button id="mouse-mode-btn" type="button" onclick="toggleRightClickMode()" class="control-btn" title="Tıklama Modu" style="background: rgba(168, 85, 247, 0.2); border: 1px solid #a855f7; color: #e9d5ff; border-radius: 20px; padding: 6px 10px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 4px;">
                 <i class="fa-solid fa-computer-mouse"></i> <span id="mouse-mode-text">Sol Tık</span>
             </button>
-            <button id="mobile-file-transfer-btn" type="button" onclick="triggerFileTransfer()" class="control-btn" title="Dosya Gönder" style="background: rgba(46, 204, 113, 0.2); border: 1px solid #2ecc71; color: #2ecc71; border-radius: 20px; padding: 6px 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 4px;">
-                <i class="fa-solid fa-file-arrow-up"></i> <span>Dosya</span>
+
+            <!-- Yakınlaştır / Uzaklaştır -->
+            <button id="zoom-in-btn" type="button" onclick="zoomIn()" class="control-btn" title="Yakınlaştır" style="background: rgba(0,229,255,0.1); border: 1px solid rgba(0,229,255,0.4); color: #00e5ff; border-radius: 20px; padding: 6px 10px; font-weight: 700; cursor: pointer;">
+                <i class="fa-solid fa-magnifying-glass-plus"></i>
+            </button>
+            <button id="zoom-reset-btn" type="button" onclick="resetZoom()" class="control-btn" title="Sıfırla" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); color: #a0aec0; border-radius: 20px; padding: 6px 8px; font-size: 0.75rem; font-weight: 700; cursor: pointer;">
+                100%
             </button>
         </div>
+
+        <!-- ══════════════════════════════════════════════════════════ -->
+        <!-- ERP & MUHASEBE SAYISAL TUŞ TAKIMI (NUMPAD POPUP) -->
+        <!-- ══════════════════════════════════════════════════════════ -->
+        <div id="erp-numpad-panel" style="display: none; position: fixed; bottom: 75px; left: 50%; transform: translateX(-50%); background: rgba(11, 15, 25, 0.96); backdrop-filter: blur(25px); border: 2px solid #00e5ff; border-radius: 24px; padding: 14px; z-index: 9999999; box-shadow: 0 20px 50px rgba(0,0,0,0.95); width: 92%; max-width: 360px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-calculator" style="color: #00e5ff; font-size: 1.1rem;"></i>
+                    <span style="font-weight: 900; font-size: 0.95rem; color: #fff; letter-spacing: 0.5px;">Sayısal Giriş</span>
+                </div>
+                <div style="display: flex; gap: 6px; align-items: center;">
+                    <button type="button" onclick="sendQuickDateToday()" style="background: rgba(46, 204, 113, 0.2); border: 1px solid #2ecc71; color: #2ecc71; border-radius: 10px; padding: 4px 10px; font-size: 0.75rem; font-weight: 800; cursor: pointer;">📅 Bugün</button>
+                    <button type="button" onclick="toggleErpNumpad()" style="background: rgba(255,255,255,0.1); border: none; color: #fff; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-size: 1rem; cursor: pointer;"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
+                <button type="button" class="numpad-key" onclick="sendRemoteKey('7')">7</button>
+                <button type="button" class="numpad-key" onclick="sendRemoteKey('8')">8</button>
+                <button type="button" class="numpad-key" onclick="sendRemoteKey('9')">9</button>
+                <button type="button" class="numpad-key numpad-backspace" onclick="sendRemoteSpecialKey('backspace')"><i class="fa-solid fa-delete-left"></i></button>
+
+                <button type="button" class="numpad-key" onclick="sendRemoteKey('4')">4</button>
+                <button type="button" class="numpad-key" onclick="sendRemoteKey('5')">5</button>
+                <button type="button" class="numpad-key" onclick="sendRemoteKey('6')">6</button>
+                <button type="button" class="numpad-key numpad-tab" onclick="sendRemoteSpecialKey('tab')">TAB ⇥</button>
+
+                <button type="button" class="numpad-key" onclick="sendRemoteKey('1')">1</button>
+                <button type="button" class="numpad-key" onclick="sendRemoteKey('2')">2</button>
+                <button type="button" class="numpad-key" onclick="sendRemoteKey('3')">3</button>
+                <button type="button" class="numpad-key numpad-enter" onclick="sendRemoteSpecialKey('enter')">↵ ENTER</button>
+
+                <button type="button" class="numpad-key" onclick="sendRemoteKey('0')" style="grid-column: span 1;">0</button>
+                <button type="button" class="numpad-key" onclick="sendRemoteKey(',')">,</button>
+                <button type="button" class="numpad-key" onclick="sendRemoteKey('.')">.</button>
+                <button type="button" class="numpad-key numpad-esc" onclick="sendRemoteSpecialKey('escape')">ESC</button>
+            </div>
+        </div>
+
+        <!-- ══════════════════════════════════════════════════════════ -->
+        <!-- HIZLI TARİH SEÇİCİ MODAL -->
+        <!-- ══════════════════════════════════════════════════════════ -->
+        <div id="quick-date-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(5, 7, 15, 0.85); backdrop-filter: blur(15px); z-index: 10000000; justify-content: center; align-items: center; padding: 20px;">
+            <div style="background: rgba(15, 23, 42, 0.95); border: 2px solid #2ecc71; border-radius: 24px; padding: 22px; max-width: 340px; width: 100%; text-align: center; box-shadow: 0 25px 50px rgba(0,0,0,0.9);">
+                <div style="width: 50px; height: 50px; margin: 0 auto 12px; background: rgba(46, 204, 113, 0.2); border: 1.5px solid #2ecc71; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; color: #2ecc71;">
+                    <i class="fa-solid fa-calendar-days"></i>
+                </div>
+                <h3 style="color: #fff; font-size: 1.15rem; font-weight: 800; margin-bottom: 6px;">Hızlı Tarih Girişi</h3>
+                <p style="color: #a0aec0; font-size: 0.8rem; margin-bottom: 16px;">Kutucuğa otomatik yazılır ve sonraki alana (TAB) atlar.</p>
+
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <button type="button" onclick="sendQuickDateToday(); closeDatePickerModal();" style="padding: 12px; background: linear-gradient(135deg, #2ecc71, #00e5ff); border: none; border-radius: 12px; color: #000; font-weight: 900; font-size: 0.95rem; cursor: pointer;">
+                        📅 Bugünün Tarihi (<span id="quick-date-today-label"></span>)
+                    </button>
+                    <button type="button" onclick="sendQuickDateYesterday(); closeDatePickerModal();" style="padding: 10px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); border-radius: 12px; color: #fff; font-weight: 700; font-size: 0.85rem; cursor: pointer;">
+                        Dünün Tarihi (<span id="quick-date-yesterday-label"></span>)
+                    </button>
+
+                    <div style="margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px; text-align: left;">
+                        <label style="font-size: 0.75rem; color: #00e5ff; font-weight: 800; display: block; margin-bottom: 4px;">Başka Bir Tarih Seç:</label>
+                        <input type="date" id="custom-date-picker-input" onchange="sendCustomSelectedDate(this.value); closeDatePickerModal();" style="width: 100%; padding: 10px; border-radius: 10px; border: 1.5px solid #00e5ff; background: rgba(11,15,25,0.9); color: #fff; font-weight: 800; font-size: 1rem;">
+                    </div>
+
+                    <button type="button" onclick="closeDatePickerModal()" style="margin-top: 8px; padding: 8px; background: none; border: none; color: #94a3b8; font-weight: 700; font-size: 0.85rem; cursor: pointer;">
+                        Vazgeç
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <style>
+            .numpad-key {
+                background: rgba(30, 41, 59, 0.8);
+                border: 1.5px solid rgba(255,255,255,0.12);
+                border-radius: 14px;
+                color: #fff;
+                font-size: 1.25rem;
+                font-weight: 800;
+                padding: 14px 6px;
+                cursor: pointer;
+                transition: all 0.1s ease;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                user-select: none;
+                -webkit-tap-highlight-color: transparent;
+            }
+            .numpad-key:active {
+                background: #00e5ff;
+                color: #000;
+                transform: scale(0.95);
+            }
+            .numpad-tab {
+                background: rgba(245, 158, 11, 0.25);
+                border-color: #f59e0b;
+                color: #fbbf24;
+                font-size: 0.85rem;
+                font-weight: 900;
+            }
+            .numpad-tab:active {
+                background: #f59e0b;
+                color: #000;
+            }
+            .numpad-enter {
+                background: linear-gradient(135deg, rgba(46, 204, 113, 0.3), rgba(0, 229, 255, 0.3));
+                border-color: #2ecc71;
+                color: #2ecc71;
+                font-size: 0.8rem;
+                font-weight: 900;
+            }
+            .numpad-enter:active {
+                background: #2ecc71;
+                color: #000;
+            }
+            .numpad-backspace {
+                background: rgba(239, 68, 68, 0.2);
+                border-color: #ef4444;
+                color: #ef4444;
+                font-size: 1.1rem;
+            }
+            .numpad-esc {
+                background: rgba(148, 163, 184, 0.2);
+                border-color: #94a3b8;
+                color: #cbd5e1;
+                font-size: 0.85rem;
+                font-weight: 800;
+            }
+        </style>
 
         <!-- Hidden input to capture keyboard events on mobile -->
         <input type="text" id="hidden-keyboard-input" autocomplete="off" autocapitalize="off" spellcheck="false">
@@ -1084,6 +1228,139 @@
             }
         }
         window.openMobileKeyboard = openMobileKeyboard;
+
+        // ═══════════════════════════════════════════════════════════════
+        // ERP & MUHASEBE SAYISAL GİRİŞ VE HIZLI TARİH FONKSİYONLARI
+        // ═══════════════════════════════════════════════════════════════
+        function toggleErpNumpad() {
+            var panel = document.getElementById('erp-numpad-panel');
+            var btn = document.getElementById('erp-numpad-btn');
+            if (!panel) return;
+            if (panel.style.display === 'none' || !panel.style.display) {
+                panel.style.display = 'block';
+                if (btn) {
+                    btn.style.background = 'linear-gradient(135deg, #00e5ff, #3b82f6)';
+                    btn.style.color = '#000';
+                }
+            } else {
+                panel.style.display = 'none';
+                if (btn) {
+                    btn.style.background = 'linear-gradient(135deg, rgba(0,229,255,0.3), rgba(59,130,246,0.3))';
+                    btn.style.color = '#fff';
+                }
+            }
+        }
+        window.toggleErpNumpad = toggleErpNumpad;
+
+        function sendRemoteKey(ch) {
+            if (!ws || ws.readyState !== WebSocket.OPEN) return;
+            try {
+                ws.send(JSON.stringify({ type: 'key', key: ch, action: 'down' }));
+                setTimeout(function() {
+                    if (ws && ws.readyState === WebSocket.OPEN) {
+                        ws.send(JSON.stringify({ type: 'key', key: ch, action: 'up' }));
+                    }
+                }, 30);
+            } catch(e) {}
+        }
+        window.sendRemoteKey = sendRemoteKey;
+
+        function sendRemoteSpecialKey(keyName) {
+            if (!ws || ws.readyState !== WebSocket.OPEN) return;
+            try {
+                ws.send(JSON.stringify({ type: 'key', key: keyName, action: 'down' }));
+                setTimeout(function() {
+                    if (ws && ws.readyState === WebSocket.OPEN) {
+                        ws.send(JSON.stringify({ type: 'key', key: keyName, action: 'up' }));
+                    }
+                }, 35);
+            } catch(e) {}
+        }
+        window.sendRemoteSpecialKey = sendRemoteSpecialKey;
+
+        function sendRemoteTextString(text, autoTab) {
+            if (!ws || ws.readyState !== WebSocket.OPEN || !text) return;
+            var delay = 0;
+            for (var i = 0; i < text.length; i++) {
+                (function(charToSend, d) {
+                    setTimeout(function() {
+                        sendRemoteKey(charToSend);
+                    }, d);
+                })(text.charAt(i), delay);
+                delay += 40;
+            }
+            if (autoTab) {
+                setTimeout(function() {
+                    sendRemoteSpecialKey('tab');
+                }, delay + 60);
+            }
+        }
+        window.sendRemoteTextString = sendRemoteTextString;
+
+        function openDatePickerModal() {
+            var modal = document.getElementById('quick-date-modal');
+            if (modal) {
+                var now = new Date();
+                var dd = String(now.getDate()).padStart(2, '0');
+                var mm = String(now.getMonth() + 1).padStart(2, '0');
+                var yyyy = now.getFullYear();
+
+                var yesterday = new Date(Date.now() - 86400000);
+                var ydd = String(yesterday.getDate()).padStart(2, '0');
+                var ymm = String(yesterday.getMonth() + 1).padStart(2, '0');
+                var yyyyy = yesterday.getFullYear();
+
+                var todayLabel = document.getElementById('quick-date-today-label');
+                var yesterdayLabel = document.getElementById('quick-date-yesterday-label');
+                if (todayLabel) todayLabel.innerText = dd + '.' + mm + '.' + yyyy;
+                if (yesterdayLabel) yesterdayLabel.innerText = ydd + '.' + ymm + '.' + yyyyy;
+
+                var customInput = document.getElementById('custom-date-picker-input');
+                if (customInput) customInput.value = yyyy + '-' + mm + '-' + dd;
+
+                modal.style.display = 'flex';
+            }
+        }
+        window.openDatePickerModal = openDatePickerModal;
+
+        function closeDatePickerModal() {
+            var modal = document.getElementById('quick-date-modal');
+            if (modal) modal.style.display = 'none';
+        }
+        window.closeDatePickerModal = closeDatePickerModal;
+
+        function sendQuickDateToday() {
+            var now = new Date();
+            var dd = String(now.getDate()).padStart(2, '0');
+            var mm = String(now.getMonth() + 1).padStart(2, '0');
+            var yyyy = now.getFullYear();
+            var dateStr = dd + '.' + mm + '.' + yyyy;
+            sendRemoteTextString(dateStr, true);
+            showToast('📅 Bugün (' + dateStr + ') girildi ve TAB atlandı!', 'success');
+        }
+        window.sendQuickDateToday = sendQuickDateToday;
+
+        function sendQuickDateYesterday() {
+            var yesterday = new Date(Date.now() - 86400000);
+            var dd = String(yesterday.getDate()).padStart(2, '0');
+            var mm = String(yesterday.getMonth() + 1).padStart(2, '0');
+            var yyyy = yesterday.getFullYear();
+            var dateStr = dd + '.' + mm + '.' + yyyy;
+            sendRemoteTextString(dateStr, true);
+            showToast('📅 Dün (' + dateStr + ') girildi ve TAB atlandı!', 'success');
+        }
+        window.sendQuickDateYesterday = sendQuickDateYesterday;
+
+        function sendCustomSelectedDate(val) {
+            if (!val) return;
+            var parts = val.split('-');
+            if (parts.length === 3) {
+                var dateStr = parts[2] + '.' + parts[1] + '.' + parts[0];
+                sendRemoteTextString(dateStr, true);
+                showToast('📅 Seçilen tarih (' + dateStr + ') girildi ve TAB atlandı!', 'success');
+            }
+        }
+        window.sendCustomSelectedDate = sendCustomSelectedDate;
 
         // Input Listeners (Mouse, Focal Pinch Zoom, Mobile Virtual Keyboard)
         window.addEventListener('load', function() {
