@@ -789,7 +789,7 @@
                     if (ws && ws.readyState === WebSocket.OPEN) {
                         try { ws.send(JSON.stringify({ type: 'ping' })); } catch(e) {}
                     }
-                }, 5000);
+                }, 25000); // 25 saniye: Mobil kotayı sıfıra yakın tutar, hattı uyanık tutmaya fazlasıyla yeter
             };
 
             ws.onmessage = function(ev) {
