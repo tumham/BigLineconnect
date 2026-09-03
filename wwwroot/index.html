@@ -743,8 +743,19 @@
         }
         window.resetConnectButton = resetConnectButton;
 
+        var isConnecting = false;
+
         function doConnect() {
             console.log('[BigLine] doConnect triggered');
+            if (isConnecting) {
+                console.log('[BigLine] Connection already in progress, ignoring duplicate tap.');
+                return;
+            }
+            if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+                console.log('[BigLine] Active WebSocket exists, ignoring duplicate call.');
+                return;
+            }
+
             var inputElem = document.getElementById('target-id') || document.getElementById('tid');
             if (!inputElem) { alert('Hata: ID giriş kutusu bulunamadı.'); return; }
 
@@ -758,6 +769,7 @@
             var cleanId = rawVal.replace(/\s+/g, '');
             saveToIdHistory(cleanId); // Save to history on connect!
 
+            isConnecting = true;
             var btn = document.getElementById('connect-btn');
             if (btn) {
                 btn.disabled = true;
@@ -765,13 +777,12 @@
             }
 
             var wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-            if (ws) { try { ws.close(); } catch(e) {} }
-
             ws = new WebSocket(wsProtocol + '//' + location.host + '/connect-client?id=' + encodeURIComponent(cleanId));
             ws.binaryType = 'arraybuffer';
 
             ws.onopen = function() {
                 console.log('[BigLine] WS Connected!');
+                isConnecting = false;
             };
 
             ws.onmessage = function(ev) {
@@ -867,11 +878,17 @@
 
             ws.onerror = function(err) {
                 console.error('WS Error:', err);
+                isConnecting = false;
                 resetConnectButton();
-                alert('Sunucu bağlantı hatası!');
+                var viewer = document.getElementById('viewer-screen');
+                var isAlreadyStreaming = viewer && viewer.style.display === 'block';
+                if (!isAlreadyStreaming) {
+                    alert('Sunucu bağlantı hatası!');
+                }
             };
 
             ws.onclose = function() {
+                isConnecting = false;
                 resetConnectButton();
                 var viewer = document.getElementById('viewer-screen');
                 var landing = document.getElementById('landing-page');
@@ -1178,14 +1195,7 @@
                 }
             }, { passive: false });
 
-            // Ensure mobile connect button fires doConnect on tap
-            var connectBtn = document.getElementById('connect-btn');
-            if (connectBtn) {
-                connectBtn.addEventListener('touchend', function(e) {
-                    e.preventDefault();
-                    doConnect();
-                });
-            }
+
 
             // Virtual Keyboard Touch Input Listener
             var hiddenInput = document.getElementById('hidden-keyboard-input');
