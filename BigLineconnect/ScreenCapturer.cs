@@ -138,7 +138,7 @@ namespace BigLineconnect
             _jpegEncoder = GetEncoder(ImageFormat.Jpeg);
         }
 
-        public static bool UseRtTileEngine { get; set; } = false; // Golden Master: Pure DXGI Hardware Accelerated Full-Frame Streaming
+        public static bool UseRtTileEngine { get; set; } = false;
         public static bool UseH264Mode { get; set; } = false;
         public static bool ForceKeyframeRequested { get; set; } = false;
         private static H264Encoder? _h264Encoder;
@@ -554,6 +554,12 @@ namespace BigLineconnect
             {
                 _dxgiCapturer?.Dispose();
                 _dxgiCapturer = null;
+                _useDxgi = true;
+                _h264Encoder?.Dispose();
+                _h264Encoder = null;
+                ForceKeyframeRequested = true;
+                LastCapturedFrameHash = 0;
+                BigLineRtEngine.Reset();
             }
             catch { }
         }

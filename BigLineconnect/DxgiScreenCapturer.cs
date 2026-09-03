@@ -36,20 +36,51 @@ namespace BigLineconnect
         {
             using (var factory = new Factory1())
             {
-                using (var adapter = factory.GetAdapter1(0))
-                {
-                    _device = new Device(adapter);
-                    using (var output = adapter.GetOutput(_outputIndex))
-                    {
-                        using (var output1 = output.QueryInterface<Output1>())
-                        {
-                            var desc = output.Description;
-                            _width = desc.DesktopBounds.Right - desc.DesktopBounds.Left;
-                            _height = desc.DesktopBounds.Bottom - desc.DesktopBounds.Top;
+                int currentGlobalOutput = 0;
+                bool found = false;
 
-                            _deskDupl = output1.DuplicateOutput(_device);
+                int adapterCount = factory.GetAdapterCount1();
+                for (int a = 0; a < adapterCount; a++)
+                {
+                    using (var adapter = factory.GetAdapter1(a))
+                    {
+                        int outputCount = adapter.GetOutputCount();
+                        for (int o = 0; o < outputCount; o++)
+                        {
+                            if (currentGlobalOutput == _outputIndex)
+                            {
+                                try
+                                {
+                                    _device = new Device(adapter);
+                                    using (var output = adapter.GetOutput(o))
+                                    {
+                                        using (var output1 = output.QueryInterface<Output1>())
+                                        {
+                                            var desc = output.Description;
+                                            _width = desc.DesktopBounds.Right - desc.DesktopBounds.Left;
+                                            _height = desc.DesktopBounds.Bottom - desc.DesktopBounds.Top;
+
+                                            _deskDupl = output1.DuplicateOutput(_device);
+                                            found = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                                catch
+                                {
+                                    _device?.Dispose();
+                                    _device = null;
+                                }
+                            }
+                            currentGlobalOutput++;
                         }
                     }
+                    if (found) break;
+                }
+
+                if (!found || _device == null || _deskDupl == null)
+                {
+                    throw new InvalidOperationException($"DXGI Output {_outputIndex} bulunamadı veya açılamadı.");
                 }
             }
 

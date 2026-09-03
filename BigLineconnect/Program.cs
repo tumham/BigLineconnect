@@ -1072,7 +1072,7 @@ namespace BigLineconnect
 
         public static string SanitizeRelayUrl(string? rawUrl)
         {
-            if (string.IsNullOrWhiteSpace(rawUrl) || rawUrl.Contains("***") || rawUrl.Contains("Güvenli Sunucu") || rawUrl.Contains("213.142.159") || !rawUrl.StartsWith("ws", StringComparison.OrdinalIgnoreCase))
+            if (string.IsNullOrWhiteSpace(rawUrl) || rawUrl.Contains("***") || rawUrl.Contains("Güvenli Sunucu") || !rawUrl.StartsWith("ws", StringComparison.OrdinalIgnoreCase))
             {
                 return "wss://biglineconnect-production.up.railway.app/register-host";
             }
@@ -1319,6 +1319,7 @@ namespace BigLineconnect
         private static Mutex? _singleStreamerMutex = null;
         private static volatile bool _isSendingFrame = false;
         private static readonly AutoResetEvent _instantCaptureEvent = new AutoResetEvent(false);
+        private static readonly AutoResetEvent _frameReadyEvent = new AutoResetEvent(false); // Wakes SendStreamLoop INSTANTLY when CaptureLoop produces a new frame (0ms inter-loop delay)
         public static volatile int _forcedRefreshCount = 0;
         public static DateTime _lastViewerActivityTime = DateTime.Now;
 
@@ -1358,8 +1359,8 @@ namespace BigLineconnect
                     }
 
                     // 3G: quality 35% + max 1600px for smaller frames (~15-20KB instead of 60-80KB)
-                    // Normal: Golden Master unchanged
-                    int q = _is3GSlowLink ? Math.Min(CurrentQuality, 35) : CurrentQuality;
+                    // 3G quality cap DISABLED — user should always get their chosen quality
+                    int q = CurrentQuality;
                     int maxDim = _is3GSlowLink ? 1600 : CurrentMaxDimension;
                     byte[] frame = ScreenCapturer.Capture(quality: q, maxDimension: maxDim);
                     ulong hash = ScreenCapturer.LastCapturedFrameHash;
@@ -1371,6 +1372,7 @@ namespace BigLineconnect
                             _latestFrame = frame;
                             _latestFrameHash = hash;
                         }
+                        _frameReadyEvent.Set(); // Wake SendStreamLoop INSTANTLY — 0ms inter-loop delay!
                     }
                     else
                     {
@@ -1462,7 +1464,7 @@ namespace BigLineconnect
                         double firstAckMs = (DateTime.Now - firstFrameSentAt).TotalMilliseconds;
                         speedProbeComplete = true;
 
-                        if (firstAckMs > 300)
+                        if (firstAckMs > 1500) // Was 300ms — raised to avoid false 3G on high-RTT broadband (Railway US = ~400ms ACK)
                         {
                             is3GMode = true;
                             _is3GSlowLink = true;
@@ -1554,7 +1556,8 @@ namespace BigLineconnect
                         }
                     }
 
-                    await Task.Delay(1, token).ConfigureAwait(false);
+                    // Wait for CaptureLoop to produce a new frame — 0ms wake on new frame!
+                    _frameReadyEvent.WaitOne(8);
                 }
                 Log("Görüntü gönderim döngüsü sonlandı.");
             }
@@ -1584,9 +1587,19 @@ namespace BigLineconnect
 
             if (pkt[0] == BinaryInputProtocol.MAGIC_BYTE && pkt.Length >= 9)
             {
-                AdaptiveRateController.NotifyUserActivity(isContinuousMotion: (pkt[1] == BinaryInputProtocol.CMD_MOUSE_MOVE || pkt[1] == BinaryInputProtocol.CMD_MOUSE_SCROLL));
-                InputSimulator.SimulateBinaryInput(pkt, _activeDisplayIndex);
-                if (pkt[1] != BinaryInputProtocol.CMD_MOUSE_MOVE)
+                // BATCH SUPPORT: Process all 9-byte chunks in the message
+                // Viewer may send multiple keystrokes in one WebSocket message for efficiency
+                bool hasNonMouseMove = false;
+                for (int offset = 0; offset + 9 <= pkt.Length; offset += 9)
+                {
+                    if (pkt[offset] != BinaryInputProtocol.MAGIC_BYTE) break;
+                    byte[] singlePkt = new byte[9];
+                    Buffer.BlockCopy(pkt, offset, singlePkt, 0, 9);
+                    AdaptiveRateController.NotifyUserActivity(isContinuousMotion: (singlePkt[1] == BinaryInputProtocol.CMD_MOUSE_MOVE || singlePkt[1] == BinaryInputProtocol.CMD_MOUSE_SCROLL));
+                    InputSimulator.SimulateBinaryInput(singlePkt, _activeDisplayIndex);
+                    if (singlePkt[1] != BinaryInputProtocol.CMD_MOUSE_MOVE) hasNonMouseMove = true;
+                }
+                if (hasNonMouseMove)
                 {
                     TriggerInstantCapture(2);
                 }
@@ -1652,6 +1665,8 @@ namespace BigLineconnect
                     _activeDisplayIndex = index;
                     ScreenCapturer.CurrentDisplayIndex = index;
                     ScreenCapturer.Shutdown(); // Re-init dxgi on next capture frame
+                    _lastSentFrameBytes = null;
+                    TriggerInstantCapture();
                 }
                 else if (type == "click")
                 {
