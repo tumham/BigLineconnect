@@ -990,10 +990,10 @@
         window.doConnect = doConnect;
         window.startConnectionProcess = doConnect;
 
-        // 100% Pixel-Perfect Mouse Calibration with Aspect Ratio & Letterbox Compensation
+        // 100% Pixel-Perfect Direct Canvas & Container Coordinate Mapping
         function getMousePos(clientX, clientY) {
-            var container = document.getElementById('canvas-container');
             var cv = document.getElementById('screen-canvas');
+            var container = document.getElementById('canvas-container');
             var fallbackImg = document.getElementById('screen-img');
 
             var targetEl = (cv && cv.style.display !== 'none' && cv.offsetWidth > 0) ? cv :
@@ -1003,40 +1003,12 @@
             var rect = targetEl.getBoundingClientRect();
             if (rect.width <= 0 || rect.height <= 0) return { x: 0, y: 0 };
 
-            var naturalWidth = 1920;
-            var naturalHeight = 1080;
-
-            if (targetEl.tagName === 'CANVAS' && targetEl.width > 300) {
-                naturalWidth = targetEl.width;
-                naturalHeight = targetEl.height;
-            } else if (targetEl.tagName === 'IMG' && targetEl.naturalWidth > 300) {
-                naturalWidth = targetEl.naturalWidth;
-                naturalHeight = targetEl.naturalHeight;
-            }
-
-            var imageAspect = naturalWidth / naturalHeight;
-            var containerAspect = rect.width / rect.height;
-
-            var renderedWidth, renderedHeight, offsetX, offsetY;
-
-            if (containerAspect > imageAspect) {
-                renderedHeight = rect.height;
-                renderedWidth = rect.height * imageAspect;
-                offsetX = (rect.width - renderedWidth) / 2;
-                offsetY = 0;
-            } else {
-                renderedWidth = rect.width;
-                renderedHeight = rect.width / imageAspect;
-                offsetX = 0;
-                offsetY = (rect.height - renderedHeight) / 2;
-            }
-
-            var mouseX = clientX - rect.left - offsetX;
-            var mouseY = clientY - rect.top - offsetY;
+            var mouseX = clientX - rect.left;
+            var mouseY = clientY - rect.top;
 
             return {
-                x: Math.max(0, Math.min(1, mouseX / renderedWidth)),
-                y: Math.max(0, Math.min(1, mouseY / renderedHeight))
+                x: Math.max(0, Math.min(1, mouseX / rect.width)),
+                y: Math.max(0, Math.min(1, mouseY / rect.height))
             };
         }
 
@@ -1230,7 +1202,7 @@
                     var t = e.touches[0];
                     var dx = Math.abs(t.clientX - touchStartX);
                     var dy = Math.abs(t.clientY - touchStartY);
-                    if (dx > 5 || dy > 5) {
+                    if (dx > 20 || dy > 20) {
                         isTouchDragging = true;
                         var pos = getMousePos(t.clientX, t.clientY);
                         safeSendMove(pos.x, pos.y);
@@ -1249,39 +1221,42 @@
                 var duration = Date.now() - touchStartTime;
                 var now = Date.now();
 
-                if (!isTouchDragging && duration < 600 && e.changedTouches.length > 0) {
+                if (!isTouchDragging && duration < 700 && e.changedTouches.length > 0) {
                     var t = e.changedTouches[0];
                     var pos = getMousePos(t.clientX, t.clientY);
 
-                    // Automatic Double-Tap Detection (within 480ms window, 50px finger drift tolerance)
+                    // 1. Önce imleci tam dokunulan noktaya sıçrat
+                    try {
+                        ws.send(JSON.stringify({ type: 'move', x: pos.x, y: pos.y }));
+                    } catch(ex) {}
+
+                    // Automatic Double-Tap Detection
                     var isDoubleTap = (now - lastTapTime < 480) && lastTapPos &&
                                       (Math.abs(t.clientX - lastTapPos.clientX) < 50 && Math.abs(t.clientY - lastTapPos.clientY) < 50);
 
                     if (clickMode === 1 || isDoubleTap) {
-                        // Double-Click mode active OR quick double-tap detected!
                         var dblPos = (isDoubleTap && lastTapPos) ? getMousePos(lastTapPos.clientX, lastTapPos.clientY) : pos;
                         ws.send(JSON.stringify({ type: 'double_click', button: 'left', x: dblPos.x, y: dblPos.y }));
                         lastTapTime = 0;
                         lastTapPos = null;
-                    } else if (clickMode === 2 || duration >= 450) {
-                        // Right-Click mode or Long-Press
+                    } else if (clickMode === 2 || duration >= 500) {
                         ws.send(JSON.stringify({ type: 'click', button: 'right', action: 'down', x: pos.x, y: pos.y }));
                         setTimeout(function() {
                             if (ws && ws.readyState === WebSocket.OPEN) {
                                 ws.send(JSON.stringify({ type: 'click', button: 'right', action: 'up', x: pos.x, y: pos.y }));
                             }
-                        }, 50);
+                        }, 40);
                         lastTapTime = now;
                         lastTapPos = { clientX: t.clientX, clientY: t.clientY };
-                        if (clickMode === 2) toggleMouseMode(); // Auto-reset to Sol Tık mode
+                        if (clickMode === 2) toggleMouseMode();
                     } else {
-                        // Single Left-Click
+                        // Single Left-Click (Kesin Tıklama)
                         ws.send(JSON.stringify({ type: 'click', button: 'left', action: 'down', x: pos.x, y: pos.y }));
                         setTimeout(function() {
                             if (ws && ws.readyState === WebSocket.OPEN) {
                                 ws.send(JSON.stringify({ type: 'click', button: 'left', action: 'up', x: pos.x, y: pos.y }));
                             }
-                        }, 50);
+                        }, 40);
                         lastTapTime = now;
                         lastTapPos = { clientX: t.clientX, clientY: t.clientY };
                     }
