@@ -209,6 +209,73 @@ function connectToHost(id) {
             const fallbackImg = document.getElementById('screen-img');
 
             let frameBytes = ev.data;
+            if (frameBytes && frameBytes.byteLength > 12) {
+                const u8 = new Uint8Array(frameBytes);
+                if (u8.length >= 20) {
+                    const dv = new DataView(frameBytes);
+                    const seq = dv.getUint32(8, true);
+                    const ackPkt = new Uint8Array([0x41, seq & 0xFF, (seq >> 8) & 0xFF, (seq >> 16) & 0xFF, (seq >> 24) & 0xFF]);
+                    if (socket && socket.readyState === WebSocket.OPEN) {
+                        try { socket.send(ackPkt.buffer); } catch (e) {}
+                    }
+                }
+
+                // Check for BigLine-RT (BRTE) Tile/Delta Packet: 'B' 0x42, 'R' 0x52, 'T' 0x54, 'E' 0x45
+                if (u8[0] === 0x42 && u8[1] === 0x52 && u8[2] === 0x54 && u8[3] === 0x45) {
+                    const dv = new DataView(frameBytes);
+                    const flag = u8[4];
+                    const w = dv.getUint16(5, true);
+                    const h = dv.getUint16(7, true);
+
+                    if (screenCanvas && (screenCanvas.width !== w || screenCanvas.height !== h)) {
+                        screenCanvas.width = w;
+                        screenCanvas.height = h;
+                    }
+
+                    if (flag === 1) { // KEYFRAME
+                        const len = dv.getInt32(9, true);
+                        const jpegBytes = frameBytes.slice(13, 13 + len);
+                        const blob = new Blob([jpegBytes], { type: 'image/jpeg' });
+                        const url = URL.createObjectURL(blob);
+                        const img = new Image();
+                        img.onload = () => {
+                            if (ctx) ctx.drawImage(img, 0, 0);
+                            URL.revokeObjectURL(url);
+                        };
+                        img.onerror = () => URL.revokeObjectURL(url);
+                        img.src = url;
+                        return;
+                    } else if (flag === 2) { // DIRTY TILES
+                        const tileCount = dv.getUint16(9, true);
+                        let offset = 11;
+                        for (let t = 0; t < tileCount; t++) {
+                            if (offset + 8 > u8.length) break;
+                            const col = dv.getUint16(offset, true);
+                            const row = dv.getUint16(offset + 2, true);
+                            const tileLen = dv.getInt32(offset + 4, true);
+                            offset += 8;
+                            if (offset + tileLen > u8.length) break;
+
+                            const tileBytes = frameBytes.slice(offset, offset + tileLen);
+                            offset += tileLen;
+
+                            const tileBlob = new Blob([tileBytes], { type: 'image/jpeg' });
+                            const tileUrl = URL.createObjectURL(tileBlob);
+                            const tileImg = new Image();
+                            const destX = col * 64;
+                            const destY = row * 64;
+                            tileImg.onload = () => {
+                                if (ctx) ctx.drawImage(tileImg, destX, destY);
+                                URL.revokeObjectURL(tileUrl);
+                            };
+                            tileImg.onerror = () => URL.revokeObjectURL(tileUrl);
+                            tileImg.src = tileUrl;
+                        }
+                        return;
+                    }
+                }
+            }
+
             let receivedSeq = 0;
             if (frameBytes && frameBytes.byteLength >= 12) {
                 const u8 = new Uint8Array(frameBytes);
@@ -285,62 +352,6 @@ function connectToHost(id) {
         showToast('Bağlantı sonlandırıldı.', 'info');
         socket = null;
     };
-}
-                    const btnElem = document.getElementById('submit-password-btn');
-                    if (btnElem) {
-                        btnElem.disabled = false;
-                        btnElem.innerHTML = 'Doğrula & Bağlan <i class="fa-solid fa-arrow-right-to-bracket"></i>';
-                    }
-                    if (passwordModal) {
-                        passwordModal.classList.add('hidden');
-                        passwordModal.style.display = 'none';
-                        passwordModal.style.pointerEvents = 'none';
-                    }
-                    if (hiddenKeyboardInput) hiddenKeyboardInput.disabled = false;
-                    showToast('Bağlantı başarılı! Ekran yükleniyor...', 'success');
-                } else if (event.data === 'AUTH_FAILED') {
-                    const btnElem = document.getElementById('submit-password-btn');
-                    if (btnElem) {
-                        btnElem.disabled = false;
-                        btnElem.innerHTML = 'Doğrula & Bağlan <i class="fa-solid fa-arrow-right-to-bracket"></i>';
-                    }
-                    showToast('❌ Hatalı Erişim Şifresi! Lütfen doğru şifreyi giriniz.', 'error');
-                    let errLabel = document.getElementById('password-error-label');
-                    if (!errLabel) {
-                        errLabel = document.createElement('div');
-                        errLabel.id = 'password-error-label';
-                        errLabel.style.cssText = 'color:#e74c3c;font-weight:700;font-size:13px;margin-top:12px;padding:10px;background:rgba(231,76,60,0.15);border-radius:10px;border:1px solid rgba(231,76,60,0.3);';
-                        const container = document.querySelector('#password-modal .glass-card');
-                        if (container) container.appendChild(errLabel);
-                    }
-                    if (errLabel) {
-                        errLabel.textContent = '❌ Hatalı Şifre! Lütfen karşı bilgisayarın ekranındaki 6 haneli şifreyi doğru girdiğinizden emin olun.';
-                    }
-                    if (accessPasswordInput) {
-                        accessPasswordInput.value = '';
-                        accessPasswordInput.focus();
-                    }
-                } else if (event.data === 'AUTH_REJECTED') {
-                    customCloseReason = 'Bağlantı isteği kullanıcı tarafından reddedildi!';
-                    if (passwordModal) passwordModal.classList.add('hidden');
-                    if (hiddenKeyboardInput) hiddenKeyboardInput.disabled = false;
-                    socket.close();
-                } else if (event.data.startsWith('{')) {
-                    try {
-                        const json = JSON.parse(event.data);
-                        if (json.type === 'clipboard') {
-                            navigator.clipboard.writeText(json.text).then(() => {
-                                showToast('Pano Eşitlendi', 'success');
-                            }).catch(err => {});
-                        }
-                    } catch (e) {}
-                }
-            }
-        };
-    } catch (e) {
-        showToast('Bağlantı hatası!', 'error');
-        console.error(e);
-    }
 }
 
 // Fullscreen Button
@@ -909,20 +920,48 @@ function updateTransform() {
 
 // 1. Magic Link Auto-Detect (?id=393215720 or ?remoteid=...)
 function checkMagicLink() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const magicId = urlParams.get('id') || urlParams.get('remoteid');
-    if (magicId && targetIdInput) {
-        const clean = magicId.replace(/\D/g, '');
-        if (clean.length >= 6) {
-            targetIdInput.value = clean;
-            targetIdInput.dispatchEvent(new Event('input'));
-            
-            // Scroll to connect widget
-            setTimeout(() => {
-                document.getElementById('baglan')?.scrollIntoView({ behavior: 'smooth' });
-                showToast('Uzak Masaüstü ID algılandı! Bağlan butonuna basın.', 'info');
-            }, 300);
+    try {
+        const search = window.location.search || '';
+        const hash = window.location.hash || '';
+        let magicId = '';
+
+        if (search) {
+            const urlParams = new URLSearchParams(search);
+            magicId = urlParams.get('id') || urlParams.get('remoteid') || urlParams.get('hostid') || '';
         }
+        if (!magicId && hash && (hash.includes('id=') || hash.includes('remoteid='))) {
+            const qIdx = hash.indexOf('?');
+            const hashQuery = qIdx !== -1 ? hash.substring(qIdx) : ('?' + hash.substring(1));
+            const hParams = new URLSearchParams(hashQuery);
+            magicId = hParams.get('id') || hParams.get('remoteid') || hParams.get('hostid') || '';
+        }
+
+        const inputElem = document.getElementById('target-id') || targetIdInput;
+        if (magicId && inputElem) {
+            const clean = magicId.replace(/\D/g, '');
+            if (clean.length >= 4) {
+                if (clean.length === 9) {
+                    inputElem.value = clean.substring(0, 3) + ' ' + clean.substring(3, 6) + ' ' + clean.substring(6);
+                } else {
+                    inputElem.value = clean;
+                }
+                inputElem.dispatchEvent(new Event('input', { bubbles: true }));
+                
+                // Hide auto-suggestions
+                const suggestBox = document.getElementById('id-suggestions-box');
+                if (suggestBox) suggestBox.style.display = 'none';
+
+                // Scroll to connect widget
+                setTimeout(() => {
+                    document.getElementById('baglan')?.scrollIntoView({ behavior: 'smooth' });
+                    if (typeof showToast === 'function') {
+                        showToast(`Uzak Masaüstü ID algılandı: ${inputElem.value}`, 'info');
+                    }
+                }, 300);
+            }
+        }
+    } catch(err) {
+        console.warn('[app.js] checkMagicLink error:', err);
     }
 }
 
@@ -963,9 +1002,14 @@ function copyMagicLink() {
     }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    checkMagicLink();
-});
+if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    setTimeout(checkMagicLink, 50);
+} else {
+    document.addEventListener('DOMContentLoaded', () => {
+        checkMagicLink();
+    });
+}
+window.addEventListener('load', checkMagicLink);
 
 // 4. Tab Switcher Logic
 function switchConnectTab(mode) {
@@ -1241,3 +1285,143 @@ window.submitOnlineCheckout = submitOnlineCheckout;
 window.checkoutViaWhatsApp = checkoutViaWhatsApp;
 window.extendFreeSessionTimer = extendFreeSessionTimer;
 window.startFreeSessionTimer = startFreeSessionTimer;
+
+
+// --- FILE TRANSFER CHUNKING INTEGRATION ---
+let fileUploadInProgress = false;
+
+function triggerFileTransfer() {
+    if (!connected || !socket || socket.readyState !== WebSocket.OPEN) {
+        showToast('LÃ¼tfen Ã¶nce bir cihaza baÄŸlanÄ±n.', 'error');
+        return;
+    }
+    if (fileUploadInProgress) {
+        showToast('Zaten aktif bir dosya gÃ¶nderimi var.', 'warning');
+        return;
+    }
+    let fileInput = document.getElementById('file-transfer-input');
+    if (!fileInput) {
+        fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.id = 'file-transfer-input';
+        fileInput.style.display = 'none';
+        fileInput.addEventListener('change', handleFileSelected);
+        document.body.appendChild(fileInput);
+    }
+    fileInput.click();
+}
+
+async function handleFileSelected(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    fileUploadInProgress = true;
+    
+    const progressContainer = document.getElementById('upload-progress-container');
+    const progressText = document.getElementById('upload-progress-text');
+    const progressBar = document.getElementById('upload-progress-bar');
+    
+    if (progressContainer) {
+        progressContainer.style.setProperty('display', 'flex', 'important');
+    }
+    if (progressText) {
+        progressText.innerText = 'Dosya GÃ¶nderiliyor: %0';
+    }
+    if (progressBar) {
+        progressBar.style.width = '0%';
+    }
+
+    try {
+        const totalSize = file.size;
+        const fileName = file.name;
+        const chunkSize = 64 * 1024; // 64KB chunks
+        
+        // 1. Send batch_start
+        const batchStart = {
+            type: "batch_start",
+            totalFiles: 1,
+            totalSize: totalSize,
+            senderId: "WebClient",
+            targetFolder: "DOWNLOADS"
+        };
+        socket.send(JSON.stringify(batchStart));
+        
+        // 2. Send file_start
+        const fileStart = {
+            type: "file_start",
+            name: fileName,
+            size: totalSize,
+            isFolder: false
+        };
+        socket.send(JSON.stringify(fileStart));
+        
+        // Let host process headers
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        let offset = 0;
+        
+        while (offset < totalSize) {
+            const currentChunkSize = Math.min(chunkSize, totalSize - offset);
+            const blobSlice = file.slice(offset, offset + currentChunkSize);
+            
+            const arrayBuffer = await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsArrayBuffer(blobSlice);
+            });
+            
+            // Format packet: 0x46 ('F') byte followed by chunk bytes
+            const packet = new Uint8Array(1 + currentChunkSize);
+            packet[0] = 0x46; // FileTransferTag
+            packet.set(new Uint8Array(arrayBuffer), 1);
+            
+            socket.send(packet.buffer);
+            
+            offset += currentChunkSize;
+            
+            const percent = Math.round((offset / totalSize) * 100);
+            if (progressText) {
+                progressText.innerText = 'Dosya GÃ¶nderiliyor: %' + percent;
+            }
+            if (progressBar) {
+                progressBar.style.width = percent + '%';
+            }
+            
+            await new Promise(resolve => setTimeout(resolve, 5));
+        }
+        
+        // 3. Send file_end
+        const fileEnd = {
+            type: "file_end"
+        };
+        socket.send(JSON.stringify(fileEnd));
+        
+        // 4. Send batch_end
+        const batchEnd = {
+            type: "batch_end"
+        };
+        socket.send(JSON.stringify(batchEnd));
+        
+        showToast('"' + fileName + '" baÅŸarÄ±yla gÃ¶nderildi!', 'success');
+        
+    } catch (e) {
+        console.error('File upload error:', e);
+        showToast('Dosya gÃ¶nderiminde hata oluÅŸtu!', 'error');
+        try {
+            socket.send(JSON.stringify({ type: "transfer_cancel" }));
+        } catch (_) {}
+    } finally {
+        fileUploadInProgress = false;
+        if (event.target) event.target.value = '';
+        
+        setTimeout(() => {
+            if (!fileUploadInProgress && progressContainer) {
+                progressContainer.style.setProperty('display', 'none', 'important');
+            }
+        }, 2000);
+    }
+}
+
+window.triggerFileTransfer = triggerFileTransfer;
+window.handleFileSelected = handleFileSelected;

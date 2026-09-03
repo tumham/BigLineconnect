@@ -54,7 +54,8 @@ public static class TelegramNotifier
             _ => "⚪"
         };
 
-        string connectUrl = $"https://biglineconnect.bigus.com.tr/?id={hostId}";
+        string cleanHostId = (hostId ?? "").Replace(" ", "").Trim();
+        string connectUrl = $"https://biglineconnect.bigus.com.tr/?id={cleanHostId}";
 
         string message = $"""
 🔔 *YENİ DESTEK TALEBİ*
@@ -62,12 +63,13 @@ public static class TelegramNotifier
 📋 Firma: *{EscapeMarkdown(customerName)}*
 🎯 Konu: {EscapeMarkdown(issue)}
 {priorityEmoji} Öncelik: *{EscapeMarkdown(priority)}*
-💻 Bilgisayar ID: `{hostId}`
+💻 Bilgisayar ID: `{cleanHostId}`
 🏢 Tenant: {EscapeMarkdown(tenantId)}
 ⏰ Zaman: {DateTime.Now:dd.MM.yyyy HH:mm}
 
 ━━━━━━━━━━━━━━━━
 🔗 [Hemen Bağlan — BigLineconnect]({connectUrl})
+🌐 {connectUrl}
 """;
 
         await BroadcastToTenantAsync(tenantId, message);

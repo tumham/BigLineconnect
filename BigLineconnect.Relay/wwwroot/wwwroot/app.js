@@ -219,10 +219,80 @@ function connectToHost(id) {
                         try { socket.send(ackPkt.buffer); } catch (e) {}
                     }
                 }
-                for (let i = 0; i < Math.min(24, u8.length - 1); i++) {
-                    if (u8[i] === 0xFF && u8[i + 1] === 0xD8) {
-                        if (i > 0) frameBytes = frameBytes.slice(i);
-                        break;
+
+                // Check for BigLine-RT (BRTE) Tile/Delta Packet: 'B' 0x42, 'R' 0x52, 'T' 0x54, 'E' 0x45
+                if (u8[0] === 0x42 && u8[1] === 0x52 && u8[2] === 0x54 && u8[3] === 0x45) {
+                    const dv = new DataView(frameBytes);
+                    const flag = u8[4];
+                    const w = dv.getUint16(5, true);
+                    const h = dv.getUint16(7, true);
+
+                    if (screenCanvas && (screenCanvas.width !== w || screenCanvas.height !== h)) {
+                        screenCanvas.width = w;
+                        screenCanvas.height = h;
+                    }
+
+                    if (flag === 1) { // KEYFRAME
+                        const len = dv.getInt32(9, true);
+                        const jpegBytes = frameBytes.slice(13, 13 + len);
+                        const blob = new Blob([jpegBytes], { type: 'image/jpeg' });
+                        const url = URL.createObjectURL(blob);
+                        const img = new Image();
+                        img.onload = () => {
+                            if (ctx) ctx.drawImage(img, 0, 0);
+                            URL.revokeObjectURL(url);
+                        };
+                        img.onerror = () => URL.revokeObjectURL(url);
+                        img.src = url;
+                        return;
+                    } else if (flag === 2) { // DIRTY TILES
+                        const tileCount = dv.getUint16(9, true);
+                        let offset = 11;
+                        for (let t = 0; t < tileCount; t++) {
+                            if (offset + 8 > u8.length) break;
+                            const col = dv.getUint16(offset, true);
+                            const row = dv.getUint16(offset + 2, true);
+                            const tileLen = dv.getInt32(offset + 4, true);
+                            offset += 8;
+                            if (offset + tileLen > u8.length) break;
+
+                            const tileBytes = frameBytes.slice(offset, offset + tileLen);
+                            offset += tileLen;
+
+                            const tileBlob = new Blob([tileBytes], { type: 'image/jpeg' });
+                            const tileUrl = URL.createObjectURL(tileBlob);
+                            const tileImg = new Image();
+                            const destX = col * 64;
+                            const destY = row * 64;
+                            tileImg.onload = () => {
+                                if (ctx) ctx.drawImage(tileImg, destX, destY);
+                                URL.revokeObjectURL(tileUrl);
+                            };
+                            tileImg.onerror = () => URL.revokeObjectURL(tileUrl);
+                            tileImg.src = tileUrl;
+                        }
+                        return;
+                    }
+                }
+            }
+
+            let receivedSeq = 0;
+            if (frameBytes && frameBytes.byteLength >= 12) {
+                const u8 = new Uint8Array(frameBytes);
+                if (u8[12] === 0xFF && u8[13] === 0xD8) {
+                    const dv = new DataView(frameBytes);
+                    receivedSeq = dv.getUint32(8, true);
+                    frameBytes = frameBytes.slice(12);
+                } else {
+                    for (let i = 0; i < Math.min(16, u8.length - 1); i++) {
+                        if (u8[i] === 0xFF && u8[i + 1] === 0xD8) {
+                            if (i === 12) {
+                                const dv = new DataView(frameBytes);
+                                receivedSeq = dv.getUint32(8, true);
+                            }
+                            if (i > 0) frameBytes = frameBytes.slice(i);
+                            break;
+                        }
                     }
                 }
             }
@@ -249,6 +319,17 @@ function connectToHost(id) {
                     }
                 }
                 URL.revokeObjectURL(url);
+
+                // Send 0ms Frame ACK to Host for 3G/5Mbps backpressure control
+                if (receivedSeq > 0 && socket && socket.readyState === WebSocket.OPEN) {
+                    const ackPkt = new Uint8Array(5);
+                    ackPkt[0] = 0x41; // 'A'
+                    ackPkt[1] = receivedSeq & 0xFF;
+                    ackPkt[2] = (receivedSeq >> 8) & 0xFF;
+                    ackPkt[3] = (receivedSeq >> 16) & 0xFF;
+                    ackPkt[4] = (receivedSeq >> 24) & 0xFF;
+                    try { socket.send(ackPkt.buffer); } catch (e) {}
+                }
             };
             tempImg.onerror = () => URL.revokeObjectURL(url);
             tempImg.src = url;
@@ -839,20 +920,48 @@ function updateTransform() {
 
 // 1. Magic Link Auto-Detect (?id=393215720 or ?remoteid=...)
 function checkMagicLink() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const magicId = urlParams.get('id') || urlParams.get('remoteid');
-    if (magicId && targetIdInput) {
-        const clean = magicId.replace(/\D/g, '');
-        if (clean.length >= 6) {
-            targetIdInput.value = clean;
-            targetIdInput.dispatchEvent(new Event('input'));
-            
-            // Scroll to connect widget
-            setTimeout(() => {
-                document.getElementById('baglan')?.scrollIntoView({ behavior: 'smooth' });
-                showToast('Uzak Masaüstü ID algılandı! Bağlan butonuna basın.', 'info');
-            }, 300);
+    try {
+        const search = window.location.search || '';
+        const hash = window.location.hash || '';
+        let magicId = '';
+
+        if (search) {
+            const urlParams = new URLSearchParams(search);
+            magicId = urlParams.get('id') || urlParams.get('remoteid') || urlParams.get('hostid') || '';
         }
+        if (!magicId && hash && (hash.includes('id=') || hash.includes('remoteid='))) {
+            const qIdx = hash.indexOf('?');
+            const hashQuery = qIdx !== -1 ? hash.substring(qIdx) : ('?' + hash.substring(1));
+            const hParams = new URLSearchParams(hashQuery);
+            magicId = hParams.get('id') || hParams.get('remoteid') || hParams.get('hostid') || '';
+        }
+
+        const inputElem = document.getElementById('target-id') || targetIdInput;
+        if (magicId && inputElem) {
+            const clean = magicId.replace(/\D/g, '');
+            if (clean.length >= 4) {
+                if (clean.length === 9) {
+                    inputElem.value = clean.substring(0, 3) + ' ' + clean.substring(3, 6) + ' ' + clean.substring(6);
+                } else {
+                    inputElem.value = clean;
+                }
+                inputElem.dispatchEvent(new Event('input', { bubbles: true }));
+                
+                // Hide auto-suggestions
+                const suggestBox = document.getElementById('id-suggestions-box');
+                if (suggestBox) suggestBox.style.display = 'none';
+
+                // Scroll to connect widget
+                setTimeout(() => {
+                    document.getElementById('baglan')?.scrollIntoView({ behavior: 'smooth' });
+                    if (typeof showToast === 'function') {
+                        showToast(`Uzak Masaüstü ID algılandı: ${inputElem.value}`, 'info');
+                    }
+                }, 300);
+            }
+        }
+    } catch(err) {
+        console.warn('[app.js] checkMagicLink error:', err);
     }
 }
 
@@ -893,9 +1002,14 @@ function copyMagicLink() {
     }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    checkMagicLink();
-});
+if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    setTimeout(checkMagicLink, 50);
+} else {
+    document.addEventListener('DOMContentLoaded', () => {
+        checkMagicLink();
+    });
+}
+window.addEventListener('load', checkMagicLink);
 
 // 4. Tab Switcher Logic
 function switchConnectTab(mode) {

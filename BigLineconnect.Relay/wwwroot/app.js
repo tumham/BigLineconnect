@@ -920,20 +920,48 @@ function updateTransform() {
 
 // 1. Magic Link Auto-Detect (?id=393215720 or ?remoteid=...)
 function checkMagicLink() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const magicId = urlParams.get('id') || urlParams.get('remoteid');
-    if (magicId && targetIdInput) {
-        const clean = magicId.replace(/\D/g, '');
-        if (clean.length >= 6) {
-            targetIdInput.value = clean;
-            targetIdInput.dispatchEvent(new Event('input'));
-            
-            // Scroll to connect widget
-            setTimeout(() => {
-                document.getElementById('baglan')?.scrollIntoView({ behavior: 'smooth' });
-                showToast('Uzak Masaüstü ID algılandı! Bağlan butonuna basın.', 'info');
-            }, 300);
+    try {
+        const search = window.location.search || '';
+        const hash = window.location.hash || '';
+        let magicId = '';
+
+        if (search) {
+            const urlParams = new URLSearchParams(search);
+            magicId = urlParams.get('id') || urlParams.get('remoteid') || urlParams.get('hostid') || '';
         }
+        if (!magicId && hash && (hash.includes('id=') || hash.includes('remoteid='))) {
+            const qIdx = hash.indexOf('?');
+            const hashQuery = qIdx !== -1 ? hash.substring(qIdx) : ('?' + hash.substring(1));
+            const hParams = new URLSearchParams(hashQuery);
+            magicId = hParams.get('id') || hParams.get('remoteid') || hParams.get('hostid') || '';
+        }
+
+        const inputElem = document.getElementById('target-id') || targetIdInput;
+        if (magicId && inputElem) {
+            const clean = magicId.replace(/\D/g, '');
+            if (clean.length >= 4) {
+                if (clean.length === 9) {
+                    inputElem.value = clean.substring(0, 3) + ' ' + clean.substring(3, 6) + ' ' + clean.substring(6);
+                } else {
+                    inputElem.value = clean;
+                }
+                inputElem.dispatchEvent(new Event('input', { bubbles: true }));
+                
+                // Hide auto-suggestions
+                const suggestBox = document.getElementById('id-suggestions-box');
+                if (suggestBox) suggestBox.style.display = 'none';
+
+                // Scroll to connect widget
+                setTimeout(() => {
+                    document.getElementById('baglan')?.scrollIntoView({ behavior: 'smooth' });
+                    if (typeof showToast === 'function') {
+                        showToast(`Uzak Masaüstü ID algılandı: ${inputElem.value}`, 'info');
+                    }
+                }, 300);
+            }
+        }
+    } catch(err) {
+        console.warn('[app.js] checkMagicLink error:', err);
     }
 }
 
@@ -974,9 +1002,14 @@ function copyMagicLink() {
     }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    checkMagicLink();
-});
+if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    setTimeout(checkMagicLink, 50);
+} else {
+    document.addEventListener('DOMContentLoaded', () => {
+        checkMagicLink();
+    });
+}
+window.addEventListener('load', checkMagicLink);
 
 // 4. Tab Switcher Logic
 function switchConnectTab(mode) {
