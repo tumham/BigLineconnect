@@ -841,19 +841,22 @@
 
                     var view = new DataView(rawBuf);
 
-                    // 1. SEQUENCE & ACK: Host'a anında frame_ack gönder (Donmayı %100 önler!)
-                    var seq = view.getUint32(8, true); // Little endian
+                    // 1. DUAL ACK: Hem binary 0x41 (5 byte) hem JSON frame_ack gönder (Eski/yeni tüm Host'lar için %100 uyum!)
+                    var seq = view.getUint32(8, true);
                     if (ws && ws.readyState === WebSocket.OPEN) {
                         try {
+                            // Binary 0x41 ACK (V3.71.3 FT4 ve tüm C# Host'lar bunu ProcessBinaryRemoteInput içinde anında işler!)
+                            var ackBuf = new Uint8Array([0x41, seq & 0xFF, (seq >> 8) & 0xFF, (seq >> 16) & 0xFF, (seq >> 24) & 0xFF]);
+                            ws.send(ackBuf.buffer);
+                            // JSON ACK (Yedek)
                             ws.send(JSON.stringify({ type: 'frame_ack', seq: seq }));
                         } catch(e) {}
                     }
 
                     var cv = document.getElementById('screen-canvas');
-                    var ctx = cv ? cv.getContext('2d', { alpha: false }) : null;
+                    var ctx = cv ? cv.getContext('2d', { alpha: false, desynchronized: true }) : null;
                     var fallbackImg = document.getElementById('screen-img');
 
-                    // 2. PAYLOAD PARSER: 12. byte'tan sonrası
                     var payloadOffset = 12;
                     var payloadLen = rawBuf.byteLength - payloadOffset;
                     if (payloadLen <= 4) return;
@@ -862,7 +865,6 @@
                     var MAGIC_BLRT = 0x54524C42; // "BLRT" in little-endian
 
                     if (magic === MAGIC_BLRT && payloadLen > 9) {
-                        // ── BIGLINE RT TILE PROTOCOL (BLRT) ──
                         var flag = view.getUint8(payloadOffset + 4);
                         var screenW = view.getUint16(payloadOffset + 5, true);
                         var screenH = view.getUint16(payloadOffset + 7, true);
@@ -873,25 +875,22 @@
                         }
 
                         if (flag === 0x01) {
-                            // KEYFRAME: Tam ekran güncelleme
                             var jpegLen = view.getInt32(payloadOffset + 9, true);
                             var jpegStart = payloadOffset + 13;
                             if (jpegStart + jpegLen <= rawBuf.byteLength) {
                                 var jpegBytes = rawBuf.slice(jpegStart, jpegStart + jpegLen);
                                 var blob = new Blob([jpegBytes], { type: 'image/jpeg' });
-                                var url = URL.createObjectURL(blob);
-                                var img = new Image();
-                                img.onload = function() {
-                                    if (ctx) ctx.drawImage(img, 0, 0);
-                                    URL.revokeObjectURL(url);
-                                    if (cv && cv.style.display !== 'block') cv.style.display = 'block';
-                                    if (fallbackImg && fallbackImg.style.display !== 'none') fallbackImg.style.display = 'none';
-                                };
-                                img.onerror = function() { URL.revokeObjectURL(url); };
-                                img.src = url;
+                                if (window.createImageBitmap) {
+                                    createImageBitmap(blob).then(function(bmp) {
+                                        if (ctx) ctx.drawImage(bmp, 0, 0);
+                                        bmp.close();
+                                        if (cv && cv.style.display !== 'block') cv.style.display = 'block';
+                                    }).catch(function() { drawLegacy(blob, 0, 0, screenW, screenH); });
+                                } else {
+                                    drawLegacy(blob, 0, 0, screenW, screenH);
+                                }
                             }
                         } else if (flag === 0x02) {
-                            // SUBFRAME: Kısmi fayans güncellemesi
                             var subX = view.getUint16(payloadOffset + 9, true);
                             var subY = view.getUint16(payloadOffset + 11, true);
                             var subW = view.getUint16(payloadOffset + 13, true);
@@ -902,22 +901,19 @@
                             if (jpegStart + jpegLen <= rawBuf.byteLength) {
                                 var jpegBytes = rawBuf.slice(jpegStart, jpegStart + jpegLen);
                                 var blob = new Blob([jpegBytes], { type: 'image/jpeg' });
-                                var url = URL.createObjectURL(blob);
-                                (function(x, y, w, h, u) {
-                                    var img = new Image();
-                                    img.onload = function() {
-                                        if (ctx) ctx.drawImage(img, x, y, w, h);
-                                        URL.revokeObjectURL(u);
-                                    };
-                                    img.onerror = function() { URL.revokeObjectURL(u); };
-                                    img.src = u;
-                                })(subX, subY, subW, subH, url);
+                                if (window.createImageBitmap) {
+                                    createImageBitmap(blob).then(function(bmp) {
+                                        if (ctx) ctx.drawImage(bmp, subX, subY, subW, subH);
+                                        bmp.close();
+                                    }).catch(function() { drawLegacy(blob, subX, subY, subW, subH); });
+                                } else {
+                                    drawLegacy(blob, subX, subY, subW, subH);
+                                }
                             }
                         }
                     } else {
-                        // ── STANDARD JPEG FALLBACK ──
+                        // STANDARD JPEG
                         var jpegBytes = rawBuf.slice(payloadOffset);
-                        // Header check: 0xFF, 0xD8
                         var u8 = new Uint8Array(jpegBytes);
                         for (var i = 0; i < Math.min(16, u8.length - 1); i++) {
                             if (u8[i] === 0xFF && u8[i + 1] === 0xD8) {
@@ -927,25 +923,44 @@
                         }
 
                         var blob = new Blob([jpegBytes], { type: 'image/jpeg' });
-                        var url = URL.createObjectURL(blob);
-                        var tempImg = new Image();
-                        tempImg.onload = function() {
-                            if (cv && ctx) {
-                                if (cv.width !== tempImg.width || cv.height !== tempImg.height) {
-                                    cv.width = tempImg.width;
-                                    cv.height = tempImg.height;
+                        if (window.createImageBitmap) {
+                            createImageBitmap(blob).then(function(bmp) {
+                                if (cv) {
+                                    if (cv.width !== bmp.width || cv.height !== bmp.height) {
+                                        cv.width = bmp.width;
+                                        cv.height = bmp.height;
+                                    }
+                                    if (ctx) ctx.drawImage(bmp, 0, 0);
+                                    if (cv.style.display !== 'block') cv.style.display = 'block';
                                 }
-                                ctx.drawImage(tempImg, 0, 0);
+                                bmp.close();
+                            }).catch(function() { drawLegacy(blob, 0, 0); });
+                        } else {
+                            drawLegacy(blob, 0, 0);
+                        }
+                    }
+
+                    function drawLegacy(blob, x, y, w, h) {
+                        var url = URL.createObjectURL(blob);
+                        var img = new Image();
+                        img.onload = function() {
+                            if (cv && ctx) {
+                                if (w && h) ctx.drawImage(img, x, y, w, h);
+                                else {
+                                    if (cv.width !== img.width || cv.height !== img.height) {
+                                        cv.width = img.width; cv.height = img.height;
+                                    }
+                                    ctx.drawImage(img, 0, 0);
+                                }
                                 if (cv.style.display !== 'block') cv.style.display = 'block';
-                                if (fallbackImg && fallbackImg.style.display !== 'none') fallbackImg.style.display = 'none';
                             } else if (fallbackImg) {
                                 fallbackImg.src = url;
                                 if (fallbackImg.style.display !== 'block') fallbackImg.style.display = 'block';
                             }
                             URL.revokeObjectURL(url);
                         };
-                        tempImg.onerror = function() { URL.revokeObjectURL(url); };
-                        tempImg.src = url;
+                        img.onerror = function() { URL.revokeObjectURL(url); };
+                        img.src = url;
                     }
                 }
             };

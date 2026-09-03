@@ -1641,6 +1641,10 @@ namespace BigLineconnect
                     if (root.TryGetProperty("seq", out var seqProp))
                     {
                         uint seq = seqProp.GetUInt32();
+                        if (seq > _lastAckedFrameSeq)
+                        {
+                            _lastAckedFrameSeq = seq;
+                        }
                         AdaptiveRateController.RecordAck(seq);
                     }
                     return;
