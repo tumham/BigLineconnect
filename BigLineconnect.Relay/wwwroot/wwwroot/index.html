@@ -350,46 +350,42 @@
             </div>
         </div>
 
-        <!-- Remote screen rendering canvas -->
-        <div class="canvas-container" id="canvas-container">
-        <!-- Remote screen rendering canvas -->
+        <!-- Remote screen rendering canvas container (Only contains canvas & img, zoomed independently) -->
         <div class="canvas-container" id="canvas-container">
             <canvas id="screen-canvas" style="width: 100%; height: 100%; object-fit: contain; cursor: default; display: block; user-select: none;"></canvas>
             <img id="screen-img" style="display: none;">
         </div>
 
-        <!-- Floating Controls for Mobile & Actions -->
-        <div class="floating-controls" style="position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(16px); padding: 6px 12px; border-radius: 30px; border: 1.5px solid rgba(0, 229, 255, 0.4); box-shadow: 0 10px 30px rgba(0,0,0,0.85); z-index: 999999; max-width: 96vw; overflow-x: auto;">
-            <!-- ERP Hızlı Numpad Tuşu -->
-            <button id="erp-numpad-btn" type="button" onclick="toggleErpNumpad()" class="control-btn" title="ERP Sayısal Tuş Takımı (123)" style="background: linear-gradient(135deg, rgba(0,229,255,0.3), rgba(59,130,246,0.3)); border: 1.5px solid #00e5ff; color: #fff; border-radius: 20px; padding: 6px 12px; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 4px; box-shadow: 0 0 10px rgba(0,229,255,0.3);">
+        <!-- Floating Controls for Mobile & Actions (Stationary at bottom, never zooms, highest z-index) -->
+        <!-- Floating Controls for Mobile & Actions (Stationary at bottom, never zooms, highest z-index) -->
+        <div class="floating-controls" id="floating-controls" style="position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; background: rgba(11, 15, 25, 0.96); backdrop-filter: blur(25px); padding: 8px 12px; border-radius: 35px; border: 1.5px solid rgba(0, 229, 255, 0.6); box-shadow: 0 15px 40px rgba(0,0,0,0.95); z-index: 2147483647 !important; pointer-events: auto !important; max-width: 98vw; touch-action: manipulation;">
+            <!-- 123 Numpad -->
+            <button id="erp-numpad-btn" type="button" class="control-btn" style="background: linear-gradient(135deg, rgba(0,229,255,0.35), rgba(59,130,246,0.35)); border: 1.5px solid #00e5ff; color: #fff; border-radius: 20px; padding: 8px 14px; font-size: 0.95rem; font-weight: 900; cursor: pointer; display: flex; align-items: center; gap: 5px; box-shadow: 0 0 12px rgba(0,229,255,0.35); touch-action: manipulation;">
                 <i class="fa-solid fa-calculator" style="color: #00e5ff;"></i> <span>123</span>
             </button>
 
-            <!-- Hızlı TAB Tuşu (Kutudan Kutuya Atlama) -->
-            <button id="quick-tab-btn" type="button" onclick="sendRemoteSpecialKey('tab')" class="control-btn" title="Sonraki Kutuya Geç (TAB)" style="background: rgba(245, 158, 11, 0.2); border: 1.5px solid #f59e0b; color: #fbbf24; border-radius: 20px; padding: 6px 12px; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+            <!-- TAB ⇥ -->
+            <button id="quick-tab-btn" type="button" class="control-btn" style="background: rgba(245, 158, 11, 0.25); border: 1.5px solid #f59e0b; color: #fbbf24; border-radius: 20px; padding: 8px 12px; font-size: 0.9rem; font-weight: 900; cursor: pointer; display: flex; align-items: center; gap: 4px; touch-action: manipulation;">
                 <span>TAB ⇥</span>
             </button>
 
-            <!-- Hızlı Tarih Butonu -->
-            <button id="quick-date-btn" type="button" onclick="openDatePickerModal()" class="control-btn" title="Hızlı Tarih Gir" style="background: rgba(46, 204, 113, 0.2); border: 1.5px solid #2ecc71; color: #2ecc71; border-radius: 20px; padding: 6px 12px; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+            <!-- Tarih -->
+            <button id="quick-date-btn" type="button" class="control-btn" style="background: rgba(46, 204, 113, 0.25); border: 1.5px solid #2ecc71; color: #2ecc71; border-radius: 20px; padding: 8px 12px; font-size: 0.9rem; font-weight: 900; cursor: pointer; display: flex; align-items: center; gap: 4px; touch-action: manipulation;">
                 <i class="fa-solid fa-calendar-day"></i> <span>Tarih</span>
             </button>
 
-            <!-- Standart Klavye -->
-            <button id="toggle-keyboard-btn" type="button" onclick="openMobileKeyboard()" class="control-btn" title="Yazı Klavyesini Aç" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); color: #fff; border-radius: 20px; padding: 6px 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+            <!-- Yazı -->
+            <button id="toggle-keyboard-btn" type="button" class="control-btn" style="background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.3); color: #fff; border-radius: 20px; padding: 8px 10px; font-size: 0.85rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 4px; touch-action: manipulation;">
                 <i class="fa-solid fa-keyboard"></i> <span>Yazı</span>
             </button>
 
-            <!-- Tıklama Modu (Sol / Çift / Sağ) -->
-            <button id="mouse-mode-btn" type="button" onclick="toggleRightClickMode()" class="control-btn" title="Tıklama Modu" style="background: rgba(168, 85, 247, 0.2); border: 1px solid #a855f7; color: #e9d5ff; border-radius: 20px; padding: 6px 10px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+            <!-- Sol Tık / Mod -->
+            <button id="mouse-mode-btn" type="button" class="control-btn" style="background: rgba(168, 85, 247, 0.25); border: 1px solid #a855f7; color: #e9d5ff; border-radius: 20px; padding: 8px 10px; font-size: 0.85rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 4px; touch-action: manipulation;">
                 <i class="fa-solid fa-computer-mouse"></i> <span id="mouse-mode-text">Sol Tık</span>
             </button>
 
-            <!-- Yakınlaştır / Uzaklaştır -->
-            <button id="zoom-in-btn" type="button" onclick="zoomIn()" class="control-btn" title="Yakınlaştır" style="background: rgba(0,229,255,0.1); border: 1px solid rgba(0,229,255,0.4); color: #00e5ff; border-radius: 20px; padding: 6px 10px; font-weight: 700; cursor: pointer;">
-                <i class="fa-solid fa-magnifying-glass-plus"></i>
-            </button>
-            <button id="zoom-reset-btn" type="button" onclick="resetZoom()" class="control-btn" title="Sıfırla" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); color: #a0aec0; border-radius: 20px; padding: 6px 8px; font-size: 0.75rem; font-weight: 700; cursor: pointer;">
+            <!-- Zoom Reset -->
+            <button id="zoom-reset-btn" type="button" class="control-btn" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); color: #a0aec0; border-radius: 20px; padding: 8px 8px; font-size: 0.75rem; font-weight: 800; cursor: pointer; touch-action: manipulation;">
                 100%
             </button>
         </div>
@@ -1368,6 +1364,54 @@
             if (!targetHost) return;
 
             targetHost.style.touchAction = 'none';
+
+            // ── MOBİL KONTROLLERİ VE NUMPAD DOKUNMA YALITIMI ──
+            function bindTouchButton(id, actionFn) {
+                var el = document.getElementById(id);
+                if (!el) return;
+                var handled = false;
+                el.addEventListener('touchend', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handled = true;
+                    try { actionFn(); } catch(err) {}
+                    setTimeout(function() { handled = false; }, 250);
+                }, { passive: false });
+                el.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    if (!handled) {
+                        try { actionFn(); } catch(err) {}
+                    }
+                });
+            }
+
+            // Alt barda butonları anında bağla
+            bindTouchButton('erp-numpad-btn', toggleErpNumpad);
+            bindTouchButton('quick-tab-btn', function() { sendRemoteSpecialKey('tab'); });
+            bindTouchButton('quick-date-btn', openDatePickerModal);
+            bindTouchButton('toggle-keyboard-btn', openMobileKeyboard);
+            bindTouchButton('mouse-mode-btn', toggleRightClickMode);
+            bindTouchButton('zoom-reset-btn', resetZoom);
+
+            // Floating controls, Numpad ve Modallara yapılan dokunmalar ASLA arkadaki canvas'a sızmasın!
+            var isolatedPanels = ['floating-controls', 'erp-numpad-panel', 'quick-date-modal'];
+            isolatedPanels.forEach(function(panelId) {
+                var p = document.getElementById(panelId);
+                if (p) {
+                    ['touchstart', 'touchmove', 'touchend', 'mousedown', 'mouseup'].forEach(function(evt) {
+                        p.addEventListener(evt, function(e) {
+                            e.stopPropagation();
+                        }, { passive: false });
+                    });
+                }
+            });
+
+            // Numpad üzerindeki tuşların dokunma duyarlılığı
+            var npKeys = document.querySelectorAll('.numpad-key');
+            npKeys.forEach(function(btn) {
+                btn.addEventListener('touchstart', function(e) { e.stopPropagation(); }, { passive: true });
+                btn.addEventListener('touchend', function(e) { e.stopPropagation(); }, { passive: true });
+            });
 
             var lastMove = 0;
             function safeSendMove(x, y) {
