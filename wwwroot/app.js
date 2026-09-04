@@ -1,36 +1,36 @@
-let socket = null;
-let connected = false;
-let currentMouseMode = 'left'; // 'left' or 'right'
+var socket = null;
+var connected = false;
+var currentMouseMode = 'left'; // 'left' or 'right'
 
 // Zoom & Pan State
-let scale = 1.0;
-let panX = 0;
-let panY = 0;
-let startTouchDistance = 0;
-let startScale = 1.0;
-let startMidX = 0;
-let startMidY = 0;
-let startPanX = 0;
-let startPanY = 0;
+var scale = 1.0;
+var panX = 0;
+var panY = 0;
+var startTouchDistance = 0;
+var startScale = 1.0;
+var startMidX = 0;
+var startMidY = 0;
+var startPanX = 0;
+var startPanY = 0;
 
 // DOM Element References (safely initialized)
-let landingPage = null;
-let viewerScreen = null;
-let targetIdInput = null;
-let connectBtn = null;
-let disconnectBtn = null;
-let fullscreenBtn = null;
-let screenImg = null;
-let canvasContainer = null;
-let connectionStatus = null;
-let toggleKeyboardBtn = null;
-let hiddenKeyboardInput = null;
-let mouseModeBtn = null;
-let mouseModeText = null;
-let toastElement = null;
-let passwordModal = null;
-let accessPasswordInput = null;
-let submitPasswordBtn = null;
+var landingPage = null;
+var viewerScreen = null;
+var targetIdInput = null;
+var connectBtn = null;
+var disconnectBtn = null;
+var fullscreenBtn = null;
+var screenImg = null;
+var canvasContainer = null;
+var connectionStatus = null;
+var toggleKeyboardBtn = null;
+var hiddenKeyboardInput = null;
+var mouseModeBtn = null;
+var mouseModeText = null;
+var toastElement = null;
+var passwordModal = null;
+var accessPasswordInput = null;
+var submitPasswordBtn = null;
 
 function initDOMElements() {
     landingPage = document.getElementById('landing-page');
@@ -630,9 +630,11 @@ function bindCanvasInteraction() {
             e.preventDefault();
         }, { passive: false });
     });
-}
 
     // Mobile Touch Events & Bulletproof Tap Engine
+    const activeInteractionElem = containerElem || canvasElem;
+    if (!activeInteractionElem) return;
+
     let startTouch1X = null, startTouch1Y = null, startPan1X = 0, startPan1Y = 0;
     let touchStartX = 0, touchStartY = 0, touchStartTime = 0, isMultiTouch = false;
     let lastTapTime = 0, lastTapX = 0, lastTapY = 0;
@@ -737,13 +739,13 @@ function bindCanvasInteraction() {
         e.preventDefault();
     }, { passive: false });
 
-    screenImg.addEventListener('touchcancel', (e) => {
+    activeInteractionElem.addEventListener('touchcancel', (e) => {
         if (!connected) return;
         startTouch1X = null;
     });
 
-    screenImg.style.transformOrigin = 'center center';
-    screenImg.style.transition = 'none';
+    activeInteractionElem.style.transformOrigin = 'center center';
+    activeInteractionElem.style.transition = 'none';
 }
 
 // Global Key Listeners
@@ -944,41 +946,68 @@ function checkMagicLink() {
     try {
         const search = window.location.search || '';
         const hash = window.location.hash || '';
+        const fullHref = window.location.href || '';
         let magicId = '';
 
-        if (search) {
-            const urlParams = new URLSearchParams(search);
-            magicId = urlParams.get('id') || urlParams.get('remoteid') || urlParams.get('hostid') || '';
+        // 1. Regex match for ?id=, &id=, #id=, ?remoteid=, ?hostid=, ?target=
+        const match = fullHref.match(/[?&#](?:id|remoteid|hostid|target)=([0-9\s]+)/i);
+        if (match && match[1]) {
+            magicId = match[1];
         }
-        if (!magicId && hash && (hash.includes('id=') || hash.includes('remoteid='))) {
+
+        // 2. Query fallback
+        if (!magicId && search) {
+            const urlParams = new URLSearchParams(search);
+            magicId = urlParams.get('id') || urlParams.get('remoteid') || urlParams.get('hostid') || urlParams.get('target') ||
+                      urlParams.get('ID') || urlParams.get('Id') || '';
+        }
+        if (!magicId && hash) {
             const qIdx = hash.indexOf('?');
             const hashQuery = qIdx !== -1 ? hash.substring(qIdx) : ('?' + hash.substring(1));
             const hParams = new URLSearchParams(hashQuery);
-            magicId = hParams.get('id') || hParams.get('remoteid') || hParams.get('hostid') || '';
+            magicId = hParams.get('id') || hParams.get('remoteid') || hParams.get('hostid') || hParams.get('target') ||
+                      hParams.get('ID') || hParams.get('Id') || '';
         }
 
         const inputElem = document.getElementById('target-id') || targetIdInput;
         if (magicId && inputElem) {
-            const clean = magicId.replace(/\D/g, '');
+            const clean = String(magicId).replace(/\D/g, '');
             if (clean.length >= 4) {
                 if (clean.length === 9) {
                     inputElem.value = clean.substring(0, 3) + ' ' + clean.substring(3, 6) + ' ' + clean.substring(6);
                 } else {
                     inputElem.value = clean;
                 }
-                inputElem.dispatchEvent(new Event('input', { bubbles: true }));
                 
-                // Hide auto-suggestions
+                // Switch to client connect tab if needed
+                if (typeof switchConnectTab === 'function') {
+                    switchConnectTab('client');
+                }
+
+                // Hide auto-suggestions so connect button is never blocked
                 const suggestBox = document.getElementById('id-suggestions-box');
-                if (suggestBox) suggestBox.style.display = 'none';
+                if (suggestBox) {
+                    suggestBox.style.display = 'none';
+                    suggestBox.style.pointerEvents = 'none';
+                }
 
                 // Scroll to connect widget
                 setTimeout(() => {
                     document.getElementById('baglan')?.scrollIntoView({ behavior: 'smooth' });
-                    if (typeof showToast === 'function') {
-                        showToast(`Uzak Masaüstü ID algılandı: ${inputElem.value}`, 'info');
-                    }
-                }, 300);
+                }, 150);
+
+                // Auto-trigger connection seamlessly from Telegram / Magic Link!
+                if (!window._magicAutoConnected) {
+                    window._magicAutoConnected = true;
+                    showToast('🚀 Otomatik Bağlanılıyor: ' + inputElem.value, 'info');
+                    setTimeout(() => {
+                        if (typeof doConnect === 'function') {
+                            doConnect();
+                        } else if (typeof startConnectionProcess === 'function') {
+                            startConnectionProcess();
+                        }
+                    }, 350);
+                }
             }
         }
     } catch(err) {
@@ -1294,7 +1323,7 @@ function copyGeneratedLicenseKey() {
 }
 
 // Global Window Function Bindings for Mobile & HTML Event Handlers
-window.startConnectionProcess = startConnectionProcess;
+window.startConnectionProcess = window.doConnect || startConnectionProcess;
 window.connectToHost = connectToHost;
 window.sendPassword = sendPassword;
 window.switchConnectTab = switchConnectTab;

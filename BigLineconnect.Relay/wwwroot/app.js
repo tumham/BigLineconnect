@@ -1,36 +1,36 @@
-let socket = null;
-let connected = false;
-let currentMouseMode = 'left'; // 'left' or 'right'
+var socket = null;
+var connected = false;
+var currentMouseMode = 'left'; // 'left' or 'right'
 
 // Zoom & Pan State
-let scale = 1.0;
-let panX = 0;
-let panY = 0;
-let startTouchDistance = 0;
-let startScale = 1.0;
-let startMidX = 0;
-let startMidY = 0;
-let startPanX = 0;
-let startPanY = 0;
+var scale = 1.0;
+var panX = 0;
+var panY = 0;
+var startTouchDistance = 0;
+var startScale = 1.0;
+var startMidX = 0;
+var startMidY = 0;
+var startPanX = 0;
+var startPanY = 0;
 
 // DOM Element References (safely initialized)
-let landingPage = null;
-let viewerScreen = null;
-let targetIdInput = null;
-let connectBtn = null;
-let disconnectBtn = null;
-let fullscreenBtn = null;
-let screenImg = null;
-let canvasContainer = null;
-let connectionStatus = null;
-let toggleKeyboardBtn = null;
-let hiddenKeyboardInput = null;
-let mouseModeBtn = null;
-let mouseModeText = null;
-let toastElement = null;
-let passwordModal = null;
-let accessPasswordInput = null;
-let submitPasswordBtn = null;
+var landingPage = null;
+var viewerScreen = null;
+var targetIdInput = null;
+var connectBtn = null;
+var disconnectBtn = null;
+var fullscreenBtn = null;
+var screenImg = null;
+var canvasContainer = null;
+var connectionStatus = null;
+var toggleKeyboardBtn = null;
+var hiddenKeyboardInput = null;
+var mouseModeBtn = null;
+var mouseModeText = null;
+var toastElement = null;
+var passwordModal = null;
+var accessPasswordInput = null;
+var submitPasswordBtn = null;
 
 function initDOMElements() {
     landingPage = document.getElementById('landing-page');
@@ -630,9 +630,11 @@ function bindCanvasInteraction() {
             e.preventDefault();
         }, { passive: false });
     });
-}
 
     // Mobile Touch Events & Bulletproof Tap Engine
+    const activeInteractionElem = containerElem || canvasElem;
+    if (!activeInteractionElem) return;
+
     let startTouch1X = null, startTouch1Y = null, startPan1X = 0, startPan1Y = 0;
     let touchStartX = 0, touchStartY = 0, touchStartTime = 0, isMultiTouch = false;
     let lastTapTime = 0, lastTapX = 0, lastTapY = 0;
@@ -737,13 +739,13 @@ function bindCanvasInteraction() {
         e.preventDefault();
     }, { passive: false });
 
-    screenImg.addEventListener('touchcancel', (e) => {
+    activeInteractionElem.addEventListener('touchcancel', (e) => {
         if (!connected) return;
         startTouch1X = null;
     });
 
-    screenImg.style.transformOrigin = 'center center';
-    screenImg.style.transition = 'none';
+    activeInteractionElem.style.transformOrigin = 'center center';
+    activeInteractionElem.style.transition = 'none';
 }
 
 // Global Key Listeners
@@ -993,6 +995,19 @@ function checkMagicLink() {
                 setTimeout(() => {
                     document.getElementById('baglan')?.scrollIntoView({ behavior: 'smooth' });
                 }, 150);
+
+                // Auto-trigger connection seamlessly from Telegram / Magic Link!
+                if (!window._magicAutoConnected) {
+                    window._magicAutoConnected = true;
+                    showToast('🚀 Otomatik Bağlanılıyor: ' + inputElem.value, 'info');
+                    setTimeout(() => {
+                        if (typeof doConnect === 'function') {
+                            doConnect();
+                        } else if (typeof startConnectionProcess === 'function') {
+                            startConnectionProcess();
+                        }
+                    }, 350);
+                }
             }
         }
     } catch(err) {

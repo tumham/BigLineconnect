@@ -940,8 +940,15 @@
                                 if (widget) widget.scrollIntoView({ behavior: 'smooth' });
                             }, 150);
 
-                            if (typeof showToast === 'function') {
-                                showToast('Uzak Masaüstü ID algılandı: ' + formatIdDisplay(clean), 'info');
+                            // Auto-trigger doConnect() seamlessly!
+                            if (!window._magicAutoConnected) {
+                                window._magicAutoConnected = true;
+                                if (typeof showToast === 'function') {
+                                    showToast('🚀 Otomatik Bağlanılıyor: ' + formatIdDisplay(clean), 'info');
+                                }
+                                setTimeout(function() {
+                                    doConnect();
+                                }, 350);
                             }
                         }
                     }
@@ -1079,6 +1086,7 @@
                 resetConnectButton();
                 alert('Bağlantı başlatılamadı: ' + wsErr.message);
                 return;
+            }
             var pingInterval = null;
             ws.onopen = function() {
                 console.log('[BigLine] WS Connected!');
@@ -2054,6 +2062,7 @@
                         lastTapPos = { clientX: t.clientX, clientY: t.clientY };
                     }
                     e.preventDefault();
+                }
                 isTouchDragging = false;
                 isPinchZooming = false;
             }, { passive: false });
