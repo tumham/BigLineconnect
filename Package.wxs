@@ -1,7 +1,7 @@
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
   <Package Name="BigLineconnect Enterprise" 
            Manufacturer="BIGUS BILISIM GELISTIRME VE UYGULAMA SISTEMLERI LIMITED SIRKETI" 
-           Version="3.71.3" 
+           Version="3.71.4" 
            UpgradeCode="78152ce7-273b-42a9-b2b3-6a4a5c4c9e69" 
            Scope="perMachine">
 
