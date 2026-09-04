@@ -144,8 +144,19 @@ if (disconnectBtn) {
 // Connect to C# Relay WebSockets (100% test.html Reference Engine)
 function connectToHost(id) {
     const cleanId = String(id).replace(/\D/g, '');
+    window.currentConnectedHostId = cleanId;
+    window.closeAppSocket = function() {
+        if (socket) {
+            try { socket.close(); } catch(e) {}
+        }
+    };
     const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${wsProtocol}//${window.location.host}/connect-client?id=${cleanId}`;
+    const urlParams = new URLSearchParams(window.location.search || '');
+    const ticketToken = urlParams.get('token') || urlParams.get('ticketToken') || '';
+    let wsUrl = `${wsProtocol}//${window.location.host}/connect-client?id=${cleanId}`;
+    if (ticketToken) {
+        wsUrl += `&ticketToken=${encodeURIComponent(ticketToken)}`;
+    }
     
     if (socket) {
         try { socket.close(); } catch(e) {}
@@ -181,6 +192,11 @@ function connectToHost(id) {
                 }
             } else if (ev.data === 'AUTH_SUCCESS') {
                 showToast('Erişim Onaylandı! Ekran ve Kontrol Açılıyor...', 'success');
+                try {
+                    if (socket && socket.readyState === WebSocket.OPEN) {
+                        socket.send(JSON.stringify({ type: 'set_quality', quality: 85, maxDim: 0 }));
+                    }
+                } catch(e) {}
                 const landing = document.getElementById('landing-page');
                 const viewer = document.getElementById('viewer-screen');
                 if (landing) landing.style.setProperty('display', 'none', 'important');
@@ -188,6 +204,7 @@ function connectToHost(id) {
                     viewer.style.setProperty('display', 'flex', 'important');
                     viewer.style.setProperty('pointer-events', 'auto', 'important');
                     viewer.style.setProperty('z-index', '999999', 'important');
+                    setTimeout(() => { if (typeof window.updateCanvasCssLayout === 'function') window.updateCanvasCssLayout(); }, 100);
                 }
             } else {
                 showToast(ev.data, 'info');
@@ -306,16 +323,20 @@ function connectToHost(id) {
                     if (screenCanvas.width !== tempImg.width || screenCanvas.height !== tempImg.height) {
                         screenCanvas.width = tempImg.width;
                         screenCanvas.height = tempImg.height;
+                        if (typeof window.updateCanvasCssLayout === 'function') {
+                            window.updateCanvasCssLayout();
+                        }
                     }
+                    ctx.imageSmoothingEnabled = true;
+                    ctx.imageSmoothingQuality = 'high';
                     ctx.drawImage(tempImg, 0, 0);
-                }
-                if (fallbackImg) {
+                    if (fallbackImg && fallbackImg.style.display !== 'none') {
+                        fallbackImg.style.display = 'none';
+                    }
+                } else if (fallbackImg) {
                     fallbackImg.src = url;
                     if (fallbackImg.style.display === 'none') {
                         fallbackImg.style.display = 'block';
-                        fallbackImg.style.width = '100%';
-                        fallbackImg.style.height = '100%';
-                        fallbackImg.style.objectFit = 'contain';
                     }
                 }
                 URL.revokeObjectURL(url);

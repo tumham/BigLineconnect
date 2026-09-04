@@ -107,7 +107,8 @@ _Destek uzmanı müşteriye bağlandı_
         string statusEmoji = status switch
         {
             _ when status.Contains("Çözüldü") => "✅",
-            _ when status.Contains("İptal") => "❌",
+            _ when status.Contains("Çözülmedi") || status.Contains("İptal") => "❌",
+            _ when status.Contains("İncelenecek") => "🔍",
             _ => "📋"
         };
 

@@ -2,6 +2,7 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
     <meta name="theme-color" content="#00e5ff">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -352,40 +353,45 @@
 
         <!-- Remote screen rendering canvas container (Only contains canvas & img, zoomed independently) -->
         <div class="canvas-container" id="canvas-container">
-            <canvas id="screen-canvas" style="max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; margin: auto; cursor: default; display: block; user-select: none; image-rendering: -webkit-optimize-contrast; image-rendering: crisp-edges;"></canvas>
+            <canvas id="screen-canvas" style="max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; margin: auto; cursor: default; display: block; user-select: none; image-rendering: auto; -webkit-font-smoothing: antialiased; will-change: transform;"></canvas>
             <img id="screen-img" style="max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; margin: auto; display: none;">
         </div>
 
         <!-- Floating Controls for Mobile & Actions (Stationary at bottom, never zooms, highest z-index) -->
-        <div class="floating-controls" id="floating-controls" style="position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; background: rgba(11, 15, 25, 0.96); backdrop-filter: blur(25px); padding: 8px 12px; border-radius: 35px; border: 1.5px solid rgba(0, 229, 255, 0.6); box-shadow: 0 15px 40px rgba(0,0,0,0.95); z-index: 2147483647 !important; pointer-events: auto !important; max-width: 98vw; touch-action: manipulation;">
+        <div class="floating-controls" id="floating-controls" style="position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); display: flex; gap: 5px; background: rgba(11, 15, 25, 0.96); backdrop-filter: blur(25px); padding: 7px 10px; border-radius: 35px; border: 1.5px solid rgba(0, 229, 255, 0.6); box-shadow: 0 15px 40px rgba(0,0,0,0.95); z-index: 2147483647 !important; pointer-events: auto !important; max-width: 98vw; overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; scrollbar-width: none; touch-action: manipulation;">
             <!-- 123 Numpad -->
-            <button id="erp-numpad-btn" type="button" class="control-btn" style="background: linear-gradient(135deg, rgba(0,229,255,0.35), rgba(59,130,246,0.35)); border: 1.5px solid #00e5ff; color: #fff; border-radius: 20px; padding: 8px 14px; font-size: 0.95rem; font-weight: 900; cursor: pointer; display: flex; align-items: center; gap: 5px; box-shadow: 0 0 12px rgba(0,229,255,0.35); touch-action: manipulation;">
+            <button id="erp-numpad-btn" type="button" class="control-btn" style="background: linear-gradient(135deg, rgba(0,229,255,0.35), rgba(59,130,246,0.35)); border: 1.5px solid #00e5ff; color: #fff; border-radius: 20px; padding: 7px 12px; font-size: 0.92rem; font-weight: 900; cursor: pointer; display: flex; align-items: center; gap: 4px; box-shadow: 0 0 12px rgba(0,229,255,0.35); touch-action: manipulation; flex-shrink: 0;">
                 <i class="fa-solid fa-calculator" style="color: #00e5ff;"></i> <span>123</span>
             </button>
 
             <!-- TAB ⇥ -->
-            <button id="quick-tab-btn" type="button" class="control-btn" style="background: rgba(245, 158, 11, 0.25); border: 1.5px solid #f59e0b; color: #fbbf24; border-radius: 20px; padding: 8px 12px; font-size: 0.9rem; font-weight: 900; cursor: pointer; display: flex; align-items: center; gap: 4px; touch-action: manipulation;">
+            <button id="quick-tab-btn" type="button" class="control-btn" style="background: rgba(245, 158, 11, 0.25); border: 1.5px solid #f59e0b; color: #fbbf24; border-radius: 20px; padding: 7px 10px; font-size: 0.88rem; font-weight: 900; cursor: pointer; display: flex; align-items: center; gap: 4px; touch-action: manipulation; flex-shrink: 0;">
                 <span>TAB ⇥</span>
             </button>
 
             <!-- Tarih -->
-            <button id="quick-date-btn" type="button" class="control-btn" style="background: rgba(46, 204, 113, 0.25); border: 1.5px solid #2ecc71; color: #2ecc71; border-radius: 20px; padding: 8px 12px; font-size: 0.9rem; font-weight: 900; cursor: pointer; display: flex; align-items: center; gap: 4px; touch-action: manipulation;">
+            <button id="quick-date-btn" type="button" class="control-btn" style="background: rgba(46, 204, 113, 0.25); border: 1.5px solid #2ecc71; color: #2ecc71; border-radius: 20px; padding: 7px 10px; font-size: 0.88rem; font-weight: 900; cursor: pointer; display: flex; align-items: center; gap: 4px; touch-action: manipulation; flex-shrink: 0;">
                 <i class="fa-solid fa-calendar-day"></i> <span>Tarih</span>
             </button>
 
             <!-- Yazı -->
-            <button id="toggle-keyboard-btn" type="button" class="control-btn" style="background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.3); color: #fff; border-radius: 20px; padding: 8px 10px; font-size: 0.85rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 4px; touch-action: manipulation;">
+            <button id="toggle-keyboard-btn" type="button" class="control-btn" style="background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.3); color: #fff; border-radius: 20px; padding: 7px 9px; font-size: 0.85rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 4px; touch-action: manipulation; flex-shrink: 0;">
                 <i class="fa-solid fa-keyboard"></i> <span>Yazı</span>
             </button>
 
             <!-- Sol Tık / Mod -->
-            <button id="mouse-mode-btn" type="button" class="control-btn" style="background: rgba(168, 85, 247, 0.25); border: 1px solid #a855f7; color: #e9d5ff; border-radius: 20px; padding: 8px 10px; font-size: 0.85rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 4px; touch-action: manipulation;">
+            <button id="mouse-mode-btn" type="button" class="control-btn" style="background: rgba(168, 85, 247, 0.25); border: 1px solid #a855f7; color: #e9d5ff; border-radius: 20px; padding: 7px 9px; font-size: 0.85rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 4px; touch-action: manipulation; flex-shrink: 0;">
                 <i class="fa-solid fa-computer-mouse"></i> <span id="mouse-mode-text">Sol Tık</span>
             </button>
 
             <!-- Zoom Reset -->
-            <button id="zoom-reset-btn" type="button" class="control-btn" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); color: #a0aec0; border-radius: 20px; padding: 8px 8px; font-size: 0.75rem; font-weight: 800; cursor: pointer; touch-action: manipulation;">
+            <button id="zoom-reset-btn" type="button" class="control-btn" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); color: #a0aec0; border-radius: 20px; padding: 7px 8px; font-size: 0.75rem; font-weight: 800; cursor: pointer; touch-action: manipulation; flex-shrink: 0;">
                 100%
+            </button>
+
+            <!-- Sonuç / Kapat (Çözüldü / Çözülmedi / İncelenecek) -->
+            <button id="session-result-btn" type="button" class="control-btn" style="background: linear-gradient(135deg, rgba(244, 63, 94, 0.35), rgba(239, 68, 68, 0.35)); border: 1.5px solid #f43f5e; color: #fff; border-radius: 20px; padding: 7px 11px; font-size: 0.88rem; font-weight: 900; cursor: pointer; display: flex; align-items: center; gap: 4px; box-shadow: 0 0 14px rgba(244, 63, 94, 0.4); touch-action: manipulation; flex-shrink: 0;">
+                <i class="fa-solid fa-clipboard-check" style="color: #fda4af;"></i> <span>Sonuç</span>
             </button>
         </div>
 
@@ -453,6 +459,70 @@
 
                     <button type="button" onclick="closeDatePickerModal()" style="margin-top: 8px; padding: 8px; background: none; border: none; color: #94a3b8; font-weight: 700; font-size: 0.85rem; cursor: pointer;">
                         Vazgeç
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══════════════════════════════════════════════════════════ -->
+        <!-- DESTEK SONUCU & ÇIKIŞ MODAL (Çözüldü / Çözülmedi / İncelenecek) -->
+        <!-- ══════════════════════════════════════════════════════════ -->
+        <div id="session-result-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(5, 7, 15, 0.88); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); z-index: 2147483647; justify-content: center; align-items: center; padding: 18px; box-sizing: border-box;">
+            <div style="background: linear-gradient(165deg, rgba(15, 23, 42, 0.98), rgba(11, 15, 25, 0.98)); border: 2px solid rgba(0, 229, 255, 0.6); border-radius: 26px; padding: 22px 18px; max-width: 360px; width: 100%; text-align: center; box-shadow: 0 25px 60px rgba(0,0,0,0.95); position: relative; box-sizing: border-box;">
+                <!-- Kapat Butonu -->
+                <button type="button" onclick="closeSessionResultModal()" style="position: absolute; top: 12px; right: 12px; background: rgba(255,255,255,0.1); border: none; color: #a0aec0; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1rem; cursor: pointer;">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+
+                <div style="width: 52px; height: 52px; margin: 0 auto 10px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(0, 229, 255, 0.25)); border: 2px solid #00e5ff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; color: #00e5ff; box-shadow: 0 0 20px rgba(0, 229, 255, 0.3);">
+                    <i class="fa-solid fa-clipboard-check"></i>
+                </div>
+
+                <h3 style="color: #fff; font-size: 1.2rem; font-weight: 800; margin-bottom: 4px;">Destek Sonucu & Çıkış</h3>
+                <p style="color: #94a3b8; font-size: 0.82rem; margin-bottom: 14px;">Sonucu seçerek oturumu güvenle kapatın:</p>
+
+                <!-- 3 Durum Seçeneği -->
+                <div style="display: flex; flex-direction: column; gap: 9px; margin-bottom: 14px;">
+                    <!-- Çözüldü -->
+                    <button type="button" id="opt-status-resolved" onclick="selectSessionStatus('Çözüldü')" style="display: flex; align-items: center; justify-content: space-between; padding: 11px 16px; border-radius: 14px; border: 2px solid #10b981; background: rgba(16, 185, 129, 0.2); color: #34d399; font-weight: 800; font-size: 0.95rem; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 0 14px rgba(16, 185, 129, 0.3); transform: scale(1.02);">
+                        <span style="display: flex; align-items: center; gap: 10px;">
+                            <i class="fa-solid fa-circle-check" style="font-size: 1.25rem;"></i> Çözüldü
+                        </span>
+                        <i id="check-icon-resolved" class="fa-solid fa-check" style="font-size: 1rem; opacity: 1;"></i>
+                    </button>
+
+                    <!-- Çözülmedi -->
+                    <button type="button" id="opt-status-unresolved" onclick="selectSessionStatus('Çözülmedi')" style="display: flex; align-items: center; justify-content: space-between; padding: 11px 16px; border-radius: 14px; border: 1.5px solid rgba(239, 68, 68, 0.35); background: rgba(239, 68, 68, 0.08); color: #f87171; font-weight: 800; font-size: 0.95rem; cursor: pointer; transition: all 0.2s ease;">
+                        <span style="display: flex; align-items: center; gap: 10px;">
+                            <i class="fa-solid fa-circle-xmark" style="font-size: 1.25rem;"></i> Çözülmedi
+                        </span>
+                        <i id="check-icon-unresolved" class="fa-solid fa-check" style="font-size: 1rem; opacity: 0;"></i>
+                    </button>
+
+                    <!-- İncelenecek -->
+                    <button type="button" id="opt-status-investigate" onclick="selectSessionStatus('İncelenecek')" style="display: flex; align-items: center; justify-content: space-between; padding: 11px 16px; border-radius: 14px; border: 1.5px solid rgba(245, 158, 11, 0.35); background: rgba(245, 158, 11, 0.08); color: #fbbf24; font-weight: 800; font-size: 0.95rem; cursor: pointer; transition: all 0.2s ease;">
+                        <span style="display: flex; align-items: center; gap: 10px;">
+                            <i class="fa-solid fa-clock-rotate-left" style="font-size: 1.25rem;"></i> İncelenecek
+                        </span>
+                        <i id="check-icon-investigate" class="fa-solid fa-check" style="font-size: 1rem; opacity: 0;"></i>
+                    </button>
+                </div>
+
+                <!-- Opsiyonel Not Girişi -->
+                <div style="margin-bottom: 14px; text-align: left;">
+                    <label style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; margin-bottom: 4px; display: block;">İşlem Notu (İsteğe bağlı):</label>
+                    <input type="text" id="session-status-note" placeholder="Örn: Mikro faturası düzenlendi, test yapıldı." style="width: 100%; padding: 9px 12px; background: rgba(0,0,0,0.4); border: 1.5px solid rgba(255,255,255,0.15); border-radius: 10px; color: #fff; font-size: 0.85rem; outline: none; box-sizing: border-box;">
+                </div>
+
+                <!-- Kaydet ve Çık Butonu -->
+                <button type="button" id="btn-save-and-exit" onclick="confirmSessionResultAndExit()" style="width: 100%; padding: 13px; background: linear-gradient(135deg, #10b981, #00e5ff); border: none; border-radius: 14px; color: #000; font-weight: 900; font-size: 0.95rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 8px 25px rgba(0, 229, 255, 0.35); transition: transform 0.15s ease;">
+                    <i class="fa-solid fa-check-double"></i> <span>Kaydet ve Bağlantıyı Kapat</span>
+                </button>
+
+                <!-- Sadece Çık (Kaydetmeden) -->
+                <div style="margin-top: 10px;">
+                    <button type="button" onclick="directExitWithoutSave()" style="background: none; border: none; color: #64748b; font-size: 0.78rem; text-decoration: underline; cursor: pointer; padding: 4px;">
+                        Kaydetmeden Direkt Çıkış Yap
                     </button>
                 </div>
             </div>
@@ -1211,30 +1281,52 @@
         var isPinchZooming = false;
 
         function applyZoomTransform() {
+            var cv = document.getElementById('screen-canvas');
             var container = document.getElementById('canvas-container');
-            if (container) {
+            if (cv) {
+                cv.style.transformOrigin = originXPercent + '% ' + originYPercent + '%';
+                cv.style.transform = 'translate3d(' + panX + 'px, ' + panY + 'px, 0) scale(' + currentScale + ')';
+            } else if (container) {
                 container.style.transformOrigin = originXPercent + '% ' + originYPercent + '%';
-                container.style.transform = 'translate(' + panX + 'px, ' + panY + 'px) scale(' + currentScale + ')';
+                container.style.transform = 'translate3d(' + panX + 'px, ' + panY + 'px, 0) scale(' + currentScale + ')';
+            }
+
+            var zoomBtn = document.getElementById('zoom-reset-btn');
+            if (zoomBtn) {
+                zoomBtn.innerText = (currentScale === 1.0) ? '100%' : Math.round(currentScale * 100) + '%';
             }
         }
 
         function zoomIn() {
-            currentScale = Math.min(4.0, currentScale + 0.3);
+            currentScale = Math.min(5.0, Math.round((currentScale + 0.4) * 10) / 10);
             applyZoomTransform();
         }
         window.zoomIn = zoomIn;
 
         function zoomOut() {
-            currentScale = Math.max(1.0, currentScale - 0.3);
+            currentScale = Math.max(1.0, Math.round((currentScale - 0.4) * 10) / 10);
             if (currentScale === 1.0) { panX = 0; panY = 0; originXPercent = 50; originYPercent = 50; }
             applyZoomTransform();
         }
         window.zoomOut = zoomOut;
 
         function resetZoom() {
-            currentScale = 1.0;
-            panX = 0; panY = 0;
-            originXPercent = 50; originYPercent = 50;
+            if (currentScale <= 1.05) {
+                // Akıllı ERP Yakınlaştırma (Mikro Jump / Logo için 2.2x HD netlik modu)
+                currentScale = (window.innerWidth < 768) ? 2.2 : 1.5;
+                panX = 0; panY = 0;
+                originXPercent = 50; originYPercent = 50;
+                if (typeof showToast === 'function') {
+                    showToast('🔍 %' + Math.round(currentScale * 100) + ' HD Yakınlaştırma Açıldı (Kaydırmak için sürükleyin)', 'info');
+                }
+            } else {
+                currentScale = 1.0;
+                panX = 0; panY = 0;
+                originXPercent = 50; originYPercent = 50;
+                if (typeof showToast === 'function') {
+                    showToast('📱 Tam Ekran Sığdırıldı', 'info');
+                }
+            }
             applyZoomTransform();
         }
         window.resetZoom = resetZoom;
@@ -1406,6 +1498,153 @@
         }
         window.sendCustomSelectedDate = sendCustomSelectedDate;
 
+        // ══════════════════════════════════════════════════════════
+        // DESTEK SONUCU MODAL YÖNETİMİ & CRM KAYIT
+        // ══════════════════════════════════════════════════════════
+        var selectedSessionStatus = 'Çözüldü';
+
+        function openSessionResultModal() {
+            var modal = document.getElementById('session-result-modal');
+            if (modal) {
+                modal.style.display = 'flex';
+                selectSessionStatus('Çözüldü');
+                var noteInput = document.getElementById('session-status-note');
+                if (noteInput) noteInput.value = '';
+                var saveBtn = document.getElementById('btn-save-and-exit');
+                if (saveBtn) {
+                    saveBtn.disabled = false;
+                    saveBtn.innerHTML = '<i class="fa-solid fa-check-double"></i> <span>Kaydet ve Bağlantıyı Kapat</span>';
+                }
+            }
+        }
+        window.openSessionResultModal = openSessionResultModal;
+
+        function closeSessionResultModal() {
+            var modal = document.getElementById('session-result-modal');
+            if (modal) modal.style.display = 'none';
+        }
+        window.closeSessionResultModal = closeSessionResultModal;
+
+        function selectSessionStatus(status) {
+            selectedSessionStatus = status;
+            var btnResolved = document.getElementById('opt-status-resolved');
+            var btnUnresolved = document.getElementById('opt-status-unresolved');
+            var btnInvestigate = document.getElementById('opt-status-investigate');
+
+            var checkResolved = document.getElementById('check-icon-resolved');
+            var checkUnresolved = document.getElementById('check-icon-unresolved');
+            var checkInvestigate = document.getElementById('check-icon-investigate');
+
+            if (btnResolved) {
+                btnResolved.style.border = '1.5px solid rgba(16, 185, 129, 0.35)';
+                btnResolved.style.background = 'rgba(16, 185, 129, 0.08)';
+                btnResolved.style.boxShadow = 'none';
+                btnResolved.style.transform = 'scale(1)';
+            }
+            if (btnUnresolved) {
+                btnUnresolved.style.border = '1.5px solid rgba(239, 68, 68, 0.35)';
+                btnUnresolved.style.background = 'rgba(239, 68, 68, 0.08)';
+                btnUnresolved.style.boxShadow = 'none';
+                btnUnresolved.style.transform = 'scale(1)';
+            }
+            if (btnInvestigate) {
+                btnInvestigate.style.border = '1.5px solid rgba(245, 158, 11, 0.35)';
+                btnInvestigate.style.background = 'rgba(245, 158, 11, 0.08)';
+                btnInvestigate.style.boxShadow = 'none';
+                btnInvestigate.style.transform = 'scale(1)';
+            }
+
+            if (checkResolved) checkResolved.style.opacity = '0';
+            if (checkUnresolved) checkUnresolved.style.opacity = '0';
+            if (checkInvestigate) checkInvestigate.style.opacity = '0';
+
+            if (status === 'Çözüldü' && btnResolved) {
+                btnResolved.style.border = '2px solid #10b981';
+                btnResolved.style.background = 'rgba(16, 185, 129, 0.22)';
+                btnResolved.style.boxShadow = '0 0 14px rgba(16, 185, 129, 0.35)';
+                btnResolved.style.transform = 'scale(1.02)';
+                if (checkResolved) checkResolved.style.opacity = '1';
+            } else if (status === 'Çözülmedi' && btnUnresolved) {
+                btnUnresolved.style.border = '2px solid #ef4444';
+                btnUnresolved.style.background = 'rgba(239, 68, 68, 0.22)';
+                btnUnresolved.style.boxShadow = '0 0 14px rgba(239, 68, 68, 0.35)';
+                btnUnresolved.style.transform = 'scale(1.02)';
+                if (checkUnresolved) checkUnresolved.style.opacity = '1';
+            } else if (status === 'İncelenecek' && btnInvestigate) {
+                btnInvestigate.style.border = '2px solid #f59e0b';
+                btnInvestigate.style.background = 'rgba(245, 158, 11, 0.22)';
+                btnInvestigate.style.boxShadow = '0 0 14px rgba(245, 158, 11, 0.35)';
+                btnInvestigate.style.transform = 'scale(1.02)';
+                if (checkInvestigate) checkInvestigate.style.opacity = '1';
+            }
+        }
+        window.selectSessionStatus = selectSessionStatus;
+
+        function confirmSessionResultAndExit() {
+            var noteElem = document.getElementById('session-status-note');
+            var note = noteElem ? noteElem.value.trim() : '';
+            var targetInput = document.getElementById('target-id');
+            var hostId = window.currentConnectedHostId || (targetInput ? targetInput.value.replace(/\D/g, '') : '');
+            var urlParams = new URLSearchParams(window.location.search || '');
+            var token = urlParams.get('token') || urlParams.get('ticketToken') || '';
+            var tenantId = urlParams.get('tenantId') || urlParams.get('tenant') || 'BIGLINE';
+
+            var formattedStatus = '✅ Çözüldü';
+            if (selectedSessionStatus === 'Çözülmedi') {
+                formattedStatus = '❌ Çözülmedi';
+            } else if (selectedSessionStatus === 'İncelenecek') {
+                formattedStatus = '🔍 İncelenecek';
+            }
+
+            var saveBtn = document.getElementById('btn-save-and-exit');
+            if (saveBtn) {
+                saveBtn.disabled = true;
+                saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Kaydediliyor & Kapatılıyor...</span>';
+            }
+
+            // POST to /api/support/resolve
+            fetch('/api/support/resolve', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id: hostId,
+                    token: token,
+                    status: formattedStatus,
+                    notes: note || (selectedSessionStatus + ' olarak kaydedildi.'),
+                    tenantId: tenantId
+                })
+            }).then(function(res) {
+                showToast('✅ Destek sonucu kaydedildi: ' + formattedStatus, 'success');
+            }).catch(function(err) {
+                console.error('Destek sonucu kayıt hatası:', err);
+            }).finally(function() {
+                closeSessionResultModal();
+                setTimeout(function() {
+                    directExitWithoutSave();
+                }, 250);
+            });
+        }
+        window.confirmSessionResultAndExit = confirmSessionResultAndExit;
+
+        function directExitWithoutSave() {
+            closeSessionResultModal();
+            if (typeof window.closeAppSocket === 'function') {
+                window.closeAppSocket();
+            } else if (typeof socket !== 'undefined' && socket) {
+                try { socket.close(); } catch(e) {}
+            }
+            var dBtn = document.getElementById('disconnect-btn');
+            if (dBtn) {
+                try { dBtn.click(); } catch(e) {}
+            }
+            var landing = document.getElementById('landing-page');
+            var viewer = document.getElementById('viewer-screen');
+            if (viewer) viewer.style.setProperty('display', 'none', 'important');
+            if (landing) landing.style.setProperty('display', 'block', 'important');
+            showToast('Bağlantı sonlandırıldı.', 'info');
+        }
+        window.directExitWithoutSave = directExitWithoutSave;
+
         // Input Listeners (Mouse, Focal Pinch Zoom, Mobile Virtual Keyboard)
         window.addEventListener('load', function() {
             var targetHost = document.getElementById('canvas-container') || document.getElementById('screen-canvas');
@@ -1440,9 +1679,10 @@
             bindTouchButton('toggle-keyboard-btn', openMobileKeyboard);
             bindTouchButton('mouse-mode-btn', toggleRightClickMode);
             bindTouchButton('zoom-reset-btn', resetZoom);
+            bindTouchButton('session-result-btn', openSessionResultModal);
 
             // Floating controls, Numpad ve Modallara yapılan dokunmalar ASLA arkadaki canvas'a sızmasın!
-            var isolatedPanels = ['floating-controls', 'erp-numpad-panel', 'quick-date-modal'];
+            var isolatedPanels = ['floating-controls', 'erp-numpad-panel', 'quick-date-modal', 'session-result-modal'];
             isolatedPanels.forEach(function(panelId) {
                 var p = document.getElementById(panelId);
                 if (p) {
