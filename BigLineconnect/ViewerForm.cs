@@ -88,9 +88,6 @@ namespace BigLineconnect
         private PictureBox? _pictureBox;
         private DateTime _lastMoveSent = DateTime.MinValue;
         private Point _lastSentMousePos = new Point(-1, -1);
-        // LOCAL CURSOR: Draw cursor locally for instant mouse feel (like Alpemix/AnyDesk)
-        private Point _localCursorPos = new Point(-1, -1);
-        private bool _localCursorVisible = false;
         private System.Windows.Forms.Timer? _clipboardTimer;
         private string _lastClipboardText = "";
         private bool _hasConnectedOnce = false;
@@ -649,36 +646,10 @@ namespace BigLineconnect
                     }
                 }
 
-                // ═══ LOCAL CURSOR OVERLAY — instant mouse feel like Alpemix/AnyDesk ═══
-                if (_localCursorVisible && _localCursorPos.X >= 0 && _pictureBox.Image != null)
-                {
-                    var g = pe.Graphics;
-                    g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-                    int cx2 = _localCursorPos.X;
-                    int cy2 = _localCursorPos.Y;
-                    // Draw arrow cursor shape
-                    var cursorPoints = new Point[]
-                    {
-                        new Point(cx2, cy2),
-                        new Point(cx2, cy2 + 18),
-                        new Point(cx2 + 5, cy2 + 14),
-                        new Point(cx2 + 9, cy2 + 21),
-                        new Point(cx2 + 12, cy2 + 20),
-                        new Point(cx2 + 8, cy2 + 13),
-                        new Point(cx2 + 13, cy2 + 13),
-                    };
-                    using (var shadow = new SolidBrush(Color.FromArgb(120, 0, 0, 0)))
-                        g.FillPolygon(shadow, cursorPoints.Select(p => new Point(p.X + 1, p.Y + 1)).ToArray());
-                    using (var fill = new SolidBrush(Color.White))
-                        g.FillPolygon(fill, cursorPoints);
-                    using (var border = new Pen(Color.Black, 1.2f))
-                        g.DrawPolygon(border, cursorPoints);
-                }
             };
 
-            // Hide Windows cursor when over PictureBox, show local cursor instead
-            _pictureBox.MouseEnter += (s, e) => { _localCursorVisible = true; _pictureBox.Cursor = Cursors.Cross; Cursor.Hide(); };
-            _pictureBox.MouseLeave += (s, e) => { _localCursorVisible = false; Cursor.Show(); _pictureBox.Invalidate(); };
+            // Ensure natural Windows hardware cursor is always active and visible
+            _pictureBox.Cursor = Cursors.Default;
 
             // Bind mouse events on picture box
             _pictureBox.MouseDown += PictureBox_MouseDown;
@@ -1892,10 +1863,6 @@ namespace BigLineconnect
 
         private void PictureBox_MouseMove(object? sender, MouseEventArgs e)
         {
-            // LOCAL CURSOR: Update position and repaint immediately (0ms latency!)
-            _localCursorPos = e.Location;
-            _pictureBox?.Invalidate();
-
             if (_pictureBox == null) return;
             if (e.Location == _lastSentMousePos) return;
             int throttleMs = 10; // 100 FPS ultra-fast mouse tracking!
@@ -4739,6 +4706,8 @@ namespace BigLineconnect
             }
 
             g.DrawImage(this.Image, destRect, 0, 0, this.Image.Width, this.Image.Height, GraphicsUnit.Pixel);
+            g.CompositingMode = System.Drawing.Drawing2D.CompositingMode.SourceOver;
+            base.OnPaint(e);
         }
     }
 }

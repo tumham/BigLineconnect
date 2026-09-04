@@ -27,6 +27,52 @@ namespace BigLineconnect
         private const int SM_CXSCREEN = 0;
         private const int SM_CYSCREEN = 1;
 
+        [StructLayout(LayoutKind.Sequential)]
+        private struct CURSORINFO
+        {
+            public int cbSize;
+            public int flags;
+            public IntPtr hCursor;
+            public int ptScreenPos_x;
+            public int ptScreenPos_y;
+        }
+
+        [DllImport("user32.dll")]
+        private static extern bool GetCursorInfo(out CURSORINFO pci);
+
+        [DllImport("user32.dll")]
+        private static extern bool DrawIconEx(IntPtr hdc, int xLeft, int yTop, IntPtr hIcon, int cxWidth, int cyHeight, int istepIfAniCur, IntPtr hbrFlickerFreeDraw, int diFlags);
+
+        private const int CURSOR_SHOWING = 0x00000001;
+        private const int DI_NORMAL = 0x0003;
+
+        public static void DrawCursorOnBitmap(Bitmap bmp, int startX = 0, int startY = 0)
+        {
+            try
+            {
+                var ci = new CURSORINFO();
+                ci.cbSize = Marshal.SizeOf(typeof(CURSORINFO));
+                if (GetCursorInfo(out ci) && (ci.flags & CURSOR_SHOWING) != 0 && ci.hCursor != IntPtr.Zero)
+                {
+                    using (Graphics g = Graphics.FromImage(bmp))
+                    {
+                        IntPtr hdc = g.GetHdc();
+                        try
+                        {
+                            int x = ci.ptScreenPos_x - startX;
+                            int y = ci.ptScreenPos_y - startY;
+                            DrawIconEx(hdc, x, y, ci.hCursor, 0, 0, 0, IntPtr.Zero, DI_NORMAL);
+                        }
+                        finally
+                        {
+                            g.ReleaseHdc(hdc);
+                        }
+                    }
+                }
+            }
+            catch { }
+        }
+
         private static ImageCodecInfo? _jpegEncoder;
         private static DxgiScreenCapturer? _dxgiCapturer;
         private static bool _useDxgi = true; // Default to DXGI for ultra-fast 60 FPS DirectX hardware capture with automatic GDI+ fallback
@@ -272,6 +318,22 @@ namespace BigLineconnect
             {
                 using (bmp)
                 {
+                    int screenStartX = 0;
+                    int screenStartY = 0;
+                    try
+                    {
+                        var screens = System.Windows.Forms.Screen.AllScreens;
+                        int idx = CurrentDisplayIndex;
+                        if (idx >= 0 && idx < screens.Length)
+                        {
+                            screenStartX = screens[idx].Bounds.X;
+                            screenStartY = screens[idx].Bounds.Y;
+                        }
+                    }
+                    catch { }
+
+                    DrawCursorOnBitmap(bmp, screenStartX, screenStartY);
+
                     LastCapturedFrameHash = CalculateFastScreenHash(bmp);
 
                     if (UseH264Mode)
