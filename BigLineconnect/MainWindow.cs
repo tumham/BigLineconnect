@@ -126,7 +126,7 @@ namespace BigLineconnect
             _instance = this;
             try { Program.SetStreamActive(false); } catch { }
             InitializeComponent();
-            this.Text = "B-Connect v3.73 🔴 M (120 FPS Ultra Motor)";
+            this.Text = "B-Connect v3.75 🔴 DeskRT Sharp (Lossless Netlik & 0ms Lag)";
             LoadLogoAndIcon();
 
             // Populate connection logs that occurred during splash screen connection
@@ -256,11 +256,11 @@ namespace BigLineconnect
 
             var subtitleLabel = new Label
             {
-                Text = "v3.72 🔴 M (120 FPS Ultra Motor)",
+                Text = "v3.75 🔴 DeskRT Sharp (Lossless Netlik & 0ms Lag)",
                 Location = new Point(28, 60),
                 Size = new Size(380, 18),
                 Font = new Font("Segoe UI", 9F, FontStyle.Bold),
-                ForeColor = Color.FromArgb(220, 53, 69),
+                ForeColor = Color.FromArgb(0, 150, 255),
                 BackColor = Color.Transparent
             };
             this.Controls.Add(subtitleLabel);
