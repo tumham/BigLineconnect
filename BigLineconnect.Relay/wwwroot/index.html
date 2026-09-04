@@ -352,7 +352,7 @@
 
         <!-- Remote screen rendering canvas container (Only contains canvas & img, zoomed independently) -->
         <div class="canvas-container" id="canvas-container">
-            <canvas id="screen-canvas" style="max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; margin: auto; cursor: default; display: block; user-select: none;"></canvas>
+            <canvas id="screen-canvas" style="max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; margin: auto; cursor: default; display: block; user-select: none; image-rendering: -webkit-optimize-contrast; image-rendering: crisp-edges;"></canvas>
             <img id="screen-img" style="max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; margin: auto; display: none;">
         </div>
 
@@ -1043,7 +1043,9 @@
 
                             if (jpegStart + jpegLen <= rawBuf.byteLength) {
                                 var jpegBytes = rawBuf.slice(jpegStart, jpegStart + jpegLen);
-                                var blob = new Blob([jpegBytes], { type: 'image/jpeg' });
+                                var u8H = new Uint8Array(jpegBytes, 0, Math.min(4, jpegBytes.byteLength));
+                                var mimeType = (u8H[0] === 0x89 && u8H[1] === 0x50) ? 'image/png' : 'image/jpeg';
+                                var blob = new Blob([jpegBytes], { type: mimeType });
                                 if (window.createImageBitmap) {
                                     createImageBitmap(blob).then(function(bmp) {
                                         if (ctx) ctx.drawImage(bmp, subX, subY, subW, subH);

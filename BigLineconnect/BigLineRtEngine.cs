@@ -79,9 +79,9 @@ namespace BigLineconnect
                 forceKeyframe = true;
             }
 
-            // Periodic Keyframe every 30 frames (~1 sec) for fast self-healing
-            // Prevents stale canvas artifacts from persisting more than 1 second
-            if (_frameCount == 1 || _frameCount % 30 == 0 || _lastTileHashes == null)
+            // Periodic Keyframe every 30 frames removed! Keyframe is ONLY sent on connection start,
+            // or when explicitly requested by client/dimension change.
+            if (_frameCount == 1 || _lastTileHashes == null)
             {
                 forceKeyframe = true;
             }
@@ -154,8 +154,8 @@ namespace BigLineconnect
                     return Array.Empty<byte>();
                 }
 
-                // 2. If Keyframe requested OR more than 25% of screen changed, send Keyframe
-                if (forceKeyframe || dirtyTileCount > (totalTiles * 0.25) || maxCol < 0 || maxRow < 0)
+                // 2. If Keyframe requested OR more than 65% of screen changed, send Keyframe
+                if (forceKeyframe || dirtyTileCount > (totalTiles * 0.65) || maxCol < 0 || maxRow < 0)
                 {
                     return BuildKeyframePacket(bmpScreen, width, height, quality);
                 }
@@ -166,13 +166,13 @@ namespace BigLineconnect
                 int dirtyW = Math.Min(width - dirtyX, (maxCol - minCol + 1) * TILE_SIZE);
                 int dirtyH = Math.Min(height - dirtyY, (maxRow - minRow + 1) * TILE_SIZE);
 
-                // If bounding box covers less than 30% of the screen area, send SUBFRAME (1-3 KB!)
-                if ((long)dirtyW * dirtyH <= (long)width * height * 0.30)
+                // If bounding box covers up to 80% of the screen area, send SUBFRAME (Vastly smaller than full keyframe!)
+                if ((long)dirtyW * dirtyH <= (long)width * height * 0.80)
                 {
                     return BuildSubFramePacket(bmpScreen, dirtyX, dirtyY, dirtyW, dirtyH, width, height, quality);
                 }
 
-                // Otherwise fallback to full keyframe for clean efficiency
+                // Otherwise fallback to full keyframe
                 return BuildKeyframePacket(bmpScreen, width, height, quality);
             }
             finally
@@ -239,15 +239,27 @@ namespace BigLineconnect
                 using (Bitmap subBmp = bmpScreen.Clone(new Rectangle(x, y, w, h), PixelFormat.Format32bppArgb))
                 using (MemoryStream subMs = new MemoryStream(1024 * 16))
                 {
-                    using (EncoderParameters encoderParams = new EncoderParameters(1))
-                    using (EncoderParameter encoderParam = new EncoderParameter(Encoder.Quality, (long)quality))
+                    // For text boxes, typing, ERP menus, and cell edits (w * h <= 90,000 pixels):
+                    // Encode with LOSSLESS PNG! Zero blur, zero mosquito noise, razor-sharp text clarity!
+                    bool useLossless = (w * h <= 90000);
+
+                    if (useLossless)
                     {
-                        encoderParams.Param[0] = encoderParam;
-                        subBmp.Save(subMs, _jpegEncoder ?? ImageCodecInfo.GetImageEncoders()[0], encoderParams);
+                        subBmp.Save(subMs, ImageFormat.Png);
                     }
-                    byte[] jpegData = subMs.ToArray();
-                    writer.Write(jpegData.Length);
-                    writer.Write(jpegData);
+                    else
+                    {
+                        using (EncoderParameters encoderParams = new EncoderParameters(1))
+                        using (EncoderParameter encoderParam = new EncoderParameter(Encoder.Quality, (long)quality))
+                        {
+                            encoderParams.Param[0] = encoderParam;
+                            subBmp.Save(subMs, _jpegEncoder ?? ImageCodecInfo.GetImageEncoders()[0], encoderParams);
+                        }
+                    }
+
+                    byte[] imgData = subMs.ToArray();
+                    writer.Write(imgData.Length);
+                    writer.Write(imgData);
                 }
 
                 return ms.ToArray();

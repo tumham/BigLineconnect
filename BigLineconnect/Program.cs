@@ -1486,13 +1486,17 @@ namespace BigLineconnect
                         continue;
                     }
 
-                    // ── BACKPRESSURE ──
-                    // Normal: 150ms timeout (Golden Master)
-                    // 3G: 3000ms timeout (true stop-and-wait)
-                    if (_currentFrameSeq > _lastAckedFrameSeq && (DateTime.Now - _lastFrameSendTime).TotalMilliseconds < backpressureTimeoutMs)
+                    // ── BACKPRESSURE (STRICT IN-FLIGHT PACING) ──
+                    // Never flood the socket buffer! Wait for client ACK of previous frame.
+                    // Allows max 1 frame in-flight to guarantee ZERO bufferbloat and 0ms queue latency!
+                    // If network drops an ACK, self-heal and allow new frame after 2500ms.
+                    if (_currentFrameSeq > _lastAckedFrameSeq)
                     {
-                        await Task.Delay(2, token).ConfigureAwait(false);
-                        continue;
+                        if ((DateTime.Now - _lastFrameSendTime).TotalMilliseconds < 2500)
+                        {
+                            await Task.Delay(2, token).ConfigureAwait(false);
+                            continue;
+                        }
                     }
 
                     if (_isSendingFrame)
@@ -1514,12 +1518,13 @@ namespace BigLineconnect
                         bool isDuplicate = (frameHash != 0 && frameHash == _lastSentFrameHash);
                         bool isInitialBurst = initialFrameCount < 5 && speedProbeComplete && !is3GMode;
                         bool isForcedBurst = _forcedRefreshCount > 0;
-                        bool isHeartbeat = (DateTime.Now - _lastSentFrameTime).TotalMilliseconds >= 200;
                         if (isForcedBurst) _forcedRefreshCount--;
 
-                        if (!isDuplicate || isInitialBurst || isForcedBurst || isHeartbeat)
+                        // Send ONLY when pixels actually changed, or during initial/forced burst.
+                        // NEVER spam full/duplicate image frames on an idle screen!
+                        if (!isDuplicate || isInitialBurst || isForcedBurst)
                         {
-                            // 3G: 10 FPS max | Normal: 60 FPS (Golden Master unchanged)
+                            // 3G: 10 FPS max | Normal: 60 FPS
                             int minIntervalMs = is3GMode ? 100 : 16;
                             if (isInitialBurst || isForcedBurst || (DateTime.Now - _lastSentFrameTime).TotalMilliseconds >= minIntervalMs)
                             {

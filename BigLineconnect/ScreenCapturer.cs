@@ -138,12 +138,12 @@ namespace BigLineconnect
             _jpegEncoder = GetEncoder(ImageFormat.Jpeg);
         }
 
-        public static bool UseRtTileEngine { get; set; } = false;
+        public static bool UseRtTileEngine { get; set; } = true; // DeskRT Tile Engine is ACTIVE by default for pinpoint subframe transmission
         public static bool UseH264Mode { get; set; } = false;
         public static bool ForceKeyframeRequested { get; set; } = false;
         private static H264Encoder? _h264Encoder;
 
-        public static Bitmap? CaptureGdiRaw(int quality = 50, int maxDimension = 1366)
+        public static Bitmap? CaptureGdiRaw(int quality = 80, int maxDimension = 0)
         {
             try
             {
@@ -208,7 +208,7 @@ namespace BigLineconnect
             }
         }
 
-        public static byte[] Capture(int quality = 50, int maxDimension = 1366)
+        public static byte[] Capture(int quality = 75, int maxDimension = 0)
         {
             Bitmap? bmp = null;
             if (_useDxgi)

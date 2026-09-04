@@ -88,6 +88,9 @@ namespace BigLineconnect
         private PictureBox? _pictureBox;
         private DateTime _lastMoveSent = DateTime.MinValue;
         private Point _lastSentMousePos = new Point(-1, -1);
+        // LOCAL CURSOR: Draw cursor locally for instant mouse feel (like Alpemix/AnyDesk)
+        private Point _localCursorPos = new Point(-1, -1);
+        private bool _localCursorVisible = false;
         private System.Windows.Forms.Timer? _clipboardTimer;
         private string _lastClipboardText = "";
         private bool _hasConnectedOnce = false;
@@ -190,7 +193,7 @@ namespace BigLineconnect
                     _isLanDirectActive = true;
 
                     // Send default quality mode on the new direct socket
-                    byte[] qPkt = Encoding.UTF8.GetBytes("{\"type\":\"set_quality\",\"quality\":55,\"maxDim\":0}");
+                    byte[] qPkt = Encoding.UTF8.GetBytes("{\"type\":\"set_quality\",\"quality\":75,\"maxDim\":0}");
                     try { await _ws.SendAsync(new ArraySegment<byte>(qPkt), WebSocketMessageType.Text, true, CancellationToken.None); } catch { }
 
                     this.BeginInvoke(new Action(() =>
@@ -289,6 +292,7 @@ namespace BigLineconnect
             this.Text = LanguageManager.Get("title_viewer", _targetId) + " - v3.71.2 (Commercial PRO License & 10-Minute Free Session Limits Engine)";
             this.Size = new Size(1280, 768);
             this.StartPosition = FormStartPosition.CenterScreen;
+            this.WindowState = FormWindowState.Maximized; // Open maximized like Alpemix — remote desktop fills the screen
             this.BackColor = Color.Black;
             this.KeyPreview = true;
 
@@ -492,17 +496,17 @@ namespace BigLineconnect
                 else if (mode == "mid")
                 {
                     btnQuality.Text = "🎨 İyi (HD)";
-                    if (sendPacket) SendJson("{\"type\":\"set_quality\",\"quality\":52,\"maxDim\":0}");
+                    if (sendPacket) SendJson("{\"type\":\"set_quality\",\"quality\":75,\"maxDim\":0}");
                 }
                 else if (mode == "high")
                 {
                     btnQuality.Text = "💎 En İyi";
-                    if (sendPacket) SendJson("{\"type\":\"set_quality\",\"quality\":65,\"maxDim\":0}");
+                    if (sendPacket) SendJson("{\"type\":\"set_quality\",\"quality\":90,\"maxDim\":0}");
                 }
                 else if (mode == "auto")
                 {
                     btnQuality.Text = "🚀 Otomatik";
-                    if (sendPacket) SendJson("{\"type\":\"set_quality\",\"quality\":55,\"maxDim\":0}");
+                    if (sendPacket) SendJson("{\"type\":\"set_quality\",\"quality\":75,\"maxDim\":0}");
                 }
             }
 
@@ -559,13 +563,19 @@ namespace BigLineconnect
                 isOriginalMode = !isOriginalMode;
                 if (isOriginalMode)
                 {
+                    // 1:1 TRUE FULLSCREEN — no borders, pixel-perfect remote desktop
                     btnDisplayMode.Text = "🔍 1:1 Net";
-                    if (_pictureBox != null) _pictureBox.SizeMode = PictureBoxSizeMode.CenterImage;
+                    this.FormBorderStyle = FormBorderStyle.None;
+                    this.WindowState = FormWindowState.Maximized;
+                    if (_pictureBox != null) _pictureBox.SizeMode = PictureBoxSizeMode.Zoom;
                     ModernUIHelper.ApplyToolbarButtonStyle(btnDisplayMode, isActive: true);
                 }
                 else
                 {
+                    // SIĞDIR — normal windowed mode, image fits to window preserving aspect ratio
                     btnDisplayMode.Text = "📐 Sığdır";
+                    this.FormBorderStyle = FormBorderStyle.Sizable;
+                    this.WindowState = FormWindowState.Maximized;
                     if (_pictureBox != null) _pictureBox.SizeMode = PictureBoxSizeMode.Zoom;
                     ModernUIHelper.ApplyToolbarButtonStyle(btnDisplayMode, isActive: false);
                 }
@@ -597,17 +607,17 @@ namespace BigLineconnect
             _pictureBox = new DoubleBufferedPictureBox
             {
                 Dock = DockStyle.Fill,
-                SizeMode = PictureBoxSizeMode.StretchImage,
+                SizeMode = PictureBoxSizeMode.Zoom,
                 BackColor = Color.FromArgb(12, 14, 20)
             };
 
-            // Custom Paint event to enforce high quality interpolation and render modern overlay when image is null
+            // Custom Paint event to enforce crisp pixel-perfect interpolation (Alpemix/AnyDesk style clarity)
             _pictureBox.Paint += (s, pe) =>
             {
-                pe.Graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+                pe.Graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
                 pe.Graphics.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.Half;
-                pe.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighQuality;
-                pe.Graphics.CompositingQuality = System.Drawing.Drawing2D.CompositingQuality.HighQuality;
+                pe.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.None;
+                pe.Graphics.CompositingQuality = System.Drawing.Drawing2D.CompositingQuality.HighSpeed;
 
                 if (_pictureBox.Image == null)
                 {
@@ -640,7 +650,37 @@ namespace BigLineconnect
                         g.DrawString(subText, subFont, subBrush, cx - (subSize.Width / 2), cy + 15);
                     }
                 }
+
+                // ═══ LOCAL CURSOR OVERLAY — instant mouse feel like Alpemix/AnyDesk ═══
+                if (_localCursorVisible && _localCursorPos.X >= 0 && _pictureBox.Image != null)
+                {
+                    var g = pe.Graphics;
+                    g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+                    int cx2 = _localCursorPos.X;
+                    int cy2 = _localCursorPos.Y;
+                    // Draw arrow cursor shape
+                    var cursorPoints = new Point[]
+                    {
+                        new Point(cx2, cy2),
+                        new Point(cx2, cy2 + 18),
+                        new Point(cx2 + 5, cy2 + 14),
+                        new Point(cx2 + 9, cy2 + 21),
+                        new Point(cx2 + 12, cy2 + 20),
+                        new Point(cx2 + 8, cy2 + 13),
+                        new Point(cx2 + 13, cy2 + 13),
+                    };
+                    using (var shadow = new SolidBrush(Color.FromArgb(120, 0, 0, 0)))
+                        g.FillPolygon(shadow, cursorPoints.Select(p => new Point(p.X + 1, p.Y + 1)).ToArray());
+                    using (var fill = new SolidBrush(Color.White))
+                        g.FillPolygon(fill, cursorPoints);
+                    using (var border = new Pen(Color.Black, 1.2f))
+                        g.DrawPolygon(border, cursorPoints);
+                }
             };
+
+            // Hide Windows cursor when over PictureBox, show local cursor instead
+            _pictureBox.MouseEnter += (s, e) => { _localCursorVisible = true; _pictureBox.Cursor = Cursors.Cross; Cursor.Hide(); };
+            _pictureBox.MouseLeave += (s, e) => { _localCursorVisible = false; Cursor.Show(); _pictureBox.Invalidate(); };
 
             // Bind mouse events on picture box
             _pictureBox.MouseDown += PictureBox_MouseDown;
@@ -709,7 +749,7 @@ namespace BigLineconnect
                 await _ws.ConnectAsync(new Uri(_wsUrl), CancellationToken.None);
                 
                 // Enforce default quality mode (Native res / Q=55 HD) for razor-sharp fonts and crystal-clear text
-                SendJson("{\"type\":\"set_quality\",\"quality\":55,\"maxDim\":0}");
+                SendJson("{\"type\":\"set_quality\",\"quality\":75,\"maxDim\":0}");
 
                 // Launch immediate parallel LAN Direct probe for 0ms local socket auto-switch
                 StartP2pAndLanProbe();
@@ -1551,7 +1591,7 @@ namespace BigLineconnect
                     }));
 
                     // Re-send quality mode
-                    SendJson("{\"type\":\"set_quality\",\"quality\":55,\"maxDim\":0}");
+                    SendJson("{\"type\":\"set_quality\",\"quality\":75,\"maxDim\":0}");
 
                     // If we have saved password, re-authenticate automatically
                     if (!string.IsNullOrEmpty(_savedPassword))
@@ -1854,6 +1894,10 @@ namespace BigLineconnect
 
         private void PictureBox_MouseMove(object? sender, MouseEventArgs e)
         {
+            // LOCAL CURSOR: Update position and repaint immediately (0ms latency!)
+            _localCursorPos = e.Location;
+            _pictureBox?.Invalidate();
+
             if (_pictureBox == null) return;
             if (e.Location == _lastSentMousePos) return;
             int throttleMs = 10; // 100 FPS ultra-fast mouse tracking!
@@ -4659,6 +4703,17 @@ namespace BigLineconnect
             {
                 base.OnPaintBackground(e);
             }
+        }
+
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            // Set rendering quality BEFORE base draws the image:
+            // NearestNeighbor + Half pixel offset eliminates bilinear blurring on text and window borders!
+            e.Graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
+            e.Graphics.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.Half;
+            e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.None;
+            e.Graphics.CompositingQuality = System.Drawing.Drawing2D.CompositingQuality.HighSpeed;
+            base.OnPaint(e);
         }
     }
 }
