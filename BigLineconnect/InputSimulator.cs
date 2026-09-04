@@ -136,7 +136,6 @@ namespace BigLineconnect
         {
             try
             {
-                DesktopHelper.AttachToInputDesktop(true);
                 var screens = System.Windows.Forms.Screen.AllScreens;
                 if (displayIndex < 0 || displayIndex >= screens.Length) displayIndex = 0;
 
@@ -168,7 +167,6 @@ namespace BigLineconnect
         {
             try
             {
-                DesktopHelper.AttachToInputDesktop(true);
                 uint flags = 0;
                 bool isDown = action.Equals("down", StringComparison.OrdinalIgnoreCase);
 
@@ -275,7 +273,6 @@ namespace BigLineconnect
         {
             try
             {
-                DesktopHelper.AttachToInputDesktop(true);
                 INPUT[] inputs = new INPUT[1];
                 inputs[0] = new INPUT
                 {
@@ -305,7 +302,6 @@ namespace BigLineconnect
             try
             {
                 ReleaseCapture();
-                DesktopHelper.AttachToInputDesktop(true);
 
                 // 1. Tıklama (Down + Up) - SendInput ile yüksek DPI duyarlı tam piksel vuruşu
                 SimulateMouseButton(button, "down", xPercent, yPercent, displayIndex);
@@ -393,8 +389,6 @@ namespace BigLineconnect
 
         public static void SimulateKeyStroke(string key, bool shift = false, bool ctrl = false, bool alt = false)
         {
-            DesktopHelper.AttachToInputDesktop(true);
-
             ushort vkCode = 0;
             if (SpecialKeyMap.TryGetValue(key, out ushort mappedVk))
             {
@@ -454,8 +448,6 @@ namespace BigLineconnect
                 SimulateKeyStroke(key, shift, ctrl, alt);
                 return;
             }
-
-            DesktopHelper.AttachToInputDesktop(true);
 
             ushort vkCode = 0;
             if (SpecialKeyMap.TryGetValue(key, out ushort mappedVk))
@@ -586,7 +578,6 @@ namespace BigLineconnect
 
         public static void SimulateChar(char ch)
         {
-            DesktopHelper.AttachToInputDesktop();
             ReleaseAllModifiers();
 
             short scan = VkKeyScan(ch);
@@ -710,7 +701,6 @@ namespace BigLineconnect
         public static void SimulateVkCode(ushort vkCode, bool shift, bool ctrl, bool alt, bool isUp, bool isStroke)
         {
             if (vkCode == 0) return;
-            DesktopHelper.AttachToInputDesktop();
 
             uint scanCode = MapVirtualKey(vkCode, 0);
             uint extFlag = 0;

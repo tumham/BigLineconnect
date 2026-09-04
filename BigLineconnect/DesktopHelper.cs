@@ -188,18 +188,10 @@ namespace BigLineconnect
 
                 DisableForegroundLock();
 
-                IntPtr hDesk = OpenInputDesktop(0, false, GENERIC_ALL);
+                IntPtr hDesk = OpenInputDesktop(0, false, MAXIMUM_ALLOWED);
                 if (hDesk == IntPtr.Zero)
                 {
-                    hDesk = OpenInputDesktop(0, false, MAXIMUM_ALLOWED);
-                }
-                if (hDesk == IntPtr.Zero)
-                {
-                    hDesk = OpenDesktop("ConsentDesktop", 0, false, MAXIMUM_ALLOWED);
-                }
-                if (hDesk == IntPtr.Zero)
-                {
-                    hDesk = OpenDesktop("Winlogon", 0, false, MAXIMUM_ALLOWED);
+                    hDesk = OpenInputDesktop(0, false, GENERIC_ALL);
                 }
                 if (hDesk == IntPtr.Zero)
                 {
@@ -209,7 +201,6 @@ namespace BigLineconnect
                 if (hDesk != IntPtr.Zero)
                 {
                     SetThreadDesktop(hDesk);
-                    CloseDesktop(hDesk);
                 }
             }
             catch { }
