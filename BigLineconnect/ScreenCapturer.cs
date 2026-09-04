@@ -184,7 +184,7 @@ namespace BigLineconnect
             _jpegEncoder = GetEncoder(ImageFormat.Jpeg);
         }
 
-        public static bool UseRtTileEngine { get; set; } = true; // Clean Dirty-Rect Differential Subframe Engine (DeskRT architecture)
+        public static bool UseRtTileEngine { get; set; } = false; // Disabled: Stateful differential drops cause desync; Full-frame is stateless & tear-free
         public static bool UseH264Mode { get; set; } = false;
         public static bool ForceKeyframeRequested { get; set; } = false;
         private static H264Encoder? _h264Encoder;
