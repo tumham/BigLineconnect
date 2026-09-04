@@ -1378,7 +1378,7 @@ namespace BigLineconnect
             }
         }
 
-        public static int CurrentQuality { get; set; } = 92; // Ultra Crisp HD quality (zero chroma subsampling blur, 4:4:4 pristine ERP text)
+        public static int CurrentQuality { get; set; } = 70; // Kota dostu akıllı kalite (Hareketsizken 0 bayt, hareketliyken sadece ~45 KB)
         public static int CurrentMaxDimension { get; set; } = 0; // 0 = 100% Native Pixel-Perfect Resolution (No Blurring/Downscaling)
         public static bool SuppressWallpaperEnabled { get; set; } = true;
 
@@ -1598,8 +1598,8 @@ namespace BigLineconnect
                         // NEVER spam full/duplicate image frames on an idle screen!
                         if (!isDuplicate || isInitialBurst || isForcedBurst)
                         {
-                            // 3G: 10 FPS max | Normal: 60 FPS
-                            int minIntervalMs = is3GMode ? 100 : 16;
+                            // 3G: 10 FPS max | Normal: 40 FPS (Kota tasarrufu, ultra akıcı)
+                            int minIntervalMs = is3GMode ? 100 : 25;
                             if (isInitialBurst || isForcedBurst || (DateTime.Now - _lastSentFrameTime).TotalMilliseconds >= minIntervalMs)
                             {
                                 _isSendingFrame = true;

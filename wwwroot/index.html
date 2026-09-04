@@ -995,7 +995,7 @@
                 console.log('[BigLine] WS Connected!');
                 isConnecting = false;
                 try {
-                    ws.send(JSON.stringify({ type: 'set_quality', quality: 92, maxDim: 0 }));
+                    ws.send(JSON.stringify({ type: 'set_quality', quality: 70, maxDim: 0 }));
                 } catch(e) {}
                 if (pingInterval) clearInterval(pingInterval);
                 pingInterval = setInterval(function() {
@@ -1026,7 +1026,7 @@
                         }
                     } else if (ev.data === 'AUTH_SUCCESS') {
                         try {
-                            ws.send(JSON.stringify({ type: 'set_quality', quality: 92, maxDim: 0 }));
+                            ws.send(JSON.stringify({ type: 'set_quality', quality: 70, maxDim: 0 }));
                         } catch(e) {}
                         if (typeof window.startFreeSessionTimer === 'function') window.startFreeSessionTimer();
                         var landing = document.getElementById('landing-page');
