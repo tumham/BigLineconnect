@@ -352,11 +352,10 @@
 
         <!-- Remote screen rendering canvas container (Only contains canvas & img, zoomed independently) -->
         <div class="canvas-container" id="canvas-container">
-            <canvas id="screen-canvas" style="width: 100%; height: 100%; object-fit: contain; cursor: default; display: block; user-select: none;"></canvas>
-            <img id="screen-img" style="display: none;">
+            <canvas id="screen-canvas" style="max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; margin: auto; cursor: default; display: block; user-select: none;"></canvas>
+            <img id="screen-img" style="max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; margin: auto; display: none;">
         </div>
 
-        <!-- Floating Controls for Mobile & Actions (Stationary at bottom, never zooms, highest z-index) -->
         <!-- Floating Controls for Mobile & Actions (Stationary at bottom, never zooms, highest z-index) -->
         <div class="floating-controls" id="floating-controls" style="position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; background: rgba(11, 15, 25, 0.96); backdrop-filter: blur(25px); padding: 8px 12px; border-radius: 35px; border: 1.5px solid rgba(0, 229, 255, 0.6); box-shadow: 0 15px 40px rgba(0,0,0,0.95); z-index: 2147483647 !important; pointer-events: auto !important; max-width: 98vw; touch-action: manipulation;">
             <!-- 123 Numpad -->
@@ -1012,6 +1011,7 @@
                         if (cv && (cv.width !== screenW || cv.height !== screenH)) {
                             cv.width = screenW;
                             cv.height = screenH;
+                            updateCanvasCssLayout();
                         }
 
                         if (flag === 0x01) {
@@ -1069,6 +1069,7 @@
                                     if (cv.width !== bmp.width || cv.height !== bmp.height) {
                                         cv.width = bmp.width;
                                         cv.height = bmp.height;
+                                        updateCanvasCssLayout();
                                     }
                                     if (ctx) ctx.drawImage(bmp, 0, 0);
                                     if (cv.style.display !== 'block') cv.style.display = 'block';
@@ -1089,6 +1090,7 @@
                                 else {
                                     if (cv.width !== img.width || cv.height !== img.height) {
                                         cv.width = img.width; cv.height = img.height;
+                                        updateCanvasCssLayout();
                                     }
                                     ctx.drawImage(img, 0, 0);
                                 }
@@ -1130,25 +1132,66 @@
         window.doConnect = doConnect;
         window.startConnectionProcess = doConnect;
 
-        // 100% Pixel-Perfect Direct Canvas & Container Coordinate Mapping
+        // ── 100% PİKSEL KUSURSUZ EN-BOY KİLİTLEME VE KALİBRASYON MOTORU ──
+        function updateCanvasCssLayout() {
+            var cv = document.getElementById('screen-canvas');
+            var container = document.getElementById('canvas-container');
+            if (!cv || !container) return;
+
+            var nativeW = cv.width || 1920;
+            var nativeH = cv.height || 1080;
+            if (nativeW <= 100 || nativeH <= 100) return;
+
+            var containerW = container.clientWidth;
+            var containerH = container.clientHeight;
+            if (containerW <= 10 || containerH <= 10) return;
+
+            var nativeAspect = nativeW / nativeH;
+            var containerAspect = containerW / containerH;
+
+            var finalW, finalH;
+            if (containerAspect > nativeAspect) {
+                // Ekran geniş (Masaüstü): Yüksekliğe tam otur
+                finalH = containerH;
+                finalW = containerH * nativeAspect;
+            } else {
+                // Ekran dar ve dikey (MOBİL): Genişliğe tam otur
+                finalW = containerW;
+                finalH = containerW / nativeAspect;
+            }
+
+            cv.style.width = Math.round(finalW) + 'px';
+            cv.style.height = Math.round(finalH) + 'px';
+            cv.style.maxWidth = 'none';
+            cv.style.maxHeight = 'none';
+            cv.style.margin = 'auto';
+            cv.style.display = 'block';
+        }
+        window.updateCanvasCssLayout = updateCanvasCssLayout;
+        window.addEventListener('resize', updateCanvasCssLayout);
+        window.addEventListener('orientationchange', function() {
+            setTimeout(updateCanvasCssLayout, 150);
+        });
+
+        // 100% Pixel-Perfect Direct Canvas Coordinate Mapping
         function getMousePos(clientX, clientY) {
             var cv = document.getElementById('screen-canvas');
             var container = document.getElementById('canvas-container');
-            var fallbackImg = document.getElementById('screen-img');
+            var targetEl = (cv && cv.style.display !== 'none' && cv.offsetWidth > 0) ? cv : container;
 
-            var targetEl = (cv && cv.style.display !== 'none' && cv.offsetWidth > 0) ? cv :
-                           ((fallbackImg && fallbackImg.offsetWidth > 0) ? fallbackImg : container);
-
-            if (!targetEl) return { x: 0, y: 0 };
+            if (!targetEl) return { x: 0.5, y: 0.5 };
             var rect = targetEl.getBoundingClientRect();
-            if (rect.width <= 0 || rect.height <= 0) return { x: 0, y: 0 };
+            if (rect.width <= 0 || rect.height <= 0) return { x: 0.5, y: 0.5 };
 
             var mouseX = clientX - rect.left;
             var mouseY = clientY - rect.top;
 
+            var normX = mouseX / rect.width;
+            var normY = mouseY / rect.height;
+
             return {
-                x: Math.max(0, Math.min(1, mouseX / rect.width)),
-                y: Math.max(0, Math.min(1, mouseY / rect.height))
+                x: Math.max(0.0, Math.min(1.0, normX)),
+                y: Math.max(0.0, Math.min(1.0, normY))
             };
         }
 
