@@ -1,7 +1,7 @@
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
   <Package Name="BigLineconnect Enterprise" 
            Manufacturer="BIGUS BILISIM GELISTIRME VE UYGULAMA SISTEMLERI LIMITED SIRKETI" 
-           Version="3.76.0" 
+           Version="3.77.0" 
            UpgradeCode="78152ce7-273b-42a9-b2b3-6a4a5c4c9e69" 
            Scope="perMachine">
 
@@ -13,7 +13,7 @@
     <StandardDirectory Id="TARGETDIR">
       <Directory Id="BigusDir" Name="Bigus">
         <Component Id="BigusExeComponent" Guid="c3d4e5f6-a7b8-4901-bcde-23456789abcd">
-          <File Id="BigusExe" Source="c:\Projev17YD\DUZ_V17_STD\publish_v376_Fluid\BigLineconnect.exe" Name="BigLineconnect.exe" KeyPath="yes">
+          <File Id="BigusExe" Source="c:\Projev17YD\DUZ_V17_STD\publish_v377_UltraClear\BigLineconnect.exe" Name="BigLineconnect.exe" KeyPath="yes">
             <Shortcut Id="DesktopShortcut"
                       Directory="DesktopFolder"
                       Name="BigLineconnect"
@@ -37,7 +37,7 @@
     <StandardDirectory Id="CommonAppDataFolder">
       <Directory Id="ProgramDataFolder" Name="BigLineconnect">
         <Component Id="ProgramDataExeComponent" Guid="b2c3d4e5-f6a7-4890-bcde-123456789abc">
-          <File Id="ProgramDataExe" Source="c:\Projev17YD\DUZ_V17_STD\publish_v376_Fluid\BigLineconnect.exe" Name="BigLineconnect.exe" KeyPath="yes" />
+          <File Id="ProgramDataExe" Source="c:\Projev17YD\DUZ_V17_STD\publish_v377_UltraClear\BigLineconnect.exe" Name="BigLineconnect.exe" KeyPath="yes" />
         </Component>
       </Directory>
     </StandardDirectory>
@@ -47,7 +47,7 @@
       <Directory Id="CompanyFolder" Name="Bigus Bilisim">
         <Directory Id="INSTALLFOLDER" Name="BigLineconnect">
           <Component Id="MainExecutableComponent" Guid="a1b2c3d4-e5f6-4789-abcd-0123456789ab">
-            <File Id="MainExecutable" Source="c:\Projev17YD\DUZ_V17_STD\publish_v376_Fluid\BigLineconnect.exe" Name="BigLineconnect_App.exe" KeyPath="yes" />
+            <File Id="MainExecutable" Source="c:\Projev17YD\DUZ_V17_STD\publish_v377_UltraClear\BigLineconnect.exe" Name="BigLineconnect_App.exe" KeyPath="yes" />
           </Component>
         </Directory>
       </Directory>

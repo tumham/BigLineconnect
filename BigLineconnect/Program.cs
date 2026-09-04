@@ -1358,10 +1358,9 @@ namespace BigLineconnect
                         ApplySleepPrevention(true);
                     }
 
-                    // 3G: quality 35% + max 1600px for smaller frames (~15-20KB instead of 60-80KB)
-                    // 3G quality cap DISABLED — user should always get their chosen quality
+                    // Always preserve chosen resolution: maxDim = CurrentMaxDimension (0 = 100% native 1:1)
                     int q = CurrentQuality;
-                    int maxDim = _is3GSlowLink ? 1600 : CurrentMaxDimension;
+                    int maxDim = CurrentMaxDimension;
                     byte[] frame = ScreenCapturer.Capture(quality: q, maxDimension: maxDim);
                     ulong hash = ScreenCapturer.LastCapturedFrameHash;
                     

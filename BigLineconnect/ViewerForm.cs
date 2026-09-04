@@ -501,7 +501,7 @@ namespace BigLineconnect
                 else if (mode == "high")
                 {
                     btnQuality.Text = "💎 En İyi";
-                    if (sendPacket) SendJson("{\"type\":\"set_quality\",\"quality\":90,\"maxDim\":0}");
+                    if (sendPacket) SendJson("{\"type\":\"set_quality\",\"quality\":95,\"maxDim\":0}");
                 }
                 else if (mode == "auto")
                 {
@@ -611,13 +611,11 @@ namespace BigLineconnect
                 BackColor = Color.FromArgb(12, 14, 20)
             };
 
-            // HighQualityBicubic guarantees smooth, clean text and table rendering without jagged/broken characters
             _pictureBox.Paint += (s, pe) =>
             {
-                pe.Graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+                pe.Graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.Bilinear;
                 pe.Graphics.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.Half;
-                pe.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighQuality;
-                pe.Graphics.CompositingQuality = System.Drawing.Drawing2D.CompositingQuality.HighQuality;
+                pe.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.None;
 
                 if (_pictureBox.Image == null)
                 {
@@ -4707,11 +4705,40 @@ namespace BigLineconnect
 
         protected override void OnPaint(PaintEventArgs e)
         {
-            e.Graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
-            e.Graphics.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.Half;
-            e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighQuality;
-            e.Graphics.CompositingQuality = System.Drawing.Drawing2D.CompositingQuality.HighQuality;
-            base.OnPaint(e);
+            if (this.Image == null)
+            {
+                base.OnPaint(e);
+                return;
+            }
+
+            var g = e.Graphics;
+            g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.Bilinear;
+            g.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.Half;
+            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.None;
+            g.CompositingMode = System.Drawing.Drawing2D.CompositingMode.SourceCopy;
+
+            Rectangle destRect;
+            if (this.SizeMode == PictureBoxSizeMode.Zoom)
+            {
+                float imgAspect = (float)this.Image.Width / this.Image.Height;
+                float boxAspect = (float)this.Width / Math.Max(1, this.Height);
+                if (boxAspect > imgAspect)
+                {
+                    int w = (int)(this.Height * imgAspect);
+                    destRect = new Rectangle((this.Width - w) / 2, 0, w, this.Height);
+                }
+                else
+                {
+                    int h = (int)(this.Width / imgAspect);
+                    destRect = new Rectangle(0, (this.Height - h) / 2, this.Width, h);
+                }
+            }
+            else
+            {
+                destRect = new Rectangle(0, 0, this.Width, this.Height);
+            }
+
+            g.DrawImage(this.Image, destRect, 0, 0, this.Image.Width, this.Image.Height, GraphicsUnit.Pixel);
         }
     }
 }
