@@ -611,13 +611,13 @@ namespace BigLineconnect
                 BackColor = Color.FromArgb(12, 14, 20)
             };
 
-            // Custom Paint event to enforce crisp pixel-perfect interpolation (Alpemix/AnyDesk style clarity)
+            // HighQualityBicubic guarantees smooth, clean text and table rendering without jagged/broken characters
             _pictureBox.Paint += (s, pe) =>
             {
-                pe.Graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
+                pe.Graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
                 pe.Graphics.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.Half;
-                pe.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.None;
-                pe.Graphics.CompositingQuality = System.Drawing.Drawing2D.CompositingQuality.HighSpeed;
+                pe.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighQuality;
+                pe.Graphics.CompositingQuality = System.Drawing.Drawing2D.CompositingQuality.HighQuality;
 
                 if (_pictureBox.Image == null)
                 {
@@ -4707,12 +4707,10 @@ namespace BigLineconnect
 
         protected override void OnPaint(PaintEventArgs e)
         {
-            // Set rendering quality BEFORE base draws the image:
-            // NearestNeighbor + Half pixel offset eliminates bilinear blurring on text and window borders!
-            e.Graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
+            e.Graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
             e.Graphics.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.Half;
-            e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.None;
-            e.Graphics.CompositingQuality = System.Drawing.Drawing2D.CompositingQuality.HighSpeed;
+            e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighQuality;
+            e.Graphics.CompositingQuality = System.Drawing.Drawing2D.CompositingQuality.HighQuality;
             base.OnPaint(e);
         }
     }

@@ -138,7 +138,7 @@ namespace BigLineconnect
             _jpegEncoder = GetEncoder(ImageFormat.Jpeg);
         }
 
-        public static bool UseRtTileEngine { get; set; } = true; // DeskRT Tile Engine is ACTIVE by default for pinpoint subframe transmission
+        public static bool UseRtTileEngine { get; set; } = false; // Full-frame direct capture for 100% stable, unbroken text/graphics
         public static bool UseH264Mode { get; set; } = false;
         public static bool ForceKeyframeRequested { get; set; } = false;
         private static H264Encoder? _h264Encoder;

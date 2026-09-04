@@ -1486,19 +1486,8 @@ namespace BigLineconnect
                         continue;
                     }
 
-                    // ── BACKPRESSURE (STRICT IN-FLIGHT PACING) ──
-                    // Never flood the socket buffer! Wait for client ACK of previous frame.
-                    // Allows max 1 frame in-flight to guarantee ZERO bufferbloat and 0ms queue latency!
-                    // If network drops an ACK, self-heal and allow new frame after 2500ms.
-                    if (_currentFrameSeq > _lastAckedFrameSeq)
-                    {
-                        if ((DateTime.Now - _lastFrameSendTime).TotalMilliseconds < 2500)
-                        {
-                            await Task.Delay(2, token).ConfigureAwait(false);
-                            continue;
-                        }
-                    }
-
+                    // Natural flow control: If previous frame is still transmitting over socket,
+                    // yield and let CaptureLoop update the latest frame (zero backlog, zero lag)
                     if (_isSendingFrame)
                     {
                         await Task.Delay(2, token).ConfigureAwait(false);
