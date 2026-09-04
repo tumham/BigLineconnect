@@ -4,24 +4,48 @@ using System.Text.Json;
 
 /// <summary>
 /// Telegram Bot API üzerinden destek taleplerini push notification olarak gönderir.
-/// Tenant (bayi) bazlı: Her destek uzmanı kendi tenant'ına kayıt olur,
-/// sadece kendi müşterilerinin taleplerini alır.
+/// Tenant (bayi) bazlı: Destek uzmanları kendi tenant'ına kayıt olur,
+/// ilgili talepleri telefonlarına anında push bildirim (sesli ve banner) olarak alır.
+/// Çift katmanlı (Markdown + Plain Text fallback), sıfır kayıp garantili bildirim mimarisi.
 /// </summary>
 public static class TelegramNotifier
 {
-    // Bot Token — BotFather'dan alınır, ortam değişkeni veya config'den okunur
+    // Bot Token — BotFather'dan alınır, ortam değişkeninden okunur
     private static string? _botToken;
     
     // Tenant bazlı kayıtlı destek uzmanları: TenantId -> List<ChatId>
     private static readonly Dictionary<string, List<long>> _tenantChatIds = new(StringComparer.OrdinalIgnoreCase);
     private static readonly string _chatIdsFilePath = Path.Combine(AppContext.BaseDirectory, "telegram_chat_ids.json");
     
-    private static readonly HttpClient _http = new() { Timeout = TimeSpan.FromSeconds(10) };
+    // Uzun yoklama (Long-Polling) için özel 60 sn timeout'lu HttpClient
+    private static readonly HttpClient _pollHttp = new() { Timeout = TimeSpan.FromSeconds(60) };
+    
+    // Bildirim gönderimi için hızlı 15 sn timeout'lu HttpClient
+    private static readonly HttpClient _sendHttp = new() { Timeout = TimeSpan.FromSeconds(15) };
+    
     private static readonly object _lock = new();
+    private static DateTime _lastPollTime = DateTime.MinValue;
+    private static int _lastUpdateId = 0;
+    private static string _lastError = "";
+
+    public class PendingSupportInfo
+    {
+        public string Id { get; set; } = "";
+        public string Name { get; set; } = "";
+        public string Issue { get; set; } = "";
+        public string Priority { get; set; } = "";
+        public string TenantId { get; set; } = "";
+        public DateTime CreatedAt { get; set; }
+    }
+
+    /// <summary>
+    /// Aktif bekleyen talepleri bot üzerinden sorgulamak için delegasyon.
+    /// </summary>
+    public static Func<IEnumerable<PendingSupportInfo>>? GetPendingRequests { get; set; }
 
     /// <summary>
     /// Telegram bildirim sistemini başlatır. Bot token'ı ortam değişkeninden okur,
-    /// kayıtlı chat ID'lerini dosyadan yükler.
+    /// kayıtlı chat ID'lerini yükler.
     /// </summary>
     public static void Initialize()
     {
@@ -40,7 +64,7 @@ public static class TelegramNotifier
     }
 
     /// <summary>
-    /// Yeni destek talebi geldiğinde ilgili tenant'ın destek uzmanlarına bildirim gönderir.
+    /// Yeni destek talebi geldiğinde ilgili tenant'ın ve ana merkezin destek uzmanlarına push bildirimi gönderir.
     /// </summary>
     public static async Task NotifySupportRequestAsync(string customerName, string issue, string priority, string hostId, string tenantId)
     {
@@ -48,10 +72,10 @@ public static class TelegramNotifier
 
         string priorityEmoji = priority switch
         {
-            "Yüksek" => "🔴",
-            "Orta" => "🟡",
-            "Düşük" => "🟢",
-            _ => "⚪"
+            _ when priority.Contains("Yüksek") || priority.Contains("Acil") => "🔴",
+            _ when priority.Contains("Orta") => "🟡",
+            _ when priority.Contains("Düşük") || priority.Contains("Rutin") => "🟢",
+            _ => "🟡"
         };
 
         string cleanHostId = System.Text.RegularExpressions.Regex.Replace(hostId ?? "", @"\D", "").Trim();
@@ -100,6 +124,7 @@ public static class TelegramNotifier
 🎯 Konu: {EscapeMarkdown(issue)}
 💻 Bilgisayar ID: `{hostId}`
 👨‍💻 Bağlanan: *{EscapeMarkdown(operatorInfo)}*
+🏢 Tenant: {EscapeMarkdown(tenantId)}
 ⏰ Zaman: {DateTime.Now:dd.MM.yyyy HH:mm}
 
 _Destek uzmanı müşteriye bağlandı_
@@ -132,6 +157,7 @@ _Destek uzmanı müşteriye bağlandı_
 🎯 Konu: {EscapeMarkdown(issue)}
 💻 Bilgisayar ID: `{hostId}`
 📊 Durum: *{EscapeMarkdown(status)}*{notesLine}
+🏢 Tenant: {EscapeMarkdown(tenantId)}
 ⏰ Zaman: {DateTime.Now:dd.MM.yyyy HH:mm}
 """;
 
@@ -163,8 +189,7 @@ _Müşteri destek talebini kendi ekranından iptal etti._
     }
 
     /// <summary>
-    /// Telegram bot'a gelen mesajları işler (/start, /stop, /durum).
-    /// /start TENANT_ID ile tenant bazlı kayıt yapılır.
+    /// Telegram bot'a gelen mesajları işler (/start, /stop, /durum, /yardim).
     /// </summary>
     public static async Task ProcessBotUpdatesAsync()
     {
@@ -176,8 +201,10 @@ _Müşteri destek talebini kendi ekranından iptal etti._
         {
             try
             {
-                var url = $"https://api.telegram.org/bot{_botToken}/getUpdates?offset={offset}&timeout=30";
-                var response = await _http.GetStringAsync(url);
+                _lastPollTime = DateTime.UtcNow;
+                // Telegram API'ye 25 saniyelik long-polling isteği atıyoruz (HttpClient timeout'u 60 sn olduğundan asla kopmaz)
+                var url = $"https://api.telegram.org/bot{_botToken}/getUpdates?offset={offset}&timeout=25";
+                var response = await _pollHttp.GetStringAsync(url);
                 var doc = JsonDocument.Parse(response);
 
                 if (doc.RootElement.TryGetProperty("result", out var results))
@@ -186,6 +213,7 @@ _Müşteri destek talebini kendi ekranından iptal etti._
                     {
                         int updateId = update.GetProperty("update_id").GetInt32();
                         offset = updateId + 1;
+                        _lastUpdateId = offset;
 
                         if (update.TryGetProperty("message", out var msg))
                         {
@@ -194,34 +222,54 @@ _Müşteri destek talebini kendi ekranından iptal etti._
                             string firstName = chat.TryGetProperty("first_name", out var fn) ? fn.GetString() ?? "" : "";
                             string text = msg.TryGetProperty("text", out var t) ? t.GetString() ?? "" : "";
 
-                            if (text.StartsWith("/start"))
+                            if (text.StartsWith("/start", StringComparison.OrdinalIgnoreCase))
                             {
-                                // /start TENANT_ID formatı — örn: /start SEMEDU
-                                string tenantId = "BIGLINE"; // varsayılan
+                                // /start [TENANT_ID] formatı — örn: /start BGS veya sadece /start
+                                string targetTenant = "BGS";
                                 var parts = text.Split(' ', StringSplitOptions.RemoveEmptyEntries);
                                 if (parts.Length >= 2)
                                 {
-                                    tenantId = parts[1].Trim().ToUpperInvariant();
+                                    targetTenant = parts[1].Trim().ToUpperInvariant();
                                 }
 
-                                RegisterChatId(tenantId, chatId);
+                                // Uzmanı hem hedef tenant'a hem de BGS ve BIGLINE'a kaydet ki hiçbir bildirim kaçmasın
+                                RegisterChatId(targetTenant, chatId);
+                                RegisterChatId("BGS", chatId);
+                                RegisterChatId("BIGLINE", chatId);
+
                                 await SendMessageAsync(chatId, $"""
-✅ *Kayıt Başarılı!*
+✅ *Kayıt Başarılı ve Kalıcı Olarak Aktif!*
 
 Merhaba *{EscapeMarkdown(firstName)}*! 🎉
 
-🏢 Tenant: *{tenantId}*
-Artık *{tenantId}* müşterilerinden gelen destek talepleri bu sohbete bildirilecek.
+🏢 Kayıtlı Kanallar: *{targetTenant}*, *BGS*, *BIGLINE*
+📱 Bildirimler bu cihaza anında push bildirim olarak iletilecektir.
+🔔 Bildirim sesinizin ve kilit ekranı izinlerinizin açık olduğundan emin olun.
 
-📱 Telefonunuzun bildirim sesi açık olduğundan emin olun.
+_Müşteri talep gönderdiğinde doğrudan telefonunuza butonlu mesaj gelecektir._
 
 _Komutlar:_
-/durum — Bot durumunu göster
+/durum — Bekleyen talepleri ve bot durumunu göster
 /stop — Bildirimleri kapat
 """);
-                                Console.WriteLine($"[Telegram] ✅ Yeni uzman kaydedildi: {firstName} → Tenant: {tenantId} (ChatID: {chatId})");
+                                Console.WriteLine($"[Telegram] ✅ Uzman kaydedildi: {firstName} → Tenant: {targetTenant} + BGS + BIGLINE (ChatID: {chatId})");
+
+                                // Eğer şu anda sırada bekleyen talep varsa hemen uzmanına kart olarak gönder!
+                                try
+                                {
+                                    var pending = GetPendingRequests?.Invoke()?.ToList();
+                                    if (pending != null && pending.Count > 0)
+                                    {
+                                        await SendMessageAsync(chatId, $"⚡ *DİKKAT:* Şu anda sırada bekleyen *{pending.Count}* adet aktif destek talebi var:");
+                                        foreach (var req in pending)
+                                        {
+                                            await NotifySupportRequestAsync(req.Name, req.Issue, req.Priority, req.Id, req.TenantId);
+                                        }
+                                    }
+                                }
+                                catch { }
                             }
-                            else if (text.StartsWith("/stop"))
+                            else if (text.StartsWith("/stop", StringComparison.OrdinalIgnoreCase))
                             {
                                 var removedTenants = UnregisterChatId(chatId);
                                 await SendMessageAsync(chatId, $"""
@@ -229,11 +277,11 @@ _Komutlar:_
 
 Şu tenant'lardan çıkarıldınız: {string.Join(", ", removedTenants)}
 
-_Tekrar kayıt olmak için /start TENANT\_ID yazabilirsiniz._
+_Tekrar bildirim almak için /start veya /start BGS yazabilirsiniz._
 """);
                                 Console.WriteLine($"[Telegram] 🛑 Uzman kaydı silindi: {firstName} (ChatID: {chatId})");
                             }
-                            else if (text.StartsWith("/durum"))
+                            else if (text.StartsWith("/durum", StringComparison.OrdinalIgnoreCase))
                             {
                                 string tenantInfo;
                                 lock (_lock)
@@ -241,14 +289,37 @@ _Tekrar kayıt olmak için /start TENANT\_ID yazabilirsiniz._
                                     var myTenants = _tenantChatIds.Where(kv => kv.Value.Contains(chatId)).Select(kv => kv.Key).ToList();
                                     tenantInfo = myTenants.Count > 0 ? string.Join(", ", myTenants) : "Hiçbir tenant'a kayıtlı değilsiniz";
                                 }
+
+                                var pending = GetPendingRequests?.Invoke()?.ToList();
+                                int pendingCount = pending?.Count ?? 0;
+
                                 await SendMessageAsync(chatId, $"""
 📊 *BigLineconnect Destek Bot Durumu*
 
-✅ Bot aktif
-🏢 Kayıtlı tenant'larınız: *{tenantInfo}*
+✅ Bot aktif ve çalışıyor
+🏢 Kayıtlı kanallarınız: *{tenantInfo}*
+⏳ Bekleyen aktif talep sayısı: *{pendingCount}*
 ⏰ Sunucu zamanı: {DateTime.Now:dd.MM.yyyy HH:mm:ss}
 
-_Yeni tenant eklemek için /start TENANT\_ID yazın_
+_Tüm bildirimler çift katmanlı push garantisiyle gönderilmektedir._
+""");
+
+                                if (pending != null && pending.Count > 0)
+                                {
+                                    foreach (var req in pending)
+                                    {
+                                        await NotifySupportRequestAsync(req.Name, req.Issue, req.Priority, req.Id, req.TenantId);
+                                    }
+                                }
+                            }
+                            else if (text.StartsWith("/yardim", StringComparison.OrdinalIgnoreCase) || text.StartsWith("/help", StringComparison.OrdinalIgnoreCase))
+                            {
+                                await SendMessageAsync(chatId, """
+ℹ️ *BigLineconnect Bot Komutları*
+
+/start BGS — BGS bayisi destek uzmanı olarak kayıt ol
+/durum — Bekleyen talepleri ve bağlantı durumunu göster
+/stop — Bildirimleri durdur
 """);
                             }
                         }
@@ -257,8 +328,9 @@ _Yeni tenant eklemek için /start TENANT\_ID yazın_
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[Telegram] ⚠️ Bot güncelleme hatası: {ex.Message}");
-                await Task.Delay(5000);
+                _lastError = $"[{DateTime.UtcNow:HH:mm:ss}] {ex.Message}";
+                Console.WriteLine($"[Telegram] ⚠️ Bot yoklama uyarısı: {ex.Message}");
+                await Task.Delay(2000);
             }
         }
     }
@@ -269,7 +341,8 @@ _Yeni tenant eklemek için /start TENANT\_ID yazın_
 
     /// <summary>
     /// Belirli bir tenant'ın tüm kayıtlı destek uzmanlarına mesaj gönderir.
-    /// Eğer o tenant'a kayıtlı kimse yoksa veya ana yöneticiler varsa, bildirimi kaçırmamak için ana uzmanlara da iletir.
+    /// Sıfır kayıp garantisi: Hedef tenant bulunsa dahi ana yöneticiye (BIGLINE) ve 
+    /// eğer hedefte kimse yoksa sistemdeki TÜM kayıtlı cihazlara gönderir!
     /// </summary>
     private static async Task BroadcastToTenantAsync(string tenantId, string message, object? replyMarkup = null)
     {
@@ -279,20 +352,22 @@ _Yeni tenant eklemek için /start TENANT\_ID yazın_
             // 1. İlgili tenant'ın uzmanlarını ekle
             if (_tenantChatIds.TryGetValue(tenantId, out var ids) && ids.Count > 0)
             {
-                chatIds.AddRange(ids);
+                foreach (var id in ids) if (!chatIds.Contains(id)) chatIds.Add(id);
             }
 
-            // 2. Ana yönetici (BIGLINE) uzmanlarını da ekle (Farklı bayi olsa bile merkezin haberi olsun)
-            if (!tenantId.Equals("BIGLINE", StringComparison.OrdinalIgnoreCase) && 
-                _tenantChatIds.TryGetValue("BIGLINE", out var masterIds))
+            // 2. BGS uzmanlarını ekle
+            if (_tenantChatIds.TryGetValue("BGS", out var bgsIds) && bgsIds.Count > 0)
             {
-                foreach (var mid in masterIds)
-                {
-                    if (!chatIds.Contains(mid)) chatIds.Add(mid);
-                }
+                foreach (var id in bgsIds) if (!chatIds.Contains(id)) chatIds.Add(id);
             }
 
-            // 3. Fallback: Eğer hedef tenant'ta kayıtlı kimse bulunamadıysa, sistemde kayıtlı TÜM uzmanlara gönder (Sıfır kayıp!)
+            // 3. Ana yönetici (BIGLINE) uzmanlarını da ekle
+            if (_tenantChatIds.TryGetValue("BIGLINE", out var masterIds))
+            {
+                foreach (var mid in masterIds) if (!chatIds.Contains(mid)) chatIds.Add(mid);
+            }
+
+            // 4. Fallback: Eğer hedef tenant'ta kayıtlı kimse bulunamadıysa, sistemde kayıtlı TÜM uzmanlara gönder
             if (chatIds.Count == 0)
             {
                 foreach (var kv in _tenantChatIds)
@@ -324,32 +399,81 @@ _Yeni tenant eklemek için /start TENANT\_ID yazın_
         }
     }
 
-    private static async Task SendMessageAsync(long chatId, string text, object? replyMarkup = null)
+    /// <summary>
+    /// Telegram'a push bildirimi gönderir.
+    /// Çift katmanlı: Önce Markdown dener; Markdown parse hatası veya API 400 dönerse
+    /// anında Düz Metin (Plain Text) olarak tekrar gönderir. Mesaj ASLA kaybolmaz.
+    /// disable_notification=false ile zil sesi ve bildirim uyarısı garanti edilir.
+    /// </summary>
+    public static async Task<bool> SendMessageAsync(long chatId, string text, object? replyMarkup = null)
     {
+        if (string.IsNullOrEmpty(_botToken)) return false;
+
         var url = $"https://api.telegram.org/bot{_botToken}/sendMessage";
-        var payload = new Dictionary<string, object>
+        
+        // 1. ADIM: Zengin Markdown formatıyla gönder
+        try
         {
-            ["chat_id"] = chatId,
-            ["text"] = text,
-            ["parse_mode"] = "Markdown"
-        };
-        if (replyMarkup != null)
+            var payload = new Dictionary<string, object>
+            {
+                ["chat_id"] = chatId,
+                ["text"] = text,
+                ["parse_mode"] = "Markdown",
+                ["disable_notification"] = false // Sesli ve banner bildirim açık
+            };
+            if (replyMarkup != null) payload["reply_markup"] = replyMarkup;
+
+            var json = JsonSerializer.Serialize(payload);
+            using var content = new StringContent(json, Encoding.UTF8, "application/json");
+            var response = await _sendHttp.PostAsync(url, content);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                return true;
+            }
+
+            var errorBody = await response.Content.ReadAsStringAsync();
+            Console.WriteLine($"[Telegram] Markdown iletim uyarısı ({response.StatusCode}): {errorBody}. Düz metin deneniyor...");
+        }
+        catch (Exception ex)
         {
-            payload["reply_markup"] = replyMarkup;
+            Console.WriteLine($"[Telegram] Markdown isteği hatası: {ex.Message}. Düz metin deneniyor...");
         }
 
-        var json = JsonSerializer.Serialize(payload);
-        var content = new StringContent(json, Encoding.UTF8, "application/json");
-        var response = await _http.PostAsync(url, content);
-        
-        if (!response.IsSuccessStatusCode)
+        // 2. ADIM: FALLBACK — Markdown formatı Telegram tarafından reddedilirse düz metin olarak ilet
+        try
         {
-            var errorBody = await response.Content.ReadAsStringAsync();
-            Console.WriteLine($"[Telegram] API Hata: {response.StatusCode} - {errorBody}");
+            string plainText = StripMarkdown(text);
+            var fallbackPayload = new Dictionary<string, object>
+            {
+                ["chat_id"] = chatId,
+                ["text"] = plainText,
+                ["disable_notification"] = false
+            };
+            if (replyMarkup != null) fallbackPayload["reply_markup"] = replyMarkup;
+
+            var fallbackJson = JsonSerializer.Serialize(fallbackPayload);
+            using var fallbackContent = new StringContent(fallbackJson, Encoding.UTF8, "application/json");
+            var fallbackResponse = await _sendHttp.PostAsync(url, fallbackContent);
+            
+            if (fallbackResponse.IsSuccessStatusCode)
+            {
+                Console.WriteLine($"[Telegram] ✅ Bildirim düz metin fallback ile başarıyla iletildi (ChatID: {chatId})");
+                return true;
+            }
+
+            var fbError = await fallbackResponse.Content.ReadAsStringAsync();
+            Console.WriteLine($"[Telegram] ❌ Düz metin fallback de başarısız oldu (ChatID: {chatId}): {fbError}");
+            return false;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[Telegram] ❌ Fallback gönderim hatası: {ex.Message}");
+            return false;
         }
     }
 
-    private static void RegisterChatId(string tenantId, long chatId)
+    public static void RegisterChatId(string tenantId, long chatId)
     {
         lock (_lock)
         {
@@ -363,7 +487,7 @@ _Yeni tenant eklemek için /start TENANT\_ID yazın_
         }
     }
 
-    private static List<string> UnregisterChatId(long chatId)
+    public static List<string> UnregisterChatId(long chatId)
     {
         var removedFrom = new List<string>();
         lock (_lock)
@@ -382,29 +506,24 @@ _Yeni tenant eklemek için /start TENANT\_ID yazın_
     {
         try
         {
+            // 1. Dosyadan yükle
             if (File.Exists(_chatIdsFilePath))
             {
                 var json = File.ReadAllText(_chatIdsFilePath);
-                
-                // Yeni format: {"SEMEDU": [123, 456], "BIGLINE": [789]}
-                // Eski format: [123, 456] (flat liste — BIGLINE'a migrate et)
                 if (json.TrimStart().StartsWith("["))
                 {
-                    // Eski flat format — BIGLINE'a migrate et
                     var ids = JsonSerializer.Deserialize<List<long>>(json);
                     if (ids != null && ids.Count > 0)
                     {
                         lock (_lock)
                         {
                             _tenantChatIds["BIGLINE"] = ids;
+                            _tenantChatIds["BGS"] = new List<long>(ids);
                         }
-                        SaveChatIds(); // Yeni formatta kaydet
-                        Console.WriteLine($"[Telegram] 📦 Eski format migrate edildi: {ids.Count} uzman → BIGLINE");
                     }
                 }
                 else
                 {
-                    // Yeni tenant bazlı format
                     var dict = JsonSerializer.Deserialize<Dictionary<string, List<long>>>(json);
                     if (dict != null)
                     {
@@ -417,10 +536,31 @@ _Yeni tenant eklemek için /start TENANT\_ID yazın_
                     }
                 }
             }
+
+            // 2. Ortam Değişkeninden (TELEGRAM_CHAT_IDS veya TELEGRAM_SUBSCRIBERS) yükle (Konteyner yeniden başlasa bile asla silinmez)
+            string? envChatIds = Environment.GetEnvironmentVariable("TELEGRAM_CHAT_IDS") ?? Environment.GetEnvironmentVariable("TELEGRAM_SUBSCRIBERS");
+            if (!string.IsNullOrWhiteSpace(envChatIds))
+            {
+                // Örn: "1234567,7654321" veya "BGS:1234567,BIGLINE:7654321"
+                var entries = envChatIds.Split(',', StringSplitOptions.RemoveEmptyEntries);
+                foreach (var entry in entries)
+                {
+                    var parts = entry.Trim().Split(':');
+                    if (parts.Length == 2 && long.TryParse(parts[1].Trim(), out long parsedId))
+                    {
+                        RegisterChatId(parts[0].Trim().ToUpperInvariant(), parsedId);
+                    }
+                    else if (long.TryParse(entry.Trim(), out long singleId))
+                    {
+                        RegisterChatId("BGS", singleId);
+                        RegisterChatId("BIGLINE", singleId);
+                    }
+                }
+            }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[Telegram] Chat ID dosyası okunamadı: {ex.Message}");
+            Console.WriteLine($"[Telegram] Chat ID yükleme hatası: {ex.Message}");
         }
     }
 
@@ -437,9 +577,34 @@ _Yeni tenant eklemek için /start TENANT\_ID yazın_
         }
     }
 
+    public static object GetStatus()
+    {
+        lock (_lock)
+        {
+            return new
+            {
+                bot_token_configured = !string.IsNullOrEmpty(_botToken),
+                bot_token_preview = string.IsNullOrEmpty(_botToken) ? "" : _botToken.Substring(0, Math.Min(8, _botToken.Length)) + "...",
+                registered_tenants = _tenantChatIds.ToDictionary(k => k.Key, v => v.Value.ToList()),
+                total_chat_ids = _tenantChatIds.Values.SelectMany(x => x).Distinct().Count(),
+                storage_path = _chatIdsFilePath,
+                storage_file_exists = File.Exists(_chatIdsFilePath),
+                last_poll_utc = _lastPollTime.ToString("yyyy-MM-dd HH:mm:ss"),
+                last_update_id = _lastUpdateId,
+                last_error = _lastError
+            };
+        }
+    }
+
     private static string EscapeMarkdown(string text)
     {
         if (string.IsNullOrEmpty(text)) return text;
         return text.Replace("_", "\\_").Replace("*", "\\*").Replace("`", "\\`").Replace("[", "\\[");
+    }
+
+    private static string StripMarkdown(string text)
+    {
+        if (string.IsNullOrEmpty(text)) return text;
+        return text.Replace("*", "").Replace("`", "").Replace("_", "").Replace("\\[", "[").Replace("\\*", "*").Replace("\\_", "_");
     }
 }

@@ -3181,9 +3181,37 @@ using System.IO;
                 }
             });
 
-            // 📱 Telegram Destek Bot — Başlat
+            // 📱 Telegram Destek Bot — Başlat ve Bekleyen Talep Sorgusunu Bağla
+            TelegramNotifier.GetPendingRequests = () => ActiveSupportRequests.Values.Select(r => new TelegramNotifier.PendingSupportInfo
+            {
+                Id = r.Id,
+                Name = r.Name,
+                Issue = r.Issue,
+                Priority = r.Priority,
+                TenantId = r.TenantId,
+                CreatedAt = r.CreatedAt
+            }).ToList();
+
             TelegramNotifier.Initialize();
             _ = Task.Run(() => TelegramNotifier.ProcessBotUpdatesAsync());
+
+            // 📱 Telegram Durum ve Yönetim API Endpoints
+            app.MapGet("/api/telegram/status", () => Results.Ok(TelegramNotifier.GetStatus()));
+            app.MapGet("/api/telegram/register", (string? tenant, long? chatId) =>
+            {
+                if (chatId == null || chatId <= 0) return Results.BadRequest("chatId parameter is required");
+                string t = string.IsNullOrWhiteSpace(tenant) ? "BGS" : tenant.Trim().ToUpperInvariant();
+                TelegramNotifier.RegisterChatId(t, chatId.Value);
+                TelegramNotifier.RegisterChatId("BGS", chatId.Value);
+                TelegramNotifier.RegisterChatId("BIGLINE", chatId.Value);
+                return Results.Ok(new { success = true, tenant = t, chatId = chatId.Value });
+            });
+            app.MapGet("/api/telegram/test", async (string? tenant) =>
+            {
+                string t = string.IsNullOrWhiteSpace(tenant) ? "BGS" : tenant.Trim().ToUpperInvariant();
+                await TelegramNotifier.NotifySupportRequestAsync("Test Müşterisi", "Test bildirim mesajı (Ses & Banner Kontrolü)", "🔴 Yüksek", "999888777", t);
+                return Results.Ok(new { success = true, message = $"Test bildirimi '{t}' kanalına gönderildi." });
+            });
 
             // Start server
             app.Run();
