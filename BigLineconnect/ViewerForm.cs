@@ -193,7 +193,7 @@ namespace BigLineconnect
                     _isLanDirectActive = true;
 
                     // Send default quality mode on the new direct socket
-                    byte[] qPkt = Encoding.UTF8.GetBytes("{\"type\":\"set_quality\",\"quality\":75,\"maxDim\":0}");
+                    byte[] qPkt = Encoding.UTF8.GetBytes("{\"type\":\"set_quality\",\"quality\":68,\"maxDim\":0}");
                     try { await _ws.SendAsync(new ArraySegment<byte>(qPkt), WebSocketMessageType.Text, true, CancellationToken.None); } catch { }
 
                     this.BeginInvoke(new Action(() =>
@@ -491,28 +491,28 @@ namespace BigLineconnect
                 if (mode == "low")
                 {
                     btnQuality.Text = "⚡ Düşük";
-                    if (sendPacket) SendJson("{\"type\":\"set_quality\",\"quality\":35,\"maxDim\":0}");
+                    if (sendPacket) SendJson("{\"type\":\"set_quality\",\"quality\":38,\"maxDim\":1280}");
                 }
                 else if (mode == "mid")
                 {
                     btnQuality.Text = "🎨 İyi (HD)";
-                    if (sendPacket) SendJson("{\"type\":\"set_quality\",\"quality\":75,\"maxDim\":0}");
+                    if (sendPacket) SendJson("{\"type\":\"set_quality\",\"quality\":68,\"maxDim\":0}");
                 }
                 else if (mode == "high")
                 {
                     btnQuality.Text = "💎 En İyi";
-                    if (sendPacket) SendJson("{\"type\":\"set_quality\",\"quality\":95,\"maxDim\":0}");
+                    if (sendPacket) SendJson("{\"type\":\"set_quality\",\"quality\":82,\"maxDim\":0}");
                 }
                 else if (mode == "auto")
                 {
                     btnQuality.Text = "🚀 Otomatik";
-                    if (sendPacket) SendJson("{\"type\":\"set_quality\",\"quality\":75,\"maxDim\":0}");
+                    if (sendPacket) SendJson("{\"type\":\"set_quality\",\"quality\":68,\"maxDim\":0}");
                 }
             }
 
-            itemLow = new ToolStripMenuItem("⚡ Düşük (Ultra Hızlı / Bant Tasarrufu)", null, (s, e) => SetQualityMode("low"));
-            itemMid = new ToolStripMenuItem("🎨 İyi (Dengeli HD - Varsayılan)", null, (s, e) => SetQualityMode("mid"));
-            itemHigh = new ToolStripMenuItem("💎 En İyi (Ultra HD Kristal Netlik)", null, (s, e) => SetQualityMode("high"));
+            itemLow = new ToolStripMenuItem("⚡ Düşük (Ultra Hızlı / 720p)", null, (s, e) => SetQualityMode("low"));
+            itemMid = new ToolStripMenuItem("🎨 İyi (HD 1080p - Dengeli)", null, (s, e) => SetQualityMode("mid"));
+            itemHigh = new ToolStripMenuItem("💎 En İyi (Kristal Netlik / 1080p)", null, (s, e) => SetQualityMode("high"));
             itemAuto = new ToolStripMenuItem("🚀 Otomatik (Akıllı Ağ Uyarlamalı)", null, (s, e) => SetQualityMode("auto"));
 
             itemMid.Checked = true;
@@ -747,7 +747,7 @@ namespace BigLineconnect
                 await _ws.ConnectAsync(new Uri(_wsUrl), CancellationToken.None);
                 
                 // Enforce default quality mode (Native res / Q=55 HD) for razor-sharp fonts and crystal-clear text
-                SendJson("{\"type\":\"set_quality\",\"quality\":75,\"maxDim\":0}");
+                SendJson("{\"type\":\"set_quality\",\"quality\":68,\"maxDim\":0}");
 
                 // Launch immediate parallel LAN Direct probe for 0ms local socket auto-switch
                 StartP2pAndLanProbe();
@@ -1589,7 +1589,7 @@ namespace BigLineconnect
                     }));
 
                     // Re-send quality mode
-                    SendJson("{\"type\":\"set_quality\",\"quality\":75,\"maxDim\":0}");
+                    SendJson("{\"type\":\"set_quality\",\"quality\":68,\"maxDim\":0}");
 
                     // If we have saved password, re-authenticate automatically
                     if (!string.IsNullOrEmpty(_savedPassword))

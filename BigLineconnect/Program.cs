@@ -1311,7 +1311,7 @@ namespace BigLineconnect
             }
         }
 
-        public static int CurrentQuality { get; set; } = 55;
+        public static int CurrentQuality { get; set; } = 68;
         public static int CurrentMaxDimension { get; set; } = 0; // 0 = 100% Native Pixel-Perfect Resolution (No Blurring/Downscaling)
         public static bool SuppressWallpaperEnabled { get; set; } = true;
 
@@ -1419,6 +1419,7 @@ namespace BigLineconnect
 
         private static uint _currentFrameSeq = 0;
         private static volatile uint _lastAckedFrameSeq = 0;
+        private static readonly AutoResetEvent _frameAckEvent = new AutoResetEvent(false);
         private static DateTime _lastFrameSendTime = DateTime.MinValue;
         private static volatile bool _is3GSlowLink = false; // Auto-detected from ACK latency in SendStreamLoop
 
@@ -1432,6 +1433,7 @@ namespace BigLineconnect
                 _lastSentFrameHash = 0;
                 _currentFrameSeq = 0;
                 _lastAckedFrameSeq = 0;
+                _frameAckEvent.Reset();
                 BigLineRtEngine.Reset();
                 _lastSentFrameTime = DateTime.MinValue;
                 _isSendingFrame = false;
@@ -1491,6 +1493,23 @@ namespace BigLineconnect
                     {
                         await Task.Delay(2, token).ConfigureAwait(false);
                         continue;
+                    }
+
+                    // ── In-Flight Flow Control / Anti-Bufferbloat Gate ──
+                    // Prevents TCP socket buffer overfill which causes the multi-second slow-motion choke!
+                    // If the viewer has not acknowledged the previous frame yet, wait for ACK (max 100ms).
+                    // The moment the viewer receives the frame, ACK arrives and wakes this up INSTANTLY (0ms).
+                    if (speedProbeComplete && _lastAckedFrameSeq > 0)
+                    {
+                        int inFlight = unchecked((int)(_currentFrameSeq - _lastAckedFrameSeq));
+                        if (inFlight >= 1)
+                        {
+                            if (!_frameAckEvent.WaitOne(100))
+                            {
+                                // Timeout fallback: if ACK was dropped on network, unstick sequence so stream never hangs
+                                _lastAckedFrameSeq = _currentFrameSeq;
+                            }
+                        }
                     }
 
                     byte[]? frameToSend = null;
@@ -1575,6 +1594,7 @@ namespace BigLineconnect
                     _lastAckedFrameSeq = ackSeq;
                 }
                 AdaptiveRateController.RecordAck(ackSeq);
+                _frameAckEvent.Set(); // Wake SendStreamLoop immediately on receiving ACK!
                 return;
             }
 
@@ -1760,6 +1780,8 @@ namespace BigLineconnect
                     CurrentMaxDimension = maxDim;
                     _lastSentFrameBytes = null;
                     _lastSentFrameHash = 0;
+                    _lastAckedFrameSeq = _currentFrameSeq; // Instantly unblock in-flight gate so new quality sends immediately!
+                    _frameAckEvent.Set(); // Wake up SendStreamLoop immediately!
                     BigLineRtEngine.Reset(); // Wipe tile hash cache so EVERY tile is immediately re-encoded with the new chosen quality!
                     ScreenCapturer.ForceKeyframeRequested = true;
                     TriggerInstantCapture(5);
