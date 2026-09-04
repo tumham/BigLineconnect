@@ -485,7 +485,7 @@ namespace BigLineconnect
                 if (mode == "low")
                 {
                     btnQuality.Text = "⚡ Düşük";
-                    if (sendPacket) SendJson("{\"type\":\"set_quality\",\"quality\":38,\"maxDim\":1280}");
+                    if (sendPacket) SendJson("{\"type\":\"set_quality\",\"quality\":40,\"maxDim\":0}");
                 }
                 else if (mode == "mid")
                 {
@@ -504,7 +504,7 @@ namespace BigLineconnect
                 }
             }
 
-            itemLow = new ToolStripMenuItem("⚡ Düşük (Ultra Hızlı / 720p)", null, (s, e) => SetQualityMode("low"));
+            itemLow = new ToolStripMenuItem("⚡ Düşük (Ultra Hızlı / Performans)", null, (s, e) => SetQualityMode("low"));
             itemMid = new ToolStripMenuItem("🎨 İyi (HD 1080p - Dengeli)", null, (s, e) => SetQualityMode("mid"));
             itemHigh = new ToolStripMenuItem("💎 En İyi (Kristal Netlik / 1080p)", null, (s, e) => SetQualityMode("high"));
             itemAuto = new ToolStripMenuItem("🚀 Otomatik (Akıllı Ağ Uyarlamalı)", null, (s, e) => SetQualityMode("auto"));
@@ -1648,11 +1648,9 @@ namespace BigLineconnect
             if (data == null || data.Length == 0) return;
             if (_ws == null || _ws.State != WebSocketState.Open) return;
 
-            // CRITICAL: Mouse clicks and keyboard events MUST NOT wait in the semaphore queue!
-            // AnyDesk dispatches clicks instantly — we must do the same.
-            // Fire-and-forget: send immediately without waiting for mouse move semaphore.
             _ = Task.Run(async () =>
             {
+                await _sendSemaphore.WaitAsync().ConfigureAwait(false);
                 try
                 {
                     if (_ws != null && _ws.State == WebSocketState.Open)
@@ -1661,6 +1659,10 @@ namespace BigLineconnect
                     }
                 }
                 catch { }
+                finally
+                {
+                    _sendSemaphore.Release();
+                }
             });
         }
 

@@ -303,6 +303,12 @@ namespace BigLineconnect
         [DllImport("user32.dll", SetLastError = true)]
         private static extern bool SetProcessDPIAware();
 
+        [DllImport("winmm.dll", EntryPoint = "timeBeginPeriod", SetLastError = true)]
+        public static extern uint TimeBeginPeriod(uint uMilliseconds);
+
+        [DllImport("winmm.dll", EntryPoint = "timeEndPeriod", SetLastError = true)]
+        public static extern uint TimeEndPeriod(uint uMilliseconds);
+
         public const byte FileTransferTag = 0x46; // 'F'
 
         public static void HandleIncomingFileChunkBinary(byte[] pkt)
@@ -461,6 +467,14 @@ namespace BigLineconnect
                         return; // Exit non-admin instance
                     }
                 }
+            }
+            catch { }
+
+            // ═══ HIGH-PRECISION 1MS TIMER RESOLUTION: Unlock maximum speed matching Alpemix ═══
+            try
+            {
+                TimeBeginPeriod(1);
+                AppDomain.CurrentDomain.ProcessExit += (s, e) => { try { TimeEndPeriod(1); } catch { } };
             }
             catch { }
 
@@ -1564,16 +1578,18 @@ namespace BigLineconnect
 
                     // ── In-Flight Flow Control / Anti-Bufferbloat Gate ──
                     // Prevents TCP socket buffer overfill which causes the multi-second slow-motion choke!
-                    // If the viewer has not acknowledged the previous frame yet, wait for ACK (max 100ms).
+                    // If in-flight frames exceed threshold (1 for 3G, 2 for Broadband), wait for ACK (max 35ms on broadband, 100ms on 3G).
                     // The moment the viewer receives the frame, ACK arrives and wakes this up INSTANTLY (0ms).
                     if (speedProbeComplete && _lastAckedFrameSeq > 0)
                     {
                         int inFlight = unchecked((int)(_currentFrameSeq - _lastAckedFrameSeq));
-                        if (inFlight >= 1)
+                        int maxInFlight = is3GMode ? 1 : 2;
+                        if (inFlight >= maxInFlight)
                         {
-                            if (!_frameAckEvent.WaitOne(100))
+                            int waitTimeoutMs = is3GMode ? 100 : 35;
+                            if (!_frameAckEvent.WaitOne(waitTimeoutMs))
                             {
-                                // Timeout fallback: if ACK was dropped on network, unstick sequence so stream never hangs
+                                // Timeout fallback: unstick sequence so stream never hangs or accumulates backlog
                                 _lastAckedFrameSeq = _currentFrameSeq;
                             }
                         }
@@ -1598,8 +1614,8 @@ namespace BigLineconnect
                         // NEVER spam full/duplicate image frames on an idle screen!
                         if (!isDuplicate || isInitialBurst || isForcedBurst)
                         {
-                            // 3G: 10 FPS max | Normal: 40 FPS (Kota tasarrufu, ultra akıcı)
-                            int minIntervalMs = is3GMode ? 100 : 25;
+                            // 3G: 10 FPS max | Normal: 60 FPS (Full speed, ultra akıcı)
+                            int minIntervalMs = is3GMode ? 100 : 16;
                             if (isInitialBurst || isForcedBurst || (DateTime.Now - _lastSentFrameTime).TotalMilliseconds >= minIntervalMs)
                             {
                                 _isSendingFrame = true;

@@ -239,9 +239,9 @@ namespace BigLineconnect
                 using (Bitmap subBmp = bmpScreen.Clone(new Rectangle(x, y, w, h), PixelFormat.Format32bppRgb))
                 using (MemoryStream subMs = new MemoryStream(1024 * 16))
                 {
-                    // Ultra-fast JPEG encoding at quality Math.Max(quality, 78)
+                    // Ultra-fast JPEG encoding honoring low quality when selected
                     // Encodes in 0.5ms with tiny 1.5 - 3 KB footprint!
-                    int subQuality = Math.Max(quality, 78);
+                    int subQuality = quality < 50 ? quality : Math.Max(quality, 75);
                     using (EncoderParameters encoderParams = new EncoderParameters(1))
                     using (EncoderParameter encoderParam = new EncoderParameter(Encoder.Quality, (long)subQuality))
                     {
