@@ -336,6 +336,7 @@
                 </div>
             </div>
             <div class="header-right">
+                <button id="hd-toggle-btn" class="icon-btn" title="Ultra HD Netlik Modu" onclick="toggleHdQuality()" style="color: #00e5ff; font-weight: 900; font-size: 0.85rem; border: 1.5px solid rgba(0,229,255,0.5); border-radius: 8px; padding: 3px 8px; margin-right: 4px; background: rgba(0,229,255,0.12);">HD ✨</button>
                 <button id="upload-file-btn" class="icon-btn" title="Dosya Gönder" onclick="triggerFileTransfer()" style="color: #2ecc71;"><i class="fa-solid fa-file-arrow-up"></i></button>
                 <button id="fullscreen-btn" class="icon-btn" title="Tam Ekran"><i class="fa-solid fa-expand"></i></button>
                 <button id="disconnect-btn" class="icon-btn danger" title="Bağlantıyı Kes"><i class="fa-solid fa-power-off"></i></button>
@@ -352,9 +353,9 @@
         </div>
 
         <!-- Remote screen rendering canvas container (Only contains canvas & img, zoomed independently) -->
-        <div class="canvas-container" id="canvas-container">
-            <canvas id="screen-canvas" style="max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; margin: auto; cursor: default; display: block; user-select: none; image-rendering: auto; -webkit-font-smoothing: antialiased; will-change: transform;"></canvas>
-            <img id="screen-img" style="max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; margin: auto; display: none;">
+        <div class="canvas-container" id="canvas-container" style="touch-action: none; position: relative; overflow: hidden;">
+            <canvas id="screen-canvas" style="width: auto; height: auto; margin: auto; cursor: default; display: block; user-select: none; image-rendering: -webkit-optimize-contrast; image-rendering: high-quality; -webkit-font-smoothing: antialiased;"></canvas>
+            <img id="screen-img" style="width: auto; height: auto; margin: auto; display: none;">
         </div>
 
         <!-- Floating Controls for Mobile & Actions (Stationary at bottom, never zooms, highest z-index) -->
@@ -384,9 +385,9 @@
                 <i class="fa-solid fa-computer-mouse"></i> <span id="mouse-mode-text">Sol Tık</span>
             </button>
 
-            <!-- Zoom Reset -->
-            <button id="zoom-reset-btn" type="button" class="control-btn" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); color: #a0aec0; border-radius: 20px; padding: 7px 8px; font-size: 0.75rem; font-weight: 800; cursor: pointer; touch-action: manipulation; flex-shrink: 0;">
-                100%
+            <!-- Zoom / Büyüt (Mikro Jump ERP HD Okuma) -->
+            <button id="zoom-reset-btn" type="button" class="control-btn" style="background: linear-gradient(135deg, rgba(0, 229, 255, 0.3), rgba(16, 185, 129, 0.3)); border: 1.5px solid #00e5ff; color: #00e5ff; border-radius: 20px; padding: 7px 11px; font-size: 0.88rem; font-weight: 900; cursor: pointer; display: flex; align-items: center; gap: 5px; box-shadow: 0 0 14px rgba(0, 229, 255, 0.35); touch-action: manipulation; flex-shrink: 0;">
+                <i class="fa-solid fa-magnifying-glass-plus"></i> <span id="zoom-btn-text">🔍 Büyüt (HD)</span>
             </button>
 
             <!-- Sonuç / Kapat (Çözüldü / Çözülmedi / İncelenecek) -->
@@ -993,6 +994,9 @@
             ws.onopen = function() {
                 console.log('[BigLine] WS Connected!');
                 isConnecting = false;
+                try {
+                    ws.send(JSON.stringify({ type: 'set_quality', quality: 92, maxDim: 0 }));
+                } catch(e) {}
                 if (pingInterval) clearInterval(pingInterval);
                 pingInterval = setInterval(function() {
                     if (ws && ws.readyState === WebSocket.OPEN) {
@@ -1021,6 +1025,9 @@
                             ws.close();
                         }
                     } else if (ev.data === 'AUTH_SUCCESS') {
+                        try {
+                            ws.send(JSON.stringify({ type: 'set_quality', quality: 92, maxDim: 0 }));
+                        } catch(e) {}
                         if (typeof window.startFreeSessionTimer === 'function') window.startFreeSessionTimer();
                         var landing = document.getElementById('landing-page');
                         var viewer = document.getElementById('viewer-screen');
@@ -1029,6 +1036,11 @@
                             viewer.style.setProperty('display', 'flex', 'important');
                             viewer.style.setProperty('pointer-events', 'auto', 'important');
                             viewer.style.setProperty('z-index', '999999', 'important');
+                        }
+                        if (window.innerWidth < 768) {
+                            setTimeout(function() {
+                                showToast('🔍 Mikro Jump yazılarını büyütmek için alttaki "🔍 Büyüt" tuşuna dokunun!', 'info');
+                            }, 1500);
                         }
                     } else {
                         try { showToast(ev.data, 'info'); } catch(e) {}
@@ -1094,7 +1106,11 @@
                                 var blob = new Blob([jpegBytes], { type: 'image/jpeg' });
                                 if (window.createImageBitmap) {
                                     createImageBitmap(blob).then(function(bmp) {
-                                        if (ctx) ctx.drawImage(bmp, 0, 0);
+                                        if (ctx) {
+                                            ctx.imageSmoothingEnabled = true;
+                                            ctx.imageSmoothingQuality = 'high';
+                                            ctx.drawImage(bmp, 0, 0);
+                                        }
                                         bmp.close();
                                         if (cv && cv.style.display !== 'block') cv.style.display = 'block';
                                     }).catch(function() { drawLegacy(blob, 0, 0, screenW, screenH); });
@@ -1118,7 +1134,11 @@
                                 var blob = new Blob([jpegBytes], { type: mimeType });
                                 if (window.createImageBitmap) {
                                     createImageBitmap(blob).then(function(bmp) {
-                                        if (ctx) ctx.drawImage(bmp, subX, subY, subW, subH);
+                                        if (ctx) {
+                                            ctx.imageSmoothingEnabled = true;
+                                            ctx.imageSmoothingQuality = 'high';
+                                            ctx.drawImage(bmp, subX, subY, subW, subH);
+                                        }
                                         bmp.close();
                                     }).catch(function() { drawLegacy(blob, subX, subY, subW, subH); });
                                 } else {
@@ -1146,7 +1166,11 @@
                                         cv.height = bmp.height;
                                         updateCanvasCssLayout();
                                     }
-                                    if (ctx) ctx.drawImage(bmp, 0, 0);
+                                    if (ctx) {
+                                        ctx.imageSmoothingEnabled = true;
+                                        ctx.imageSmoothingQuality = 'high';
+                                        ctx.drawImage(bmp, 0, 0);
+                                    }
                                     if (cv.style.display !== 'block') cv.style.display = 'block';
                                 }
                                 bmp.close();
@@ -1161,8 +1185,11 @@
                         var img = new Image();
                         img.onload = function() {
                             if (cv && ctx) {
-                                if (w && h) ctx.drawImage(img, x, y, w, h);
-                                else {
+                                ctx.imageSmoothingEnabled = true;
+                                ctx.imageSmoothingQuality = 'high';
+                                if (w && h) {
+                                    ctx.drawImage(img, x, y, w, h);
+                                } else {
                                     if (cv.width !== img.width || cv.height !== img.height) {
                                         cv.width = img.width; cv.height = img.height;
                                         updateCanvasCssLayout();
@@ -1207,7 +1234,11 @@
         window.doConnect = doConnect;
         window.startConnectionProcess = doConnect;
 
-        // ── 100% PİKSEL KUSURSUZ EN-BOY KİLİTLEME VE KALİBRASYON MOTORU ──
+        // ── ULTRA HD NETLİK VE DİNAMİK MASAÜSTÜ ÖLÇEKLEME MOTORU ──
+        var currentScale = 1.0;
+        var panX = 0, panY = 0;
+        var baseFitW = 0, baseFitH = 0;
+
         function updateCanvasCssLayout() {
             var cv = document.getElementById('screen-canvas');
             var container = document.getElementById('canvas-container');
@@ -1217,30 +1248,24 @@
             var nativeH = cv.height || 1080;
             if (nativeW <= 100 || nativeH <= 100) return;
 
-            var containerW = container.clientWidth;
-            var containerH = container.clientHeight;
+            var containerW = container.clientWidth || window.innerWidth;
+            var containerH = container.clientHeight || (window.innerHeight - 60);
             if (containerW <= 10 || containerH <= 10) return;
 
             var nativeAspect = nativeW / nativeH;
             var containerAspect = containerW / containerH;
 
-            var finalW, finalH;
             if (containerAspect > nativeAspect) {
-                // Ekran geniş (Masaüstü): Yüksekliğe tam otur
-                finalH = containerH;
-                finalW = containerH * nativeAspect;
+                // Ekran geniş (Masaüstü veya Yatay Mobil): Yüksekliğe tam otur
+                baseFitH = containerH;
+                baseFitW = containerH * nativeAspect;
             } else {
-                // Ekran dar ve dikey (MOBİL): Genişliğe tam otur
-                finalW = containerW;
-                finalH = containerW / nativeAspect;
+                // Ekran dar ve dikey (Dikey Mobil): Genişliğe tam otur
+                baseFitW = containerW;
+                baseFitH = containerW / nativeAspect;
             }
 
-            cv.style.width = Math.round(finalW) + 'px';
-            cv.style.height = Math.round(finalH) + 'px';
-            cv.style.maxWidth = 'none';
-            cv.style.maxHeight = 'none';
-            cv.style.margin = 'auto';
-            cv.style.display = 'block';
+            applyZoomTransform();
         }
         window.updateCanvasCssLayout = updateCanvasCssLayout;
         window.addEventListener('resize', updateCanvasCssLayout);
@@ -1251,11 +1276,8 @@
         // 100% Pixel-Perfect Direct Canvas Coordinate Mapping
         function getMousePos(clientX, clientY) {
             var cv = document.getElementById('screen-canvas');
-            var container = document.getElementById('canvas-container');
-            var targetEl = (cv && cv.style.display !== 'none' && cv.offsetWidth > 0) ? cv : container;
-
-            if (!targetEl) return { x: 0.5, y: 0.5 };
-            var rect = targetEl.getBoundingClientRect();
+            if (!cv) return { x: 0.5, y: 0.5 };
+            var rect = cv.getBoundingClientRect();
             if (rect.width <= 0 || rect.height <= 0) return { x: 0.5, y: 0.5 };
 
             var mouseX = clientX - rect.left;
@@ -1271,9 +1293,6 @@
         }
 
         // Mobile Zoom & Focal Point Pinch Engine
-        var currentScale = 1.0;
-        var panX = 0, panY = 0;
-        var originXPercent = 50, originYPercent = 50;
         var clickMode = 0; // 0: Sol Tık, 1: Çift Tık, 2: Sağ Tık
         var lastTapTime = 0, lastTapPos = null;
         var initialPinchDist = 0, initialPinchScale = 1.0;
@@ -1283,46 +1302,114 @@
         function applyZoomTransform() {
             var cv = document.getElementById('screen-canvas');
             var container = document.getElementById('canvas-container');
-            if (cv) {
-                cv.style.transformOrigin = originXPercent + '% ' + originYPercent + '%';
-                cv.style.transform = 'translate3d(' + panX + 'px, ' + panY + 'px, 0) scale(' + currentScale + ')';
-            } else if (container) {
-                container.style.transformOrigin = originXPercent + '% ' + originYPercent + '%';
-                container.style.transform = 'translate3d(' + panX + 'px, ' + panY + 'px, 0) scale(' + currentScale + ')';
+            if (!cv || !container) return;
+
+            var containerW = container.clientWidth || window.innerWidth;
+            var containerH = container.clientHeight || (window.innerHeight - 60);
+
+            if (baseFitW <= 0 || baseFitH <= 0) {
+                var nativeW = cv.width || 1920;
+                var nativeH = cv.height || 1080;
+                baseFitW = containerW;
+                baseFitH = containerW / (nativeW / nativeH);
+            }
+
+            // Gerçek piksel ölçekleme:
+            // CSS piksel boyutunu doğrudan büyüterek Retina ekranlarda 1920x1080 canvas tamponunun
+            // tam çözünürlükte (sıfır bulanıklıkla) çizilmesini sağlar.
+            var targetW = Math.round(baseFitW * currentScale);
+            var targetH = Math.round(baseFitH * currentScale);
+
+            cv.style.width = targetW + 'px';
+            cv.style.height = targetH + 'px';
+            cv.style.maxWidth = 'none';
+            cv.style.maxHeight = 'none';
+
+            if (currentScale <= 1.02) {
+                panX = 0;
+                panY = 0;
+                container.style.alignItems = 'center';
+                container.style.justifyContent = 'center';
+                cv.style.position = 'relative';
+                cv.style.top = 'auto';
+                cv.style.left = 'auto';
+                cv.style.margin = 'auto';
+                cv.style.transform = 'translate3d(0px, 0px, 0)';
+                cv.style.filter = 'none';
+            } else {
+                container.style.alignItems = 'flex-start';
+                container.style.justifyContent = 'flex-start';
+                cv.style.position = 'absolute';
+                cv.style.top = '0';
+                cv.style.left = '0';
+                cv.style.margin = '0';
+                var minPanX = Math.min(0, containerW - targetW);
+                var minPanY = Math.min(0, containerH - targetH);
+                panX = Math.max(minPanX, Math.min(0, panX));
+                panY = Math.max(minPanY, Math.min(0, panY));
+                cv.style.transform = 'translate3d(' + Math.round(panX) + 'px, ' + Math.round(panY) + 'px, 0)';
+                // Font keskinleştirme & Mikro Jump muhasebe kontrast artırıcı
+                cv.style.filter = 'contrast(108%) saturate(104%)';
             }
 
             var zoomBtn = document.getElementById('zoom-reset-btn');
             if (zoomBtn) {
-                zoomBtn.innerText = (currentScale === 1.0) ? '100%' : Math.round(currentScale * 100) + '%';
+                if (currentScale <= 1.02) {
+                    zoomBtn.innerHTML = '<i class="fa-solid fa-magnifying-glass-plus"></i> <span>🔍 Büyüt (HD)</span>';
+                    zoomBtn.style.color = '#00e5ff';
+                    zoomBtn.style.borderColor = '#00e5ff';
+                    zoomBtn.style.background = 'linear-gradient(135deg, rgba(0, 229, 255, 0.25), rgba(16, 185, 129, 0.25))';
+                } else if (currentScale < 2.8) {
+                    zoomBtn.innerHTML = '<i class="fa-solid fa-compress"></i> <span>🔍 %250 HD</span>';
+                    zoomBtn.style.color = '#2ecc71';
+                    zoomBtn.style.borderColor = '#2ecc71';
+                    zoomBtn.style.background = 'linear-gradient(135deg, rgba(46, 204, 113, 0.35), rgba(0, 229, 255, 0.35))';
+                } else {
+                    zoomBtn.innerHTML = '<i class="fa-solid fa-expand"></i> <span>💎 1:1 Ultra</span>';
+                    zoomBtn.style.color = '#f59e0b';
+                    zoomBtn.style.borderColor = '#f59e0b';
+                    zoomBtn.style.background = 'linear-gradient(135deg, rgba(245, 158, 11, 0.35), rgba(239, 68, 68, 0.35))';
+                }
             }
         }
+        window.applyZoomTransform = applyZoomTransform;
 
         function zoomIn() {
-            currentScale = Math.min(5.0, Math.round((currentScale + 0.4) * 10) / 10);
+            currentScale = Math.min(5.5, Math.round((currentScale + 0.5) * 10) / 10);
             applyZoomTransform();
         }
         window.zoomIn = zoomIn;
 
         function zoomOut() {
-            currentScale = Math.max(1.0, Math.round((currentScale - 0.4) * 10) / 10);
-            if (currentScale === 1.0) { panX = 0; panY = 0; originXPercent = 50; originYPercent = 50; }
+            currentScale = Math.max(1.0, Math.round((currentScale - 0.5) * 10) / 10);
             applyZoomTransform();
         }
         window.zoomOut = zoomOut;
 
         function resetZoom() {
-            if (currentScale <= 1.05) {
-                // Akıllı ERP Yakınlaştırma (Mikro Jump / Logo için 2.2x HD netlik modu)
-                currentScale = (window.innerWidth < 768) ? 2.2 : 1.5;
-                panX = 0; panY = 0;
-                originXPercent = 50; originYPercent = 50;
+            if (currentScale <= 1.02) {
+                // 1. Adım: %250 HD Netlik (Mikro Jump / Logo muhasebe menüleri için ideal okuma boyutu)
+                currentScale = 2.5;
+                panX = 0;
+                panY = 0; // Sol üst köşedeki menülere odaklan
                 if (typeof showToast === 'function') {
-                    showToast('🔍 %' + Math.round(currentScale * 100) + ' HD Yakınlaştırma Açıldı (Kaydırmak için sürükleyin)', 'info');
+                    showToast('🔍 %250 HD Netlik: Mikro yazıları büyütüldü! (Kaydırmak için sürükleyin)', 'success');
+                }
+            } else if (currentScale < 2.8) {
+                // 2. Adım: 1:1 Ultra Kristal Masaüstü
+                var cv = document.getElementById('screen-canvas');
+                var nativeW = (cv && cv.width) || 1920;
+                currentScale = Math.max(3.2, nativeW / (baseFitW || 390));
+                panX = 0;
+                panY = 0;
+                if (typeof showToast === 'function') {
+                    showToast('💎 1:1 Ultra Kristal: Gerçek masaüstü piksel netliği!', 'success');
                 }
             } else {
+                // 3. Adım: Tam ekran sığdırma
                 currentScale = 1.0;
-                panX = 0; panY = 0;
-                originXPercent = 50; originYPercent = 50;
+                panX = 0;
+                panY = 0;
                 if (typeof showToast === 'function') {
                     showToast('📱 Tam Ekran Sığdırıldı', 'info');
                 }
@@ -1330,6 +1417,14 @@
             applyZoomTransform();
         }
         window.resetZoom = resetZoom;
+
+        function toggleHdQuality() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'set_quality', quality: 95, maxDim: 0 }));
+                showToast('✨ Ultra HD Netlik Aktif (%95 Kalite, 4:4:4 Tam Renk & Kristal Netlik)', 'success');
+            }
+        }
+        window.toggleHdQuality = toggleHdQuality;
 
         function toggleMouseMode() {
             clickMode = (clickMode + 1) % 3;
@@ -1754,67 +1849,66 @@
 
             // Mobile Touch Engine: Focal Point Pinch Zoom + Pan + Tap & Hold
             var touchStartX = 0, touchStartY = 0, touchStartTime = 0, isTouchDragging = false;
+            var startPanX = 0, startPanY = 0;
 
             targetHost.addEventListener('touchstart', function(e) {
                 if (!ws || ws.readyState !== WebSocket.OPEN) return;
                 if (e.touches.length === 2) {
                     isPinchZooming = true;
+                    isTouchDragging = false;
                     var t1 = e.touches[0];
                     var t2 = e.touches[1];
-                    var midX = (t1.clientX + t2.clientX) / 2;
-                    var midY = (t1.clientY + t2.clientY) / 2;
-
-                    var rect = targetHost.getBoundingClientRect();
-                    if (rect.width > 0 && rect.height > 0) {
-                        originXPercent = Math.max(0, Math.min(100, ((midX - rect.left) / rect.width) * 100));
-                        originYPercent = Math.max(0, Math.min(100, ((midY - rect.top) / rect.height) * 100));
-                    }
-
                     initialPinchDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
                     initialPinchScale = currentScale;
-                    lastTouchMidX = midX;
-                    lastTouchMidY = midY;
+                    lastTouchMidX = (t1.clientX + t2.clientX) / 2;
+                    lastTouchMidY = (t1.clientY + t2.clientY) / 2;
                 } else if (e.touches.length === 1) {
                     isPinchZooming = false;
+                    isTouchDragging = false;
                     var t = e.touches[0];
                     touchStartX = t.clientX;
                     touchStartY = t.clientY;
                     touchStartTime = Date.now();
-                    isTouchDragging = false;
-                    var pos = getMousePos(t.clientX, t.clientY);
-                    safeSendMove(pos.x, pos.y);
+                    startPanX = panX;
+                    startPanY = panY;
                 }
             }, { passive: false });
 
             targetHost.addEventListener('touchmove', function(e) {
                 if (!ws || ws.readyState !== WebSocket.OPEN) return;
-                if (e.touches.length === 2) {
+                if (e.touches.length === 2 && isPinchZooming) {
                     var t1 = e.touches[0];
                     var t2 = e.touches[1];
+                    var dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
                     var midX = (t1.clientX + t2.clientX) / 2;
                     var midY = (t1.clientY + t2.clientY) / 2;
-                    var dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
 
                     if (initialPinchDist > 0) {
                         var factor = dist / initialPinchDist;
-                        currentScale = Math.max(1.0, Math.min(4.0, initialPinchScale * factor));
-
+                        currentScale = Math.max(1.0, Math.min(5.5, initialPinchScale * factor));
                         panX += (midX - lastTouchMidX);
                         panY += (midY - lastTouchMidY);
                         lastTouchMidX = midX;
                         lastTouchMidY = midY;
-
                         applyZoomTransform();
                     }
                     e.preventDefault();
                 } else if (e.touches.length === 1 && !isPinchZooming) {
                     var t = e.touches[0];
-                    var dx = Math.abs(t.clientX - touchStartX);
-                    var dy = Math.abs(t.clientY - touchStartY);
-                    if (dx > 20 || dy > 20) {
+                    var dx = t.clientX - touchStartX;
+                    var dy = t.clientY - touchStartY;
+                    if (Math.abs(dx) > 6 || Math.abs(dy) > 6) {
                         isTouchDragging = true;
-                        var pos = getMousePos(t.clientX, t.clientY);
-                        safeSendMove(pos.x, pos.y);
+                        if (currentScale > 1.05) {
+                            // Zoomlu mod: Masaüstünde pürüzsüz kaydırma (Mikro Jump formlarında rahatça gezin!)
+                            panX = startPanX + dx;
+                            panY = startPanY + dy;
+                            applyZoomTransform();
+                        } else {
+                            // Tam ekran modu: Fare imlecini hareket ettir
+                            var pos = getMousePos(t.clientX, t.clientY);
+                            safeSendMove(pos.x, pos.y);
+                        }
                     }
                     e.preventDefault();
                 }
@@ -1830,7 +1924,8 @@
                 var duration = Date.now() - touchStartTime;
                 var now = Date.now();
 
-                if (!isTouchDragging && duration < 700 && e.changedTouches.length > 0) {
+                // Kaydırma yapılmadıysa ve kısa dokunulduysa: TIKLAMA GÖNDER!
+                if (!isTouchDragging && duration < 600 && e.changedTouches.length > 0) {
                     var t = e.changedTouches[0];
                     var pos = getMousePos(t.clientX, t.clientY);
 
@@ -1848,7 +1943,7 @@
                         ws.send(JSON.stringify({ type: 'double_click', button: 'left', x: dblPos.x, y: dblPos.y }));
                         lastTapTime = 0;
                         lastTapPos = null;
-                    } else if (clickMode === 2 || duration >= 500) {
+                    } else if (clickMode === 2 || duration >= 450) {
                         ws.send(JSON.stringify({ type: 'click', button: 'right', action: 'down', x: pos.x, y: pos.y }));
                         setTimeout(function() {
                             if (ws && ws.readyState === WebSocket.OPEN) {
@@ -1870,7 +1965,8 @@
                         lastTapPos = { clientX: t.clientX, clientY: t.clientY };
                     }
                     e.preventDefault();
-                }
+                isTouchDragging = false;
+                isPinchZooming = false;
             }, { passive: false });
 
 

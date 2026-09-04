@@ -680,8 +680,8 @@ body, html {
 .icon-btn { width: 38px; height: 38px; border-radius: 8px; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.1); color: #fff; cursor: pointer; display: flex; justify-content: center; align-items: center; }
 .icon-btn.danger:hover { background: var(--danger-color); }
 
-.canvas-container { flex: 1; display: flex; justify-content: center; align-items: center; background: #000; overflow: hidden; position: relative; }
-#screen-canvas, #screen-img { width: 100%; height: 100%; object-fit: contain; cursor: default; display: block; touch-action: none; }
+.canvas-container { flex: 1; display: flex; justify-content: center; align-items: center; background: #000; overflow: hidden; position: relative; width: 100vw; height: calc(100vh - 60px); }
+#screen-canvas, #screen-img { margin: auto; cursor: default; display: block; touch-action: none; user-select: none; -webkit-user-select: none; image-rendering: -webkit-optimize-contrast; image-rendering: crisp-edges; image-rendering: high-quality; -webkit-font-smoothing: antialiased; }
 
 .floating-controls { 
     position: fixed; 

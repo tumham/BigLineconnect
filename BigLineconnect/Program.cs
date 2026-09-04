@@ -1378,7 +1378,7 @@ namespace BigLineconnect
             }
         }
 
-        public static int CurrentQuality { get; set; } = 68;
+        public static int CurrentQuality { get; set; } = 92; // Ultra Crisp HD quality (zero chroma subsampling blur, 4:4:4 pristine ERP text)
         public static int CurrentMaxDimension { get; set; } = 0; // 0 = 100% Native Pixel-Perfect Resolution (No Blurring/Downscaling)
         public static bool SuppressWallpaperEnabled { get; set; } = true;
 
