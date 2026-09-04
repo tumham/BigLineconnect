@@ -94,7 +94,7 @@ namespace BigLineconnect
         private bool _isReconnecting = false;
         private string _savedPassword = "";
         private Bitmap? _rtCanvas = null;
-        private readonly object _rtCanvasLock = new object();
+        public static readonly object RtCanvasLock = new object();
         
         // Custom features forms
         private ClientChatForm? _clientChatForm;
@@ -951,7 +951,7 @@ namespace BigLineconnect
                                                     oldUnpainted = _latestDecodedImage;
                                                     _latestDecodedImage = newImg;
                                                 }
-                                                if (oldUnpainted != null && oldUnpainted != newImg)
+                                                if (oldUnpainted != null && oldUnpainted != newImg && oldUnpainted != _rtCanvas)
                                                 {
                                                     try { oldUnpainted.Dispose(); } catch { }
                                                 }
@@ -974,15 +974,18 @@ namespace BigLineconnect
                                                                 if (frameToDraw != null && this.WindowState != FormWindowState.Minimized && _pictureBox != null && !_pictureBox.IsDisposed)
                                                                 {
                                                                     var oldImg = _pictureBox.Image;
-                                                                    _pictureBox.Image = frameToDraw;
+                                                                    if (_pictureBox.Image != frameToDraw)
+                                                                    {
+                                                                        _pictureBox.Image = frameToDraw;
+                                                                    }
                                                                     _pictureBox.Invalidate();
                                                                     _pictureBox.Update();
-                                                                    if (oldImg != null && oldImg != frameToDraw)
+                                                                    if (oldImg != null && oldImg != frameToDraw && oldImg != _rtCanvas)
                                                                     {
                                                                         try { oldImg.Dispose(); } catch { }
                                                                     }
                                                                 }
-                                                                else if (frameToDraw != null)
+                                                                else if (frameToDraw != null && frameToDraw != _rtCanvas)
                                                                 {
                                                                     try { frameToDraw.Dispose(); } catch { }
                                                                 }
@@ -993,6 +996,10 @@ namespace BigLineconnect
                                                                 Interlocked.Exchange(ref _isUiPaintPending, 0);
                                                             }
                                                         }));
+                                                    }
+                                                    else
+                                                    {
+                                                        Interlocked.Exchange(ref _isUiPaintPending, 0);
                                                     }
                                                 }
                                             }
@@ -4705,7 +4712,13 @@ namespace BigLineconnect
                 destRect = new Rectangle(0, 0, this.Width, this.Height);
             }
 
-            g.DrawImage(this.Image, destRect, 0, 0, this.Image.Width, this.Image.Height, GraphicsUnit.Pixel);
+            lock (ViewerForm.RtCanvasLock)
+            {
+                if (this.Image != null)
+                {
+                    g.DrawImage(this.Image, destRect, 0, 0, this.Image.Width, this.Image.Height, GraphicsUnit.Pixel);
+                }
+            }
             g.CompositingMode = System.Drawing.Drawing2D.CompositingMode.SourceOver;
             base.OnPaint(e);
         }
