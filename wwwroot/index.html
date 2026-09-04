@@ -2004,10 +2004,10 @@
                     var t = e.touches[0];
                     var dx = t.clientX - touchStartX;
                     var dy = t.clientY - touchStartY;
-                    if (Math.abs(dx) > 6 || Math.abs(dy) > 6) {
+                    if (Math.abs(dx) > 16 || Math.abs(dy) > 16) {
                         isTouchDragging = true;
                         if (currentScale > 1.05) {
-                            // Zoomlu mod: Masaüstünde pürüzsüz kaydırma (Mikro Jump formlarında rahatça gezin!)
+                            // Zoomlu mod: Masaüstünde pürüzsüz kaydırma
                             panX = startPanX + dx;
                             panY = startPanY + dy;
                             applyZoomTransform();
@@ -2032,11 +2032,11 @@
                 var now = Date.now();
 
                 // Kaydırma yapılmadıysa ve kısa dokunulduysa: TIKLAMA GÖNDER!
-                if (!isTouchDragging && duration < 600 && e.changedTouches.length > 0) {
+                if (!isTouchDragging && duration < 650 && e.changedTouches.length > 0) {
                     var t = e.changedTouches[0];
                     var pos = getMousePos(t.clientX, t.clientY);
 
-                    // 1. Toolbar Çift Tık Modu (Tek dokunuşta 2 ardışık donanımsal tık üret)
+                    // 1. Toolbar Çift Tık Modu (Tek dokunuşta donanımsal çift tıklama patlaması)
                     if (clickMode === 1) {
                         ws.send(JSON.stringify({ type: 'move', x: pos.x, y: pos.y }));
                         ws.send(JSON.stringify({ type: 'click', button: 'left', action: 'down', x: pos.x, y: pos.y }));
@@ -2050,56 +2050,67 @@
                                             if (ws && ws.readyState === WebSocket.OPEN) {
                                                 ws.send(JSON.stringify({ type: 'click', button: 'left', action: 'up', x: pos.x, y: pos.y }));
                                             }
-                                        }, 40);
+                                        }, 30);
                                     }
-                                }, 70);
+                                }, 50);
                             }
-                        }, 40);
+                        }, 30);
+                        ws.send(JSON.stringify({ type: 'double_click', button: 'left', x: pos.x, y: pos.y }));
                         toggleMouseMode();
                         lastTapTime = 0;
                         lastTapPos = null;
-                        showToast('⚡ Çift Tıklandı', 'info');
                         e.preventDefault();
                         isTouchDragging = false;
                         isPinchZooming = false;
                         return;
                     }
 
-                    // 2. Toolbar Sağ Tık Modu VEYA Uzun Basma (>= 450ms)
-                    if (clickMode === 2 || duration >= 450) {
+                    // 2. Toolbar Sağ Tık Modu VEYA Uzun Basma (>= 600ms)
+                    if (clickMode === 2 || duration >= 600) {
                         ws.send(JSON.stringify({ type: 'move', x: pos.x, y: pos.y }));
                         ws.send(JSON.stringify({ type: 'click', button: 'right', action: 'down', x: pos.x, y: pos.y }));
                         setTimeout(function() {
                             if (ws && ws.readyState === WebSocket.OPEN) {
                                 ws.send(JSON.stringify({ type: 'click', button: 'right', action: 'up', x: pos.x, y: pos.y }));
                             }
-                        }, 45);
+                        }, 40);
                         lastTapTime = 0;
                         lastTapPos = null;
                         if (clickMode === 2) toggleMouseMode();
-                        showToast('🔴 Sağ Tıklandı', 'info');
                         e.preventDefault();
                         isTouchDragging = false;
                         isPinchZooming = false;
                         return;
                     }
 
-                    // 3. DOĞAL PARMAKLA ÇİFT TIKLAMA TESPİTİ (Dosya / Program Açma)
-                    var isDoubleTap = (now - lastTapTime < 500) && lastTapPos &&
-                                      (Math.abs(t.clientX - lastTapPos.clientX) < 55 && Math.abs(t.clientY - lastTapPos.clientY) < 55);
+                    // 3. DOĞAL PARMAKLA ÇİFT TIKLAMA TESPİTİ (Dosya / Program / Klasör Açma)
+                    var isDoubleTap = (now - lastTapTime < 550) && lastTapPos &&
+                                      (Math.abs(t.clientX - lastTapPos.clientX) < 60 && Math.abs(t.clientY - lastTapPos.clientY) < 60);
 
                     if (isDoubleTap) {
-                        // 2. Dokunuş: İmleci 1. dokunuşun tam pikseline sabitle ve 2. tıklamayı gönder!
+                        // 2. Dokunuş: 1. dokunuşun tam koordinatında 50ms aralıklı ÇİFT TIKLAMA PATLAMASI gönder!
                         var fixedPos = lastTapPos.normPos || pos;
                         ws.send(JSON.stringify({ type: 'move', x: fixedPos.x, y: fixedPos.y }));
                         ws.send(JSON.stringify({ type: 'click', button: 'left', action: 'down', x: fixedPos.x, y: fixedPos.y }));
                         setTimeout(function() {
                             if (ws && ws.readyState === WebSocket.OPEN) {
                                 ws.send(JSON.stringify({ type: 'click', button: 'left', action: 'up', x: fixedPos.x, y: fixedPos.y }));
+                                setTimeout(function() {
+                                    if (ws && ws.readyState === WebSocket.OPEN) {
+                                        ws.send(JSON.stringify({ type: 'click', button: 'left', action: 'down', x: fixedPos.x, y: fixedPos.y }));
+                                        setTimeout(function() {
+                                            if (ws && ws.readyState === WebSocket.OPEN) {
+                                                ws.send(JSON.stringify({ type: 'click', button: 'left', action: 'up', x: fixedPos.x, y: fixedPos.y }));
+                                            }
+                                        }, 30);
+                                    }
+                                }, 50);
                             }
-                        }, 40);
+                        }, 30);
 
-                        showToast('⚡ Çift Tıklandı', 'info');
+                        // C# Host için donanımsal çift tık komutunu da ilet
+                        ws.send(JSON.stringify({ type: 'double_click', button: 'left', x: fixedPos.x, y: fixedPos.y }));
+
                         lastTapTime = 0;
                         lastTapPos = null;
                     } else {
@@ -2110,7 +2121,7 @@
                             if (ws && ws.readyState === WebSocket.OPEN) {
                                 ws.send(JSON.stringify({ type: 'click', button: 'left', action: 'up', x: pos.x, y: pos.y }));
                             }
-                        }, 40);
+                        }, 35);
                         lastTapTime = now;
                         lastTapPos = { clientX: t.clientX, clientY: t.clientY, normPos: pos };
                     }

@@ -302,35 +302,18 @@ namespace BigLineconnect
                 ReleaseCapture();
                 DesktopHelper.AttachToInputDesktop(true);
 
-                uint downFlag = button.Equals("right", StringComparison.OrdinalIgnoreCase) ? MOUSEEVENTF_RIGHTDOWN : MOUSEEVENTF_LEFTDOWN;
-                uint upFlag = button.Equals("right", StringComparison.OrdinalIgnoreCase) ? MOUSEEVENTF_RIGHTUP : MOUSEEVENTF_LEFTUP;
+                // 1. Tıklama (Down + Up) - SendInput ile yüksek DPI duyarlı tam piksel vuruşu
+                SimulateMouseButton(button, "down", xPercent, yPercent, displayIndex);
+                Thread.Sleep(25);
+                SimulateMouseButton(button, "up", xPercent, yPercent, displayIndex);
 
-                // Ensure any stuck mouse buttons are released first
-                mouse_event(upFlag, 0, 0, 0, (UIntPtr)0);
-                _isLeftMouseDown = false;
-                _isRightMouseDown = false;
+                // Windows Explorer ve Masaüstü için ideal çift tıklama aralığı: 65 ms
+                Thread.Sleep(65);
 
-                if (xPercent.HasValue && yPercent.HasValue)
-                {
-                    var screens = System.Windows.Forms.Screen.AllScreens;
-                    if (displayIndex < 0 || displayIndex >= screens.Length) displayIndex = 0;
-                    var bounds = screens[displayIndex].Bounds;
-                    int actualX = bounds.X + Math.Min(bounds.Width - 1, (int)(xPercent.Value * bounds.Width));
-                    int actualY = bounds.Y + Math.Min(bounds.Height - 1, (int)(yPercent.Value * bounds.Height));
-
-                    SetCursorPos(actualX, actualY);
-                }
-
-                // Hardware mouse_event double click with exact Windows OS double click timing (15ms click hold + 35ms inter-click delay)
-                mouse_event(downFlag, 0, 0, 0, (UIntPtr)0);
-                Thread.Sleep(15);
-                mouse_event(upFlag, 0, 0, 0, (UIntPtr)0);
-
-                Thread.Sleep(35);
-
-                mouse_event(downFlag, 0, 0, 0, (UIntPtr)0);
-                Thread.Sleep(15);
-                mouse_event(upFlag, 0, 0, 0, (UIntPtr)0);
+                // 2. Tıklama (Down + Up)
+                SimulateMouseButton(button, "down", xPercent, yPercent, displayIndex);
+                Thread.Sleep(25);
+                SimulateMouseButton(button, "up", xPercent, yPercent, displayIndex);
 
                 _isLeftMouseDown = false;
                 _isRightMouseDown = false;
