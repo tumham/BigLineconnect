@@ -465,85 +465,69 @@ if (hiddenKeyboardInput) {
 
 // Helper functions to send inputs via WS
 function sendMove(x, y) {
-    if (socket && socket.readyState === WebSocket.OPEN) {
-        socket.send(JSON.stringify({ type: 'move', x, y }));
+    const s = (socket && socket.readyState === WebSocket.OPEN) ? socket : (window.ws && window.ws.readyState === WebSocket.OPEN ? window.ws : null);
+    if (s) {
+        s.send(JSON.stringify({ type: 'move', x, y }));
     }
 }
 
 function sendClick(button, action, x = null, y = null) {
-    if (socket && socket.readyState === WebSocket.OPEN) {
+    const s = (socket && socket.readyState === WebSocket.OPEN) ? socket : (window.ws && window.ws.readyState === WebSocket.OPEN ? window.ws : null);
+    if (s) {
         const payload = { type: 'click', button, action };
         if (x !== null && y !== null) {
             payload.x = x;
             payload.y = y;
         }
-        socket.send(JSON.stringify(payload));
+        s.send(JSON.stringify(payload));
     }
 }
 
 function sendDoubleClick(button = 'left', x = null, y = null) {
-    if (socket && socket.readyState === WebSocket.OPEN) {
+    const s = (socket && socket.readyState === WebSocket.OPEN) ? socket : (window.ws && window.ws.readyState === WebSocket.OPEN ? window.ws : null);
+    if (s) {
         const payload = { type: 'double_click', button };
         if (x !== null && y !== null) {
             payload.x = x;
             payload.y = y;
         }
-        socket.send(JSON.stringify(payload));
+        s.send(JSON.stringify(payload));
     }
 }
 
 function sendScroll(deltaY) {
-    if (socket && socket.readyState === WebSocket.OPEN) {
-        socket.send(JSON.stringify({ type: 'scroll', deltaY }));
+    const s = (socket && socket.readyState === WebSocket.OPEN) ? socket : (window.ws && window.ws.readyState === WebSocket.OPEN ? window.ws : null);
+    if (s) {
+        s.send(JSON.stringify({ type: 'scroll', deltaY }));
     }
 }
 
 function sendKey(key, action) {
-    if (socket && socket.readyState === WebSocket.OPEN) {
-        socket.send(JSON.stringify({ type: 'key', key, action }));
+    const s = (socket && socket.readyState === WebSocket.OPEN) ? socket : (window.ws && window.ws.readyState === WebSocket.OPEN ? window.ws : null);
+    if (s) {
+        s.send(JSON.stringify({ type: 'key', key, action }));
     }
 }
 
-// Mouse Event listeners on canvas
-function getMousePos(canvas, clientX, clientY) {
-    const elem = document.getElementById('screen-canvas') || canvasContainer;
-    const rect = elem.getBoundingClientRect();
-    const naturalWidth = (elem.width && elem.width > 300) ? elem.width : 1920;
-    const naturalHeight = (elem.height && elem.height > 150) ? elem.height : 1080;
-    
-    if (rect.width <= 0 || rect.height <= 0) return { x: 0, y: 0 };
-
-    const imageAspect = naturalWidth / naturalHeight;
-    const containerAspect = rect.width / rect.height;
-    
-    let renderedWidth, renderedHeight, offsetX, offsetY;
-    
-    if (containerAspect > imageAspect) {
-        // Black bars on left & right
-        renderedHeight = rect.height;
-        renderedWidth = rect.height * imageAspect;
-        offsetX = (rect.width - renderedWidth) / 2;
-        offsetY = 0;
-    } else {
-        // Black bars on top & bottom
-        renderedWidth = rect.width;
-        renderedHeight = rect.width / imageAspect;
-        offsetX = 0;
-        offsetY = (rect.height - renderedHeight) / 2;
+// Mouse coordinate normalization (Universal, never returns NaN)
+function getMousePos(a, b, c) {
+    if (typeof window.getMousePos === 'function' && window.getMousePos !== getMousePos) {
+        return window.getMousePos(a, b, c);
     }
-    
-    // getBoundingClientRect() already incorporates panX, panY, and CSS scale transforms
-    const mouseX = clientX - rect.left - offsetX;
-    const mouseY = clientY - rect.top - offsetY;
-    
-    const x = mouseX / renderedWidth;
-    const y = mouseY / renderedHeight;
-    
+    const clientX = (typeof c === 'number') ? b : a;
+    const clientY = (typeof c === 'number') ? c : b;
+    const elem = document.getElementById('screen-canvas') || document.getElementById('canvas-container');
+    if (!elem) return { x: 0.5, y: 0.5 };
+    const rect = elem.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return { x: 0.5, y: 0.5 };
+    const normX = (clientX - rect.left) / rect.width;
+    const normY = (clientY - rect.top) / rect.height;
     return {
-        x: Math.max(0, Math.min(1, x)),
-        y: Math.max(0, Math.min(1, y))
+        x: Math.max(0.0, Math.min(1.0, isNaN(normX) ? 0.5 : normX)),
+        y: Math.max(0.0, Math.min(1.0, isNaN(normY) ? 0.5 : normY))
     };
 }
+window.getMousePos = getMousePos;
 
 // Global Desktop Physical Keyboard Listeners
 window.addEventListener('keydown', (e) => {
@@ -568,189 +552,9 @@ window.addEventListener('keyup', (e) => {
     e.preventDefault();
 });
 
-let lastMouseMoveTime = 0;
-let isBoundCanvasInteraction = false;
-
+// Canvas interaction is handled authoritatively by index.html
 function bindCanvasInteraction() {
-    if (isBoundCanvasInteraction) return;
-    const canvasElem = document.getElementById('screen-canvas');
-    const containerElem = document.getElementById('canvas-container');
-    const targets = [canvasElem, containerElem].filter(Boolean);
-    if (targets.length === 0) return;
-    
-    isBoundCanvasInteraction = true;
-    targets.forEach(elem => {
-        elem.addEventListener('mousedown', (e) => {
-            if (!connected) return;
-            const targetElem = document.getElementById('screen-canvas') || elem;
-            const pos = getMousePos(targetElem, e.clientX, e.clientY);
-            
-            let button = 'left';
-            if (e.button === 2) button = 'right';
-            else if (e.button === 1) button = 'middle';
-            
-            sendClick(button, 'down', pos.x, pos.y);
-            e.preventDefault();
-        });
-
-        elem.addEventListener('mouseup', (e) => {
-            if (!connected) return;
-            const targetElem = document.getElementById('screen-canvas') || elem;
-            const pos = getMousePos(targetElem, e.clientX, e.clientY);
-            let button = 'left';
-            if (e.button === 2) button = 'right';
-            else if (e.button === 1) button = 'middle';
-            
-            sendClick(button, 'up', pos.x, pos.y);
-            e.preventDefault();
-        });
-
-        elem.addEventListener('dblclick', (e) => {
-            if (!connected) return;
-            const targetElem = document.getElementById('screen-canvas') || elem;
-            const pos = getMousePos(targetElem, e.clientX, e.clientY);
-            sendDoubleClick('left', pos.x, pos.y);
-            e.preventDefault();
-        });
-
-        elem.addEventListener('mousemove', (e) => {
-            if (!connected) return;
-            const now = performance.now();
-            if (now - lastMouseMoveTime < 16) return; // 60 FPS max rate limit
-            lastMouseMoveTime = now;
-
-            const targetElem = document.getElementById('screen-canvas') || elem;
-            const pos = getMousePos(targetElem, e.clientX, e.clientY);
-            sendMove(pos.x, pos.y);
-        });
-
-        elem.addEventListener('contextmenu', (e) => {
-            e.preventDefault();
-        });
-
-        elem.addEventListener('wheel', (e) => {
-            if (!connected) return;
-            const delta = e.deltaY < 0 ? 120 : -120;
-            sendScroll(delta);
-            e.preventDefault();
-        }, { passive: false });
-    });
-
-    // Mobile Touch Events & Bulletproof Tap Engine
-    const activeInteractionElem = containerElem || canvasElem;
-    if (!activeInteractionElem) return;
-
-    let startTouch1X = null, startTouch1Y = null, startPan1X = 0, startPan1Y = 0;
-    let touchStartX = 0, touchStartY = 0, touchStartTime = 0, isMultiTouch = false;
-    let lastTapTime = 0, lastTapX = 0, lastTapY = 0;
-
-    activeInteractionElem.addEventListener('touchstart', (e) => {
-        if (!connected) return;
-        
-        if (e.touches.length === 1) {
-            isMultiTouch = false;
-            const touch = e.touches[0];
-            touchStartX = touch.clientX;
-            touchStartY = touch.clientY;
-            touchStartTime = Date.now();
-
-            startTouch1X = touch.clientX;
-            startTouch1Y = touch.clientY;
-            startPan1X = panX;
-            startPan1Y = panY;
-        } else if (e.touches.length === 2) {
-            isMultiTouch = true;
-            startTouch1X = null;
-            
-            const dx = e.touches[0].clientX - e.touches[1].clientX;
-            const dy = e.touches[0].clientY - e.touches[1].clientY;
-            startTouchDistance = Math.sqrt(dx * dx + dy * dy);
-            startScale = scale;
-            
-            startMidX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
-            startMidY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-            startPanX = panX;
-            startPanY = panY;
-        }
-        e.preventDefault();
-    }, { passive: false });
-
-    activeInteractionElem.addEventListener('touchmove', (e) => {
-        if (!connected) return;
-        
-        if (e.touches.length === 1) {
-            const touch = e.touches[0];
-            if (scale > 1.0 && startTouch1X !== null) {
-                panX = startPan1X + (touch.clientX - startTouch1X);
-                panY = startPan1Y + (touch.clientY - startTouch1Y);
-                updateTransform();
-            } else {
-                const canvasElem = document.getElementById('screen-canvas') || activeInteractionElem;
-                const pos = getMousePos(canvasElem, touch.clientX, touch.clientY);
-                sendMove(pos.x, pos.y);
-            }
-        } else if (e.touches.length === 2) {
-            const dx = e.touches[0].clientX - e.touches[1].clientX;
-            const dy = e.touches[0].clientY - e.touches[1].clientY;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-            
-            const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
-            const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-            
-            scale = Math.max(1.0, Math.min(6.0, startScale * (distance / startTouchDistance)));
-            panX = startPanX + (midX - startMidX);
-            panY = startPanY + (midY - startMidY);
-            
-            updateTransform();
-        }
-        e.preventDefault();
-    }, { passive: false });
-
-    activeInteractionElem.addEventListener('touchend', (e) => {
-        if (!connected || isMultiTouch) return;
-        
-        const now = Date.now();
-        const duration = now - touchStartTime;
-        
-        if (duration < 600 && e.changedTouches.length === 1) {
-            const touch = e.changedTouches[0];
-            const moveDist = Math.sqrt((touch.clientX - touchStartX) ** 2 + (touch.clientY - touchStartY) ** 2);
-            
-            if (moveDist < 60) {
-                const canvasElem = document.getElementById('screen-canvas') || activeInteractionElem;
-                const pos = getMousePos(canvasElem, touch.clientX, touch.clientY);
-                sendMove(pos.x, pos.y);
-
-                if (currentMouseMode === 'double') {
-                    sendDoubleClick('left', pos.x, pos.y);
-                    showToast('Çift Tıklama Yollandı ⚡', 'info');
-                    lastTapTime = 0;
-                } else if (currentMouseMode === 'right') {
-                    sendClick('right', 'down');
-                    setTimeout(() => sendClick('right', 'up'), 40);
-                    showToast('Sağ Tıklama Yollandı 🔴', 'info');
-                    lastTapTime = 0;
-                } else {
-                    sendClick('left', 'down');
-                    setTimeout(() => sendClick('left', 'up'), 40);
-                    lastTapTime = now;
-                    lastTapX = touch.clientX;
-                    lastTapY = touch.clientY;
-                }
-            }
-        }
-        
-        startTouch1X = null;
-        e.preventDefault();
-    }, { passive: false });
-
-    activeInteractionElem.addEventListener('touchcancel', (e) => {
-        if (!connected) return;
-        startTouch1X = null;
-    });
-
-    activeInteractionElem.style.transformOrigin = 'center center';
-    activeInteractionElem.style.transition = 'none';
+    // No-op: index.html handles canvas and mobile touch interaction cleanly
 }
 
 // Global Key Listeners

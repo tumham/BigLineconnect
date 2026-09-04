@@ -145,6 +145,12 @@ namespace BigLineconnect
         [DllImport("user32.dll", SetLastError = true)]
         private static extern bool AllowSetForegroundWindow(int dwProcessId);
 
+        [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        public static extern uint SetThreadExecutionState(uint esFlags);
+        public const uint ES_SYSTEM_REQUIRED = 0x00000001;
+        public const uint ES_DISPLAY_REQUIRED = 0x00000002;
+        public const uint ES_CONTINUOUS = 0x80000000;
+
         [DllImport("user32.dll", SetLastError = true)]
         private static extern bool SystemParametersInfo(uint uiAction, uint uiParam, ref uint pvParam, uint fWinIni);
 
@@ -155,6 +161,7 @@ namespace BigLineconnect
         {
             try
             {
+                SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED | ES_DISPLAY_REQUIRED);
                 AllowSetForegroundWindow(ASFW_ANY);
                 uint zero = 0;
                 SystemParametersInfo(SPI_SETFOREGROUNDLOCKTIMEOUT, 0, ref zero, 0);
@@ -166,15 +173,14 @@ namespace BigLineconnect
 
         public static void ForceAttachToInputDesktop()
         {
-            _lastAttachTime = DateTime.MinValue;
-            AttachToInputDesktop();
+            AttachToInputDesktop(true);
         }
 
-        public static void AttachToInputDesktop()
+        public static void AttachToInputDesktop(bool force = false)
         {
             try
             {
-                if ((DateTime.Now - _lastAttachTime).TotalMilliseconds < 1000)
+                if (!force && (DateTime.Now - _lastAttachTime).TotalMilliseconds < 500)
                 {
                     return;
                 }

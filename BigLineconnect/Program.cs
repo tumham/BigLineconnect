@@ -1738,9 +1738,13 @@ namespace BigLineconnect
 
                 if (type == "move")
                 {
-                    double x = root.GetProperty("x").GetDouble();
-                    double y = root.GetProperty("y").GetDouble();
-                    InputSimulator.SimulateMouseMove(x, y, _activeDisplayIndex);
+                    if (root.TryGetProperty("x", out var xProp) && xProp.ValueKind == JsonValueKind.Number &&
+                        root.TryGetProperty("y", out var yProp) && yProp.ValueKind == JsonValueKind.Number)
+                    {
+                        double x = xProp.GetDouble();
+                        double y = yProp.GetDouble();
+                        InputSimulator.SimulateMouseMove(x, y, _activeDisplayIndex);
+                    }
                 }
                 else if (type == "select_display")
                 {
@@ -1758,7 +1762,8 @@ namespace BigLineconnect
                     string action = root.GetProperty("action").GetString() ?? "";
                     double? x = null;
                     double? y = null;
-                    if (root.TryGetProperty("x", out var xProp) && root.TryGetProperty("y", out var yProp))
+                    if (root.TryGetProperty("x", out var xProp) && xProp.ValueKind == JsonValueKind.Number &&
+                        root.TryGetProperty("y", out var yProp) && yProp.ValueKind == JsonValueKind.Number)
                     {
                         x = xProp.GetDouble();
                         y = yProp.GetDouble();
@@ -1774,7 +1779,8 @@ namespace BigLineconnect
 
                     double? x = null;
                     double? y = null;
-                    if (root.TryGetProperty("x", out var xProp) && root.TryGetProperty("y", out var yProp))
+                    if (root.TryGetProperty("x", out var xProp) && xProp.ValueKind == JsonValueKind.Number &&
+                        root.TryGetProperty("y", out var yProp) && yProp.ValueKind == JsonValueKind.Number)
                     {
                         x = xProp.GetDouble();
                         y = yProp.GetDouble();

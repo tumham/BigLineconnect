@@ -136,6 +136,7 @@ namespace BigLineconnect
         {
             try
             {
+                DesktopHelper.AttachToInputDesktop(true);
                 var screens = System.Windows.Forms.Screen.AllScreens;
                 if (displayIndex < 0 || displayIndex >= screens.Length) displayIndex = 0;
 
@@ -167,6 +168,7 @@ namespace BigLineconnect
         {
             try
             {
+                DesktopHelper.AttachToInputDesktop(true);
                 uint flags = 0;
                 bool isDown = action.Equals("down", StringComparison.OrdinalIgnoreCase);
 
@@ -199,6 +201,9 @@ namespace BigLineconnect
                 {
                     int actualX = bounds.X + Math.Min(bounds.Width - 1, (int)(xPercent.Value * bounds.Width));
                     int actualY = bounds.Y + Math.Min(bounds.Height - 1, (int)(yPercent.Value * bounds.Height));
+
+                    // Always sync physical cursor position first
+                    SetCursorPos(actualX, actualY);
 
                     // Convert to absolute coordinates (0-65535 range for full virtual screen)
                     int virtualW = System.Windows.Forms.SystemInformation.VirtualScreen.Width;

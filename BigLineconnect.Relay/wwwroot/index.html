@@ -586,6 +586,11 @@
                 font-size: 0.85rem;
                 font-weight: 800;
             }
+            @keyframes tapRippleAnim {
+                0% { transform: scale(0.35); opacity: 0.9; }
+                50% { opacity: 0.6; }
+                100% { transform: scale(1.6); opacity: 0; }
+            }
         </style>
 
         <!-- Hidden input to capture keyboard events on mobile -->
@@ -1133,6 +1138,7 @@
                             viewer.style.setProperty('display', 'flex', 'important');
                             viewer.style.setProperty('pointer-events', 'auto', 'important');
                             viewer.style.setProperty('z-index', '999999', 'important');
+                            if (typeof window.initInputListeners === 'function') window.initInputListeners();
                         }
                         if (window.innerWidth < 768) {
                             setTimeout(function() {
@@ -1162,6 +1168,7 @@
                         viewer.style.setProperty('display', 'flex', 'important');
                         viewer.style.setProperty('pointer-events', 'auto', 'important');
                         viewer.style.setProperty('z-index', '999999', 'important');
+                        if (typeof window.initInputListeners === 'function') window.initInputListeners();
                     }
 
                     var rawBuf = ev.data;
@@ -1380,8 +1387,10 @@
             setTimeout(updateCanvasCssLayout, 150);
         });
 
-        // 100% Pixel-Perfect Direct Canvas Coordinate Mapping
-        function getMousePos(clientX, clientY) {
+        // 100% Pixel-Perfect Direct Canvas Coordinate Mapping (Universal & Bulletproof)
+        function getMousePos(a, b, c) {
+            var clientX = (typeof c === 'number') ? b : a;
+            var clientY = (typeof c === 'number') ? c : b;
             var cv = document.getElementById('screen-canvas');
             if (!cv) return { x: 0.5, y: 0.5 };
             var rect = cv.getBoundingClientRect();
@@ -1393,11 +1402,12 @@
             var normX = mouseX / rect.width;
             var normY = mouseY / rect.height;
 
-            return {
-                x: Math.max(0.0, Math.min(1.0, normX)),
-                y: Math.max(0.0, Math.min(1.0, normY))
-            };
+            var finalX = Math.max(0.0, Math.min(1.0, isNaN(normX) ? 0.5 : normX));
+            var finalY = Math.max(0.0, Math.min(1.0, isNaN(normY) ? 0.5 : normY));
+
+            return { x: finalX, y: finalY };
         }
+        window.getMousePos = getMousePos;
 
         // Mobile Zoom & Focal Point Pinch Engine
         var clickMode = 0; // 0: Sol Tık, 1: Çift Tık, 2: Sağ Tık
@@ -1847,12 +1857,32 @@
         }
         window.directExitWithoutSave = directExitWithoutSave;
 
+        // ── TOUCH RIPPLE VISUAL FEEDBACK ENGINE ──
+        function showTouchFeedback(clientX, clientY, mode) {
+            try {
+                var ripple = document.createElement('div');
+                var color = mode === 'double' ? '#2ecc71' : (mode === 'right' ? '#ef4444' : '#00e5ff');
+                var size = mode === 'double' ? 56 : 40;
+                ripple.style.cssText = 'position:fixed;left:' + (clientX - size/2) + 'px;top:' + (clientY - size/2) + 'px;' +
+                    'width:' + size + 'px;height:' + size + 'px;border-radius:50%;' +
+                    'border:2.5px solid ' + color + ';background:' + color + '33;' +
+                    'box-shadow:0 0 15px ' + color + ';pointer-events:none;z-index:2147483647;' +
+                    'animation:tapRippleAnim 0.35s ease-out forwards;';
+                document.body.appendChild(ripple);
+                setTimeout(function() { if (ripple && ripple.parentNode) ripple.parentNode.removeChild(ripple); }, 380);
+            } catch(e) {}
+        }
+
         // Input Listeners (Mouse, Focal Pinch Zoom, Mobile Virtual Keyboard)
-        window.addEventListener('load', function() {
+        function initInputListeners() {
+            if (window._inputListenersBound) return;
             var targetHost = document.getElementById('canvas-container') || document.getElementById('screen-canvas');
             if (!targetHost) return;
+            window._inputListenersBound = true;
 
             targetHost.style.touchAction = 'none';
+            var sc = document.getElementById('screen-canvas');
+            if (sc) sc.style.touchAction = 'none';
 
             // ── MOBİL KONTROLLERİ VE NUMPAD DOKUNMA YALITIMI ──
             function bindTouchButton(id, actionFn) {
@@ -1906,7 +1936,6 @@
             var lastMove = 0;
             function safeSendMove(x, y) {
                 if (!ws || ws.readyState !== WebSocket.OPEN) return;
-                // Buffer koruması: Çıkış tamponu dolduysa gönderme (kopmayı %100 engeller!)
                 if (ws.bufferedAmount && ws.bufferedAmount > 32768) return;
                 var now = Date.now();
                 if (now - lastMove < 20) return;
@@ -2004,7 +2033,7 @@
                     var t = e.touches[0];
                     var dx = t.clientX - touchStartX;
                     var dy = t.clientY - touchStartY;
-                    if (Math.abs(dx) > 28 || Math.abs(dy) > 28) {
+                    if (Math.abs(dx) > 24 || Math.abs(dy) > 24) {
                         isTouchDragging = true;
                         if (currentScale > 1.05) {
                             // Zoomlu mod: Masaüstünde pürüzsüz kaydırma
@@ -2030,17 +2059,22 @@
 
                 var duration = Date.now() - touchStartTime;
                 var now = Date.now();
+                var t = (e.changedTouches && e.changedTouches.length > 0) ? e.changedTouches[0] : null;
+                if (!t) {
+                    isTouchDragging = false;
+                    isPinchZooming = false;
+                    return;
+                }
 
-                // Hızlı dokunuş kontrolü: 350ms altı dokunuşlar parmak kayması olsa bile drag sayılmaz, tap kabul edilir
-                var isQuickTap = duration < 350;
-                var shouldProcessTap = (!isTouchDragging || isQuickTap) && duration < 650 && e.changedTouches.length > 0;
+                var moveDist = Math.hypot(t.clientX - touchStartX, t.clientY - touchStartY);
+                var isTap = moveDist < 40 && duration < 700;
 
-                if (shouldProcessTap) {
-                    var t = e.changedTouches[0];
+                if (isTap) {
                     var pos = getMousePos(t.clientX, t.clientY);
 
                     // 1. Toolbar Çift Tık Modu
                     if (clickMode === 1) {
+                        showTouchFeedback(t.clientX, t.clientY, 'double');
                         ws.send(JSON.stringify({ type: 'move', x: pos.x, y: pos.y }));
                         ws.send(JSON.stringify({ type: 'double_click', button: 'left', x: pos.x, y: pos.y }));
                         toggleMouseMode();
@@ -2054,6 +2088,7 @@
 
                     // 2. Toolbar Sağ Tık Modu VEYA Uzun Basma (>= 600ms)
                     if (clickMode === 2 || duration >= 600) {
+                        showTouchFeedback(t.clientX, t.clientY, 'right');
                         ws.send(JSON.stringify({ type: 'move', x: pos.x, y: pos.y }));
                         ws.send(JSON.stringify({ type: 'click', button: 'right', action: 'down', x: pos.x, y: pos.y }));
                         setTimeout(function() {
@@ -2071,19 +2106,18 @@
                     }
 
                     // 3. DOĞAL PARMAKLA ÇİFT TIKLAMA TESPİTİ (Dosya / Program / Klasör Açma)
-                    var isDoubleTap = (now - lastTapTime < 550) && lastTapPos &&
-                                      (Math.abs(t.clientX - lastTapPos.clientX) < 80 && Math.abs(t.clientY - lastTapPos.clientY) < 80);
+                    var isDoubleTap = (now - lastTapTime < 500) && lastTapPos &&
+                                      (Math.hypot(t.clientX - lastTapPos.clientX, t.clientY - lastTapPos.clientY) < 70);
 
                     if (isDoubleTap) {
-                        // 2. Dokunuş: 1. dokunuşun tam konumuna odaklanarak donanımsal çift tıklamayı gönder
+                        showTouchFeedback(t.clientX, t.clientY, 'double');
                         var fixedPos = lastTapPos.normPos || pos;
                         ws.send(JSON.stringify({ type: 'move', x: fixedPos.x, y: fixedPos.y }));
                         ws.send(JSON.stringify({ type: 'double_click', button: 'left', x: fixedPos.x, y: fixedPos.y }));
-
                         lastTapTime = 0;
                         lastTapPos = null;
                     } else {
-                        // 1. Dokunuş: Tek Sol Tıklama
+                        showTouchFeedback(t.clientX, t.clientY, 'single');
                         ws.send(JSON.stringify({ type: 'move', x: pos.x, y: pos.y }));
                         ws.send(JSON.stringify({ type: 'click', button: 'left', action: 'down', x: pos.x, y: pos.y }));
                         setTimeout(function() {
@@ -2099,8 +2133,6 @@
                 isTouchDragging = false;
                 isPinchZooming = false;
             }, { passive: false });
-
-
 
             // Virtual Keyboard Touch Input Listener
             var hiddenInput = document.getElementById('hidden-keyboard-input');
@@ -2129,7 +2161,17 @@
                     }
                 });
             }
-        });
+        }
+        window.initInputListeners = initInputListeners;
+
+        if (document.readyState === 'loading') {
+            window.addEventListener('DOMContentLoaded', initInputListeners);
+            window.addEventListener('load', initInputListeners);
+        } else {
+            initInputListeners();
+        }
+
+
 
         window.addEventListener('keydown', function(e) {
             if (!ws || ws.readyState !== WebSocket.OPEN) return;
