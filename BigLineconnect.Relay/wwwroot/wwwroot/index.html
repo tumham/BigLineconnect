@@ -1136,11 +1136,21 @@
                         }
                         if (window.innerWidth < 768) {
                             setTimeout(function() {
-                                showToast('🔍 Mikro Jump yazılarını büyütmek için alttaki "🔍 Büyüt" tuşuna dokunun!', 'info');
+                                showToast('🔍 Büyüteç ile yazıları büyütmek için alttaki tuşa dokunabilirsiniz', 'info');
                             }, 1500);
                         }
+                    } else if (typeof ev.data === 'string' && ev.data.trim().startsWith('{')) {
+                        // Silent JSON message (host_info, ping/pong, metadata) - DO NOT show toast or alert!
+                        try {
+                            var meta = JSON.parse(ev.data);
+                            console.log('[BigLine] Host metadata received:', meta.type || meta);
+                        } catch(e) {}
                     } else {
-                        try { showToast(ev.data, 'info'); } catch(e) {}
+                        try {
+                            if (typeof ev.data === 'string' && ev.data.length < 100 && !ev.data.startsWith('{')) {
+                                showToast(ev.data, 'info');
+                            }
+                        } catch(e) {}
                     }
                 } else if (ev.data instanceof ArrayBuffer) {
                     var landing = document.getElementById('landing-page');
@@ -2026,32 +2036,75 @@
                     var t = e.changedTouches[0];
                     var pos = getMousePos(t.clientX, t.clientY);
 
-                    // 1. Önce imleci tam dokunulan noktaya sıçrat
-                    try {
+                    // 1. Toolbar Çift Tık Modu (Tek dokunuşta 2 ardışık donanımsal tık üret)
+                    if (clickMode === 1) {
                         ws.send(JSON.stringify({ type: 'move', x: pos.x, y: pos.y }));
-                    } catch(ex) {}
-
-                    // Automatic Double-Tap Detection
-                    var isDoubleTap = (now - lastTapTime < 480) && lastTapPos &&
-                                      (Math.abs(t.clientX - lastTapPos.clientX) < 50 && Math.abs(t.clientY - lastTapPos.clientY) < 50);
-
-                    if (clickMode === 1 || isDoubleTap) {
-                        var dblPos = (isDoubleTap && lastTapPos) ? getMousePos(lastTapPos.clientX, lastTapPos.clientY) : pos;
-                        ws.send(JSON.stringify({ type: 'double_click', button: 'left', x: dblPos.x, y: dblPos.y }));
+                        ws.send(JSON.stringify({ type: 'click', button: 'left', action: 'down', x: pos.x, y: pos.y }));
+                        setTimeout(function() {
+                            if (ws && ws.readyState === WebSocket.OPEN) {
+                                ws.send(JSON.stringify({ type: 'click', button: 'left', action: 'up', x: pos.x, y: pos.y }));
+                                setTimeout(function() {
+                                    if (ws && ws.readyState === WebSocket.OPEN) {
+                                        ws.send(JSON.stringify({ type: 'click', button: 'left', action: 'down', x: pos.x, y: pos.y }));
+                                        setTimeout(function() {
+                                            if (ws && ws.readyState === WebSocket.OPEN) {
+                                                ws.send(JSON.stringify({ type: 'click', button: 'left', action: 'up', x: pos.x, y: pos.y }));
+                                            }
+                                        }, 40);
+                                    }
+                                }, 70);
+                            }
+                        }, 40);
+                        toggleMouseMode();
                         lastTapTime = 0;
                         lastTapPos = null;
-                    } else if (clickMode === 2 || duration >= 450) {
+                        showToast('⚡ Çift Tıklandı', 'info');
+                        e.preventDefault();
+                        isTouchDragging = false;
+                        isPinchZooming = false;
+                        return;
+                    }
+
+                    // 2. Toolbar Sağ Tık Modu VEYA Uzun Basma (>= 450ms)
+                    if (clickMode === 2 || duration >= 450) {
+                        ws.send(JSON.stringify({ type: 'move', x: pos.x, y: pos.y }));
                         ws.send(JSON.stringify({ type: 'click', button: 'right', action: 'down', x: pos.x, y: pos.y }));
                         setTimeout(function() {
                             if (ws && ws.readyState === WebSocket.OPEN) {
                                 ws.send(JSON.stringify({ type: 'click', button: 'right', action: 'up', x: pos.x, y: pos.y }));
                             }
-                        }, 40);
-                        lastTapTime = now;
-                        lastTapPos = { clientX: t.clientX, clientY: t.clientY };
+                        }, 45);
+                        lastTapTime = 0;
+                        lastTapPos = null;
                         if (clickMode === 2) toggleMouseMode();
+                        showToast('🔴 Sağ Tıklandı', 'info');
+                        e.preventDefault();
+                        isTouchDragging = false;
+                        isPinchZooming = false;
+                        return;
+                    }
+
+                    // 3. DOĞAL PARMAKLA ÇİFT TIKLAMA TESPİTİ (Dosya / Program Açma)
+                    var isDoubleTap = (now - lastTapTime < 500) && lastTapPos &&
+                                      (Math.abs(t.clientX - lastTapPos.clientX) < 55 && Math.abs(t.clientY - lastTapPos.clientY) < 55);
+
+                    if (isDoubleTap) {
+                        // 2. Dokunuş: İmleci 1. dokunuşun tam pikseline sabitle ve 2. tıklamayı gönder!
+                        var fixedPos = lastTapPos.normPos || pos;
+                        ws.send(JSON.stringify({ type: 'move', x: fixedPos.x, y: fixedPos.y }));
+                        ws.send(JSON.stringify({ type: 'click', button: 'left', action: 'down', x: fixedPos.x, y: fixedPos.y }));
+                        setTimeout(function() {
+                            if (ws && ws.readyState === WebSocket.OPEN) {
+                                ws.send(JSON.stringify({ type: 'click', button: 'left', action: 'up', x: fixedPos.x, y: fixedPos.y }));
+                            }
+                        }, 40);
+
+                        showToast('⚡ Çift Tıklandı', 'info');
+                        lastTapTime = 0;
+                        lastTapPos = null;
                     } else {
-                        // Single Left-Click (Kesin Tıklama)
+                        // 1. Dokunuş: Tek Sol Tıklama
+                        ws.send(JSON.stringify({ type: 'move', x: pos.x, y: pos.y }));
                         ws.send(JSON.stringify({ type: 'click', button: 'left', action: 'down', x: pos.x, y: pos.y }));
                         setTimeout(function() {
                             if (ws && ws.readyState === WebSocket.OPEN) {
@@ -2059,7 +2112,7 @@
                             }
                         }, 40);
                         lastTapTime = now;
-                        lastTapPos = { clientX: t.clientX, clientY: t.clientY };
+                        lastTapPos = { clientX: t.clientX, clientY: t.clientY, normPos: pos };
                     }
                     e.preventDefault();
                 }

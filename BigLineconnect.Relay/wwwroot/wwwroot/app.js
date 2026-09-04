@@ -65,19 +65,24 @@ const getElem = (id) => document.getElementById(id);
 
 // Toast system
 function showToast(message, type = 'info') {
-    const tElem = getElem('toast');
+    if (!message || typeof message !== 'string') return;
+    var trimmed = message.trim();
+    if (trimmed.startsWith('{') && trimmed.endsWith('}')) return; // Never show raw JSON as toast or alert!
+
+    var tElem = document.getElementById('toast');
     if (!tElem) {
-        try { alert(message); } catch(e) {}
-        return;
+        tElem = document.createElement('div');
+        tElem.id = 'toast';
+        document.body.appendChild(tElem);
     }
     tElem.textContent = message;
-    tElem.className = `toast ${type}`;
-    tElem.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:999999;padding:12px 24px;border-radius:10px;font-weight:700;font-size:14px;box-shadow:0 8px 24px rgba(0,0,0,0.8);background:' + (type === 'error' ? '#e74c3c' : (type === 'success' ? '#2ecc71' : '#00e5ff')) + ';color:' + (type === 'info' ? '#000' : '#fff');
-    tElem.classList.remove('hidden');
+    tElem.className = 'toast ' + type;
+    tElem.style.cssText = 'position:fixed;top:24px;left:50%;transform:translateX(-50%);z-index:9999999;padding:10px 20px;border-radius:12px;font-weight:700;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,0.8);background:' + (type === 'error' ? '#ef4444' : (type === 'success' ? '#10b981' : 'rgba(15,23,42,0.92)')) + ';color:#fff;border:1px solid rgba(0,229,255,0.5);backdrop-filter:blur(10px);pointer-events:none;transition:opacity 0.3s ease;opacity:1;';
     
-    setTimeout(() => {
-        if (tElem) tElem.classList.add('hidden');
-    }, 4000);
+    if (window._toastTimer) clearTimeout(window._toastTimer);
+    window._toastTimer = setTimeout(function() {
+        if (tElem) tElem.style.opacity = '0';
+    }, 2800);
 }
 
 // Actions bound at end of file
