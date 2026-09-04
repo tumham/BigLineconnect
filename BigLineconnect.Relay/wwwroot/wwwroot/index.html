@@ -116,10 +116,10 @@
                             <input type="tel" inputmode="numeric" pattern="[0-9]*" autocomplete="off" id="target-id" placeholder="Örn: 219 675 629" data-i18n-ph="widget.placeholder" oninput="onIdInputType(this)" onkeydown="if(event.key==='Enter') doConnect()" style="text-align: center; letter-spacing: 3px; font-weight: 900; font-size: 1.6rem; padding: 14px; height: 58px; border-radius: 14px; border: 2px solid rgba(0, 229, 255, 0.4); background: rgba(15, 23, 42, 0.85); color: #fff; width: 100%;">
                             
                             <!-- Auto-Suggest Dropdown Popup -->
-                            <div id="id-suggestions-box" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: #0f172a; border: 1.5px solid #00e5ff; border-radius: 12px; margin-top: 4px; max-height: 200px; overflow-y: auto; z-index: 99999; box-shadow: 0 10px 25px rgba(0,0,0,0.8); padding: 6px;"></div>
+                            <div id="id-suggestions-box" style="display: none; pointer-events: none; position: absolute; top: 100%; left: 0; right: 0; background: #0f172a; border: 1.5px solid #00e5ff; border-radius: 12px; margin-top: 4px; max-height: 200px; overflow-y: auto; z-index: 99999; box-shadow: 0 10px 25px rgba(0,0,0,0.8); padding: 6px;"></div>
                         </div>
                         
-                        <button id="connect-btn" type="button" onclick="doConnect()" class="primary-btn" style="position: relative; z-index: 9999; pointer-events: auto !important; cursor: pointer; height: 54px; font-size: 1.15rem; font-weight: 800; margin-top: 10px;">
+                        <button id="connect-btn" type="button" onclick="doConnect()" class="primary-btn" style="position: relative; z-index: 9999; pointer-events: auto !important; cursor: pointer; height: 54px; font-size: 1.15rem; font-weight: 800; margin-top: 10px; touch-action: manipulation;">
                             <span data-i18n="widget.connect">Bağlan</span> <i class="fa-solid fa-arrow-right-to-bracket"></i>
                         </button>
 
@@ -828,12 +828,15 @@
                 }
             }
 
-            var clean = raw.replace(/\s+/g, '');
+            var clean = digits;
             var suggestBox = document.getElementById('id-suggestions-box');
             if (!suggestBox) return;
 
-            if (clean.length < 3) {
+            // ⚠️ KRİTİK MOBİL DÜZELTME: 9 hane (tam ID) yazıldığında öneri kutusunu HEMEN GİZLE!
+            // Böylece öneri kutusu alttaki "Bağlan" butonunun üstünü asla kapatamaz!
+            if (clean.length < 3 || clean.length >= 9) {
                 suggestBox.style.display = 'none';
+                suggestBox.style.pointerEvents = 'none';
                 return;
             }
 
@@ -851,18 +854,20 @@
 
             if (matched.length === 0) {
                 suggestBox.style.display = 'none';
+                suggestBox.style.pointerEvents = 'none';
                 return;
             }
 
             var html = '';
             matched.slice(0, 5).forEach(function(item) {
-                html += '<div onclick="selectSuggestion(\'' + item.id + '\')" style="padding: 8px 12px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center;">';
+                html += '<div onclick="selectSuggestion(\'' + item.id + '\')" style="padding: 10px 12px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; touch-action: manipulation;">';
                 html += '  <span style="font-weight: 700; color: #fff; font-size: 0.85rem;">' + escapeHtml(item.name || item.formatted) + '</span>';
                 html += '  <span style="font-weight: 800; color: #00e5ff; font-size: 0.85rem; letter-spacing: 1px;">' + escapeHtml(item.formatted) + '</span>';
                 html += '</div>';
             });
             suggestBox.innerHTML = html;
             suggestBox.style.display = 'block';
+            suggestBox.style.pointerEvents = 'auto';
         }
         window.onIdInputType = onIdInputType;
 
@@ -872,7 +877,10 @@
             if (inputElem) {
                 inputElem.value = formatIdDisplay(cleanId);
             }
-            if (suggestBox) suggestBox.style.display = 'none';
+            if (suggestBox) {
+                suggestBox.style.display = 'none';
+                suggestBox.style.pointerEvents = 'none';
+            }
             doConnect();
         }
         window.selectSuggestion = selectSuggestion;
@@ -882,36 +890,59 @@
             try {
                 var search = window.location.search || '';
                 var hash = window.location.hash || '';
+                var fullHref = window.location.href || '';
                 var idVal = '';
 
-                if (search) {
-                    var params = new URLSearchParams(search);
-                    idVal = params.get('id') || params.get('remoteid') || params.get('hostid') || '';
+                // 1. Comprehensive regex on full URL (detects ?id=, &id=, #id=, ?remoteid=, etc. case-insensitively)
+                var match = fullHref.match(/[?&#](?:id|remoteid|hostid|target)=([0-9\s]+)/i);
+                if (match && match[1]) {
+                    idVal = match[1];
                 }
-                if (!idVal && hash && (hash.indexOf('id=') !== -1 || hash.indexOf('remoteid=') !== -1)) {
+
+                // 2. URLSearchParams query string fallback
+                if (!idVal && search) {
+                    var params = new URLSearchParams(search);
+                    idVal = params.get('id') || params.get('remoteid') || params.get('hostid') || params.get('target') ||
+                            params.get('ID') || params.get('Id') || '';
+                }
+
+                // 3. Hash query fallback
+                if (!idVal && hash) {
                     var qIdx = hash.indexOf('?');
                     var hashQuery = qIdx !== -1 ? hash.substring(qIdx) : ('?' + hash.substring(1));
                     var hParams = new URLSearchParams(hashQuery);
-                    idVal = hParams.get('id') || hParams.get('remoteid') || hParams.get('hostid') || '';
+                    idVal = hParams.get('id') || hParams.get('remoteid') || hParams.get('hostid') || hParams.get('target') ||
+                            hParams.get('ID') || hParams.get('Id') || '';
                 }
 
                 if (idVal) {
-                    var clean = idVal.replace(/\D/g, '');
+                    var clean = String(idVal).replace(/\D/g, '');
                     if (clean.length >= 4) {
                         var inputElem = document.getElementById('target-id') || document.getElementById('tid');
                         if (inputElem) {
                             inputElem.value = formatIdDisplay(clean);
-                            // Sadece formatlamakla kalma, input trigger et
-                            if (typeof onIdInputType === 'function') {
-                                onIdInputType(inputElem);
-                            }
-                            var suggestBox = document.getElementById('id-suggestions-box');
-                            if (suggestBox) suggestBox.style.display = 'none';
 
+                            // Switch to client tab if needed
+                            if (typeof switchConnectTab === 'function') {
+                                switchConnectTab('client');
+                            }
+
+                            // ⚠️ Öneri kutusunu KESİNLİKLE gizle, Bağlan butonunu asla kapatmasın!
+                            var suggestBox = document.getElementById('id-suggestions-box');
+                            if (suggestBox) {
+                                suggestBox.style.display = 'none';
+                                suggestBox.style.pointerEvents = 'none';
+                            }
+
+                            // Scroll directly to connect card
                             setTimeout(function() {
                                 var widget = document.getElementById('baglan');
                                 if (widget) widget.scrollIntoView({ behavior: 'smooth' });
-                            }, 300);
+                            }, 150);
+
+                            if (typeof showToast === 'function') {
+                                showToast('Uzak Masaüstü ID algılandı: ' + formatIdDisplay(clean), 'info');
+                            }
                         }
                     }
                 }
@@ -921,25 +952,52 @@
         }
         window.applyMagicLink = applyMagicLink;
 
-        // Render saved devices on page load
+        // Bağlan Butonuna Dokunma ve Tıklama Dinleyicisi (iOS Safari sanal klavye kapanırken click iptal edilmesini önler!)
+        function bindConnectButton() {
+            var btn = document.getElementById('connect-btn');
+            if (!btn || btn._touchBound) return;
+            btn._touchBound = true;
+
+            var lastTap = 0;
+            function handleConnectTap(e) {
+                var now = Date.now();
+                if (now - lastTap < 800) {
+                    if (e && e.cancelable) e.preventDefault();
+                    return;
+                }
+                lastTap = now;
+                doConnect();
+            }
+
+            btn.addEventListener('pointerdown', handleConnectTap);
+            btn.addEventListener('click', handleConnectTap);
+        }
+
+        // Render saved devices & magic link on page load & lifecycle events
+        applyMagicLink();
+        document.addEventListener('DOMContentLoaded', function() {
+            applyMagicLink();
+            bindConnectButton();
+        });
         window.addEventListener('load', function() {
             renderSavedDevices();
             applyMagicLink();
+            bindConnectButton();
             // Close suggestions on outside tap
-            document.addEventListener('click', function(e) {
+            var closeSuggest = function(e) {
                 var suggestBox = document.getElementById('id-suggestions-box');
                 var inputElem = document.getElementById('target-id');
-                if (suggestBox && e.target !== suggestBox && e.target !== inputElem) {
+                if (suggestBox && e.target !== suggestBox && e.target !== inputElem && !suggestBox.contains(e.target)) {
                     suggestBox.style.display = 'none';
+                    suggestBox.style.pointerEvents = 'none';
                 }
-            });
+            };
+            document.addEventListener('click', closeSuggest);
+            document.addEventListener('touchstart', closeSuggest, { passive: true });
         });
-
-        if (document.readyState === 'complete' || document.readyState === 'interactive') {
-            setTimeout(applyMagicLink, 50);
-        } else {
-            document.addEventListener('DOMContentLoaded', applyMagicLink);
-        }
+        window.addEventListener('pageshow', applyMagicLink); // Safari BFCache support
+        setTimeout(applyMagicLink, 100);
+        setTimeout(applyMagicLink, 500);
 
         function resetConnectButton() {
             var btn = document.getElementById('connect-btn');
@@ -957,26 +1015,42 @@
 
         function doConnect() {
             console.log('[BigLine] doConnect triggered');
+
+            // 1. Öneri kutusunu hemen kapat ve sanal klavyeyi indir
+            var suggestBox = document.getElementById('id-suggestions-box');
+            if (suggestBox) {
+                suggestBox.style.display = 'none';
+                suggestBox.style.pointerEvents = 'none';
+            }
+            var inputElem = document.getElementById('target-id') || document.getElementById('tid');
+            if (inputElem) {
+                inputElem.blur();
+            }
+
+            // 2. Kilitlenme koruması: isConnecting takılı kaldıysa ve soket yoksa kilidi aç
             if (isConnecting) {
-                console.log('[BigLine] Connection already in progress, ignoring duplicate tap.');
-                return;
+                console.log('[BigLine] Connection in progress check...');
+                if (!ws || (ws.readyState !== WebSocket.OPEN && ws.readyState !== WebSocket.CONNECTING)) {
+                    isConnecting = false; // Self-heal stuck state
+                } else {
+                    return;
+                }
             }
             if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
                 console.log('[BigLine] Active WebSocket exists, ignoring duplicate call.');
                 return;
             }
 
-            var inputElem = document.getElementById('target-id') || document.getElementById('tid');
             if (!inputElem) { alert('Hata: ID giriş kutusu bulunamadı.'); return; }
 
             var rawVal = inputElem.value ? inputElem.value.trim() : '';
-            if (!rawVal) {
-                alert('⚠️ Lütfen bağlanmak istediğiniz uzaktaki bilgisayarın ID numarasını girin (Örn: 219 675 629).');
+            var cleanId = rawVal.replace(/\D/g, ''); // Sadece rakamları al!
+            if (!cleanId || cleanId.length < 5) {
+                alert('⚠️ Lütfen bağlanmak istediğiniz uzaktaki bilgisayarın 9 haneli ID numarasını girin (Örn: 219 675 629).');
                 resetConnectButton();
                 return;
             }
 
-            var cleanId = rawVal.replace(/\s+/g, '');
             saveToIdHistory(cleanId); // Save to history on connect!
 
             isConnecting = true;
@@ -986,10 +1060,25 @@
                 btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Bağlanıyor...</span>';
             }
 
-            var wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-            ws = new WebSocket(wsProtocol + '//' + location.host + '/connect-client?id=' + encodeURIComponent(cleanId));
-            ws.binaryType = 'arraybuffer';
+            // 3. Emniyet Zaman Aşımı: 5 saniye içinde bağlantı açılmazsa butonu tekrar aç
+            setTimeout(function() {
+                if (isConnecting && (!ws || ws.readyState !== WebSocket.OPEN)) {
+                    console.warn('[BigLine] Connection attempt timeout, auto-resetting button.');
+                    isConnecting = false;
+                    resetConnectButton();
+                }
+            }, 5000);
 
+            var wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            try {
+                ws = new WebSocket(wsProtocol + '//' + location.host + '/connect-client?id=' + encodeURIComponent(cleanId));
+                ws.binaryType = 'arraybuffer';
+            } catch(wsErr) {
+                console.error('[BigLine] WebSocket create error:', wsErr);
+                isConnecting = false;
+                resetConnectButton();
+                alert('Bağlantı başlatılamadı: ' + wsErr.message);
+                return;
             var pingInterval = null;
             ws.onopen = function() {
                 console.log('[BigLine] WS Connected!');
@@ -2018,9 +2107,3 @@
     <script src="app.js?v=3610"></script>
 </body>
 </html>
-
-
-
-            <button id="file-transfer-btn" type="button" onclick="triggerFileTransfer()" class="control-btn" title="Dosya GÃ¶nder" style="background: rgba(16, 185, 129, 0.2); border: 1px solid #10b981; color: #a7f3d0; border-radius: 20px; padding: 6px 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 4px;">
-                <i class="fa-solid fa-upload"></i> <span>GÃ¶nder</span>
-            </button>

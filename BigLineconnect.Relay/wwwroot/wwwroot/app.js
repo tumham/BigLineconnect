@@ -944,41 +944,55 @@ function checkMagicLink() {
     try {
         const search = window.location.search || '';
         const hash = window.location.hash || '';
+        const fullHref = window.location.href || '';
         let magicId = '';
 
-        if (search) {
-            const urlParams = new URLSearchParams(search);
-            magicId = urlParams.get('id') || urlParams.get('remoteid') || urlParams.get('hostid') || '';
+        // 1. Regex match for ?id=, &id=, #id=, ?remoteid=, ?hostid=, ?target=
+        const match = fullHref.match(/[?&#](?:id|remoteid|hostid|target)=([0-9\s]+)/i);
+        if (match && match[1]) {
+            magicId = match[1];
         }
-        if (!magicId && hash && (hash.includes('id=') || hash.includes('remoteid='))) {
+
+        // 2. Query fallback
+        if (!magicId && search) {
+            const urlParams = new URLSearchParams(search);
+            magicId = urlParams.get('id') || urlParams.get('remoteid') || urlParams.get('hostid') || urlParams.get('target') ||
+                      urlParams.get('ID') || urlParams.get('Id') || '';
+        }
+        if (!magicId && hash) {
             const qIdx = hash.indexOf('?');
             const hashQuery = qIdx !== -1 ? hash.substring(qIdx) : ('?' + hash.substring(1));
             const hParams = new URLSearchParams(hashQuery);
-            magicId = hParams.get('id') || hParams.get('remoteid') || hParams.get('hostid') || '';
+            magicId = hParams.get('id') || hParams.get('remoteid') || hParams.get('hostid') || hParams.get('target') ||
+                      hParams.get('ID') || hParams.get('Id') || '';
         }
 
         const inputElem = document.getElementById('target-id') || targetIdInput;
         if (magicId && inputElem) {
-            const clean = magicId.replace(/\D/g, '');
+            const clean = String(magicId).replace(/\D/g, '');
             if (clean.length >= 4) {
                 if (clean.length === 9) {
                     inputElem.value = clean.substring(0, 3) + ' ' + clean.substring(3, 6) + ' ' + clean.substring(6);
                 } else {
                     inputElem.value = clean;
                 }
-                inputElem.dispatchEvent(new Event('input', { bubbles: true }));
                 
-                // Hide auto-suggestions
+                // Switch to client connect tab if needed
+                if (typeof switchConnectTab === 'function') {
+                    switchConnectTab('client');
+                }
+
+                // Hide auto-suggestions so connect button is never blocked
                 const suggestBox = document.getElementById('id-suggestions-box');
-                if (suggestBox) suggestBox.style.display = 'none';
+                if (suggestBox) {
+                    suggestBox.style.display = 'none';
+                    suggestBox.style.pointerEvents = 'none';
+                }
 
                 // Scroll to connect widget
                 setTimeout(() => {
                     document.getElementById('baglan')?.scrollIntoView({ behavior: 'smooth' });
-                    if (typeof showToast === 'function') {
-                        showToast(`Uzak Masaüstü ID algılandı: ${inputElem.value}`, 'info');
-                    }
-                }, 300);
+                }, 150);
             }
         }
     } catch(err) {
@@ -1294,7 +1308,7 @@ function copyGeneratedLicenseKey() {
 }
 
 // Global Window Function Bindings for Mobile & HTML Event Handlers
-window.startConnectionProcess = startConnectionProcess;
+window.startConnectionProcess = window.doConnect || startConnectionProcess;
 window.connectToHost = connectToHost;
 window.sendPassword = sendPassword;
 window.switchConnectTab = switchConnectTab;

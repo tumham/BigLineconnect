@@ -54,7 +54,7 @@ public static class TelegramNotifier
             _ => "⚪"
         };
 
-        string cleanHostId = (hostId ?? "").Replace(" ", "").Trim();
+        string cleanHostId = System.Text.RegularExpressions.Regex.Replace(hostId ?? "", @"\D", "").Trim();
         string connectUrl = $"https://biglineconnect.bigus.com.tr/?id={cleanHostId}";
 
         string message = $"""
@@ -72,7 +72,18 @@ public static class TelegramNotifier
 🌐 {connectUrl}
 """;
 
-        await BroadcastToTenantAsync(tenantId, message);
+        var inlineKeyboard = new
+        {
+            inline_keyboard = new[]
+            {
+                new[]
+                {
+                    new { text = $"🚀 HEMEN BAĞLAN ({cleanHostId})", url = connectUrl }
+                }
+            }
+        };
+
+        await BroadcastToTenantAsync(tenantId, message, inlineKeyboard);
     }
 
     /// <summary>
@@ -260,7 +271,7 @@ _Yeni tenant eklemek için /start TENANT\_ID yazın_
     /// Belirli bir tenant'ın tüm kayıtlı destek uzmanlarına mesaj gönderir.
     /// Eğer o tenant'a kayıtlı kimse yoksa veya ana yöneticiler varsa, bildirimi kaçırmamak için ana uzmanlara da iletir.
     /// </summary>
-    private static async Task BroadcastToTenantAsync(string tenantId, string message)
+    private static async Task BroadcastToTenantAsync(string tenantId, string message, object? replyMarkup = null)
     {
         List<long> chatIds = new();
         lock (_lock)
@@ -304,7 +315,7 @@ _Yeni tenant eklemek için /start TENANT\_ID yazın_
         {
             try
             {
-                await SendMessageAsync(chatId, message);
+                await SendMessageAsync(chatId, message, replyMarkup);
             }
             catch (Exception ex)
             {
@@ -313,15 +324,19 @@ _Yeni tenant eklemek için /start TENANT\_ID yazın_
         }
     }
 
-    private static async Task SendMessageAsync(long chatId, string text)
+    private static async Task SendMessageAsync(long chatId, string text, object? replyMarkup = null)
     {
         var url = $"https://api.telegram.org/bot{_botToken}/sendMessage";
-        var payload = new
+        var payload = new Dictionary<string, object>
         {
-            chat_id = chatId,
-            text = text,
-            parse_mode = "Markdown"
+            ["chat_id"] = chatId,
+            ["text"] = text,
+            ["parse_mode"] = "Markdown"
         };
+        if (replyMarkup != null)
+        {
+            payload["reply_markup"] = replyMarkup;
+        }
 
         var json = JsonSerializer.Serialize(payload);
         var content = new StringContent(json, Encoding.UTF8, "application/json");
