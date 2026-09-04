@@ -1001,9 +1001,10 @@
                     if (payloadLen <= 4) return;
 
                     var magic = view.getUint32(payloadOffset, true);
-                    var MAGIC_BLRT = 0x54524C42; // "BLRT" in little-endian
+                    var MAGIC_BRTE = 0x45545242; // "BRTE" in little-endian (BigLine-RT v3 / FT4)
+                    var MAGIC_BLRT = 0x54524C42; // "BLRT" in little-endian (Legacy)
 
-                    if (magic === MAGIC_BLRT && payloadLen > 9) {
+                    if ((magic === MAGIC_BRTE || magic === MAGIC_BLRT) && payloadLen > 9) {
                         var flag = view.getUint8(payloadOffset + 4);
                         var screenW = view.getUint16(payloadOffset + 5, true);
                         var screenH = view.getUint16(payloadOffset + 7, true);
@@ -1015,6 +1016,7 @@
                         }
 
                         if (flag === 0x01) {
+                            // KEYFRAME (Tam Ekran Güncelleme)
                             var jpegLen = view.getInt32(payloadOffset + 9, true);
                             var jpegStart = payloadOffset + 13;
                             if (jpegStart + jpegLen <= rawBuf.byteLength) {
@@ -1030,7 +1032,8 @@
                                     drawLegacy(blob, 0, 0, screenW, screenH);
                                 }
                             }
-                        } else if (flag === 0x02) {
+                        } else if (flag === 0x03 || flag === 0x02) {
+                            // SUBFRAME (Pinpoint Bounding Box - DeskRT)
                             var subX = view.getUint16(payloadOffset + 9, true);
                             var subY = view.getUint16(payloadOffset + 11, true);
                             var subW = view.getUint16(payloadOffset + 13, true);

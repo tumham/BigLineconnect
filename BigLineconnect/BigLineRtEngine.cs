@@ -23,6 +23,7 @@ namespace BigLineconnect
         public const uint MAGIC_HEADER = 0x45545242; // 'B','R','T','E'
 
         private static ulong[]? _lastTileHashes;
+        private static ulong[]? _currentTileHashes;
         private static int _lastScreenWidth = 0;
         private static int _lastScreenHeight = 0;
         private static ushort _tileCols = 0;
@@ -41,6 +42,7 @@ namespace BigLineconnect
         public static void Reset()
         {
             _lastTileHashes = null;
+            _currentTileHashes = null;
             _lastScreenWidth = 0;
             _lastScreenHeight = 0;
             _frameCount = 0;
@@ -77,9 +79,9 @@ namespace BigLineconnect
                 forceKeyframe = true;
             }
 
-            // Periodic Keyframe every 300 frames (~10-15 sec) for self-healing packet sync
-            // Reduced frequency to prevent 3G bandwidth spike (keyframe = 60-80 KB vs subframe = 2-5 KB)
-            if (_frameCount == 1 || _frameCount % 300 == 0 || _lastTileHashes == null)
+            // Periodic Keyframe every 30 frames (~1 sec) for fast self-healing
+            // Prevents stale canvas artifacts from persisting more than 1 second
+            if (_frameCount == 1 || _frameCount % 30 == 0 || _lastTileHashes == null)
             {
                 forceKeyframe = true;
             }
@@ -92,7 +94,13 @@ namespace BigLineconnect
                 _tileCols = cols;
                 _tileRows = rows;
                 _lastTileHashes = new ulong[totalTiles];
+                _currentTileHashes = new ulong[totalTiles];
                 forceKeyframe = true;
+            }
+
+            if (_currentTileHashes == null || _currentTileHashes.Length != totalTiles)
+            {
+                _currentTileHashes = new ulong[totalTiles];
             }
 
             // Lock bitmap bits for fast SIMD / pointer hash comparison
@@ -100,7 +108,7 @@ namespace BigLineconnect
             
             try
             {
-                var currentHashes = new ulong[totalTiles];
+                var currentHashes = _currentTileHashes;
                 int minCol = cols, maxCol = -1;
                 int minRow = rows, maxRow = -1;
                 int dirtyTileCount = 0;
@@ -135,8 +143,10 @@ namespace BigLineconnect
                     }
                 }
 
-                // Update hash cache
-                _lastTileHashes = currentHashes;
+                // Swap hash buffers without allocation
+                var temp = _lastTileHashes;
+                _lastTileHashes = _currentTileHashes;
+                _currentTileHashes = temp;
 
                 // 1. If NO pixels changed at all and not keyframe, return empty (0 KB network bandwidth!)
                 if (dirtyTileCount == 0 && !forceKeyframe)
@@ -144,8 +154,8 @@ namespace BigLineconnect
                     return Array.Empty<byte>();
                 }
 
-                // 2. If Keyframe requested OR more than 40% of screen changed (e.g. Excel opening), send Keyframe
-                if (forceKeyframe || dirtyTileCount > (totalTiles * 0.40) || maxCol < 0 || maxRow < 0)
+                // 2. If Keyframe requested OR more than 25% of screen changed, send Keyframe
+                if (forceKeyframe || dirtyTileCount > (totalTiles * 0.25) || maxCol < 0 || maxRow < 0)
                 {
                     return BuildKeyframePacket(bmpScreen, width, height, quality);
                 }
@@ -156,8 +166,8 @@ namespace BigLineconnect
                 int dirtyW = Math.Min(width - dirtyX, (maxCol - minCol + 1) * TILE_SIZE);
                 int dirtyH = Math.Min(height - dirtyY, (maxRow - minRow + 1) * TILE_SIZE);
 
-                // If bounding box covers less than 50% of the screen area, send SUBFRAME (1-3 KB!)
-                if ((long)dirtyW * dirtyH <= (long)width * height * 0.50)
+                // If bounding box covers less than 30% of the screen area, send SUBFRAME (1-3 KB!)
+                if ((long)dirtyW * dirtyH <= (long)width * height * 0.30)
                 {
                     return BuildSubFramePacket(bmpScreen, dirtyX, dirtyY, dirtyW, dirtyH, width, height, quality);
                 }
@@ -271,10 +281,18 @@ namespace BigLineconnect
                         byte[] jpegData = reader.ReadBytes(length);
 
                         using (var jpegMs = new MemoryStream(jpegData))
+                        using (var fullBmp = new Bitmap(jpegMs))
                         {
-                            var fullBmp = new Bitmap(jpegMs);
+                            // Safe pixel-copy instead of GDI+ Clone
+                            var newCanvas = new Bitmap(fullBmp.Width, fullBmp.Height, PixelFormat.Format32bppArgb);
+                            using (Graphics g = Graphics.FromImage(newCanvas))
+                            {
+                                g.CompositingMode = CompositingMode.SourceCopy;
+                                g.InterpolationMode = InterpolationMode.NearestNeighbor;
+                                g.DrawImage(fullBmp, 0, 0, fullBmp.Width, fullBmp.Height);
+                            }
                             currentCanvas?.Dispose();
-                            currentCanvas = new Bitmap(fullBmp);
+                            currentCanvas = newCanvas;
                         }
                     }
                     else if (flag == FLAG_SUBFRAME)
@@ -286,10 +304,10 @@ namespace BigLineconnect
                         int length = reader.ReadInt32();
                         byte[] jpegData = reader.ReadBytes(length);
 
+                        // SAFETY: If no canvas exists, skip subframe (wait for keyframe)
                         if (currentCanvas == null || currentCanvas.Width != width || currentCanvas.Height != height)
                         {
-                            currentCanvas?.Dispose();
-                            currentCanvas = new Bitmap(width, height, PixelFormat.Format32bppArgb);
+                            return currentCanvas != null ? SafeCloneCanvas(currentCanvas) : null;
                         }
 
                         using (var jpegMs = new MemoryStream(jpegData))
@@ -304,13 +322,21 @@ namespace BigLineconnect
                         }
                     }
 
-                    if (currentCanvas != null)
-                    {
-                        return (Bitmap)currentCanvas.Clone();
-                    }
-                    return null;
+                    return currentCanvas != null ? SafeCloneCanvas(currentCanvas) : null;
                 }
             }
+        }
+
+        private static Bitmap SafeCloneCanvas(Bitmap canvas)
+        {
+            var clone = new Bitmap(canvas.Width, canvas.Height, PixelFormat.Format32bppArgb);
+            using (Graphics g = Graphics.FromImage(clone))
+            {
+                g.CompositingMode = CompositingMode.SourceCopy;
+                g.InterpolationMode = InterpolationMode.NearestNeighbor;
+                g.DrawImage(canvas, 0, 0, canvas.Width, canvas.Height);
+            }
+            return clone;
         }
     }
 }
