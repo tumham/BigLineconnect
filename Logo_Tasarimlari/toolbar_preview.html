@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Toolbar Tasarım Önizleme</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background-color: #0d0f12;
+            color: #fff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 30px;
+        }
+        h2 { color: #00e5ff; margin-bottom: 8px; }
+        p { color: #aaa; margin-top: 0; margin-bottom: 16px; }
+        .section {
+            background: #14171d;
+            border: 1px solid #232731;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        .toolbar {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            background: #1a1d24;
+            border-bottom: 2px solid #00e5ff;
+        }
+        
+        /* OPTION 1 - Modern Slate Dark */
+        .opt1 .tb-btn {
+            background: #262a34;
+            border: 1px solid #3d4352;
+            color: #f0f2f5;
+            padding: 5px 12px;
+            border-radius: 6px;
+            font-size: 12.5px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .opt1 .tb-btn:hover {
+            background: #323846;
+            border-color: #00e5ff;
+            color: #fff;
+        }
+        .opt1 .badge-cloud {
+            background: #ffb300;
+            color: #111;
+            padding: 5px 14px;
+            border-radius: 6px;
+            font-weight: 800;
+            font-size: 12.5px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .opt1 .badge-lan {
+            background: #00e676;
+            color: #111;
+            padding: 5px 14px;
+            border-radius: 6px;
+            font-weight: 800;
+            font-size: 12.5px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .opt1 .fps-stat {
+            color: #00e5ff;
+            font-weight: 700;
+            font-size: 12.5px;
+            margin-left: 8px;
+            letter-spacing: 0.5px;
+        }
+
+        /* OPTION 2 - Deep Midnight */
+        .opt2 .tb-btn {
+            background: #15171c;
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #e0e0e0;
+            padding: 5px 12px;
+            border-radius: 4px;
+            font-size: 12.5px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .opt2 .badge-cloud {
+            background: #ff6d00;
+            color: #fff;
+            padding: 5px 14px;
+            border-radius: 4px;
+            font-weight: 800;
+            font-size: 12.5px;
+        }
+        .opt2 .badge-lan {
+            background: #00c853;
+            color: #fff;
+            padding: 5px 14px;
+            border-radius: 4px;
+            font-weight: 800;
+            font-size: 12.5px;
+        }
+        .opt2 .fps-stat {
+            color: #76ff03;
+            font-weight: 700;
+            font-size: 12.5px;
+            margin-left: 8px;
+        }
+
+        .select-box {
+            background: #262a34;
+            border: 1px solid #3d4352;
+            color: #fff;
+            padding: 5px 8px;
+            border-radius: 6px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <h1 style="color:#00e5ff;">🖥️ BigLineconnect - Üst Araç Çubuğu Tasarım Seçenekleri</h1>
+    
+    <div class="section opt1">
+        <h2>🌟 Seçenek 1: Modern Slate Dark (Önerilen - AnyDesk / TeamViewer Pro Stili)</h2>
+        <p>Tüm butonlar tek tip koyu antrasit tonunda, yazılar ve simgeler net beyaz, değişken bağlantı durumları belirgin parlak rozet.</p>
+        <div class="toolbar">
+            <button class="tb-btn"><i class="fa-solid fa-comment-dots"></i> Sohbet</button>
+            <button class="tb-btn"><i class="fa-solid fa-folder-open"></i> Dosya 1</button>
+            <button class="tb-btn"><i class="fa-solid fa-bolt"></i> Dosya 2</button>
+            <button class="tb-btn"><i class="fa-solid fa-key"></i> Eylemler</button>
+            <div class="badge-cloud"><i class="fa-solid fa-cloud"></i> BULUT TÜNELİ</div>
+            <select class="select-box"><option>Ekran 1 (Ana)</option></select>
+            <button class="tb-btn"><i class="fa-solid fa-palette"></i> İyi (HD)</button>
+            <button class="tb-btn"><i class="fa-solid fa-moon"></i> Siyah</button>
+            <button class="tb-btn"><i class="fa-solid fa-compress"></i> Sığdır</button>
+            <span class="fps-stat"><i class="fa-solid fa-bolt"></i> 60 FPS | 12 ms</span>
+        </div>
+        <br>
+        <div class="toolbar">
+            <button class="tb-btn"><i class="fa-solid fa-comment-dots"></i> Sohbet</button>
+            <button class="tb-btn"><i class="fa-solid fa-folder-open"></i> Dosya 1</button>
+            <button class="tb-btn"><i class="fa-solid fa-bolt"></i> Dosya 2</button>
+            <button class="tb-btn"><i class="fa-solid fa-key"></i> Eylemler</button>
+            <div class="badge-lan"><i class="fa-solid fa-bolt"></i> LAN DİREKT</div>
+            <select class="select-box"><option>Ekran 1 (Ana)</option></select>
+            <button class="tb-btn"><i class="fa-solid fa-palette"></i> İyi (HD)</button>
+            <button class="tb-btn"><i class="fa-solid fa-moon"></i> Siyah</button>
+            <button class="tb-btn"><i class="fa-solid fa-compress"></i> Sığdır</button>
+            <span class="fps-stat"><i class="fa-solid fa-bolt"></i> 60 FPS | 0.5 ms</span>
+        </div>
+    </div>
+
+    <div class="section opt2">
+        <h2>🖤 Seçenek 2: Deep Midnight (Minimalist Mat Siyah)</h2>
+        <p>Mat siyah zemin, sade gri-beyaz simgeler, parlayan neon rozetler.</p>
+        <div class="toolbar" style="background:#0e1014; border-bottom: 2px solid #333;">
+            <button class="tb-btn"><i class="fa-solid fa-comment-dots"></i> Sohbet</button>
+            <button class="tb-btn"><i class="fa-solid fa-folder-open"></i> Dosya 1</button>
+            <button class="tb-btn"><i class="fa-solid fa-bolt"></i> Dosya 2</button>
+            <button class="tb-btn"><i class="fa-solid fa-key"></i> Eylemler</button>
+            <div class="badge-cloud"><i class="fa-solid fa-cloud"></i> BULUT TÜNELİ</div>
+            <select class="select-box" style="background:#15171c; border-color:rgba(255,255,255,0.1);"><option>Ekran 1 (Ana)</option></select>
+            <button class="tb-btn"><i class="fa-solid fa-palette"></i> İyi (HD)</button>
+            <button class="tb-btn"><i class="fa-solid fa-moon"></i> Siyah</button>
+            <button class="tb-btn"><i class="fa-solid fa-compress"></i> Sığdır</button>
+            <span class="fps-stat"><i class="fa-solid fa-bolt"></i> 60 FPS | 12 ms</span>
+        </div>
+    </div>
+</body>
+</html>

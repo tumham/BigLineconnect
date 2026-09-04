@@ -1037,31 +1037,8 @@ namespace BigLineconnect
                     }
                 }
 
-                // 3. App Icon: Load from icon.ico or create icon from B-C cyber icon
-                if (loadedIcon == null)
-                {
-                    string iconFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "wwwroot", "icon.ico");
-                    if (!File.Exists(iconFilePath)) iconFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "icon.ico");
-                    if (!File.Exists(iconFilePath)) iconFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Logo_Tasarimlari", "icon.ico");
-
-                    if (File.Exists(iconFilePath))
-                    {
-                        try { loadedIcon = new Icon(iconFilePath); } catch { }
-                    }
-                }
-
-                if (loadedIcon == null && _logoBox != null && _logoBox.Image != null)
-                {
-                    try
-                    {
-                        using (var iconBmp = new Bitmap(_logoBox.Image, 32, 32))
-                        {
-                            IntPtr hIcon = iconBmp.GetHicon();
-                            loadedIcon = Icon.FromHandle(hIcon);
-                        }
-                    }
-                    catch { }
-                }
+                // 3. App Icon: Always load the genuine crisp square 'B' application icon
+                loadedIcon = Program.GetAppIcon();
 
                 if (loadedIcon != null)
                 {

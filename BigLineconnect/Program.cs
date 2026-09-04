@@ -21,6 +21,73 @@ namespace BigLineconnect
 {
     public static class Program
     {
+        private static Icon? _cachedAppIcon = null;
+        private static readonly object _appIconLock = new object();
+
+        public static Icon? GetAppIcon()
+        {
+            if (_cachedAppIcon != null) return _cachedAppIcon;
+
+            lock (_appIconLock)
+            {
+                if (_cachedAppIcon != null) return _cachedAppIcon;
+
+                // 1. Extract directly from running .exe (embedded Win32 ApplicationIcon)
+                try
+                {
+                    string? procPath = Environment.ProcessPath;
+                    if (!string.IsNullOrEmpty(procPath) && File.Exists(procPath))
+                    {
+                        _cachedAppIcon = Icon.ExtractAssociatedIcon(procPath);
+                        if (_cachedAppIcon != null) return _cachedAppIcon;
+                    }
+                }
+                catch { }
+
+                // 2. Load from Embedded Resource stream
+                try
+                {
+                    var assembly = System.Reflection.Assembly.GetExecutingAssembly();
+                    string[] resNames = new[] { "BigLineconnect.icon.ico", "BigLineconnect.wwwroot.icon.ico" };
+                    foreach (var res in resNames)
+                    {
+                        using (Stream? s = assembly.GetManifestResourceStream(res))
+                        {
+                            if (s != null)
+                            {
+                                _cachedAppIcon = new Icon(s);
+                                return _cachedAppIcon;
+                            }
+                        }
+                    }
+                }
+                catch { }
+
+                // 3. Fallback: Search disk files
+                try
+                {
+                    string[] searchPaths = new[]
+                    {
+                        Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "icon.ico"),
+                        Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "wwwroot", "icon.ico"),
+                        Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Logo_Tasarimlari", "icon.ico")
+                    };
+
+                    foreach (var p in searchPaths)
+                    {
+                        if (File.Exists(p))
+                        {
+                            _cachedAppIcon = new Icon(p);
+                            return _cachedAppIcon;
+                        }
+                    }
+                }
+                catch { }
+
+                return null;
+            }
+        }
+
         public static string SafeSerialize(object? obj)
         {
             if (obj == null) return "null";

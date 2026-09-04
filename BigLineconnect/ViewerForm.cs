@@ -272,11 +272,8 @@ namespace BigLineconnect
             InitializeComponent();
             try
             {
-                string iconPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "icon.ico");
-                if (File.Exists(iconPath))
-                {
-                    this.Icon = new Icon(iconPath);
-                }
+                var appIcon = Program.GetAppIcon();
+                if (appIcon != null) this.Icon = appIcon;
             }
             catch {}
             this.Load += ViewerForm_Load;
@@ -3381,11 +3378,8 @@ namespace BigLineconnect
             InitializeComponent();
             try
             {
-                string iconPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "icon.ico");
-                if (File.Exists(iconPath))
-                {
-                    this.Icon = new Icon(iconPath);
-                }
+                var appIcon = Program.GetAppIcon();
+                if (appIcon != null) this.Icon = appIcon;
             }
             catch {}
         }
@@ -3534,8 +3528,8 @@ namespace BigLineconnect
             InitializeComponent();
             try
             {
-                string iconPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "icon.ico");
-                if (File.Exists(iconPath)) this.Icon = new Icon(iconPath);
+                var appIcon = Program.GetAppIcon();
+                if (appIcon != null) this.Icon = appIcon;
             }
             catch {}
 
