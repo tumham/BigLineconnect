@@ -258,15 +258,46 @@ _Yeni tenant eklemek için /start TENANT\_ID yazın_
 
     /// <summary>
     /// Belirli bir tenant'ın tüm kayıtlı destek uzmanlarına mesaj gönderir.
+    /// Eğer o tenant'a kayıtlı kimse yoksa veya ana yöneticiler varsa, bildirimi kaçırmamak için ana uzmanlara da iletir.
     /// </summary>
     private static async Task BroadcastToTenantAsync(string tenantId, string message)
     {
-        List<long> chatIds;
+        List<long> chatIds = new();
         lock (_lock)
         {
-            if (!_tenantChatIds.TryGetValue(tenantId, out var ids) || ids.Count == 0)
-                return;
-            chatIds = new List<long>(ids);
+            // 1. İlgili tenant'ın uzmanlarını ekle
+            if (_tenantChatIds.TryGetValue(tenantId, out var ids) && ids.Count > 0)
+            {
+                chatIds.AddRange(ids);
+            }
+
+            // 2. Ana yönetici (BIGLINE) uzmanlarını da ekle (Farklı bayi olsa bile merkezin haberi olsun)
+            if (!tenantId.Equals("BIGLINE", StringComparison.OrdinalIgnoreCase) && 
+                _tenantChatIds.TryGetValue("BIGLINE", out var masterIds))
+            {
+                foreach (var mid in masterIds)
+                {
+                    if (!chatIds.Contains(mid)) chatIds.Add(mid);
+                }
+            }
+
+            // 3. Fallback: Eğer hedef tenant'ta kayıtlı kimse bulunamadıysa, sistemde kayıtlı TÜM uzmanlara gönder (Sıfır kayıp!)
+            if (chatIds.Count == 0)
+            {
+                foreach (var kv in _tenantChatIds)
+                {
+                    foreach (var id in kv.Value)
+                    {
+                        if (!chatIds.Contains(id)) chatIds.Add(id);
+                    }
+                }
+            }
+        }
+
+        if (chatIds.Count == 0)
+        {
+            Console.WriteLine($"[Telegram] ⚠️ Dikkat: Destek talebi için Telegram'da kayıtlı hiçbir uzman bulunamadı! (Tenant: {tenantId})");
+            return;
         }
 
         foreach (var chatId in chatIds)

@@ -85,6 +85,7 @@ namespace BigLineconnect
         private Button? _btnMyTickets;
         public bool _hasActiveSubmittedTicket = false;
         private bool _hasAutoMinimizedForRemoteSession = false;
+        private bool _userManuallyRestored = false;
         private static RemoteOverlayBannerForm? _overlayBannerForm = null;
         public static bool IsBannerDismissedByUser = false;
 
@@ -1445,7 +1446,7 @@ namespace BigLineconnect
                 bool isStreamActive = Program._isStreaming || File.Exists(streamFlagPath);
                 if (isStreamActive)
                 {
-                    if (!_hasAutoMinimizedForRemoteSession)
+                    if (!_hasAutoMinimizedForRemoteSession && !_userManuallyRestored)
                     {
                         _hasAutoMinimizedForRemoteSession = true;
                         if (this.WindowState != FormWindowState.Minimized)
@@ -1477,6 +1478,7 @@ namespace BigLineconnect
                         ResetSupportButton();
                     }
                     _hasAutoMinimizedForRemoteSession = false;
+                    _userManuallyRestored = false;
                     IsBannerDismissedByUser = false;
                     if (_overlayBannerForm != null && !_overlayBannerForm.IsDisposed)
                     {
@@ -1952,13 +1954,17 @@ namespace BigLineconnect
 
             try
             {
+                _userManuallyRestored = true;
                 this.Show();
                 if (this.WindowState == FormWindowState.Minimized)
                 {
                     this.WindowState = FormWindowState.Normal;
                 }
                 ShowWindow(this.Handle, SW_RESTORE);
+                ShowWindow(this.Handle, 5); // SW_SHOW
                 SetForegroundWindow(this.Handle);
+                this.TopMost = true;
+                this.TopMost = false;
                 this.Activate();
                 this.BringToFront();
             }
@@ -1969,6 +1975,7 @@ namespace BigLineconnect
         {
             if (this.WindowState == FormWindowState.Normal)
             {
+                _userManuallyRestored = true;
                 this.Activate();
                 this.BringToFront();
             }
@@ -2005,6 +2012,9 @@ namespace BigLineconnect
                 _notifyIcon.Visible = false;
                 _notifyIcon.Dispose();
             }
+
+            // Temiz ve tam kapanış garantisi (Görev Yöneticisinde veya PowerShell'de asılı kalmayı %100 önler)
+            try { System.Diagnostics.Process.GetCurrentProcess().Kill(); } catch { }
         }
         private void LoadAddressBook()
         {
