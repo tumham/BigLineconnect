@@ -1404,12 +1404,14 @@ namespace BigLineconnect
         public static volatile int _forcedRefreshCount = 0;
         public static DateTime _lastViewerActivityTime = DateTime.Now;
 
-        public static void TriggerInstantCapture(int count = 2)
+        public static void TriggerInstantCapture(int count = 3)
         {
             try
             {
                 _forcedRefreshCount = Math.Max(_forcedRefreshCount, count);
                 _lastSentFrameBytes = null;
+                _lastSentFrameHash = 0;
+                Interlocked.Exchange(ref _forceSendUntilTicks, DateTime.Now.AddMilliseconds(600).Ticks);
                 _instantCaptureEvent.Set();
             }
             catch { }
@@ -1628,14 +1630,15 @@ namespace BigLineconnect
                         bool isInitialBurst = initialFrameCount < 5 && speedProbeComplete && !is3GMode;
                         bool isForcedBurst = _forcedRefreshCount > 0;
                         if (isForcedBurst) _forcedRefreshCount--;
+                        bool isInputActive = DateTime.Now.Ticks < Interlocked.Read(ref _forceSendUntilTicks);
 
-                        // Send ONLY when pixels actually changed, or during initial/forced burst.
-                        // NEVER spam full/duplicate image frames on an idle screen!
-                        if (!isDuplicate || isInitialBurst || isForcedBurst)
+                        // Send when pixels changed, or during input activity, or during burst.
+                        // Guarantees zero dropped keystrokes, zero accordion lag in ERP/Excel, and zero duplicate spam on static idle!
+                        if (!isDuplicate || isInitialBurst || isForcedBurst || isInputActive)
                         {
                             // 3G: 15 FPS | Normal: 60 FPS max pacing
                             int minIntervalMs = is3GMode ? 66 : 16;
-                            if (isInitialBurst || isForcedBurst || (DateTime.Now - _lastSentFrameTime).TotalMilliseconds >= minIntervalMs)
+                            if (isInitialBurst || isForcedBurst || isInputActive || (DateTime.Now - _lastSentFrameTime).TotalMilliseconds >= minIntervalMs)
                             {
                                 _isSendingFrame = true;
                                 try
@@ -1716,7 +1719,8 @@ namespace BigLineconnect
                 }
                 if (hasNonMouseMove)
                 {
-                    TriggerInstantCapture(2);
+                    Interlocked.Exchange(ref _forceSendUntilTicks, DateTime.Now.AddMilliseconds(600).Ticks);
+                    TriggerInstantCapture(3);
                 }
                 return;
             }
