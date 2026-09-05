@@ -495,22 +495,22 @@ namespace BigLineconnect
                 if (mode == "low")
                 {
                     btnQuality.Text = "⚡ Düşük";
-                    if (sendPacket) SendJson("{\"type\":\"set_quality\",\"quality\":40,\"maxDim\":0}");
+                    if (sendPacket) SendJson("{\"type\":\"set_quality\",\"quality\":45,\"maxDim\":1280}");
                 }
                 else if (mode == "mid")
                 {
                     btnQuality.Text = "🎨 İyi (HD)";
-                    if (sendPacket) SendJson("{\"type\":\"set_quality\",\"quality\":68,\"maxDim\":0}");
+                    if (sendPacket) SendJson("{\"type\":\"set_quality\",\"quality\":55,\"maxDim\":0}");
                 }
                 else if (mode == "high")
                 {
                     btnQuality.Text = "💎 En İyi";
-                    if (sendPacket) SendJson("{\"type\":\"set_quality\",\"quality\":82,\"maxDim\":0}");
+                    if (sendPacket) SendJson("{\"type\":\"set_quality\",\"quality\":80,\"maxDim\":0}");
                 }
                 else if (mode == "auto")
                 {
                     btnQuality.Text = "🚀 Otomatik";
-                    if (sendPacket) SendJson("{\"type\":\"set_quality\",\"quality\":68,\"maxDim\":0}");
+                    if (sendPacket) SendJson("{\"type\":\"set_quality\",\"quality\":55,\"maxDim\":0}");
                 }
             }
 
@@ -725,7 +725,7 @@ namespace BigLineconnect
                 await _ws.ConnectAsync(new Uri(_wsUrl), CancellationToken.None);
                 
                 // Enforce default quality mode (Native res / Q=55 HD) for razor-sharp fonts and crystal-clear text
-                SendJson("{\"type\":\"set_quality\",\"quality\":68,\"maxDim\":0}");
+                SendJson("{\"type\":\"set_quality\",\"quality\":55,\"maxDim\":0}");
 
                 // Launch immediate parallel LAN Direct probe for 0ms local socket auto-switch
                 StartP2pAndLanProbe();

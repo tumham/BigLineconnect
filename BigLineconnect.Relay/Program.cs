@@ -84,7 +84,7 @@ using System.IO;
         {
             _targetSocket = targetSocket;
             _cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            _channel = Channel.CreateBounded<byte[]>(new BoundedChannelOptions(8)
+            _channel = Channel.CreateBounded<byte[]>(new BoundedChannelOptions(1)
             {
                 FullMode = BoundedChannelFullMode.DropOldest,
                 SingleReader = true,

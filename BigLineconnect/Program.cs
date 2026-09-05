@@ -1618,14 +1618,15 @@ namespace BigLineconnect
                         _lastViewerActivityTime = DateTime.Now;
                     }
 
-                    // ZERO-BLOCKING CONGESTION CONTROL:
-                    // Only pause if more than 2 frames are unacknowledged (pipe severely choked).
-                    // Under healthy network, push latest frame immediately without waiting for roundtrip ACK from Europe!
+                    // ZERO-BUFFERBLOAT FLOW CONTROL:
+                    // Never allow multiple stale frames to stack in the network pipe!
+                    // Wait for viewer to acknowledge previous frame, or timeout and send ONLY the fresh frame!
                     uint inFlight = unchecked(_currentFrameSeq - _lastAckedFrameSeq);
-                    if (inFlight > 2)
+                    if (inFlight >= 1)
                     {
-                        _frameAckEvent.WaitOne(6);
-                        if (unchecked(_currentFrameSeq - _lastAckedFrameSeq) > 2)
+                        _frameAckEvent.WaitOne(20);
+                        inFlight = unchecked(_currentFrameSeq - _lastAckedFrameSeq);
+                        if (inFlight >= 1)
                         {
                             if ((DateTime.Now - _lastFrameSendTime).TotalMilliseconds < 80)
                             {
@@ -1634,6 +1635,7 @@ namespace BigLineconnect
                             }
                             else
                             {
+                                // Network timeout / drop: skip forward to current seq so we send the single fresh frame!
                                 _lastAckedFrameSeq = _currentFrameSeq;
                             }
                         }
@@ -1827,7 +1829,11 @@ namespace BigLineconnect
                     // Host sends its own STUN candidate back so Viewer can punch
                     string myCandidate = $"{{\"type\":\"p2p_candidate\",\"public_ip\":\"{P2pDirectEngine.PublicIp}\",\"public_port\":{P2pDirectEngine.PublicPort},\"lan_ip\":\"{GetLocalLanIPAddress()}\",\"lan_port\":{P2pDirectEngine.LocalUdpPort}}}";
                     byte[] candBytes = Encoding.UTF8.GetBytes(myCandidate);
-                    try { _ = WebSocketClient?.SendAsync(new ArraySegment<byte>(candBytes), WebSocketMessageType.Text, true, CancellationToken.None); } catch { }
+                    WebSocket? targetCandidateWs = StreamWebSocketClient ?? (WebSocket?)WebSocketClient;
+                    if (targetCandidateWs != null && targetCandidateWs.State == WebSocketState.Open)
+                    {
+                        try { _ = SafeSendAsync(targetCandidateWs, new ArraySegment<byte>(candBytes), WebSocketMessageType.Text, true, CancellationToken.None); } catch { }
+                    }
 
                     P2pDirectEngine.StartHolePunch(remotePublicIp, remotePublicPort, remoteLanIp, remoteLanPort);
                     return;
