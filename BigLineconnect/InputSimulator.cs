@@ -143,8 +143,37 @@ namespace BigLineconnect
                 int actualX = bounds.X + Math.Min(bounds.Width - 1, (int)(xPercent * bounds.Width));
                 int actualY = bounds.Y + Math.Min(bounds.Height - 1, (int)(yPercent * bounds.Height));
 
-                SetCursorPos(actualX, actualY);
-                mouse_event(MOUSEEVENTF_MOVE, 0, 0, 0, (UIntPtr)0); // Force Windows mouse subsystem to dispatch input
+                int vLeft = System.Windows.Forms.SystemInformation.VirtualScreen.Left;
+                int vTop = System.Windows.Forms.SystemInformation.VirtualScreen.Top;
+                int vWidth = System.Windows.Forms.SystemInformation.VirtualScreen.Width;
+                int vHeight = System.Windows.Forms.SystemInformation.VirtualScreen.Height;
+
+                int normX = (int)(((actualX - vLeft) * 65535.0) / (vWidth > 1 ? vWidth - 1 : 1));
+                int normY = (int)(((actualY - vTop) * 65535.0) / (vHeight > 1 ? vHeight - 1 : 1));
+
+                INPUT[] inputs = new INPUT[1];
+                inputs[0] = new INPUT
+                {
+                    type = INPUT_MOUSE,
+                    U = new InputUnion
+                    {
+                        mi = new MOUSEINPUT
+                        {
+                            dx = normX,
+                            dy = normY,
+                            dwFlags = MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_VIRTUALDESK,
+                            mouseData = 0,
+                            time = 0,
+                            dwExtraInfo = IntPtr.Zero
+                        }
+                    }
+                };
+                uint res = SendInput(1, inputs, Marshal.SizeOf<INPUT>());
+                if (res == 0)
+                {
+                    SetCursorPos(actualX, actualY);
+                    mouse_event(MOUSEEVENTF_MOVE, 0, 0, 0, (UIntPtr)0);
+                }
             }
             catch { }
         }
@@ -193,19 +222,68 @@ namespace BigLineconnect
                 var bounds = screens[displayIndex].Bounds;
 
                 // ATOMIC MOVE+CLICK: Combine position and click into a single SendInput call.
-                // This prevents the race condition where SetCursorPos and click arrive separately.
-                // AnyDesk uses the same technique for instant, precise clicks.
+                // This ensures modal dialogs (Mikro ERP, Excel, Windows dialogs) receive the click at the exact pixel.
                 if (xPercent.HasValue && yPercent.HasValue)
                 {
                     int actualX = bounds.X + Math.Min(bounds.Width - 1, (int)(xPercent.Value * bounds.Width));
                     int actualY = bounds.Y + Math.Min(bounds.Height - 1, (int)(yPercent.Value * bounds.Height));
 
-                    SetCursorPos(actualX, actualY);
-                    mouse_event(flags, 0, 0, 0, (UIntPtr)0);
+                    int vLeft = System.Windows.Forms.SystemInformation.VirtualScreen.Left;
+                    int vTop = System.Windows.Forms.SystemInformation.VirtualScreen.Top;
+                    int vWidth = System.Windows.Forms.SystemInformation.VirtualScreen.Width;
+                    int vHeight = System.Windows.Forms.SystemInformation.VirtualScreen.Height;
+
+                    int normX = (int)(((actualX - vLeft) * 65535.0) / (vWidth > 1 ? vWidth - 1 : 1));
+                    int normY = (int)(((actualY - vTop) * 65535.0) / (vHeight > 1 ? vHeight - 1 : 1));
+
+                    INPUT[] inputs = new INPUT[1];
+                    inputs[0] = new INPUT
+                    {
+                        type = INPUT_MOUSE,
+                        U = new InputUnion
+                        {
+                            mi = new MOUSEINPUT
+                            {
+                                dx = normX,
+                                dy = normY,
+                                dwFlags = flags | MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_VIRTUALDESK,
+                                mouseData = 0,
+                                time = 0,
+                                dwExtraInfo = IntPtr.Zero
+                            }
+                        }
+                    };
+                    uint res = SendInput(1, inputs, Marshal.SizeOf<INPUT>());
+                    if (res == 0)
+                    {
+                        SetCursorPos(actualX, actualY);
+                        mouse_event(flags, 0, 0, 0, (UIntPtr)0);
+                    }
                 }
                 else
                 {
-                    mouse_event(flags, 0, 0, 0, (UIntPtr)0);
+                    INPUT[] inputs = new INPUT[1];
+                    inputs[0] = new INPUT
+                    {
+                        type = INPUT_MOUSE,
+                        U = new InputUnion
+                        {
+                            mi = new MOUSEINPUT
+                            {
+                                dx = 0,
+                                dy = 0,
+                                dwFlags = flags,
+                                mouseData = 0,
+                                time = 0,
+                                dwExtraInfo = IntPtr.Zero
+                            }
+                        }
+                    };
+                    uint res = SendInput(1, inputs, Marshal.SizeOf<INPUT>());
+                    if (res == 0)
+                    {
+                        mouse_event(flags, 0, 0, 0, (UIntPtr)0);
+                    }
                 }
 
                 Program.TriggerInstantCapture();
