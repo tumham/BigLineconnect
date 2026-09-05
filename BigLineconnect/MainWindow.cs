@@ -127,7 +127,7 @@ namespace BigLineconnect
             _instance = this;
             try { Program.SetStreamActive(false); } catch { }
             InitializeComponent();
-            this.Text = "B-Connect v3.92 ⚡ WAN P2P Direct & 0-Lag Motoru";
+            this.Text = "B-Connect v3.93 ⚡ WAN Kesintisiz Akış Motoru";
             LoadLogoAndIcon();
 
             // Populate connection logs that occurred during splash screen connection

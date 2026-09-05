@@ -354,9 +354,10 @@ namespace BigLineconnect
                         }
                         else
                         {
-                            _remoteEndpoint = senderEp;
-                            _isP2pConnected = true;
-                            OnP2pPacketReceived?.Invoke(data);
+                            if (_isP2pConnected && _remoteEndpoint != null && senderEp.Address.Equals(_remoteEndpoint.Address))
+                            {
+                                OnP2pPacketReceived?.Invoke(data);
+                            }
                         }
                     }
                 }

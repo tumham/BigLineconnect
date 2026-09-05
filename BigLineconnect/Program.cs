@@ -1682,19 +1682,19 @@ namespace BigLineconnect
                                     Buffer.BlockCopy(BitConverter.GetBytes(seq), 0, stampedPayload, 8, 4);
                                     Buffer.BlockCopy(frameToSend, 0, stampedPayload, 12, frameToSend.Length);
 
+                                    // Primary guaranteed stream over WebSocket
+                                    await SafeSendAsync(
+                                        ws,
+                                        new ArraySegment<byte>(stampedPayload),
+                                        WebSocketMessageType.Binary,
+                                        true,
+                                        token
+                                    ).ConfigureAwait(false);
+
+                                    // Direct low-latency P2P UDP boost when connected
                                     if (P2pDirectEngine.IsP2pConnected)
                                     {
-                                        P2pDirectEngine.SendFrameChunks(stampedPayload);
-                                    }
-                                    else
-                                    {
-                                        await SafeSendAsync(
-                                            ws,
-                                            new ArraySegment<byte>(stampedPayload),
-                                            WebSocketMessageType.Binary,
-                                            true,
-                                            token
-                                        ).ConfigureAwait(false);
+                                        try { P2pDirectEngine.SendFrameChunks(stampedPayload); } catch { }
                                     }
 
                                     _lastSentFrameBytes = frameToSend;
