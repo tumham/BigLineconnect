@@ -169,6 +169,15 @@ namespace BigLineconnect
             catch { }
         }
 
+        [ThreadStatic]
+        private static IntPtr _currentThreadDesktop = IntPtr.Zero;
+
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern IntPtr GetThreadDesktop(int dwThreadId);
+
+        [DllImport("kernel32.dll")]
+        private static extern int GetCurrentThreadId();
+
         private static DateTime _lastAttachTime = DateTime.MinValue;
 
         public static void ForceAttachToInputDesktop()
@@ -180,7 +189,7 @@ namespace BigLineconnect
         {
             try
             {
-                if (!force && (DateTime.Now - _lastAttachTime).TotalMilliseconds < 2000)
+                if (!force && (DateTime.Now - _lastAttachTime).TotalMilliseconds < 1000)
                 {
                     return;
                 }
@@ -200,8 +209,25 @@ namespace BigLineconnect
 
                 if (hDesk != IntPtr.Zero)
                 {
-                    SetThreadDesktop(hDesk);
-                    CloseDesktop(hDesk);
+                    if (_currentThreadDesktop != hDesk)
+                    {
+                        if (SetThreadDesktop(hDesk))
+                        {
+                            if (_currentThreadDesktop != IntPtr.Zero)
+                            {
+                                try { CloseDesktop(_currentThreadDesktop); } catch { }
+                            }
+                            _currentThreadDesktop = hDesk;
+                        }
+                        else
+                        {
+                            try { CloseDesktop(hDesk); } catch { }
+                        }
+                    }
+                    else
+                    {
+                        try { CloseDesktop(hDesk); } catch { }
+                    }
                 }
             }
             catch { }

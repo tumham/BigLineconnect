@@ -163,6 +163,11 @@ namespace BigLineconnect
         private static bool _isRightMouseDown = false;
         private static bool _isMiddleMouseDown = false;
         private static DateTime _lastLeftDownTime = DateTime.MinValue;
+        private static string _lastBtn = "";
+        private static string _lastAct = "";
+        private static int _lastX = -1;
+        private static int _lastY = -1;
+        private static DateTime _lastBtnTime = DateTime.MinValue;
 
         public static void SimulateMouseButton(string button, string action, double? xPercent = null, double? yPercent = null, int displayIndex = 0)
         {
@@ -172,12 +177,29 @@ namespace BigLineconnect
                 if (displayIndex < 0 || displayIndex >= screens.Length) displayIndex = 0;
                 var bounds = screens[displayIndex].Bounds;
 
+                int actualX = _lastX;
+                int actualY = _lastY;
                 if (xPercent.HasValue && yPercent.HasValue)
                 {
-                    int actualX = bounds.X + Math.Min(bounds.Width - 1, (int)(xPercent.Value * bounds.Width));
-                    int actualY = bounds.Y + Math.Min(bounds.Height - 1, (int)(yPercent.Value * bounds.Height));
+                    actualX = bounds.X + Math.Min(bounds.Width - 1, (int)(xPercent.Value * bounds.Width));
+                    actualY = bounds.Y + Math.Min(bounds.Height - 1, (int)(yPercent.Value * bounds.Height));
                     SetCursorPos(actualX, actualY);
                 }
+
+                // DEDUPLICATION: Ignore duplicate parallel arrival from backup WebSocket channel within 75ms
+                if (button.Equals(_lastBtn, StringComparison.OrdinalIgnoreCase) &&
+                    action.Equals(_lastAct, StringComparison.OrdinalIgnoreCase) &&
+                    Math.Abs(actualX - _lastX) <= 3 && Math.Abs(actualY - _lastY) <= 3 &&
+                    (DateTime.UtcNow - _lastBtnTime).TotalMilliseconds < 75)
+                {
+                    return;
+                }
+
+                _lastBtn = button;
+                _lastAct = action;
+                _lastX = actualX;
+                _lastY = actualY;
+                _lastBtnTime = DateTime.UtcNow;
 
                 uint downFlag = 0;
                 uint upFlag = 0;
@@ -543,8 +565,18 @@ namespace BigLineconnect
             };
         }
 
+        private static char _lastChar = '\0';
+        private static DateTime _lastCharTime = DateTime.MinValue;
+
         public static void SimulateChar(char ch)
         {
+            if (ch == _lastChar && (DateTime.UtcNow - _lastCharTime).TotalMilliseconds < 75)
+            {
+                return; // Discard parallel duplicate from backup channel
+            }
+            _lastChar = ch;
+            _lastCharTime = DateTime.UtcNow;
+
             // Direct Unicode injection: 100x faster, zero modifier spam, perfectly supports Turkish chars in Mikro ERP & Excel cells
             INPUT[] inputs = new INPUT[2];
             inputs[0] = CreateKeyInput(0, (ushort)ch, KEYEVENTF_UNICODE);
@@ -623,9 +655,21 @@ namespace BigLineconnect
             }
         }
 
+        private static ushort _lastVkCode = 0;
+        private static bool _lastVkUp = false;
+        private static DateTime _lastVkTime = DateTime.MinValue;
+
         public static void SimulateVkCode(ushort vkCode, bool shift, bool ctrl, bool alt, bool isUp, bool isStroke)
         {
             if (vkCode == 0) return;
+
+            if (vkCode == _lastVkCode && isUp == _lastVkUp && (DateTime.UtcNow - _lastVkTime).TotalMilliseconds < 75)
+            {
+                return; // Discard parallel duplicate from backup channel
+            }
+            _lastVkCode = vkCode;
+            _lastVkUp = isUp;
+            _lastVkTime = DateTime.UtcNow;
 
             uint scanCode = MapVirtualKey(vkCode, 0);
             uint extFlag = 0;

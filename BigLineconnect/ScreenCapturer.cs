@@ -254,10 +254,12 @@ namespace BigLineconnect
             }
         }
 
+        private static DateTime _lastDxgiFailureTime = DateTime.MinValue;
+
         public static byte[] Capture(int quality = 75, int maxDimension = 0)
         {
             Bitmap? bmp = null;
-            if (_useDxgi)
+            if (_useDxgi && (DateTime.UtcNow - _lastDxgiFailureTime).TotalSeconds >= 2.0)
             {
                 if (_dxgiCapturer == null)
                 {
@@ -267,11 +269,11 @@ namespace BigLineconnect
                     }
                     catch
                     {
-                        _useDxgi = false;
+                        _lastDxgiFailureTime = DateTime.UtcNow;
                     }
                 }
 
-                if (_useDxgi && _dxgiCapturer != null)
+                if (_dxgiCapturer != null)
                 {
                     try
                     {
@@ -279,7 +281,7 @@ namespace BigLineconnect
                     }
                     catch
                     {
-                        _useDxgi = false;
+                        _lastDxgiFailureTime = DateTime.UtcNow;
                         try { _dxgiCapturer?.Dispose(); } catch { }
                         _dxgiCapturer = null;
                     }
@@ -287,7 +289,7 @@ namespace BigLineconnect
                     if (bmp != null && IsBitmapBlack(bmp))
                     {
                         _consecutiveBlackFrames++;
-                        _useDxgi = false;
+                        _lastDxgiFailureTime = DateTime.UtcNow;
                         try { _dxgiCapturer?.Dispose(); } catch { }
                         _dxgiCapturer = null;
                         bmp.Dispose();

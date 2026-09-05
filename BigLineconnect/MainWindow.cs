@@ -127,7 +127,7 @@ namespace BigLineconnect
             _instance = this;
             try { Program.SetStreamActive(false); } catch { }
             InitializeComponent();
-            this.Text = "B-Connect v4.00 ⚡ Unbreakable P2P Direct & Ultra-Düşük Gecikme";
+            this.Text = "B-Connect v4.10 ⚡ Unstoppable WAN P2P & Fail-Proof Input";
             LoadLogoAndIcon();
 
             // Populate connection logs that occurred during splash screen connection
@@ -257,7 +257,7 @@ namespace BigLineconnect
 
             var subtitleLabel = new Label
             {
-                Text = "v4.00 ⚡ Unbreakable P2P Direct & Ultra-Düşük Gecikme",
+                Text = "v4.10 ⚡ Unstoppable WAN P2P & Fail-Proof Input",
                 Location = new Point(28, 60),
                 Size = new Size(380, 18),
                 Font = new Font("Segoe UI", 9F, FontStyle.Bold),

@@ -914,8 +914,10 @@ namespace BigLineconnect
                         }
 
                         // Thread-safe isolated frame copy for GDI+ JPEG or H.264 NAL decoding
-                        // If P2P is connected, drop relay frames so they don't overwrite live P2P frames and jitter
-                        if (!P2pDirectEngine.IsP2pConnected)
+                        // If P2P is actively delivering frames (< 250ms gap), drop relay frames to prevent jitter.
+                        // But if UDP pauses for > 250ms (packet loss / NAT glitch), seamlessly render relay frames!
+                        bool isP2pActivelyDelivering = P2pDirectEngine.IsP2pConnected && (DateTime.Now - _lastP2pFrameTime).TotalMilliseconds < 250;
+                        if (!isP2pActivelyDelivering)
                         {
                             byte[] isolatedFrame = new byte[frameDataLength];
                             Buffer.BlockCopy(_receiveBuffer, frameDataOffset, isolatedFrame, 0, frameDataLength);
@@ -1540,9 +1542,12 @@ namespace BigLineconnect
             }
         }
 
+        private DateTime _lastP2pFrameTime = DateTime.MinValue;
+
         private void OnDirectP2pFrameReceived(byte[] frameBytes)
         {
             if (frameBytes == null || frameBytes.Length == 0) return;
+            _lastP2pFrameTime = DateTime.Now;
             int frameDataOffset = 0;
             int frameDataLength = frameBytes.Length;
             if (frameBytes.Length >= 20)
@@ -1729,18 +1734,32 @@ namespace BigLineconnect
         {
             if (data == null || data.Length == 0) return;
 
-            // 1. Instant UDP dispatch if P2P active - DO NOT DUPLICATE TO WEBSOCKET
+            // 1. Instant UDP dispatch if P2P active
+            bool udpSent = false;
             if (P2pDirectEngine.IsP2pConnected)
             {
-                P2pDirectEngine.SendP2pPacket(data);
-                return;
+                udpSent = P2pDirectEngine.SendP2pPacket(data);
             }
 
-            // 2. Relay fallback only when P2P is not connected
-            if (_ws != null && _ws.State == WebSocketState.Open)
+            // 2. CRITICAL FAIL-SAFE FOR 1,700 KM WAN:
+            // Clicks, Double-clicks, Mouse Ups, Keystrokes MUST NEVER BE LOST!
+            // If UDP send failed OR if it's a vital action, dispatch in parallel to WebSocket.
+            // Host deduplicates identical actions within 75ms so zero duplicate execution!
+            bool isVitalAction = data.Length >= 2 && data[0] == BinaryInputProtocol.MAGIC_BYTE &&
+                                 (data[1] == BinaryInputProtocol.CMD_MOUSE_BUTTON ||
+                                  data[1] == BinaryInputProtocol.CMD_MOUSE_DBLCLICK ||
+                                  data[1] == BinaryInputProtocol.CMD_KEY_STROKE ||
+                                  data[1] == BinaryInputProtocol.CMD_KEY_DOWN ||
+                                  data[1] == BinaryInputProtocol.CMD_KEY_UP ||
+                                  data[1] == BinaryInputProtocol.CMD_KEY_CHAR);
+
+            if (!udpSent || isVitalAction)
             {
-                _highPriorityInputs.Enqueue((data, WebSocketMessageType.Binary));
-                _senderWakeEvent.Set();
+                if (_ws != null && _ws.State == WebSocketState.Open)
+                {
+                    _highPriorityInputs.Enqueue((data, WebSocketMessageType.Binary));
+                    _senderWakeEvent.Set();
+                }
             }
         }
 
@@ -1970,21 +1989,24 @@ namespace BigLineconnect
             ushort ux = (ushort)(Math.Max(0, Math.Min(1, x)) * 65535);
             ushort uy = (ushort)(Math.Max(0, Math.Min(1, y)) * 65535);
 
+            bool sentViaUdp = false;
             if (P2pDirectEngine.IsP2pConnected)
             {
                 byte[] pkt = new byte[5];
                 pkt[0] = 0x4D; // 'M' for Move
                 BitConverter.TryWriteBytes(new Span<byte>(pkt, 1, 2), ux);
                 BitConverter.TryWriteBytes(new Span<byte>(pkt, 3, 2), uy);
-                P2pDirectEngine.SendP2pPacket(pkt);
-                return;
+                sentViaUdp = P2pDirectEngine.SendP2pPacket(pkt);
             }
 
-            // COALESCE MOUSE MOVE: Never queue multiple moves! Only keep the single latest position!
-            _latestMouseUx = ux;
-            _latestMouseUy = uy;
-            Interlocked.Exchange(ref _hasPendingMouseMove, 1);
-            _senderWakeEvent.Set();
+            if (!sentViaUdp)
+            {
+                // COALESCE MOUSE MOVE: Never queue multiple moves! Only keep the single latest position!
+                _latestMouseUx = ux;
+                _latestMouseUy = uy;
+                Interlocked.Exchange(ref _hasPendingMouseMove, 1);
+                _senderWakeEvent.Set();
+            }
         }
 
         private void PictureBox_MouseMove(object? sender, MouseEventArgs e)

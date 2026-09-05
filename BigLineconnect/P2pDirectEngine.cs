@@ -115,17 +115,24 @@ namespace BigLineconnect
                     catch { }
                 });
 
-                // 3. Watchdog: monitor UDP traffic and detect link loss (15 seconds of total silence)
+                // 3. Watchdog: monitor UDP traffic, keep NAT alive, and auto-repunch if link drops
                 _ = Task.Run(async () =>
                 {
                     CancellationToken token = _cts.Token;
                     while (!token.IsCancellationRequested)
                     {
-                        try { await Task.Delay(2000, token).ConfigureAwait(false); } catch { break; }
-                        if (_isP2pConnected && (DateTime.UtcNow - _lastUdpTrafficTime).TotalSeconds > 15.0)
+                        try { await Task.Delay(1500, token).ConfigureAwait(false); } catch { break; }
+                        double silenceSec = (DateTime.UtcNow - _lastUdpTrafficTime).TotalSeconds;
+                        if (_isP2pConnected && silenceSec > 4.0)
+                        {
+                            // Trigger background re-punch to refresh router NAT mappings before dropping!
+                            TriggerAutoRePunch();
+                        }
+                        if (_isP2pConnected && silenceSec > 12.0)
                         {
                             _isP2pConnected = false;
                             OnP2pDisconnected?.Invoke();
+                            TriggerAutoRePunch();
                         }
                     }
                 });
@@ -187,18 +194,43 @@ namespace BigLineconnect
             return null;
         }
 
+        private static string? _lastRemotePublicIp;
+        private static int _lastRemotePublicPort;
+        private static string? _lastRemoteLanIp;
+        private static int _lastRemoteLanPort;
+        private static DateTime _lastRePunchTime = DateTime.MinValue;
+
+        public static void TriggerAutoRePunch()
+        {
+            if ((DateTime.UtcNow - _lastRePunchTime).TotalSeconds < 3.0) return;
+            _lastRePunchTime = DateTime.UtcNow;
+
+            if (!string.IsNullOrEmpty(_lastRemotePublicIp) && _lastRemotePublicPort > 0)
+            {
+                StartHolePunch(_lastRemotePublicIp, _lastRemotePublicPort, _lastRemoteLanIp, _lastRemoteLanPort, isRePunch: true);
+            }
+        }
+
         /// <summary>
         /// Starts UDP Hole Punching to the target peer's public (with CGNAT sequential deltas) and LAN endpoints.
         /// </summary>
-        public static void StartHolePunch(string remotePublicIp, int remotePublicPort, string? remoteLanIp = null, int remoteLanPort = 0)
+        public static void StartHolePunch(string remotePublicIp, int remotePublicPort, string? remoteLanIp = null, int remoteLanPort = 0, bool isRePunch = false)
         {
             if (_udpClient == null) return;
             CancellationToken token = _cts?.Token ?? CancellationToken.None;
 
-            // Reset connection state for new hole punch session
-            _isP2pConnected = false;
-            _remoteEndpoint = null;
-            _reassemblyBuffers.Clear();
+            _lastRemotePublicIp = remotePublicIp;
+            _lastRemotePublicPort = remotePublicPort;
+            _lastRemoteLanIp = remoteLanIp;
+            _lastRemoteLanPort = remoteLanPort;
+
+            if (!isRePunch)
+            {
+                // Reset connection state for new initial hole punch session
+                _isP2pConnected = false;
+                _remoteEndpoint = null;
+                _reassemblyBuffers.Clear();
+            }
             _lastUdpTrafficTime = DateTime.UtcNow;
 
             var targetEndpoints = new List<IPEndPoint>();
@@ -230,10 +262,11 @@ namespace BigLineconnect
             _ = Task.Run(async () =>
             {
                 byte[] pingPacket = Encoding.UTF8.GetBytes("P2P_PING");
-                // Rapid punch bursts: send burst packets at 40ms intervals for up to 35 rounds
-                for (int i = 0; i < 35 && !token.IsCancellationRequested; i++)
+                // Rapid punch bursts: send burst packets at 35ms intervals
+                int rounds = isRePunch ? 15 : 35;
+                for (int i = 0; i < rounds && !token.IsCancellationRequested; i++)
                 {
-                    if (_isP2pConnected) break;
+                    if (_isP2pConnected && !isRePunch) break;
 
                     foreach (var ep in targetEndpoints)
                     {
@@ -245,11 +278,13 @@ namespace BigLineconnect
                         catch { }
                     }
 
-                    await Task.Delay(40, token).ConfigureAwait(false);
+                    await Task.Delay(35, token).ConfigureAwait(false);
                 }
 
+                if (isRePunch) return; // Keep existing keep-alive loop alive
+
                 // Continuous Keep-Alive & Auto-Heal Loop:
-                // Rapid 800ms heartbeat keeps domestic router NAT port mapping permanently OPEN
+                // Rapid 400ms heartbeat keeps domestic router NAT port mapping permanently OPEN
                 while (!token.IsCancellationRequested && _udpClient != null)
                 {
                     if (_remoteEndpoint != null)
@@ -260,24 +295,34 @@ namespace BigLineconnect
                         }
                         catch { }
                     }
-                    await Task.Delay(800, token).ConfigureAwait(false);
+                    else
+                    {
+                        // Periodically probe target endpoints if hole hasn't opened yet
+                        foreach (var ep in targetEndpoints)
+                        {
+                            try { if (_udpClient != null) await _udpClient.SendAsync(pingPacket, pingPacket.Length, ep).ConfigureAwait(false); } catch { }
+                        }
+                    }
+                    await Task.Delay(400, token).ConfigureAwait(false);
                 }
             }, token);
         }
 
-        public static void SendP2pPacket(byte[] data)
+        public static bool SendP2pPacket(byte[] data)
         {
             if (_isP2pConnected && _udpClient != null && _remoteEndpoint != null)
             {
                 try
                 {
                     _udpClient.Send(data, data.Length, _remoteEndpoint);
+                    return true;
                 }
                 catch
                 {
                     _isP2pConnected = false;
                 }
             }
+            return false;
         }
 
         /// <summary>
