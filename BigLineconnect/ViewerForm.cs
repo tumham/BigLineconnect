@@ -164,10 +164,18 @@ namespace BigLineconnect
                         }
                     }
 
-                    // 2. For 9-digit ID connections, do NOT scan local subnet IPs to prevent wrong local redirection!
-                    // Initiate P2P NAT Punching exclusively for the target ID.
-                    P2pDirectEngine.Initialize();
-                    await P2pDirectEngine.PunchHoleAndConnectAsync(candidate, 18888);
+                    // 2. STUN Discovery & P2P Candidate Exchange for WAN & LAN Hole Punching
+                    for (int i = 0; i < 20 && string.IsNullOrEmpty(P2pDirectEngine.PublicIp); i++)
+                    {
+                        await Task.Delay(50);
+                    }
+
+                    string myCand = $"{{\"type\":\"p2p_candidate\",\"public_ip\":\"{P2pDirectEngine.PublicIp}\",\"public_port\":{P2pDirectEngine.PublicPort},\"lan_ip\":\"{Program.GetLocalLanIPAddress()}\",\"lan_port\":{P2pDirectEngine.LocalUdpPort}}}";
+                    byte[] candBytes = Encoding.UTF8.GetBytes(myCand);
+                    if (_ws != null && _ws.State == WebSocketState.Open)
+                    {
+                        await _ws.SendAsync(new ArraySegment<byte>(candBytes), WebSocketMessageType.Text, true, CancellationToken.None);
+                    }
                 }
                 catch { }
             });
@@ -278,6 +286,10 @@ namespace BigLineconnect
             this.FormClosing += ViewerForm_FormClosing;
             this.Deactivate += (s, e) => ReleaseAllRemoteModifiers();
             this.Leave += (s, e) => ReleaseAllRemoteModifiers();
+
+            P2pDirectEngine.Initialize();
+            P2pDirectEngine.OnFrameReceived += OnDirectP2pFrameReceived;
+            P2pDirectEngine.OnP2pConnected += OnDirectP2pConnected;
         }
         private void InitializeComponent()
         {
@@ -892,122 +904,7 @@ namespace BigLineconnect
                         // Thread-safe isolated frame copy for GDI+ JPEG or H.264 NAL decoding
                         byte[] isolatedFrame = new byte[frameDataLength];
                         Buffer.BlockCopy(_receiveBuffer, frameDataOffset, isolatedFrame, 0, frameDataLength);
-
-                        if (this.WindowState != FormWindowState.Minimized)
-                        {
-                            lock (_pendingFrameLock)
-                            {
-                                _latestPendingFrameBytes = isolatedFrame;
-                            }
-
-                            if (Interlocked.CompareExchange(ref _isDecodingFrame, 1, 0) == 0)
-                            {
-                                _ = Task.Run(() =>
-                                {
-                                    try
-                                    {
-                                        while (true)
-                                        {
-                                            byte[]? frameToDecode = null;
-                                            lock (_pendingFrameLock)
-                                            {
-                                                frameToDecode = _latestPendingFrameBytes;
-                                                _latestPendingFrameBytes = null;
-                                            }
-
-                                            if (frameToDecode == null) break;
-
-                                            if (this.WindowState == FormWindowState.Minimized || _pictureBox == null || _pictureBox.IsDisposed) break;
-
-                                            Image? newImg = null;
-
-                                            if (BigLineRtEngine.IsBigLineRtPacket(frameToDecode))
-                                            {
-                                                newImg = BigLineRtEngine.ProcessRtPacket(frameToDecode, ref _rtCanvas);
-                                            }
-                                            else if (H264Decoder.IsH264Packet(frameToDecode))
-                                            {
-                                                if (_h264Decoder == null) _h264Decoder = new H264Decoder();
-                                                newImg = _h264Decoder.DecodeNalUnit(frameToDecode);
-                                            }
-                                            else
-                                            {
-                                                using (var ms = new MemoryStream(frameToDecode, 0, frameToDecode.Length))
-                                                {
-                                                    newImg = new Bitmap(ms);
-                                                }
-                                            }
-
-                                            if (newImg != null && _pictureBox != null && !_pictureBox.IsDisposed)
-                                            {
-                                                Image? oldUnpainted = null;
-                                                lock (_decodedImageLock)
-                                                {
-                                                    oldUnpainted = _latestDecodedImage;
-                                                    _latestDecodedImage = newImg;
-                                                }
-                                                if (oldUnpainted != null && oldUnpainted != newImg && oldUnpainted != _rtCanvas)
-                                                {
-                                                    try { oldUnpainted.Dispose(); } catch { }
-                                                }
-
-                                                if (Interlocked.CompareExchange(ref _isUiPaintPending, 1, 0) == 0)
-                                                {
-                                                    if (_pictureBox != null && !_pictureBox.IsDisposed)
-                                                    {
-                                                        _pictureBox.BeginInvoke(new Action(() =>
-                                                        {
-                                                            try
-                                                            {
-                                                                Image? frameToDraw = null;
-                                                                lock (_decodedImageLock)
-                                                                {
-                                                                    frameToDraw = _latestDecodedImage;
-                                                                    _latestDecodedImage = null;
-                                                                }
-
-                                                                if (frameToDraw != null && this.WindowState != FormWindowState.Minimized && _pictureBox != null && !_pictureBox.IsDisposed)
-                                                                {
-                                                                    var oldImg = _pictureBox.Image;
-                                                                    if (_pictureBox.Image != frameToDraw)
-                                                                    {
-                                                                        _pictureBox.Image = frameToDraw;
-                                                                    }
-                                                                    _pictureBox.Invalidate();
-                                                                    _pictureBox.Update();
-                                                                    if (oldImg != null && oldImg != frameToDraw && oldImg != _rtCanvas)
-                                                                    {
-                                                                        try { oldImg.Dispose(); } catch { }
-                                                                    }
-                                                                }
-                                                                else if (frameToDraw != null && frameToDraw != _rtCanvas)
-                                                                {
-                                                                    try { frameToDraw.Dispose(); } catch { }
-                                                                }
-                                                            }
-                                                            catch { }
-                                                            finally
-                                                            {
-                                                                Interlocked.Exchange(ref _isUiPaintPending, 0);
-                                                            }
-                                                        }));
-                                                    }
-                                                    else
-                                                    {
-                                                        Interlocked.Exchange(ref _isUiPaintPending, 0);
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                    catch { }
-                                    finally
-                                    {
-                                        Interlocked.Exchange(ref _isDecodingFrame, 0);
-                                    }
-                                });
-                            }
-                        }
+                        QueueAndDecodeIncomingFrame(isolatedFrame);
                     }
                     else if (result.MessageType == WebSocketMessageType.Text)
                     {
@@ -1177,28 +1074,28 @@ namespace BigLineconnect
                                             }
                                         }));
                                     }
+                                    else if (type == "p2p_candidate")
+                                    {
+                                        string remotePublicIp = root.TryGetProperty("public_ip", out var pip) ? pip.GetString() ?? "" : "";
+                                        int remotePublicPort = root.TryGetProperty("public_port", out var pport) ? pport.GetInt32() : 0;
+                                        string remoteLanIp = root.TryGetProperty("lan_ip", out var lip) ? lip.GetString() ?? "" : "";
+                                        int remoteLanPort = root.TryGetProperty("lan_port", out var lport) ? lport.GetInt32() : 0;
+
+                                        P2pDirectEngine.StartHolePunch(remotePublicIp, remotePublicPort, remoteLanIp, remoteLanPort);
+                                    }
                                     else if (type == "host_info")
                                     {
-                                        if (root.TryGetProperty("lan_ip", out var lanIpPropHost))
+                                        string lanIp = root.TryGetProperty("lan_ip", out var lanIpPropHost) ? lanIpPropHost.GetString() ?? "" : "";
+                                        if (!string.IsNullOrEmpty(lanIp) && !_isLanDirectActive)
                                         {
-                                            string lanIp = lanIpPropHost.GetString() ?? "";
-                                            if (!string.IsNullOrEmpty(lanIp) && !_isLanDirectActive)
-                                            {
-                                                _ = Task.Run(() => TryConnectLanDirectAsync(lanIp));
-                                            }
+                                            _ = Task.Run(() => TryConnectLanDirectAsync(lanIp));
                                         }
-                                        if (root.TryGetProperty("public_ip", out var pubIpProp))
+
+                                        string pubIp = root.TryGetProperty("public_ip", out var pubIpProp) ? pubIpProp.GetString() ?? "" : "";
+                                        int pubPort = root.TryGetProperty("public_port", out var pubPortProp) ? pubPortProp.GetInt32() : 18888;
+                                        if (!string.IsNullOrEmpty(pubIp))
                                         {
-                                            string pubIp = pubIpProp.GetString() ?? "";
-                                            int pubPort = root.TryGetProperty("public_port", out var pubPortProp) ? pubPortProp.GetInt32() : 18888;
-                                            if (!string.IsNullOrEmpty(pubIp) && pubIp != Program.GetLocalLanIPAddress())
-                                            {
-                                                _ = Task.Run(async () =>
-                                                {
-                                                    P2pDirectEngine.Initialize();
-                                                    await P2pDirectEngine.PunchHoleAndConnectAsync(pubIp, pubPort);
-                                                });
-                                            }
+                                            P2pDirectEngine.StartHolePunch(pubIp, pubPort, lanIp, 18888);
                                         }
                                     }
                                     else if (type == "clipboard")
@@ -1510,6 +1407,172 @@ namespace BigLineconnect
             }
         }
 
+        private void QueueAndDecodeIncomingFrame(byte[] isolatedFrame)
+        {
+            if (this.WindowState == FormWindowState.Minimized || isolatedFrame == null || isolatedFrame.Length == 0) return;
+
+            lock (_pendingFrameLock)
+            {
+                _latestPendingFrameBytes = isolatedFrame;
+            }
+
+            if (Interlocked.CompareExchange(ref _isDecodingFrame, 1, 0) == 0)
+            {
+                _ = Task.Run(() =>
+                {
+                    try
+                    {
+                        while (true)
+                        {
+                            byte[]? frameToDecode = null;
+                            lock (_pendingFrameLock)
+                            {
+                                frameToDecode = _latestPendingFrameBytes;
+                                _latestPendingFrameBytes = null;
+                            }
+
+                            if (frameToDecode == null) break;
+                            if (this.WindowState == FormWindowState.Minimized || _pictureBox == null || _pictureBox.IsDisposed) break;
+
+                            Image? newImg = null;
+
+                            if (BigLineRtEngine.IsBigLineRtPacket(frameToDecode))
+                            {
+                                newImg = BigLineRtEngine.ProcessRtPacket(frameToDecode, ref _rtCanvas);
+                            }
+                            else if (H264Decoder.IsH264Packet(frameToDecode))
+                            {
+                                if (_h264Decoder == null) _h264Decoder = new H264Decoder();
+                                newImg = _h264Decoder.DecodeNalUnit(frameToDecode);
+                            }
+                            else
+                            {
+                                using (var ms = new MemoryStream(frameToDecode, 0, frameToDecode.Length))
+                                {
+                                    newImg = new Bitmap(ms);
+                                }
+                            }
+
+                            if (newImg != null && _pictureBox != null && !_pictureBox.IsDisposed)
+                            {
+                                Image? oldUnpainted = null;
+                                lock (_decodedImageLock)
+                                {
+                                    oldUnpainted = _latestDecodedImage;
+                                    _latestDecodedImage = newImg;
+                                }
+                                if (oldUnpainted != null && oldUnpainted != newImg && oldUnpainted != _rtCanvas)
+                                {
+                                    try { oldUnpainted.Dispose(); } catch { }
+                                }
+
+                                if (Interlocked.CompareExchange(ref _isUiPaintPending, 1, 0) == 0)
+                                {
+                                    if (_pictureBox != null && !_pictureBox.IsDisposed)
+                                    {
+                                        _pictureBox.BeginInvoke(new Action(() =>
+                                        {
+                                            try
+                                            {
+                                                Image? frameToDraw = null;
+                                                lock (_decodedImageLock)
+                                                {
+                                                    frameToDraw = _latestDecodedImage;
+                                                    _latestDecodedImage = null;
+                                                }
+
+                                                if (frameToDraw != null && this.WindowState != FormWindowState.Minimized && _pictureBox != null && !_pictureBox.IsDisposed)
+                                                {
+                                                    var oldImg = _pictureBox.Image;
+                                                    if (_pictureBox.Image != frameToDraw)
+                                                    {
+                                                        _pictureBox.Image = frameToDraw;
+                                                    }
+                                                    _pictureBox.Invalidate();
+                                                    _pictureBox.Update();
+                                                    if (oldImg != null && oldImg != frameToDraw && oldImg != _rtCanvas)
+                                                    {
+                                                        try { oldImg.Dispose(); } catch { }
+                                                    }
+                                                }
+                                                else if (frameToDraw != null && frameToDraw != _rtCanvas)
+                                                {
+                                                    try { frameToDraw.Dispose(); } catch { }
+                                                }
+                                            }
+                                            catch { }
+                                            finally
+                                            {
+                                                Interlocked.Exchange(ref _isUiPaintPending, 0);
+                                            }
+                                        }));
+                                    }
+                                    else
+                                    {
+                                        Interlocked.Exchange(ref _isUiPaintPending, 0);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    catch { }
+                    finally
+                    {
+                        Interlocked.Exchange(ref _isDecodingFrame, 0);
+                    }
+                });
+            }
+        }
+
+        private void OnDirectP2pFrameReceived(byte[] frameBytes)
+        {
+            if (frameBytes == null || frameBytes.Length == 0) return;
+            int frameDataOffset = 0;
+            int frameDataLength = frameBytes.Length;
+            if (frameBytes.Length >= 20)
+            {
+                long frameTicks = BitConverter.ToInt64(frameBytes, 0);
+                if (frameTicks > 630000000000000000L && frameTicks < 700000000000000000L)
+                {
+                    uint receivedSeq = BitConverter.ToUInt32(frameBytes, 8);
+                    frameDataOffset = 12;
+                    frameDataLength = frameBytes.Length - 12;
+                    SendFrameAck(receivedSeq);
+                }
+            }
+            else if (frameBytes.Length >= 16)
+            {
+                long frameTicks = BitConverter.ToInt64(frameBytes, 0);
+                if (frameTicks > 630000000000000000L && frameTicks < 700000000000000000L)
+                {
+                    frameDataOffset = 8;
+                    frameDataLength = frameBytes.Length - 8;
+                }
+            }
+
+            _hasConnectedOnce = true;
+            _fpsCounter++;
+            _totalFramesReceivedCount++;
+
+            byte[] isolatedFrame = new byte[frameDataLength];
+            Buffer.BlockCopy(frameBytes, frameDataOffset, isolatedFrame, 0, frameDataLength);
+
+            QueueAndDecodeIncomingFrame(isolatedFrame);
+        }
+
+        private void OnDirectP2pConnected()
+        {
+            this.BeginInvoke(new Action(() =>
+            {
+                if (_lblConnModeBadge != null && !_lblConnModeBadge.IsDisposed)
+                {
+                    _lblConnModeBadge.Text = " 🌐 P2P DIRECT (UDP - 12ms) ";
+                    _lblConnModeBadge.BackColor = Color.FromArgb(0, 229, 255); // Cyan
+                    _lblConnModeBadge.ForeColor = Color.Black;
+                }
+            }));
+        }
+
         private async void StartReconnectionLoop()
         {
             if (_isReconnecting || _isProgrammaticClose || _cts.IsCancellationRequested) return;
@@ -1636,6 +1699,11 @@ namespace BigLineconnect
         public void SendBinaryInput(byte[] data)
         {
             if (data == null || data.Length == 0) return;
+            if (P2pDirectEngine.IsP2pConnected)
+            {
+                P2pDirectEngine.SendP2pPacket(data);
+                return;
+            }
             if (_ws == null || _ws.State != WebSocketState.Open) return;
             _highPriorityInputs.Enqueue((data, WebSocketMessageType.Binary));
             _senderWakeEvent.Set();
@@ -2377,6 +2445,13 @@ namespace BigLineconnect
 
         private void ViewerForm_FormClosing(object? sender, FormClosingEventArgs e)
         {
+            try
+            {
+                P2pDirectEngine.OnFrameReceived -= OnDirectP2pFrameReceived;
+                P2pDirectEngine.OnP2pConnected -= OnDirectP2pConnected;
+            }
+            catch { }
+
             if (_isProgrammaticClose || _isAuthFailureClosing)
             {
                 _cts.Cancel();

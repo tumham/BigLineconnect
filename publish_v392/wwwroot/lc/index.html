@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>LightConnect - Web Uzak MasaÃ¼stÃ¼ PortalÄ±</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="lc.css">
+</head>
+<body>
+    <!-- Connection Portal Page -->
+    <div id="landing-page" class="landing-page">
+        <div class="glass-card">
+            <div class="brand">
+                <div class="logo">âš¡</div>
+                <h1>LightConnect</h1>
+                <p>HÄ±zlÄ± & BaÄŸÄ±msÄ±z Web Uzak MasaÃ¼stÃ¼ PortalÄ±</p>
+            </div>
+
+            <div class="input-box">
+                <label for="lc-id-input"><i class="fa-solid fa-desktop"></i> UZAKTAKÄ° LIGHTCONNECT ID</label>
+                <input type="text" id="lc-id-input" placeholder="Ã–rn: 849 102" maxlength="10" autocomplete="off">
+            </div>
+
+            <button id="lc-connect-btn" class="btn-primary">
+                <span>BaÄŸlan</span> <i class="fa-solid fa-bolt"></i>
+            </button>
+
+            <div class="status-msg" id="lc-status">ID girip "BaÄŸlan" butonuna basÄ±nÄ±z.</div>
+        </div>
+    </div>
+
+    <!-- Live Desktop Canvas Viewport -->
+    <div id="viewport" class="viewport hidden">
+        <header class="v-header">
+            <div class="v-title">âš¡ LightConnect CanlÄ± BaÄŸlantÄ±</div>
+            <div class="v-badge" id="v-kb-badge">0 KB</div>
+            <button id="v-disconnect-btn" class="v-btn-danger"><i class="fa-solid fa-xmark"></i> BaÄŸlantÄ±yÄ± Kes</button>
+        </header>
+
+        <div class="canvas-box" id="canvas-box">
+            <canvas id="lc-canvas"></canvas>
+        </div>
+
+        <div class="v-toolbar">
+            <button id="tb-esc" class="tb-btn">Esc</button>
+            <button id="tb-tab" class="tb-btn">Tab</button>
+            <button id="tb-cad" class="tb-btn danger">Ctrl+Alt+Del</button>
+            <button id="tb-rclick" class="tb-btn active">SaÄŸ TÄ±k</button>
+        </div>
+    </div>
+
+    <script src="lc.js"></script>
+</body>
+</html>
+
+
+

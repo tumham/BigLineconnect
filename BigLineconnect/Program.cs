@@ -1225,7 +1225,13 @@ namespace BigLineconnect
         public static async Task ConnectToRelayAsync(string url)
         {
             StartLocalLanServer();
-            try { P2pDirectEngine.Initialize(18888); } catch { }
+            try
+            {
+                P2pDirectEngine.Initialize(18888);
+                P2pDirectEngine.OnP2pPacketReceived -= HandleP2pPacketOnHost;
+                P2pDirectEngine.OnP2pPacketReceived += HandleP2pPacketOnHost;
+            }
+            catch { }
             url = SanitizeRelayUrl(url);
             _currentRelayUrl = url;
             
@@ -1676,13 +1682,20 @@ namespace BigLineconnect
                                     Buffer.BlockCopy(BitConverter.GetBytes(seq), 0, stampedPayload, 8, 4);
                                     Buffer.BlockCopy(frameToSend, 0, stampedPayload, 12, frameToSend.Length);
 
-                                    await SafeSendAsync(
-                                        ws,
-                                        new ArraySegment<byte>(stampedPayload),
-                                        WebSocketMessageType.Binary,
-                                        true,
-                                        token
-                                    ).ConfigureAwait(false);
+                                    if (P2pDirectEngine.IsP2pConnected)
+                                    {
+                                        P2pDirectEngine.SendFrameChunks(stampedPayload);
+                                    }
+                                    else
+                                    {
+                                        await SafeSendAsync(
+                                            ws,
+                                            new ArraySegment<byte>(stampedPayload),
+                                            WebSocketMessageType.Binary,
+                                            true,
+                                            token
+                                        ).ConfigureAwait(false);
+                                    }
 
                                     _lastSentFrameBytes = frameToSend;
                                     _lastSentFrameHash = frameHash;
@@ -1705,6 +1718,15 @@ namespace BigLineconnect
             {
                 Log($"Gönderim döngüsü hatası: {ex.Message}");
             }
+        }
+
+        private static void HandleP2pPacketOnHost(byte[] data)
+        {
+            try
+            {
+                ProcessBinaryRemoteInput(data);
+            }
+            catch { }
         }
 
         private static DateTime _lastMouseMoveTime = DateTime.MinValue;
@@ -1790,6 +1812,24 @@ namespace BigLineconnect
                         AdaptiveRateController.RecordAck(seq);
                         _frameAckEvent.Set();
                     }
+                    return;
+                }
+
+                if (type == "p2p_candidate")
+                {
+                    string remotePublicIp = root.TryGetProperty("public_ip", out var pip) ? pip.GetString() ?? "" : "";
+                    int remotePublicPort = root.TryGetProperty("public_port", out var pport) ? pport.GetInt32() : 0;
+                    string remoteLanIp = root.TryGetProperty("lan_ip", out var lip) ? lip.GetString() ?? "" : "";
+                    int remoteLanPort = root.TryGetProperty("lan_port", out var lport) ? lport.GetInt32() : 0;
+
+                    Log($"[P2P] İstemci STUN adresi alındı: {remotePublicIp}:{remotePublicPort} (LAN: {remoteLanIp}:{remoteLanPort})");
+
+                    // Host sends its own STUN candidate back so Viewer can punch
+                    string myCandidate = $"{{\"type\":\"p2p_candidate\",\"public_ip\":\"{P2pDirectEngine.PublicIp}\",\"public_port\":{P2pDirectEngine.PublicPort},\"lan_ip\":\"{GetLocalLanIPAddress()}\",\"lan_port\":{P2pDirectEngine.LocalUdpPort}}}";
+                    byte[] candBytes = Encoding.UTF8.GetBytes(myCandidate);
+                    try { _ = WebSocketClient?.SendAsync(new ArraySegment<byte>(candBytes), WebSocketMessageType.Text, true, CancellationToken.None); } catch { }
+
+                    P2pDirectEngine.StartHolePunch(remotePublicIp, remotePublicPort, remoteLanIp, remoteLanPort);
                     return;
                 }
 

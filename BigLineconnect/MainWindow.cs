@@ -127,7 +127,7 @@ namespace BigLineconnect
             _instance = this;
             try { Program.SetStreamActive(false); } catch { }
             InitializeComponent();
-            this.Text = "B-Connect v3.90 ⚡ Kesintisiz LAN Direct & 0-Lag Motoru";
+            this.Text = "B-Connect v3.92 ⚡ WAN P2P Direct & 0-Lag Motoru";
             LoadLogoAndIcon();
 
             // Populate connection logs that occurred during splash screen connection
@@ -257,7 +257,7 @@ namespace BigLineconnect
 
             var subtitleLabel = new Label
             {
-                Text = "v3.90 ⚡ Kesintisiz LAN Direct & 0-Lag Motoru",
+                Text = "v3.92 ⚡ WAN P2P Direct & 0-Lag Motoru",
                 Location = new Point(28, 60),
                 Size = new Size(380, 18),
                 Font = new Font("Segoe UI", 9F, FontStyle.Bold),
