@@ -111,9 +111,29 @@ namespace BigLineconnect
         {
             byte[] packet = new byte[9];
             packet[0] = MAGIC_BYTE;
-            packet[1] = (action == MOUSE_ACT_CLICK) ? CMD_MOUSE_DBLCLICK : CMD_MOUSE_BUTTON;
+            packet[1] = CMD_MOUSE_BUTTON;
             packet[2] = button;
             packet[3] = action;
+            packet[4] = 0;
+
+            ushort normX = (ushort)Math.Max(0, Math.Min(65535, (int)(xPercent * 65535.0)));
+            ushort normY = (ushort)Math.Max(0, Math.Min(65535, (int)(yPercent * 65535.0)));
+
+            packet[5] = (byte)(normX & 0xFF);
+            packet[6] = (byte)((normX >> 8) & 0xFF);
+            packet[7] = (byte)(normY & 0xFF);
+            packet[8] = (byte)((normY >> 8) & 0xFF);
+
+            return packet;
+        }
+
+        public static byte[] EncodeMouseDoubleClick(byte button, double xPercent, double yPercent)
+        {
+            byte[] packet = new byte[9];
+            packet[0] = MAGIC_BYTE;
+            packet[1] = CMD_MOUSE_DBLCLICK;
+            packet[2] = button;
+            packet[3] = MOUSE_ACT_CLICK;
             packet[4] = 0;
 
             ushort normX = (ushort)Math.Max(0, Math.Min(65535, (int)(xPercent * 65535.0)));

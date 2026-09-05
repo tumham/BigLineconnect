@@ -143,37 +143,8 @@ namespace BigLineconnect
                 int actualX = bounds.X + Math.Min(bounds.Width - 1, (int)(xPercent * bounds.Width));
                 int actualY = bounds.Y + Math.Min(bounds.Height - 1, (int)(yPercent * bounds.Height));
 
-                int vLeft = System.Windows.Forms.SystemInformation.VirtualScreen.Left;
-                int vTop = System.Windows.Forms.SystemInformation.VirtualScreen.Top;
-                int vWidth = System.Windows.Forms.SystemInformation.VirtualScreen.Width;
-                int vHeight = System.Windows.Forms.SystemInformation.VirtualScreen.Height;
-
-                int normX = (int)(((actualX - vLeft) * 65535.0) / (vWidth > 1 ? vWidth - 1 : 1));
-                int normY = (int)(((actualY - vTop) * 65535.0) / (vHeight > 1 ? vHeight - 1 : 1));
-
-                INPUT[] inputs = new INPUT[1];
-                inputs[0] = new INPUT
-                {
-                    type = INPUT_MOUSE,
-                    U = new InputUnion
-                    {
-                        mi = new MOUSEINPUT
-                        {
-                            dx = normX,
-                            dy = normY,
-                            dwFlags = MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_VIRTUALDESK,
-                            mouseData = 0,
-                            time = 0,
-                            dwExtraInfo = IntPtr.Zero
-                        }
-                    }
-                };
-                uint res = SendInput(1, inputs, Marshal.SizeOf<INPUT>());
-                if (res == 0)
-                {
-                    SetCursorPos(actualX, actualY);
-                    mouse_event(MOUSEEVENTF_MOVE, 0, 0, 0, (UIntPtr)0);
-                }
+                SetCursorPos(actualX, actualY);
+                mouse_event(MOUSEEVENTF_MOVE, 0, 0, 0, (UIntPtr)0);
             }
             catch { }
         }
@@ -191,99 +162,74 @@ namespace BigLineconnect
         private static bool _isLeftMouseDown = false;
         private static bool _isRightMouseDown = false;
         private static bool _isMiddleMouseDown = false;
+        private static DateTime _lastLeftDownTime = DateTime.MinValue;
 
         public static void SimulateMouseButton(string button, string action, double? xPercent = null, double? yPercent = null, int displayIndex = 0)
         {
             try
             {
-                uint flags = 0;
-                bool isDown = action.Equals("down", StringComparison.OrdinalIgnoreCase);
-
-                if (button.Equals("left", StringComparison.OrdinalIgnoreCase))
-                {
-                    flags = isDown ? MOUSEEVENTF_LEFTDOWN : MOUSEEVENTF_LEFTUP;
-                    _isLeftMouseDown = isDown;
-                }
-                else if (button.Equals("right", StringComparison.OrdinalIgnoreCase))
-                {
-                    flags = isDown ? MOUSEEVENTF_RIGHTDOWN : MOUSEEVENTF_RIGHTUP;
-                    _isRightMouseDown = isDown;
-                }
-                else if (button.Equals("middle", StringComparison.OrdinalIgnoreCase))
-                {
-                    flags = isDown ? MOUSEEVENTF_MIDDLEDOWN : MOUSEEVENTF_MIDDLEUP;
-                    _isMiddleMouseDown = isDown;
-                }
-
-                if (flags == 0) return;
-
                 var screens = System.Windows.Forms.Screen.AllScreens;
                 if (displayIndex < 0 || displayIndex >= screens.Length) displayIndex = 0;
                 var bounds = screens[displayIndex].Bounds;
 
-                // ATOMIC MOVE+CLICK: Combine position and click into a single SendInput call.
-                // This ensures modal dialogs (Mikro ERP, Excel, Windows dialogs) receive the click at the exact pixel.
                 if (xPercent.HasValue && yPercent.HasValue)
                 {
                     int actualX = bounds.X + Math.Min(bounds.Width - 1, (int)(xPercent.Value * bounds.Width));
                     int actualY = bounds.Y + Math.Min(bounds.Height - 1, (int)(yPercent.Value * bounds.Height));
-
-                    int vLeft = System.Windows.Forms.SystemInformation.VirtualScreen.Left;
-                    int vTop = System.Windows.Forms.SystemInformation.VirtualScreen.Top;
-                    int vWidth = System.Windows.Forms.SystemInformation.VirtualScreen.Width;
-                    int vHeight = System.Windows.Forms.SystemInformation.VirtualScreen.Height;
-
-                    int normX = (int)(((actualX - vLeft) * 65535.0) / (vWidth > 1 ? vWidth - 1 : 1));
-                    int normY = (int)(((actualY - vTop) * 65535.0) / (vHeight > 1 ? vHeight - 1 : 1));
-
-                    INPUT[] inputs = new INPUT[1];
-                    inputs[0] = new INPUT
-                    {
-                        type = INPUT_MOUSE,
-                        U = new InputUnion
-                        {
-                            mi = new MOUSEINPUT
-                            {
-                                dx = normX,
-                                dy = normY,
-                                dwFlags = flags | MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_VIRTUALDESK,
-                                mouseData = 0,
-                                time = 0,
-                                dwExtraInfo = IntPtr.Zero
-                            }
-                        }
-                    };
-                    uint res = SendInput(1, inputs, Marshal.SizeOf<INPUT>());
-                    if (res == 0)
-                    {
-                        SetCursorPos(actualX, actualY);
-                        mouse_event(flags, 0, 0, 0, (UIntPtr)0);
-                    }
+                    SetCursorPos(actualX, actualY);
                 }
-                else
+
+                uint downFlag = 0;
+                uint upFlag = 0;
+                if (button.Equals("left", StringComparison.OrdinalIgnoreCase))
                 {
-                    INPUT[] inputs = new INPUT[1];
-                    inputs[0] = new INPUT
+                    downFlag = MOUSEEVENTF_LEFTDOWN;
+                    upFlag = MOUSEEVENTF_LEFTUP;
+                }
+                else if (button.Equals("right", StringComparison.OrdinalIgnoreCase))
+                {
+                    downFlag = MOUSEEVENTF_RIGHTDOWN;
+                    upFlag = MOUSEEVENTF_RIGHTUP;
+                }
+                else if (button.Equals("middle", StringComparison.OrdinalIgnoreCase))
+                {
+                    downFlag = MOUSEEVENTF_MIDDLEDOWN;
+                    upFlag = MOUSEEVENTF_MIDDLEUP;
+                }
+
+                if (downFlag == 0) return;
+
+                if (action.Equals("down", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (button.Equals("left", StringComparison.OrdinalIgnoreCase))
                     {
-                        type = INPUT_MOUSE,
-                        U = new InputUnion
-                        {
-                            mi = new MOUSEINPUT
-                            {
-                                dx = 0,
-                                dy = 0,
-                                dwFlags = flags,
-                                mouseData = 0,
-                                time = 0,
-                                dwExtraInfo = IntPtr.Zero
-                            }
-                        }
-                    };
-                    uint res = SendInput(1, inputs, Marshal.SizeOf<INPUT>());
-                    if (res == 0)
-                    {
-                        mouse_event(flags, 0, 0, 0, (UIntPtr)0);
+                        _isLeftMouseDown = true;
+                        _lastLeftDownTime = DateTime.UtcNow;
                     }
+                    mouse_event(downFlag, 0, 0, 0, (UIntPtr)0);
+                }
+                else if (action.Equals("up", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (button.Equals("left", StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (!_isLeftMouseDown)
+                        {
+                            // FAILSAFE RECOVERY: DOWN packet was dropped over UDP!
+                            // Synthesize Down -> 25ms dwell -> Up to guarantee modal click (Mikro ERP, Excel, dialogs)!
+                            mouse_event(downFlag, 0, 0, 0, (UIntPtr)0);
+                            Thread.Sleep(25);
+                        }
+                        _isLeftMouseDown = false;
+                    }
+                    mouse_event(upFlag, 0, 0, 0, (UIntPtr)0);
+                }
+                else if (action.Equals("click", StringComparison.OrdinalIgnoreCase))
+                {
+                    // Full atomic click with human-physics 25ms dwell time for Win32/Delphi/Mikro Jump controls
+                    mouse_event(downFlag, 0, 0, 0, (UIntPtr)0);
+                    Thread.Sleep(25);
+                    mouse_event(upFlag, 0, 0, 0, (UIntPtr)0);
+                    if (button.Equals("left", StringComparison.OrdinalIgnoreCase)) _isLeftMouseDown = false;
                 }
 
                 Program.TriggerInstantCapture();

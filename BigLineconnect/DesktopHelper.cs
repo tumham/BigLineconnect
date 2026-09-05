@@ -180,7 +180,7 @@ namespace BigLineconnect
         {
             try
             {
-                if (!force && (DateTime.Now - _lastAttachTime).TotalMilliseconds < 500)
+                if (!force && (DateTime.Now - _lastAttachTime).TotalMilliseconds < 2000)
                 {
                     return;
                 }
@@ -201,6 +201,7 @@ namespace BigLineconnect
                 if (hDesk != IntPtr.Zero)
                 {
                     SetThreadDesktop(hDesk);
+                    CloseDesktop(hDesk);
                 }
             }
             catch { }

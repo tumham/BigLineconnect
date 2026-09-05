@@ -914,9 +914,13 @@ namespace BigLineconnect
                         }
 
                         // Thread-safe isolated frame copy for GDI+ JPEG or H.264 NAL decoding
-                        byte[] isolatedFrame = new byte[frameDataLength];
-                        Buffer.BlockCopy(_receiveBuffer, frameDataOffset, isolatedFrame, 0, frameDataLength);
-                        QueueAndDecodeIncomingFrame(isolatedFrame);
+                        // If P2P is connected, drop relay frames so they don't overwrite live P2P frames and jitter
+                        if (!P2pDirectEngine.IsP2pConnected)
+                        {
+                            byte[] isolatedFrame = new byte[frameDataLength];
+                            Buffer.BlockCopy(_receiveBuffer, frameDataOffset, isolatedFrame, 0, frameDataLength);
+                            QueueAndDecodeIncomingFrame(isolatedFrame);
+                        }
                     }
                     else if (result.MessageType == WebSocketMessageType.Text)
                     {
@@ -1725,14 +1729,14 @@ namespace BigLineconnect
         {
             if (data == null || data.Length == 0) return;
 
-            // 1. Instant UDP dispatch if P2P active
+            // 1. Instant UDP dispatch if P2P active - DO NOT DUPLICATE TO WEBSOCKET
             if (P2pDirectEngine.IsP2pConnected)
             {
                 P2pDirectEngine.SendP2pPacket(data);
+                return;
             }
 
-            // 2. High-priority inputs (clicks, key presses, double clicks, scrolls) MUST ALSO be enqueued to WebSocket
-            // so if a UDP packet is lost on WAN, the click or keystroke is 100% guaranteed to land!
+            // 2. Relay fallback only when P2P is not connected
             if (_ws != null && _ws.State == WebSocketState.Open)
             {
                 _highPriorityInputs.Enqueue((data, WebSocketMessageType.Binary));
@@ -2195,7 +2199,7 @@ namespace BigLineconnect
             if (e.Button == MouseButtons.Right) button = BinaryInputProtocol.MOUSE_BTN_RIGHT;
             else if (e.Button == MouseButtons.Middle) button = BinaryInputProtocol.MOUSE_BTN_MIDDLE;
 
-            byte[] binPkt = BinaryInputProtocol.EncodeMouseButton(button, BinaryInputProtocol.MOUSE_ACT_CLICK, x, y);
+            byte[] binPkt = BinaryInputProtocol.EncodeMouseDoubleClick(button, x, y);
             SendBinaryInput(binPkt);
         }
 

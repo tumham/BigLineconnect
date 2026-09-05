@@ -1689,13 +1689,9 @@ namespace BigLineconnect
                                     {
                                         try { P2pDirectEngine.SendFrameChunks(stampedPayload); } catch { }
                                     }
-
-                                    // 2. CRITICAL HYBRID FAILSAFE NET:
-                                    // If P2P is not connected OR previous UDP frame wasn't ACKed (packet loss on WAN)
-                                    // OR periodically every 5th frame, deliver over WebSocket so screen NEVER freezes if a UDP chunk drops!
-                                    bool needsWsDelivery = !P2pDirectEngine.IsP2pConnected || inFlight >= 1 || (initialFrameCount % 5 == 0);
-                                    if (needsWsDelivery)
+                                    else
                                     {
+                                        // 2. Guaranteed cloud relay stream over WebSocket when P2P is not connected
                                         await SafeSendAsync(
                                             ws,
                                             new ArraySegment<byte>(stampedPayload),
