@@ -240,10 +240,7 @@ namespace BigLineconnect
 
         private int _isRenderingFrame = 0;
         private H264Decoder? _h264Decoder;
-        private int _isSendingBinaryMove = 0;
-        private ushort _latestMouseUx = 0;
-        private ushort _latestMouseUy = 0;
-        private bool _hasUnsentMouseMove = false;
+
 
         private Image? _latestDecodedImage = null;
         private readonly object _decodedImageLock = new object();
@@ -793,10 +790,7 @@ namespace BigLineconnect
                                 frameDataLength = totalReceived - 12;
 
                                 // 0ms Frame ACK back to Host for zero-backlog flow control
-                                byte[] ackPkt = new byte[5];
-                                ackPkt[0] = 0x41; // 'A'
-                                BitConverter.TryWriteBytes(new Span<byte>(ackPkt, 1, 4), receivedSeq);
-                                SendBinaryInput(ackPkt);
+                                SendFrameAck(receivedSeq);
                             }
                         }
                         else if (totalReceived >= 16)
@@ -1613,9 +1607,12 @@ namespace BigLineconnect
             catch { }
         }
 
-        private readonly System.Threading.Channels.Channel<(byte[] Data, WebSocketMessageType Type)> _outgoingChannel =
-            System.Threading.Channels.Channel.CreateUnbounded<(byte[] Data, WebSocketMessageType Type)>(
-                new System.Threading.Channels.UnboundedChannelOptions { SingleReader = false, SingleWriter = false });
+        private readonly System.Collections.Concurrent.ConcurrentQueue<(byte[] Data, WebSocketMessageType Type)> _highPriorityInputs = new();
+        private volatile uint _latestPendingAckSeq = 0;
+        private volatile int _hasPendingMouseMove = 0;
+        private volatile int _latestMouseUx = 0;
+        private volatile int _latestMouseUy = 0;
+        private readonly AutoResetEvent _senderWakeEvent = new AutoResetEvent(false);
 
         public async Task SendJsonAsync(object data)
         {
@@ -1632,31 +1629,75 @@ namespace BigLineconnect
                 LogClient($"Sending: {json}");
             }
             byte[] bytes = Encoding.UTF8.GetBytes(json);
-            _outgoingChannel.Writer.TryWrite((bytes, WebSocketMessageType.Text));
+            _highPriorityInputs.Enqueue((bytes, WebSocketMessageType.Text));
+            _senderWakeEvent.Set();
         }
 
         public void SendBinaryInput(byte[] data)
         {
             if (data == null || data.Length == 0) return;
             if (_ws == null || _ws.State != WebSocketState.Open) return;
-            _outgoingChannel.Writer.TryWrite((data, WebSocketMessageType.Binary));
+            _highPriorityInputs.Enqueue((data, WebSocketMessageType.Binary));
+            _senderWakeEvent.Set();
+        }
+
+        public void SendFrameAck(uint seq)
+        {
+            uint cur;
+            do
+            {
+                cur = _latestPendingAckSeq;
+                if (seq <= cur) break;
+            } while (Interlocked.CompareExchange(ref _latestPendingAckSeq, seq, cur) != cur);
+            _senderWakeEvent.Set();
         }
 
         private async Task StartSenderLoopAsync(ClientWebSocket ws, CancellationToken token)
         {
             try
             {
+                byte[] mousePkt = new byte[5];
+                mousePkt[0] = 0x4D; // 'M'
+
+                byte[] ackPkt = new byte[5];
+                ackPkt[0] = 0x41; // 'A'
+
                 while (!token.IsCancellationRequested && ws.State == WebSocketState.Open)
                 {
-                    if (await _outgoingChannel.Reader.WaitToReadAsync(token).ConfigureAwait(false))
+                    bool sentAnything = false;
+
+                    // 1. Send all high-priority inputs FIRST (Clicks, Keys, Typing, Commands)
+                    while (_highPriorityInputs.TryDequeue(out var item))
                     {
-                        while (_outgoingChannel.Reader.TryRead(out var item))
-                        {
-                            if (ws.State == WebSocketState.Open)
-                            {
-                                await ws.SendAsync(new ArraySegment<byte>(item.Data), item.Type, true, token).ConfigureAwait(false);
-                            }
-                        }
+                        if (ws.State != WebSocketState.Open) break;
+                        await ws.SendAsync(new ArraySegment<byte>(item.Data), item.Type, true, token).ConfigureAwait(false);
+                        sentAnything = true;
+                    }
+
+                    // 2. Send coalesced Frame ACK (Flow Control)
+                    uint ackSeq = Interlocked.Exchange(ref _latestPendingAckSeq, 0);
+                    if (ackSeq > 0 && ws.State == WebSocketState.Open)
+                    {
+                        BitConverter.TryWriteBytes(new Span<byte>(ackPkt, 1, 4), ackSeq);
+                        await ws.SendAsync(new ArraySegment<byte>(ackPkt), WebSocketMessageType.Binary, true, token).ConfigureAwait(false);
+                        sentAnything = true;
+                    }
+
+                    // 3. Send coalesced Mouse Move (ONLY the single latest coordinate, never a backlog!)
+                    if (Interlocked.Exchange(ref _hasPendingMouseMove, 0) == 1 && ws.State == WebSocketState.Open)
+                    {
+                        ushort ux = (ushort)_latestMouseUx;
+                        ushort uy = (ushort)_latestMouseUy;
+                        BitConverter.TryWriteBytes(new Span<byte>(mousePkt, 1, 2), ux);
+                        BitConverter.TryWriteBytes(new Span<byte>(mousePkt, 3, 2), uy);
+                        await ws.SendAsync(new ArraySegment<byte>(mousePkt), WebSocketMessageType.Binary, true, token).ConfigureAwait(false);
+                        sentAnything = true;
+                    }
+
+                    // If nothing was sent, wait for next event or 10ms max
+                    if (!sentAnything)
+                    {
+                        _senderWakeEvent.WaitOne(10);
                     }
                 }
             }
@@ -1812,18 +1853,21 @@ namespace BigLineconnect
             ushort ux = (ushort)(Math.Max(0, Math.Min(1, x)) * 65535);
             ushort uy = (ushort)(Math.Max(0, Math.Min(1, y)) * 65535);
 
-            byte[] pkt = new byte[5];
-            pkt[0] = 0x4D; // 'M' for Move
-            BitConverter.TryWriteBytes(new Span<byte>(pkt, 1, 2), ux);
-            BitConverter.TryWriteBytes(new Span<byte>(pkt, 3, 2), uy);
-
             if (P2pDirectEngine.IsP2pConnected)
             {
+                byte[] pkt = new byte[5];
+                pkt[0] = 0x4D; // 'M' for Move
+                BitConverter.TryWriteBytes(new Span<byte>(pkt, 1, 2), ux);
+                BitConverter.TryWriteBytes(new Span<byte>(pkt, 3, 2), uy);
                 P2pDirectEngine.SendP2pPacket(pkt);
                 return;
             }
 
-            SendBinaryInput(pkt);
+            // COALESCE MOUSE MOVE: Never queue multiple moves! Only keep the single latest position!
+            _latestMouseUx = ux;
+            _latestMouseUy = uy;
+            Interlocked.Exchange(ref _hasPendingMouseMove, 1);
+            _senderWakeEvent.Set();
         }
 
         private void PictureBox_MouseMove(object? sender, MouseEventArgs e)
