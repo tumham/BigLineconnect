@@ -165,10 +165,7 @@ namespace BigLineconnect
                     }
 
                     // 2. STUN Discovery & P2P Candidate Exchange for WAN & LAN Hole Punching
-                    for (int i = 0; i < 20 && string.IsNullOrEmpty(P2pDirectEngine.PublicIp); i++)
-                    {
-                        await Task.Delay(50);
-                    }
+                    await P2pDirectEngine.EnsureStunResolvedAsync(1200);
 
                     string myCand = $"{{\"type\":\"p2p_candidate\",\"public_ip\":\"{P2pDirectEngine.PublicIp}\",\"public_port\":{P2pDirectEngine.PublicPort},\"lan_ip\":\"{Program.GetLocalLanIPAddress()}\",\"lan_port\":{P2pDirectEngine.LocalUdpPort}}}";
                     byte[] candBytes = Encoding.UTF8.GetBytes(myCand);
@@ -176,6 +173,20 @@ namespace BigLineconnect
                     {
                         await _ws.SendAsync(new ArraySegment<byte>(candBytes), WebSocketMessageType.Text, true, CancellationToken.None);
                     }
+
+                    // Also push update if STUN resolves shortly afterwards
+                    P2pDirectEngine.OnStunResolved += (newPubIp, newPubPort) =>
+                    {
+                        try
+                        {
+                            if (_ws != null && _ws.State == WebSocketState.Open)
+                            {
+                                string updatedCand = $"{{\"type\":\"p2p_candidate\",\"public_ip\":\"{newPubIp}\",\"public_port\":{newPubPort},\"lan_ip\":\"{Program.GetLocalLanIPAddress()}\",\"lan_port\":{P2pDirectEngine.LocalUdpPort}}}";
+                                SendJson(updatedCand);
+                            }
+                        }
+                        catch { }
+                    };
                 }
                 catch { }
             });
@@ -1711,6 +1722,15 @@ namespace BigLineconnect
 
         public void SendFrameAck(uint seq)
         {
+            if (P2pDirectEngine.IsP2pConnected)
+            {
+                byte[] ackPkt = new byte[5];
+                ackPkt[0] = 0x41; // 'A'
+                BitConverter.TryWriteBytes(new Span<byte>(ackPkt, 1, 4), seq);
+                P2pDirectEngine.SendP2pPacket(ackPkt);
+                return;
+            }
+
             uint cur;
             do
             {

@@ -29,6 +29,9 @@ namespace BigLineconnect
         public static event Action<byte[]>? OnP2pPacketReceived;
         public static event Action<byte[]>? OnFrameReceived;
         public static event Action? OnP2pConnected;
+        public static event Action<string, int>? OnStunResolved;
+
+        private static TaskCompletionSource<IPEndPoint?> _stunTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
         private static readonly ConcurrentDictionary<string, TaskCompletionSource<string>> _pendingLanProbes = new();
 
@@ -59,6 +62,7 @@ namespace BigLineconnect
             {
                 Shutdown();
                 _cts = new CancellationTokenSource();
+                _stunTcs = new TaskCompletionSource<IPEndPoint?>(TaskCreationOptions.RunContinuationsAsynchronously);
                 
                 try
                 {
@@ -82,27 +86,47 @@ namespace BigLineconnect
 
                 LocalUdpPort = (ushort)((IPEndPoint)_udpClient.Client.LocalEndPoint!).Port;
 
+                // 1. Single UDP consumer loop (handles STUN replies, hole-punch pings/pongs, and video/input packets)
                 _ = Task.Run(() => ListenUdpLoop(_cts.Token));
 
-                // Discover external public IP & NAT mapped port via RFC 5389 STUN in background
+                // 2. Discover external public IP & NAT mapped port via RFC 5389 STUN in background
                 _ = Task.Run(async () =>
                 {
                     try
                     {
                         if (_udpClient != null)
                         {
-                            var stunEp = await StunClient.QueryExternalEndpointAsync(_udpClient, 2000).ConfigureAwait(false);
-                            if (stunEp != null)
-                            {
-                                PublicIp = stunEp.Address.ToString();
-                                PublicPort = stunEp.Port;
-                            }
+                            await StunClient.SendBindingRequestsAsync(_udpClient).ConfigureAwait(false);
                         }
                     }
                     catch { }
                 });
             }
             catch { }
+        }
+
+        public static async Task<IPEndPoint?> EnsureStunResolvedAsync(int timeoutMs = 1500)
+        {
+            if (!string.IsNullOrEmpty(PublicIp) && PublicPort > 0 && IPAddress.TryParse(PublicIp, out var parsedIp))
+            {
+                return new IPEndPoint(parsedIp, PublicPort);
+            }
+
+            if (_udpClient != null)
+            {
+                try { _ = StunClient.SendBindingRequestsAsync(_udpClient); } catch { }
+            }
+
+            var currentTcs = _stunTcs;
+            if (currentTcs != null)
+            {
+                var completed = await Task.WhenAny(currentTcs.Task, Task.Delay(timeoutMs)).ConfigureAwait(false);
+                if (completed == currentTcs.Task)
+                {
+                    return await currentTcs.Task.ConfigureAwait(false);
+                }
+            }
+            return null;
         }
 
         public static async Task<string?> ProbeLocalLanForHostIdAsync(string hostId, int timeoutMs = 250)
@@ -136,45 +160,58 @@ namespace BigLineconnect
         }
 
         /// <summary>
-        /// Starts UDP Hole Punching to the target peer's public and optional LAN endpoints.
+        /// Starts UDP Hole Punching to the target peer's public (with CGNAT sequential deltas) and LAN endpoints.
         /// </summary>
         public static void StartHolePunch(string remotePublicIp, int remotePublicPort, string? remoteLanIp = null, int remoteLanPort = 0)
         {
             if (_udpClient == null) return;
             CancellationToken token = _cts?.Token ?? CancellationToken.None;
 
-            IPEndPoint? publicEp = null;
+            var targetEndpoints = new List<IPEndPoint>();
+
             if (IPAddress.TryParse(remotePublicIp, out var pIp) && remotePublicPort > 0)
             {
-                publicEp = new IPEndPoint(pIp, remotePublicPort);
+                // Primary public mapped endpoint
+                targetEndpoints.Add(new IPEndPoint(pIp, remotePublicPort));
+
+                // Sequential port deltas for CGNAT / Symmetric NAT (+1, -1, +2, -2, +3, -3, +4, -4)
+                int[] deltas = new[] { 1, -1, 2, -2, 3, -3, 4, -4 };
+                foreach (int d in deltas)
+                {
+                    int shifted = remotePublicPort + d;
+                    if (shifted >= 1024 && shifted <= 65535)
+                    {
+                        targetEndpoints.Add(new IPEndPoint(pIp, shifted));
+                    }
+                }
             }
 
-            IPEndPoint? lanEp = null;
             if (!string.IsNullOrEmpty(remoteLanIp) && IPAddress.TryParse(remoteLanIp, out var lIp))
             {
-                lanEp = new IPEndPoint(lIp, remoteLanPort > 0 ? remoteLanPort : 18888);
+                targetEndpoints.Add(new IPEndPoint(lIp, remoteLanPort > 0 ? remoteLanPort : 18888));
             }
 
-            if (publicEp == null && lanEp == null) return;
+            if (targetEndpoints.Count == 0) return;
 
             _ = Task.Run(async () =>
             {
                 byte[] pingPacket = Encoding.UTF8.GetBytes("P2P_PING");
-                // Rapid punch bursts: send 10 packets at 50ms intervals
-                for (int i = 0; i < 30 && !token.IsCancellationRequested; i++)
+                // Rapid punch bursts: send burst packets at 40ms intervals for up to 35 rounds
+                for (int i = 0; i < 35 && !token.IsCancellationRequested; i++)
                 {
                     if (_isP2pConnected) break;
 
-                    try
+                    foreach (var ep in targetEndpoints)
                     {
-                        if (publicEp != null && _udpClient != null)
-                            await _udpClient.SendAsync(pingPacket, pingPacket.Length, publicEp).ConfigureAwait(false);
-                        if (lanEp != null && _udpClient != null)
-                            await _udpClient.SendAsync(pingPacket, pingPacket.Length, lanEp).ConfigureAwait(false);
+                        try
+                        {
+                            if (_udpClient != null)
+                                await _udpClient.SendAsync(pingPacket, pingPacket.Length, ep).ConfigureAwait(false);
+                        }
+                        catch { }
                     }
-                    catch { }
 
-                    await Task.Delay(60, token).ConfigureAwait(false);
+                    await Task.Delay(40, token).ConfigureAwait(false);
                 }
 
                 // Keep-alive loop once connected
@@ -185,7 +222,7 @@ namespace BigLineconnect
                         await _udpClient.SendAsync(pingPacket, pingPacket.Length, _remoteEndpoint).ConfigureAwait(false);
                     }
                     catch { }
-                    await Task.Delay(3000, token).ConfigureAwait(false);
+                    await Task.Delay(2500, token).ConfigureAwait(false);
                 }
             }, token);
         }
@@ -248,6 +285,21 @@ namespace BigLineconnect
                     var result = await _udpClient.ReceiveAsync(token).ConfigureAwait(false);
                     byte[] data = result.Buffer;
                     IPEndPoint senderEp = result.RemoteEndPoint;
+
+                    // 1. RFC 5389 STUN Binding Success Response Parsing:
+                    // 0x01, 0x01 = Binding Response; Magic Cookie at 4..7 = 0x2112A442
+                    if (data.Length >= 20 && data[0] == 0x01 && data[1] == 0x01 && data[4] == 0x21 && data[5] == 0x12 && data[6] == 0xA4 && data[7] == 0x42)
+                    {
+                        var stunEp = StunClient.ParseResponse(data);
+                        if (stunEp != null)
+                        {
+                            PublicIp = stunEp.Address.ToString();
+                            PublicPort = stunEp.Port;
+                            _stunTcs.TrySetResult(stunEp);
+                            OnStunResolved?.Invoke(PublicIp, PublicPort);
+                        }
+                        continue;
+                    }
 
                     if (data.Length >= 8 && Encoding.UTF8.GetString(data, 0, 8) == "P2P_PING")
                     {
