@@ -184,7 +184,7 @@ namespace BigLineconnect
             _jpegEncoder = GetEncoder(ImageFormat.Jpeg);
         }
 
-        public static bool UseRtTileEngine { get; set; } = true; // Enabled: Differential subframes (2-5 KB) unlock 60 FPS on WAN
+        public static bool UseRtTileEngine { get; set; } = false; // Stateless full-frame: zero desync, zero corruption, zero buffer accumulation
         public static bool UseH264Mode { get; set; } = false;
         public static bool ForceKeyframeRequested { get; set; } = false;
         private static H264Encoder? _h264Encoder;

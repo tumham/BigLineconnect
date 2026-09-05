@@ -1589,17 +1589,19 @@ namespace BigLineconnect
                     }
 
                     // ── In-Flight Flow Control / Anti-Bufferbloat Gate ──
-                    // Bandwidth-Delay Product for 60-100ms WAN: 6 frames in flight allows full 60 FPS!
-                    // Yields with fast 2ms delay without freezing the capture pipeline.
+                    // Strict pipeline: allows at most 2 in-flight frames on broadband (1 on 3G).
+                    // Wakes INSTANTLY (0ms) upon receiving ACK from viewer.
+                    // Strictly prevents TCP socket buffer overfill (10-15s delay / ballooning)!
                     if (speedProbeComplete && _lastAckedFrameSeq > 0)
                     {
                         int inFlight = unchecked((int)(_currentFrameSeq - _lastAckedFrameSeq));
-                        int maxInFlight = is3GMode ? 1 : 6;
+                        int maxInFlight = is3GMode ? 1 : 2;
                         if (inFlight >= maxInFlight)
                         {
-                            if (!_frameAckEvent.WaitOne(8))
+                            int waitTimeoutMs = is3GMode ? 100 : 45;
+                            if (!_frameAckEvent.WaitOne(waitTimeoutMs))
                             {
-                                if ((DateTime.Now - _lastFrameSendTime).TotalMilliseconds > 120)
+                                if ((DateTime.Now - _lastFrameSendTime).TotalMilliseconds > 250)
                                 {
                                     _lastAckedFrameSeq = _currentFrameSeq; // unstick sequence if ACK lost
                                 }
@@ -1631,8 +1633,8 @@ namespace BigLineconnect
                         // NEVER spam full/duplicate image frames on an idle screen!
                         if (!isDuplicate || isInitialBurst || isForcedBurst)
                         {
-                            // 3G: 15 FPS | Normal: 60 FPS (Full speed, ultra akıcı: 14ms threshold)
-                            int minIntervalMs = is3GMode ? 66 : 14;
+                            // 3G: 15 FPS | Normal: 60 FPS max pacing
+                            int minIntervalMs = is3GMode ? 66 : 16;
                             if (isInitialBurst || isForcedBurst || (DateTime.Now - _lastSentFrameTime).TotalMilliseconds >= minIntervalMs)
                             {
                                 _isSendingFrame = true;
