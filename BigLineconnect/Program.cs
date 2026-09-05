@@ -1392,9 +1392,9 @@ namespace BigLineconnect
             }
         }
 
-        public static int CurrentQuality { get; set; } = 70; // Kota dostu akıllı kalite (Hareketsizken 0 bayt, hareketliyken sadece ~45 KB)
+        public static int CurrentQuality { get; set; } = 55; // Ultra-fast lightweight frames (~40 KB, 0ms transfer)
         public static int CurrentMaxDimension { get; set; } = 0; // 0 = 100% Native Pixel-Perfect Resolution (No Blurring/Downscaling)
-        public static bool SuppressWallpaperEnabled { get; set; } = true;
+        public static bool SuppressWallpaperEnabled { get; set; } = false;
 
         private static long _forceSendUntilTicks = 0;
         private static Mutex? _singleStreamerMutex = null;
@@ -1538,21 +1538,20 @@ namespace BigLineconnect
                     // This mathematically guarantees zero bufferbloat and zero queue buildup!
                     if (_currentFrameSeq > _lastAckedFrameSeq)
                     {
-                        // Wait for ACK event from viewer
+                        // Wait for ACK event from viewer (0ms wake up on arrival)
                         _frameAckEvent.WaitOne(4);
                         if (_currentFrameSeq > _lastAckedFrameSeq)
                         {
-                            // If still waiting and within safety window (500ms), wait without injecting new frames into TCP!
-                            if ((DateTime.Now - _lastFrameSendTime).TotalMilliseconds < 500)
+                            // If still waiting and within safety window (120ms), wait without injecting new frames into TCP!
+                            if ((DateTime.Now - _lastFrameSendTime).TotalMilliseconds < 120)
                             {
                                 await Task.Delay(1, token).ConfigureAwait(false);
                                 continue;
                             }
                             else
                             {
-                                // Safety recovery after 500ms without ACK: assume ACK dropped, force fresh keyframe
+                                // Safety recovery after 120ms: previous frame/ACK in transit or dropped, unblock gate
                                 _lastAckedFrameSeq = _currentFrameSeq;
-                                ScreenCapturer.ForceKeyframeRequested = true;
                             }
                         }
                     }

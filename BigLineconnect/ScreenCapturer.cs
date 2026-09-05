@@ -184,7 +184,7 @@ namespace BigLineconnect
             _jpegEncoder = GetEncoder(ImageFormat.Jpeg);
         }
 
-        public static bool UseRtTileEngine { get; set; } = true; // DeskRT 64x64 Differential SubFrames: 1.5 - 3 KB per frame, 0ms latency
+        public static bool UseRtTileEngine { get; set; } = false; // Stateless full-frame: zero black boxes, zero desync, 100% clean display
         public static bool UseH264Mode { get; set; } = false;
         public static bool ForceKeyframeRequested { get; set; } = false;
         private static H264Encoder? _h264Encoder;
