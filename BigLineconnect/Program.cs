@@ -1628,7 +1628,8 @@ namespace BigLineconnect
                         inFlight = unchecked(_currentFrameSeq - _lastAckedFrameSeq);
                         if (inFlight >= 1)
                         {
-                            if ((DateTime.Now - _lastFrameSendTime).TotalMilliseconds < 80)
+                            int maxWaitMs = P2pDirectEngine.IsP2pConnected ? 60 : 350;
+                            if ((DateTime.Now - _lastFrameSendTime).TotalMilliseconds < maxWaitMs)
                             {
                                 await Task.Delay(2, token).ConfigureAwait(false);
                                 continue;
@@ -1714,7 +1715,15 @@ namespace BigLineconnect
                         }
                     }
 
-                    await Task.Delay(1, token).ConfigureAwait(false);
+                    // Strict pacing: wait for next frame ready or active pacing interval
+                    if (P2pDirectEngine.IsP2pConnected)
+                    {
+                        _frameReadyEvent.WaitOne(4);
+                    }
+                    else
+                    {
+                        _frameReadyEvent.WaitOne(15);
+                    }
                 }
                 Log("Görüntü gönderim döngüsü sonlandı.");
             }
@@ -1728,7 +1737,18 @@ namespace BigLineconnect
         {
             try
             {
-                ProcessBinaryRemoteInput(data);
+                if (data == null || data.Length < 5) return;
+
+                // Frame-ACK ('A') is time-critical: process immediately on socket thread
+                if (data[0] == 0x41)
+                {
+                    ProcessBinaryRemoteInput(data);
+                }
+                else
+                {
+                    // Input events (moves, clicks, keys): dispatch to ThreadPool immediately so UDP socket thread NEVER stalls!
+                    ThreadPool.QueueUserWorkItem(_ => ProcessBinaryRemoteInput(data));
+                }
             }
             catch { }
         }

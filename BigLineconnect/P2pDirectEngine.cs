@@ -115,14 +115,14 @@ namespace BigLineconnect
                     catch { }
                 });
 
-                // 3. Watchdog: monitor UDP traffic and detect zombie states
+                // 3. Watchdog: monitor UDP traffic and detect link loss (15 seconds of total silence)
                 _ = Task.Run(async () =>
                 {
                     CancellationToken token = _cts.Token;
                     while (!token.IsCancellationRequested)
                     {
-                        try { await Task.Delay(1500, token).ConfigureAwait(false); } catch { break; }
-                        if (_isP2pConnected && (DateTime.UtcNow - _lastUdpTrafficTime).TotalSeconds > 5.0)
+                        try { await Task.Delay(2000, token).ConfigureAwait(false); } catch { break; }
+                        if (_isP2pConnected && (DateTime.UtcNow - _lastUdpTrafficTime).TotalSeconds > 15.0)
                         {
                             _isP2pConnected = false;
                             OnP2pDisconnected?.Invoke();
@@ -248,15 +248,19 @@ namespace BigLineconnect
                     await Task.Delay(40, token).ConfigureAwait(false);
                 }
 
-                // Keep-alive loop once connected
-                while (!token.IsCancellationRequested && _udpClient != null && _isP2pConnected && _remoteEndpoint != null)
+                // Continuous Keep-Alive & Auto-Heal Loop:
+                // Rapid 800ms heartbeat keeps domestic router NAT port mapping permanently OPEN
+                while (!token.IsCancellationRequested && _udpClient != null)
                 {
-                    try
+                    if (_remoteEndpoint != null)
                     {
-                        await _udpClient.SendAsync(pingPacket, pingPacket.Length, _remoteEndpoint).ConfigureAwait(false);
+                        try
+                        {
+                            await _udpClient.SendAsync(pingPacket, pingPacket.Length, _remoteEndpoint).ConfigureAwait(false);
+                        }
+                        catch { }
                     }
-                    catch { }
-                    await Task.Delay(2500, token).ConfigureAwait(false);
+                    await Task.Delay(800, token).ConfigureAwait(false);
                 }
             }, token);
         }
@@ -367,6 +371,12 @@ namespace BigLineconnect
                     else if (data.Length >= 8 && data[0] == 0x50)
                     {
                         _lastUdpTrafficTime = DateTime.UtcNow;
+                        if (!_isP2pConnected)
+                        {
+                            _remoteEndpoint = senderEp;
+                            _isP2pConnected = true;
+                            OnP2pConnected?.Invoke();
+                        }
                         ushort frameId = (ushort)((data[1] << 8) | data[2]);
                         ushort totalChunks = (ushort)((data[3] << 8) | data[4]);
                         ushort chunkIndex = (ushort)((data[5] << 8) | data[6]);
@@ -449,10 +459,15 @@ namespace BigLineconnect
                         }
                         else
                         {
-                            if (_isP2pConnected && (_remoteEndpoint == null || senderEp.Address.Equals(_remoteEndpoint.Address)))
+                            if (_remoteEndpoint == null || senderEp.Address.Equals(_remoteEndpoint.Address))
                             {
                                 _remoteEndpoint = senderEp;
                                 _lastUdpTrafficTime = DateTime.UtcNow;
+                                if (!_isP2pConnected)
+                                {
+                                    _isP2pConnected = true;
+                                    OnP2pConnected?.Invoke();
+                                }
                                 OnP2pPacketReceived?.Invoke(data);
                             }
                         }
