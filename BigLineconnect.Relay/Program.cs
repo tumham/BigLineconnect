@@ -3231,6 +3231,54 @@ using System.IO;
         {
             var buffer = new byte[1024 * 8]; // 8KB read buffer for inputs
             var token = session.ClientCts?.Token ?? session.Cts.Token;
+            var highPriorityQueue = new ConcurrentQueue<(byte[] Data, WebSocketMessageType Type)>();
+            byte[]? latestMouseMove = null;
+            var wakeSender = new AutoResetEvent(false);
+
+            // Dedicated zero-latency sender loop: transmits inputs to Host without Head-of-Line blocking
+            var senderTask = Task.Run(async () =>
+            {
+                try
+                {
+                    while (!token.IsCancellationRequested && session.HostSocket.State == WebSocketState.Open)
+                    {
+                        bool sentAnything = false;
+
+                        // 1. Send all Clicks, Keys, ACKs, Text Commands immediately
+                        while (highPriorityQueue.TryDequeue(out var item))
+                        {
+                            if (session.HostSocket.State != WebSocketState.Open) break;
+                            await session.HostSocket.SendAsync(
+                                new ArraySegment<byte>(item.Data),
+                                item.Type,
+                                true,
+                                token
+                            ).ConfigureAwait(false);
+                            sentAnything = true;
+                        }
+
+                        // 2. Send ONLY the single newest mouse move (never a 50-packet backlog!)
+                        byte[]? mouseToSend = Interlocked.Exchange(ref latestMouseMove, null);
+                        if (mouseToSend != null && session.HostSocket.State == WebSocketState.Open)
+                        {
+                            await session.HostSocket.SendAsync(
+                                new ArraySegment<byte>(mouseToSend),
+                                WebSocketMessageType.Binary,
+                                true,
+                                token
+                            ).ConfigureAwait(false);
+                            sentAnything = true;
+                        }
+
+                        if (!sentAnything)
+                        {
+                            wakeSender.WaitOne(10);
+                        }
+                    }
+                }
+                catch { }
+            }, token);
+
             try
             {
                 while (!token.IsCancellationRequested &&
@@ -3251,20 +3299,29 @@ using System.IO;
 
                         if (result.MessageType == WebSocketMessageType.Close) break;
 
-                        if (ms.Length > 0 && session.HostSocket.State == WebSocketState.Open)
+                        if (ms.Length > 0)
                         {
-                            byte[] entireMsg = ms.ToArray();
-                            await session.HostSocket.SendAsync(
-                                new ArraySegment<byte>(entireMsg),
-                                result.MessageType,
-                                true, // End of message
-                                token
-                            );
+                            byte[] msg = ms.ToArray();
+                            // If this is a mouse move (5 bytes, starting with 0x4D 'M') -> Coalesce to 0-latency!
+                            if (result.MessageType == WebSocketMessageType.Binary && msg.Length == 5 && msg[0] == 0x4D)
+                            {
+                                Interlocked.Exchange(ref latestMouseMove, msg);
+                            }
+                            else
+                            {
+                                highPriorityQueue.Enqueue((msg, result.MessageType));
+                            }
+                            wakeSender.Set();
                         }
                     }
                 }
             }
             catch (Exception) { }
+            finally
+            {
+                wakeSender.Set();
+                try { await senderTask; } catch { }
+            }
         }
 
         private static async Task TunnelViewOnlyClient(WebSocket socket, HostSession session)

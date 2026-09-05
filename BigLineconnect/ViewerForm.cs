@@ -1722,15 +1722,15 @@ namespace BigLineconnect
 
         private async Task StartSenderLoopAsync(ClientWebSocket ws, CancellationToken token)
         {
-            try
+            byte[] mousePkt = new byte[5];
+            mousePkt[0] = 0x4D; // 'M'
+
+            byte[] ackPkt = new byte[5];
+            ackPkt[0] = 0x41; // 'A'
+
+            while (!token.IsCancellationRequested && ws.State == WebSocketState.Open)
             {
-                byte[] mousePkt = new byte[5];
-                mousePkt[0] = 0x4D; // 'M'
-
-                byte[] ackPkt = new byte[5];
-                ackPkt[0] = 0x41; // 'A'
-
-                while (!token.IsCancellationRequested && ws.State == WebSocketState.Open)
+                try
                 {
                     bool sentAnything = false;
 
@@ -1762,14 +1762,19 @@ namespace BigLineconnect
                         sentAnything = true;
                     }
 
-                    // If nothing was sent, wait for next event or 10ms max
+                    // If nothing was sent, wait for next event or 15ms max
                     if (!sentAnything)
                     {
-                        _senderWakeEvent.WaitOne(10);
+                        _senderWakeEvent.WaitOne(15);
                     }
                 }
+                catch (OperationCanceledException) { break; }
+                catch (Exception)
+                {
+                    if (ws.State != WebSocketState.Open) break;
+                    try { await Task.Delay(10, token).ConfigureAwait(false); } catch { break; }
+                }
             }
-            catch { }
         }
 
         private void ShowFloatingClipboardButton(System.Collections.Generic.List<string> fileList)
@@ -1942,7 +1947,7 @@ namespace BigLineconnect
         {
             if (_pictureBox == null) return;
             if (e.Location == _lastSentMousePos) return;
-            int throttleMs = 10; // 100 FPS ultra-fast mouse tracking!
+            int throttleMs = 35; // ~28 FPS smooth mouse tracking without flooding WAN pipe
             if (DateTime.Now - _lastMoveSent < TimeSpan.FromMilliseconds(throttleMs)) return;
             _lastMoveSent = DateTime.Now;
             _lastSentMousePos = e.Location;
@@ -2436,7 +2441,8 @@ namespace BigLineconnect
                     if (_ws != null && _ws.State == WebSocketState.Open)
                     {
                         byte[] pingPkt = Encoding.UTF8.GetBytes("PING");
-                        _ws.SendAsync(new ArraySegment<byte>(pingPkt), WebSocketMessageType.Text, true, CancellationToken.None);
+                        _highPriorityInputs.Enqueue((pingPkt, WebSocketMessageType.Text));
+                        _senderWakeEvent.Set();
                     }
                 }
                 catch { }
