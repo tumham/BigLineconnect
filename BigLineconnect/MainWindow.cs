@@ -127,7 +127,7 @@ namespace BigLineconnect
             _instance = this;
             try { Program.SetStreamActive(false); } catch { }
             InitializeComponent();
-            this.Text = "B-Connect v3.84 ⚡ ERP & Hücre Hızlı Mod";
+            this.Text = "B-Connect v3.85 ⚡ Kusursuz Koordinat & Akıcı Tepki";
             LoadLogoAndIcon();
 
             // Populate connection logs that occurred during splash screen connection
@@ -257,7 +257,7 @@ namespace BigLineconnect
 
             var subtitleLabel = new Label
             {
-                Text = "v3.84 ⚡ ERP & Hücre Hızlı Mod",
+                Text = "v3.85 ⚡ Kusursuz Koordinat & Akıcı Tepki",
                 Location = new Point(28, 60),
                 Size = new Size(380, 18),
                 Font = new Font("Segoe UI", 9F, FontStyle.Bold),

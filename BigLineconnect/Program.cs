@@ -1638,7 +1638,7 @@ namespace BigLineconnect
                         {
                             // 3G: 15 FPS | Normal: 60 FPS max pacing
                             int minIntervalMs = is3GMode ? 66 : 16;
-                            if (isInitialBurst || isForcedBurst || isInputActive || (DateTime.Now - _lastSentFrameTime).TotalMilliseconds >= minIntervalMs)
+                            if (isInitialBurst || (DateTime.Now - _lastSentFrameTime).TotalMilliseconds >= minIntervalMs)
                             {
                                 _isSendingFrame = true;
                                 try

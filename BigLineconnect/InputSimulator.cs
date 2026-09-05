@@ -200,69 +200,12 @@ namespace BigLineconnect
                     int actualX = bounds.X + Math.Min(bounds.Width - 1, (int)(xPercent.Value * bounds.Width));
                     int actualY = bounds.Y + Math.Min(bounds.Height - 1, (int)(yPercent.Value * bounds.Height));
 
-                    // Always sync physical cursor position first
                     SetCursorPos(actualX, actualY);
-
-                    // Convert to absolute coordinates (0-65535 range for full virtual screen)
-                    int virtualW = System.Windows.Forms.SystemInformation.VirtualScreen.Width;
-                    int virtualH = System.Windows.Forms.SystemInformation.VirtualScreen.Height;
-                    int virtualX = System.Windows.Forms.SystemInformation.VirtualScreen.Left;
-                    int virtualY = System.Windows.Forms.SystemInformation.VirtualScreen.Top;
-                    int absX = (int)(((actualX - virtualX) * 65535.0) / (virtualW - 1));
-                    int absY = (int)(((actualY - virtualY) * 65535.0) / (virtualH - 1));
-
-                    INPUT[] inputs = new INPUT[1];
-                    inputs[0] = new INPUT
-                    {
-                        type = INPUT_MOUSE,
-                        U = new InputUnion
-                        {
-                            mi = new MOUSEINPUT
-                            {
-                                dx = absX,
-                                dy = absY,
-                                dwFlags = flags | MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_MOVE | MOUSEEVENTF_VIRTUALDESK,
-                                mouseData = 0,
-                                time = 0,
-                                dwExtraInfo = (IntPtr)0
-                            }
-                        }
-                    };
-
-                    uint res = SendInput(1, inputs, Marshal.SizeOf<INPUT>());
-                    if (res == 0)
-                    {
-                        // Fallback: separate SetCursorPos + mouse_event
-                        SetCursorPos(actualX, actualY);
-                        mouse_event(flags, 0, 0, 0, (UIntPtr)0);
-                    }
+                    mouse_event(flags, 0, 0, 0, (UIntPtr)0);
                 }
                 else
                 {
-                    // No position — just click at current cursor position
-                    INPUT[] inputs = new INPUT[1];
-                    inputs[0] = new INPUT
-                    {
-                        type = INPUT_MOUSE,
-                        U = new InputUnion
-                        {
-                            mi = new MOUSEINPUT
-                            {
-                                dx = 0,
-                                dy = 0,
-                                dwFlags = flags,
-                                mouseData = 0,
-                                time = 0,
-                                dwExtraInfo = (IntPtr)0
-                            }
-                        }
-                    };
-
-                    uint res = SendInput(1, inputs, Marshal.SizeOf<INPUT>());
-                    if (res == 0)
-                    {
-                        mouse_event(flags, 0, 0, 0, (UIntPtr)0);
-                    }
+                    mouse_event(flags, 0, 0, 0, (UIntPtr)0);
                 }
 
                 Program.TriggerInstantCapture();
