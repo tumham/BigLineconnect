@@ -127,7 +127,7 @@ namespace BigLineconnect
             _instance = this;
             try { Program.SetStreamActive(false); } catch { }
             InitializeComponent();
-            this.Text = "B-Connect v3.96 ⚡ WAN P2P Direct & Delme Motoru";
+            this.Text = "B-Connect v3.97 ⚡ P2P Direct & Hybrid Failsafe Motoru";
             LoadLogoAndIcon();
 
             // Populate connection logs that occurred during splash screen connection
@@ -257,7 +257,7 @@ namespace BigLineconnect
 
             var subtitleLabel = new Label
             {
-                Text = "v3.96 ⚡ WAN P2P Direct & Delme Motoru",
+                Text = "v3.97 ⚡ P2P Direct & Hybrid Failsafe Motoru",
                 Location = new Point(28, 60),
                 Size = new Size(380, 18),
                 Font = new Font("Segoe UI", 9F, FontStyle.Bold),

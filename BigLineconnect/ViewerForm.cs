@@ -301,6 +301,7 @@ namespace BigLineconnect
             P2pDirectEngine.Initialize();
             P2pDirectEngine.OnFrameReceived += OnDirectP2pFrameReceived;
             P2pDirectEngine.OnP2pConnected += OnDirectP2pConnected;
+            P2pDirectEngine.OnP2pDisconnected += OnDirectP2pDisconnected;
         }
         private void InitializeComponent()
         {
@@ -1584,6 +1585,19 @@ namespace BigLineconnect
             }));
         }
 
+        private void OnDirectP2pDisconnected()
+        {
+            this.BeginInvoke(new Action(() =>
+            {
+                if (_lblConnModeBadge != null && !_lblConnModeBadge.IsDisposed && !_isLanDirectActive)
+                {
+                    _lblConnModeBadge.Text = " ☁️ BULUT TÜNELİ ";
+                    _lblConnModeBadge.BackColor = Color.FromArgb(255, 179, 0); // Vibrant Amber
+                    _lblConnModeBadge.ForeColor = Color.Black;
+                }
+            }));
+        }
+
         private async void StartReconnectionLoop()
         {
             if (_isReconnecting || _isProgrammaticClose || _cts.IsCancellationRequested) return;
@@ -1710,14 +1724,20 @@ namespace BigLineconnect
         public void SendBinaryInput(byte[] data)
         {
             if (data == null || data.Length == 0) return;
+
+            // 1. Instant UDP dispatch if P2P active
             if (P2pDirectEngine.IsP2pConnected)
             {
                 P2pDirectEngine.SendP2pPacket(data);
-                return;
             }
-            if (_ws == null || _ws.State != WebSocketState.Open) return;
-            _highPriorityInputs.Enqueue((data, WebSocketMessageType.Binary));
-            _senderWakeEvent.Set();
+
+            // 2. High-priority inputs (clicks, key presses, double clicks, scrolls) MUST ALSO be enqueued to WebSocket
+            // so if a UDP packet is lost on WAN, the click or keystroke is 100% guaranteed to land!
+            if (_ws != null && _ws.State == WebSocketState.Open)
+            {
+                _highPriorityInputs.Enqueue((data, WebSocketMessageType.Binary));
+                _senderWakeEvent.Set();
+            }
         }
 
         public void SendFrameAck(uint seq)

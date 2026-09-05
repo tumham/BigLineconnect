@@ -1684,14 +1684,18 @@ namespace BigLineconnect
                                     Buffer.BlockCopy(BitConverter.GetBytes(seq), 0, stampedPayload, 8, 4);
                                     Buffer.BlockCopy(frameToSend, 0, stampedPayload, 12, frameToSend.Length);
 
-                                    // Direct low-latency P2P UDP when connected (0ms cloud relay latency)
+                                    // 1. Direct low-latency P2P UDP when connected (0ms cloud relay latency)
                                     if (P2pDirectEngine.IsP2pConnected)
                                     {
                                         try { P2pDirectEngine.SendFrameChunks(stampedPayload); } catch { }
                                     }
-                                    else
+
+                                    // 2. CRITICAL HYBRID FAILSAFE NET:
+                                    // If P2P is not connected OR previous UDP frame wasn't ACKed (packet loss on WAN)
+                                    // OR periodically every 5th frame, deliver over WebSocket so screen NEVER freezes if a UDP chunk drops!
+                                    bool needsWsDelivery = !P2pDirectEngine.IsP2pConnected || inFlight >= 1 || (initialFrameCount % 5 == 0);
+                                    if (needsWsDelivery)
                                     {
-                                        // Fallback guaranteed stream over WebSocket cloud relay
                                         await SafeSendAsync(
                                             ws,
                                             new ArraySegment<byte>(stampedPayload),
@@ -1751,6 +1755,8 @@ namespace BigLineconnect
                 _frameAckEvent.Set(); // Wake SendStreamLoop immediately on receiving ACK!
                 return;
             }
+
+            DesktopHelper.AttachToInputDesktop();
 
             if (pkt[0] == BinaryInputProtocol.MAGIC_BYTE && pkt.Length >= 9)
             {

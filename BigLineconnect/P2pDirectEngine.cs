@@ -29,9 +29,11 @@ namespace BigLineconnect
         public static event Action<byte[]>? OnP2pPacketReceived;
         public static event Action<byte[]>? OnFrameReceived;
         public static event Action? OnP2pConnected;
+        public static event Action? OnP2pDisconnected;
         public static event Action<string, int>? OnStunResolved;
 
         private static TaskCompletionSource<IPEndPoint?> _stunTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private static DateTime _lastUdpTrafficTime = DateTime.UtcNow;
 
         private static readonly ConcurrentDictionary<string, TaskCompletionSource<string>> _pendingLanProbes = new();
 
@@ -63,6 +65,7 @@ namespace BigLineconnect
                 Shutdown();
                 _cts = new CancellationTokenSource();
                 _stunTcs = new TaskCompletionSource<IPEndPoint?>(TaskCreationOptions.RunContinuationsAsynchronously);
+                _lastUdpTrafficTime = DateTime.UtcNow;
                 
                 try
                 {
@@ -75,6 +78,16 @@ namespace BigLineconnect
 
                 _udpClient.EnableBroadcast = true;
                 _udpClient.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+
+                // Prevent Windows from closing UDP socket or throwing 10054 on ICMP Port Unreachable
+                try
+                {
+                    const int SIO_UDP_CONNRESET = -1744830452; // 0x9800000C
+                    byte[] inValue = new byte[] { 0 };
+                    byte[] outValue = new byte[] { 0 };
+                    _udpClient.Client.IOControl(SIO_UDP_CONNRESET, inValue, outValue);
+                }
+                catch { }
                 
                 // Allow OS buffer to hold UDP bursts without dropping packets
                 try
@@ -100,6 +113,21 @@ namespace BigLineconnect
                         }
                     }
                     catch { }
+                });
+
+                // 3. Watchdog: monitor UDP traffic and detect zombie states
+                _ = Task.Run(async () =>
+                {
+                    CancellationToken token = _cts.Token;
+                    while (!token.IsCancellationRequested)
+                    {
+                        try { await Task.Delay(1500, token).ConfigureAwait(false); } catch { break; }
+                        if (_isP2pConnected && (DateTime.UtcNow - _lastUdpTrafficTime).TotalSeconds > 5.0)
+                        {
+                            _isP2pConnected = false;
+                            OnP2pDisconnected?.Invoke();
+                        }
+                    }
                 });
             }
             catch { }
@@ -166,6 +194,12 @@ namespace BigLineconnect
         {
             if (_udpClient == null) return;
             CancellationToken token = _cts?.Token ?? CancellationToken.None;
+
+            // Reset connection state for new hole punch session
+            _isP2pConnected = false;
+            _remoteEndpoint = null;
+            _reassemblyBuffers.Clear();
+            _lastUdpTrafficTime = DateTime.UtcNow;
 
             var targetEndpoints = new List<IPEndPoint>();
 
@@ -271,6 +305,12 @@ namespace BigLineconnect
                     Buffer.BlockCopy(frameData, offset, packet, 8, len);
 
                     _udpClient.Send(packet, packet.Length, _remoteEndpoint);
+
+                    // Micro-pacing: brief spin every 4 chunks to prevent domestic router buffer overflow
+                    if ((i & 0x03) == 0 && totalChunks > 10)
+                    {
+                        Thread.SpinWait(100);
+                    }
                 }
             }
             catch { }
@@ -304,6 +344,7 @@ namespace BigLineconnect
                     if (data.Length >= 8 && Encoding.UTF8.GetString(data, 0, 8) == "P2P_PING")
                     {
                         _remoteEndpoint = senderEp;
+                        _lastUdpTrafficTime = DateTime.UtcNow;
                         if (!_isP2pConnected)
                         {
                             _isP2pConnected = true;
@@ -315,6 +356,7 @@ namespace BigLineconnect
                     else if (data.Length >= 8 && Encoding.UTF8.GetString(data, 0, 8) == "P2P_PONG")
                     {
                         _remoteEndpoint = senderEp;
+                        _lastUdpTrafficTime = DateTime.UtcNow;
                         if (!_isP2pConnected)
                         {
                             _isP2pConnected = true;
@@ -324,6 +366,7 @@ namespace BigLineconnect
                     // Handle 0x50 Video Frame Chunk
                     else if (data.Length >= 8 && data[0] == 0x50)
                     {
+                        _lastUdpTrafficTime = DateTime.UtcNow;
                         ushort frameId = (ushort)((data[1] << 8) | data[2]);
                         ushort totalChunks = (ushort)((data[3] << 8) | data[4]);
                         ushort chunkIndex = (ushort)((data[5] << 8) | data[6]);
@@ -406,8 +449,10 @@ namespace BigLineconnect
                         }
                         else
                         {
-                            if (_isP2pConnected && _remoteEndpoint != null && senderEp.Address.Equals(_remoteEndpoint.Address))
+                            if (_isP2pConnected && (_remoteEndpoint == null || senderEp.Address.Equals(_remoteEndpoint.Address)))
                             {
+                                _remoteEndpoint = senderEp;
+                                _lastUdpTrafficTime = DateTime.UtcNow;
                                 OnP2pPacketReceived?.Invoke(data);
                             }
                         }
