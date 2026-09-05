@@ -1411,8 +1411,24 @@ namespace BigLineconnect
                 _forcedRefreshCount = Math.Max(_forcedRefreshCount, count);
                 _lastSentFrameBytes = null;
                 _lastSentFrameHash = 0;
-                Interlocked.Exchange(ref _forceSendUntilTicks, DateTime.Now.AddMilliseconds(600).Ticks);
+                Interlocked.Exchange(ref _forceSendUntilTicks, DateTime.Now.AddMilliseconds(800).Ticks);
                 _instantCaptureEvent.Set();
+            }
+            catch { }
+        }
+
+        public static void TriggerStaggeredCapture()
+        {
+            try
+            {
+                TriggerInstantCapture(2);
+                _ = Task.Run(async () =>
+                {
+                    await Task.Delay(25).ConfigureAwait(false);
+                    TriggerInstantCapture(2);
+                    await Task.Delay(45).ConfigureAwait(false);
+                    TriggerInstantCapture(2);
+                });
             }
             catch { }
         }
@@ -1534,23 +1550,22 @@ namespace BigLineconnect
                         _lastViewerActivityTime = DateTime.Now;
                     }
 
-                    // STRICT 1-IN-FLIGHT FLOW CONTROL: If previous frame is still in transit over network, DO NOT PUSH new frames into TCP buffer!
-                    // This mathematically guarantees zero bufferbloat and zero queue buildup!
-                    if (_currentFrameSeq > _lastAckedFrameSeq)
+                    // ZERO-BLOCKING CONGESTION CONTROL:
+                    // Only pause if more than 2 frames are unacknowledged (pipe severely choked).
+                    // Under healthy network, push latest frame immediately without waiting for roundtrip ACK from Europe!
+                    uint inFlight = unchecked(_currentFrameSeq - _lastAckedFrameSeq);
+                    if (inFlight > 2)
                     {
-                        // Wait for ACK event from viewer (0ms wake up on arrival)
-                        _frameAckEvent.WaitOne(4);
-                        if (_currentFrameSeq > _lastAckedFrameSeq)
+                        _frameAckEvent.WaitOne(6);
+                        if (unchecked(_currentFrameSeq - _lastAckedFrameSeq) > 2)
                         {
-                            // If still waiting and within safety window (120ms), wait without injecting new frames into TCP!
-                            if ((DateTime.Now - _lastFrameSendTime).TotalMilliseconds < 120)
+                            if ((DateTime.Now - _lastFrameSendTime).TotalMilliseconds < 80)
                             {
-                                await Task.Delay(1, token).ConfigureAwait(false);
+                                await Task.Delay(2, token).ConfigureAwait(false);
                                 continue;
                             }
                             else
                             {
-                                // Safety recovery after 120ms: previous frame/ACK in transit or dropped, unblock gate
                                 _lastAckedFrameSeq = _currentFrameSeq;
                             }
                         }
@@ -1558,7 +1573,7 @@ namespace BigLineconnect
 
                     if (_isSendingFrame)
                     {
-                        await Task.Delay(2, token).ConfigureAwait(false);
+                        await Task.Delay(1, token).ConfigureAwait(false);
                         continue;
                     }
 
@@ -1572,13 +1587,18 @@ namespace BigLineconnect
                     
                     if (frameToSend != null && frameToSend.Length > 0)
                     {
+                        bool isUserActive = (DateTime.Now - _lastMouseMoveTime).TotalMilliseconds < 1000 ||
+                                            DateTime.Now.Ticks < Interlocked.Read(ref _forceSendUntilTicks);
                         bool isDuplicate = (frameHash != 0 && frameHash == _lastSentFrameHash);
                         bool isInitialBurst = initialFrameCount < 5;
                         bool isForcedBurst = _forcedRefreshCount > 0;
                         bool isHeartbeat = (DateTime.Now - _lastSentFrameTime).TotalMilliseconds >= 200;
                         if (isForcedBurst) _forcedRefreshCount--;
 
-                        if (!isDuplicate || isInitialBurst || isForcedBurst || isHeartbeat)
+                        // During active user interaction (mouse move, click, typing), guarantee a 30 FPS floor (every 33ms) so hover & text edits flow seamlessly!
+                        bool allowActivePacing = isUserActive && (DateTime.Now - _lastSentFrameTime).TotalMilliseconds >= 33;
+
+                        if (!isDuplicate || isInitialBurst || isForcedBurst || isHeartbeat || allowActivePacing)
                         {
                             int minIntervalMs = 16; // 60 FPS maximum pacing
                             if (isInitialBurst || isForcedBurst || (DateTime.Now - _lastSentFrameTime).TotalMilliseconds >= minIntervalMs)
@@ -1660,8 +1680,8 @@ namespace BigLineconnect
                 }
                 if (hasNonMouseMove)
                 {
-                    Interlocked.Exchange(ref _forceSendUntilTicks, DateTime.Now.AddMilliseconds(600).Ticks);
-                    TriggerInstantCapture(3);
+                    Interlocked.Exchange(ref _forceSendUntilTicks, DateTime.Now.AddMilliseconds(800).Ticks);
+                    TriggerStaggeredCapture();
                 }
                 return;
             }
@@ -1713,12 +1733,13 @@ namespace BigLineconnect
 
                 if (type == "click" || type == "key" || type == "scroll" || type == "double_click")
                 {
-                    Interlocked.Exchange(ref _forceSendUntilTicks, DateTime.Now.AddMilliseconds(250).Ticks);
+                    Interlocked.Exchange(ref _forceSendUntilTicks, DateTime.Now.AddMilliseconds(800).Ticks);
                     _lastSentFrameBytes = null;
                 }
 
                 if (type == "move")
                 {
+                    _lastMouseMoveTime = DateTime.Now;
                     if (root.TryGetProperty("x", out var xProp) && xProp.ValueKind == JsonValueKind.Number &&
                         root.TryGetProperty("y", out var yProp) && yProp.ValueKind == JsonValueKind.Number)
                     {
@@ -1751,7 +1772,7 @@ namespace BigLineconnect
                     }
                     InputSimulator.SimulateMouseButton(button, action, x, y, _activeDisplayIndex);
                     _lastSentFrameBytes = null;
-                    TriggerInstantCapture();
+                    TriggerStaggeredCapture();
                 }
                 else if (type == "double_click")
                 {
@@ -1768,7 +1789,7 @@ namespace BigLineconnect
                     }
                     InputSimulator.SimulateMouseDoubleClick(button, x, y, _activeDisplayIndex);
                     _lastSentFrameBytes = null;
-                    TriggerInstantCapture();
+                    TriggerStaggeredCapture();
                 }
                 else if (type == "release_modifiers")
                 {
@@ -2377,6 +2398,30 @@ namespace BigLineconnect
             }
         }
 
+        private static async Task SendHostInfoAsync(WebSocket ws, CancellationToken token)
+        {
+            try
+            {
+                string lanIp = GetLocalLanIPAddress();
+                if (!string.IsNullOrEmpty(lanIp))
+                {
+                    string infoJson = SafeSerialize(new
+                    {
+                        type = "host_info",
+                        lan_ip = lanIp,
+                        public_port = 18888
+                    });
+                    byte[] infoBytes = Encoding.UTF8.GetBytes(infoJson);
+                    await SafeSendAsync(ws, new ArraySegment<byte>(infoBytes), WebSocketMessageType.Text, true, token).ConfigureAwait(false);
+                    Log($"[HostInfo] Yerel IP bilgisi ({lanIp}:18888) izleyiciye aktarıldı (LAN Direct 0.5ms terfisi için).");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log($"[HostInfo Hatası]: {ex.Message}");
+            }
+        }
+
         private static async Task HandleConnectionRequestAsync(WebSocket ws, CancellationToken token, string receivedToken = "", bool promptConfirmation = false)
         {
             StreamWebSocketClient = ws;
@@ -2444,7 +2489,8 @@ namespace BigLineconnect
                     };
                     captureThread.Start();
                     
-                    // Start sender task & displays list in parallel
+                    // Start sender task, host info & displays list in parallel
+                    _ = Task.Run(() => SendHostInfoAsync(ws, token));
                     _ = Task.Run(() => SendStreamLoop(ws, token));
                     _ = Task.Run(() => SendDisplaysListAsync(ws, token));
 
@@ -2521,6 +2567,7 @@ namespace BigLineconnect
                                 };
                                 captureThread.Start();
 
+                                _ = Task.Run(() => SendHostInfoAsync(ws, token));
                                 _ = Task.Run(() => SendStreamLoop(ws, token));
                                 _ = Task.Run(() => SendDisplaysListAsync(ws, token));
                                 return;
@@ -2567,6 +2614,7 @@ namespace BigLineconnect
                     };
                     captureThread.Start();
                     
+                    _ = Task.Run(() => SendHostInfoAsync(ws, token));
                     _ = Task.Run(() => SendStreamLoop(ws, token));
                     _ = Task.Run(() => SendDisplaysListAsync(ws, token));
                     return;
