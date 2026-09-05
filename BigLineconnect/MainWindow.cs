@@ -127,7 +127,7 @@ namespace BigLineconnect
             _instance = this;
             try { Program.SetStreamActive(false); } catch { }
             InitializeComponent();
-            this.Text = "B-Connect v3.80 ⚡ Turbo Kristal (0-Ghost Fare / Kesintisiz Akıcı)";
+            this.Text = "B-Connect v3.81 ⚡ WAN 60 FPS (Ultra Akıcı)";
             LoadLogoAndIcon();
 
             // Populate connection logs that occurred during splash screen connection
@@ -257,7 +257,7 @@ namespace BigLineconnect
 
             var subtitleLabel = new Label
             {
-                Text = "v3.80 ⚡ Turbo Kristal (0-Ghost Fare / Kesintisiz Akıcı)",
+                Text = "v3.81 ⚡ WAN 60 FPS (Ultra Akıcı)",
                 Location = new Point(28, 60),
                 Size = new Size(380, 18),
                 Font = new Font("Segoe UI", 9F, FontStyle.Bold),
