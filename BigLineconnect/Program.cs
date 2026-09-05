@@ -1576,21 +1576,33 @@ namespace BigLineconnect
                         continue;
                     }
 
+                    // Dynamic 3G recovery: If ongoing latency is broadband (< 150ms), un-lock to full speed!
+                    if (is3GMode && AdaptiveRateController.MeasuredRttMs > 0 && AdaptiveRateController.MeasuredRttMs < 150)
+                    {
+                        is3GMode = false;
+                        _is3GSlowLink = false;
+                    }
+
                     // ── In-Flight Flow Control / Anti-Bufferbloat Gate ──
-                    // Prevents TCP socket buffer overfill which causes the multi-second slow-motion choke!
-                    // If in-flight frames exceed threshold (1 for 3G, 2 for Broadband), wait for ACK (max 35ms on broadband, 100ms on 3G).
-                    // The moment the viewer receives the frame, ACK arrives and wakes this up INSTANTLY (0ms).
+                    // Bandwidth-Delay Product for 60ms WAN: 4 frames in flight allows full 60 FPS!
+                    // Yields with fast 2ms delay without freezing the capture pipeline.
                     if (speedProbeComplete && _lastAckedFrameSeq > 0)
                     {
                         int inFlight = unchecked((int)(_currentFrameSeq - _lastAckedFrameSeq));
-                        int maxInFlight = is3GMode ? 1 : 2;
+                        int maxInFlight = is3GMode ? 1 : 4;
                         if (inFlight >= maxInFlight)
                         {
-                            int waitTimeoutMs = is3GMode ? 100 : 35;
-                            if (!_frameAckEvent.WaitOne(waitTimeoutMs))
+                            if (!_frameAckEvent.WaitOne(10))
                             {
-                                // Timeout fallback: unstick sequence so stream never hangs or accumulates backlog
-                                _lastAckedFrameSeq = _currentFrameSeq;
+                                if ((DateTime.Now - _lastFrameSendTime).TotalMilliseconds > 120)
+                                {
+                                    _lastAckedFrameSeq = _currentFrameSeq; // unstick sequence if ACK lost
+                                }
+                                else
+                                {
+                                    await Task.Delay(2, token).ConfigureAwait(false);
+                                    continue;
+                                }
                             }
                         }
                     }
@@ -1614,8 +1626,8 @@ namespace BigLineconnect
                         // NEVER spam full/duplicate image frames on an idle screen!
                         if (!isDuplicate || isInitialBurst || isForcedBurst)
                         {
-                            // 3G: 10 FPS max | Normal: 60 FPS (Full speed, ultra akıcı)
-                            int minIntervalMs = is3GMode ? 100 : 16;
+                            // 3G: 15 FPS | Normal: 60 FPS (Full speed, ultra akıcı)
+                            int minIntervalMs = is3GMode ? 66 : 16;
                             if (isInitialBurst || isForcedBurst || (DateTime.Now - _lastSentFrameTime).TotalMilliseconds >= minIntervalMs)
                             {
                                 _isSendingFrame = true;
