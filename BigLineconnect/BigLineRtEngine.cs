@@ -275,27 +275,28 @@ namespace BigLineconnect
 
             lock (ViewerForm.RtCanvasLock)
             {
-                using (var ms = new MemoryStream(packet))
-                using (var reader = new BinaryReader(ms))
+                try
                 {
-                    uint magic = reader.ReadUInt32();
-                    byte flag = reader.ReadByte();
-                    ushort width = reader.ReadUInt16();
-                    ushort height = reader.ReadUInt16();
-
-                    if (flag == FLAG_KEYFRAME)
+                    using (var ms = new MemoryStream(packet))
+                    using (var reader = new BinaryReader(ms))
                     {
-                        int length = reader.ReadInt32();
-                        byte[] jpegData = reader.ReadBytes(length);
+                        uint magic = reader.ReadUInt32();
+                        byte flag = reader.ReadByte();
+                        ushort width = reader.ReadUInt16();
+                        ushort height = reader.ReadUInt16();
 
-                        using (var jpegMs = new MemoryStream(jpegData))
-                        using (var fullBmp = new Bitmap(jpegMs))
+                        if (flag == FLAG_KEYFRAME)
                         {
-                            if (currentCanvas == null || currentCanvas.Width != fullBmp.Width || currentCanvas.Height != fullBmp.Height)
+                            int length = reader.ReadInt32();
+                            byte[] jpegData = reader.ReadBytes(length);
+
+                            using (var jpegMs = new MemoryStream(jpegData))
+                            using (var fullBmp = new Bitmap(jpegMs))
                             {
-                                currentCanvas?.Dispose();
-                                currentCanvas = new Bitmap(fullBmp.Width, fullBmp.Height, PixelFormat.Format32bppArgb);
-                            }
+                                if (currentCanvas == null || currentCanvas.Width != fullBmp.Width || currentCanvas.Height != fullBmp.Height)
+                                {
+                                    currentCanvas = new Bitmap(fullBmp.Width, fullBmp.Height, PixelFormat.Format32bppArgb);
+                                }
 
                             using (Graphics g = Graphics.FromImage(currentCanvas))
                             {
@@ -333,6 +334,11 @@ namespace BigLineconnect
                         }
                     }
 
+                        return currentCanvas;
+                    }
+                }
+                catch
+                {
                     return currentCanvas;
                 }
             }

@@ -4681,42 +4681,48 @@ namespace BigLineconnect
                 return;
             }
 
-            var g = e.Graphics;
-            g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.Bilinear;
-            g.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.Half;
-            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.None;
-            g.CompositingMode = System.Drawing.Drawing2D.CompositingMode.SourceCopy;
+            try
+            {
+                lock (ViewerForm.RtCanvasLock)
+                {
+                    var img = this.Image;
+                    if (img == null) return;
 
-            Rectangle destRect;
-            if (this.SizeMode == PictureBoxSizeMode.Zoom)
-            {
-                float imgAspect = (float)this.Image.Width / this.Image.Height;
-                float boxAspect = (float)this.Width / Math.Max(1, this.Height);
-                if (boxAspect > imgAspect)
-                {
-                    int w = (int)(this.Height * imgAspect);
-                    destRect = new Rectangle((this.Width - w) / 2, 0, w, this.Height);
-                }
-                else
-                {
-                    int h = (int)(this.Width / imgAspect);
-                    destRect = new Rectangle(0, (this.Height - h) / 2, this.Width, h);
-                }
-            }
-            else
-            {
-                destRect = new Rectangle(0, 0, this.Width, this.Height);
-            }
+                    var g = e.Graphics;
+                    g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.Bilinear;
+                    g.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.Half;
+                    g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.None;
+                    g.CompositingMode = System.Drawing.Drawing2D.CompositingMode.SourceCopy;
 
-            lock (ViewerForm.RtCanvasLock)
-            {
-                if (this.Image != null)
-                {
-                    g.DrawImage(this.Image, destRect, 0, 0, this.Image.Width, this.Image.Height, GraphicsUnit.Pixel);
+                    Rectangle destRect;
+                    if (this.SizeMode == PictureBoxSizeMode.Zoom)
+                    {
+                        float imgAspect = (float)img.Width / Math.Max(1, img.Height);
+                        float boxAspect = (float)this.Width / Math.Max(1, this.Height);
+                        if (boxAspect > imgAspect)
+                        {
+                            int w = (int)(this.Height * imgAspect);
+                            destRect = new Rectangle((this.Width - w) / 2, 0, w, this.Height);
+                        }
+                        else
+                        {
+                            int h = (int)(this.Width / imgAspect);
+                            destRect = new Rectangle(0, (this.Height - h) / 2, this.Width, h);
+                        }
+                    }
+                    else
+                    {
+                        destRect = new Rectangle(0, 0, this.Width, this.Height);
+                    }
+
+                    g.DrawImage(img, destRect, 0, 0, img.Width, img.Height, GraphicsUnit.Pixel);
+                    g.CompositingMode = System.Drawing.Drawing2D.CompositingMode.SourceOver;
                 }
             }
-            g.CompositingMode = System.Drawing.Drawing2D.CompositingMode.SourceOver;
-            base.OnPaint(e);
+            catch (Exception)
+            {
+                // Prevent any unhandled GDI+ race exception or red X
+            }
         }
     }
 }
