@@ -1534,12 +1534,27 @@ namespace BigLineconnect
                         _lastViewerActivityTime = DateTime.Now;
                     }
 
-                    // 1-IN-FLIGHT BACKPRESSURE: If previous frame is still in transit over network, DO NOT PUSH new frames into TCP buffer!
-                    // This mathematically guarantees zero buffer bloat and zero queue buildup!
-                    if (_currentFrameSeq > _lastAckedFrameSeq && (DateTime.Now - _lastFrameSendTime).TotalMilliseconds < 150)
+                    // STRICT 1-IN-FLIGHT FLOW CONTROL: If previous frame is still in transit over network, DO NOT PUSH new frames into TCP buffer!
+                    // This mathematically guarantees zero bufferbloat and zero queue buildup!
+                    if (_currentFrameSeq > _lastAckedFrameSeq)
                     {
-                        await Task.Delay(2, token).ConfigureAwait(false);
-                        continue;
+                        // Wait for ACK event from viewer
+                        _frameAckEvent.WaitOne(4);
+                        if (_currentFrameSeq > _lastAckedFrameSeq)
+                        {
+                            // If still waiting and within safety window (500ms), wait without injecting new frames into TCP!
+                            if ((DateTime.Now - _lastFrameSendTime).TotalMilliseconds < 500)
+                            {
+                                await Task.Delay(1, token).ConfigureAwait(false);
+                                continue;
+                            }
+                            else
+                            {
+                                // Safety recovery after 500ms without ACK: assume ACK dropped, force fresh keyframe
+                                _lastAckedFrameSeq = _currentFrameSeq;
+                                ScreenCapturer.ForceKeyframeRequested = true;
+                            }
+                        }
                     }
 
                     if (_isSendingFrame)
