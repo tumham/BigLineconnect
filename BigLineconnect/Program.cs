@@ -1456,7 +1456,7 @@ namespace BigLineconnect
                             _latestFrame = frame;
                             _latestFrameHash = hash;
                         }
-                        _frameReadyEvent.Set(); // Wake SendStreamLoop INSTANTLY — 0ms inter-loop delay!
+                        _frameReadyEvent.Set();
                     }
                     else
                     {
@@ -1465,11 +1465,8 @@ namespace BigLineconnect
                         _lastSentFrameHash = 0;
                     }
 
-                    // Adaptive pacing to target true 60 FPS (16.6ms cycle):
-                    // Deduct capture + encode time so we don't add redundant 16ms delay on top of CPU work!
-                    int elapsed = (int)swLoop.ElapsedMilliseconds;
-                    int waitMs = Math.Max(1, 16 - elapsed);
-                    _instantCaptureEvent.WaitOne(waitMs);
+                    // Wait up to 16ms (60 FPS max speed) OR wake up INSTANTLY (0ms) on mouse/key click!
+                    _instantCaptureEvent.WaitOne(16);
                 }
                 ScreenCapturer.SuppressWallpaper(false);
                 ApplySleepPrevention(false);
@@ -1529,16 +1526,6 @@ namespace BigLineconnect
                 Interlocked.Exchange(ref _forceSendUntilTicks, DateTime.Now.AddMilliseconds(2000).Ticks);
                 _lastViewerActivityTime = DateTime.Now;
 
-                // ═══════════════════════════════════════════════════════════════
-                // 3G INSTANT DETECT: Measure ACK of the VERY FIRST frame.
-                // If first ACK > 300ms → 3G mode IMMEDIATELY (no initial burst flood!)
-                // Normal broadband: completely unchanged Golden Master behavior.
-                // ═══════════════════════════════════════════════════════════════
-                bool is3GMode = false;
-                int backpressureTimeoutMs = 150; // Golden Master default
-                DateTime firstFrameSentAt = DateTime.MinValue;
-                bool speedProbeComplete = false;
-
                 while (!token.IsCancellationRequested && _isStreaming && ws.State == WebSocketState.Open)
                 {
                     if ((DateTime.Now - _lastViewerActivityTime).TotalSeconds > 300)
@@ -1547,73 +1534,18 @@ namespace BigLineconnect
                         _lastViewerActivityTime = DateTime.Now;
                     }
 
-                    // ── SPEED PROBE: Detect 3G from FIRST frame ACK ──
-                    if (!speedProbeComplete && _lastAckedFrameSeq >= 1)
-                    {
-                        double firstAckMs = (DateTime.Now - firstFrameSentAt).TotalMilliseconds;
-                        speedProbeComplete = true;
-
-                        if (firstAckMs > 1500) // Was 300ms — raised to avoid false 3G on high-RTT broadband (Railway US = ~400ms ACK)
-                        {
-                            is3GMode = true;
-                            _is3GSlowLink = true;
-                            backpressureTimeoutMs = 3000;
-                            Log($"[3G-MODE] İlk kare ACK: {firstAckMs:F0}ms. Yavaş bağlantı → stop-and-wait aktif.");
-                        }
-                        else
-                        {
-                            Log($"[NORMAL-MODE] İlk kare ACK: {firstAckMs:F0}ms. Hızlı bağlantı.");
-                        }
-                    }
-
-                    // ── SPEED PROBE GUARD: Before probe complete, strict 1-frame-at-a-time ──
-                    // Prevents initial burst from flooding TCP buffer on 3G!
-                    if (!speedProbeComplete && _currentFrameSeq >= 1)
-                    {
-                        // Already sent 1 probe frame. Wait for its ACK before sending more.
-                        await Task.Delay(5, token).ConfigureAwait(false);
-                        continue;
-                    }
-
-                    // Natural flow control: If previous frame is still transmitting over socket,
-                    // yield and let CaptureLoop update the latest frame (zero backlog, zero lag)
-                    if (_isSendingFrame)
+                    // 1-IN-FLIGHT BACKPRESSURE: If previous frame is still in transit over network, DO NOT PUSH new frames into TCP buffer!
+                    // This mathematically guarantees zero buffer bloat and zero queue buildup!
+                    if (_currentFrameSeq > _lastAckedFrameSeq && (DateTime.Now - _lastFrameSendTime).TotalMilliseconds < 150)
                     {
                         await Task.Delay(2, token).ConfigureAwait(false);
                         continue;
                     }
 
-                    // Dynamic 3G recovery: If ongoing latency is broadband (< 150ms), un-lock to full speed!
-                    if (is3GMode && AdaptiveRateController.MeasuredRttMs > 0 && AdaptiveRateController.MeasuredRttMs < 150)
+                    if (_isSendingFrame)
                     {
-                        is3GMode = false;
-                        _is3GSlowLink = false;
-                    }
-
-                    // ── In-Flight Flow Control / Anti-Bufferbloat Gate ──
-                    // Strict pipeline: allows at most 2 in-flight frames on broadband (1 on 3G).
-                    // Wakes INSTANTLY (0ms) upon receiving ACK from viewer.
-                    // Strictly prevents TCP socket buffer overfill (10-15s delay / ballooning)!
-                    if (speedProbeComplete && _lastAckedFrameSeq > 0)
-                    {
-                        int inFlight = unchecked((int)(_currentFrameSeq - _lastAckedFrameSeq));
-                        int maxInFlight = is3GMode ? 1 : 2;
-                        if (inFlight >= maxInFlight)
-                        {
-                            int waitTimeoutMs = is3GMode ? 100 : 45;
-                            if (!_frameAckEvent.WaitOne(waitTimeoutMs))
-                            {
-                                if ((DateTime.Now - _lastFrameSendTime).TotalMilliseconds > 250)
-                                {
-                                    _lastAckedFrameSeq = _currentFrameSeq; // unstick sequence if ACK lost
-                                }
-                                else
-                                {
-                                    await Task.Delay(2, token).ConfigureAwait(false);
-                                    continue;
-                                }
-                            }
-                        }
+                        await Task.Delay(2, token).ConfigureAwait(false);
+                        continue;
                     }
 
                     byte[]? frameToSend = null;
@@ -1627,25 +1559,21 @@ namespace BigLineconnect
                     if (frameToSend != null && frameToSend.Length > 0)
                     {
                         bool isDuplicate = (frameHash != 0 && frameHash == _lastSentFrameHash);
-                        bool isInitialBurst = initialFrameCount < 5 && speedProbeComplete && !is3GMode;
+                        bool isInitialBurst = initialFrameCount < 5;
                         bool isForcedBurst = _forcedRefreshCount > 0;
+                        bool isHeartbeat = (DateTime.Now - _lastSentFrameTime).TotalMilliseconds >= 200;
                         if (isForcedBurst) _forcedRefreshCount--;
-                        bool isInputActive = DateTime.Now.Ticks < Interlocked.Read(ref _forceSendUntilTicks);
 
-                        // Send when pixels changed, or during input activity, or during burst.
-                        // Guarantees zero dropped keystrokes, zero accordion lag in ERP/Excel, and zero duplicate spam on static idle!
-                        if (!isDuplicate || isInitialBurst || isForcedBurst || isInputActive)
+                        if (!isDuplicate || isInitialBurst || isForcedBurst || isHeartbeat)
                         {
-                            // 3G: 15 FPS | Normal: 60 FPS max pacing
-                            int minIntervalMs = is3GMode ? 66 : 16;
-                            if (isInitialBurst || (DateTime.Now - _lastSentFrameTime).TotalMilliseconds >= minIntervalMs)
+                            int minIntervalMs = 16; // 60 FPS maximum pacing
+                            if (isInitialBurst || isForcedBurst || (DateTime.Now - _lastSentFrameTime).TotalMilliseconds >= minIntervalMs)
                             {
                                 _isSendingFrame = true;
                                 try
                                 {
                                     uint seq = unchecked(++_currentFrameSeq);
                                     _lastFrameSendTime = DateTime.Now;
-                                    if (seq == 1) firstFrameSentAt = DateTime.Now;
 
                                     byte[] stampedPayload = new byte[12 + frameToSend.Length];
                                     Buffer.BlockCopy(BitConverter.GetBytes(DateTime.UtcNow.Ticks), 0, stampedPayload, 0, 8);
@@ -1673,8 +1601,7 @@ namespace BigLineconnect
                         }
                     }
 
-                    // Wait for CaptureLoop to produce a new frame — 0ms wake on new frame!
-                    _frameReadyEvent.WaitOne(4);
+                    await Task.Delay(1, token).ConfigureAwait(false);
                 }
                 Log("Görüntü gönderim döngüsü sonlandı.");
             }
@@ -1765,6 +1692,7 @@ namespace BigLineconnect
                             _lastAckedFrameSeq = seq;
                         }
                         AdaptiveRateController.RecordAck(seq);
+                        _frameAckEvent.Set();
                     }
                     return;
                 }

@@ -203,6 +203,7 @@ namespace BigLineconnect
                         }
                     }));
 
+                    _ = Task.Run(() => StartSenderLoopAsync(_ws, _cts.Token));
                     _ = Task.Run(() => ReceiveLoop(_ws, _cts.Token));
                     try { oldWs?.Dispose(); } catch { }
                 }
@@ -719,6 +720,9 @@ namespace BigLineconnect
 
                 // Launch immediate parallel LAN Direct probe for 0ms local socket auto-switch
                 StartP2pAndLanProbe();
+
+                // Start dedicated background sender loop for 0ms lock-free input dispatch
+                _ = Task.Run(() => StartSenderLoopAsync(_ws, _cts.Token));
 
                 // Start receiving remote screen stream
                 _ = Task.Run(async () => {
@@ -1574,6 +1578,7 @@ namespace BigLineconnect
                     }
 
                     _isReconnecting = false;
+                    _ = Task.Run(() => StartSenderLoopAsync(_ws, _cts.Token));
                     _ = Task.Run(async () => {
                         await ReceiveScreenLoop(_ws, _cts.Token);
                         await ReceiveLoop(_ws, _cts.Token);
@@ -1608,62 +1613,54 @@ namespace BigLineconnect
             catch { }
         }
 
+        private readonly System.Threading.Channels.Channel<(byte[] Data, WebSocketMessageType Type)> _outgoingChannel =
+            System.Threading.Channels.Channel.CreateUnbounded<(byte[] Data, WebSocketMessageType Type)>(
+                new System.Threading.Channels.UnboundedChannelOptions { SingleReader = false, SingleWriter = false });
+
         public async Task SendJsonAsync(object data)
         {
-            if (_ws == null || _ws.State != WebSocketState.Open) return;
-
-            await _sendSemaphore.WaitAsync();
-            try
-            {
-                if (_ws.State == WebSocketState.Open)
-                {
-                    string json = data is string str ? str : SafeSerialize(data);
-                    
-                    if (!json.Contains("\"type\":\"move\"") && !json.Contains("\"type\":\"key\"") && !json.Contains("\"type\":\"char\"") && !json.Contains("\"chunk\":") && !json.Contains("\"data\":"))
-                    {
-                        LogClient($"Sending: {json}");
-                    }
-                    
-                    byte[] bytes = Encoding.UTF8.GetBytes(json);
-                    await _ws.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, CancellationToken.None);
-                }
-            }
-            catch (Exception ex)
-            {
-                LogClient($"Send error: {ex.Message}");
-            }
-            finally
-            {
-                _sendSemaphore.Release();
-            }
+            SendJson(data);
+            await Task.CompletedTask;
         }
 
         public void SendJson(object data)
         {
-            _ = Task.Run(() => SendJsonAsync(data));
+            if (_ws == null || _ws.State != WebSocketState.Open) return;
+            string json = data is string str ? str : SafeSerialize(data);
+            if (!json.Contains("\"type\":\"move\"") && !json.Contains("\"type\":\"key\"") && !json.Contains("\"type\":\"char\"") && !json.Contains("\"chunk\":") && !json.Contains("\"data\":"))
+            {
+                LogClient($"Sending: {json}");
+            }
+            byte[] bytes = Encoding.UTF8.GetBytes(json);
+            _outgoingChannel.Writer.TryWrite((bytes, WebSocketMessageType.Text));
         }
 
         public void SendBinaryInput(byte[] data)
         {
             if (data == null || data.Length == 0) return;
             if (_ws == null || _ws.State != WebSocketState.Open) return;
+            _outgoingChannel.Writer.TryWrite((data, WebSocketMessageType.Binary));
+        }
 
-            _ = Task.Run(async () =>
+        private async Task StartSenderLoopAsync(ClientWebSocket ws, CancellationToken token)
+        {
+            try
             {
-                await _sendSemaphore.WaitAsync().ConfigureAwait(false);
-                try
+                while (!token.IsCancellationRequested && ws.State == WebSocketState.Open)
                 {
-                    if (_ws != null && _ws.State == WebSocketState.Open)
+                    if (await _outgoingChannel.Reader.WaitToReadAsync(token).ConfigureAwait(false))
                     {
-                        await _ws.SendAsync(new ArraySegment<byte>(data), WebSocketMessageType.Binary, true, CancellationToken.None).ConfigureAwait(false);
+                        while (_outgoingChannel.Reader.TryRead(out var item))
+                        {
+                            if (ws.State == WebSocketState.Open)
+                            {
+                                await ws.SendAsync(new ArraySegment<byte>(item.Data), item.Type, true, token).ConfigureAwait(false);
+                            }
+                        }
                     }
                 }
-                catch { }
-                finally
-                {
-                    _sendSemaphore.Release();
-                }
-            });
+            }
+            catch { }
         }
 
         private void ShowFloatingClipboardButton(System.Collections.Generic.List<string> fileList)
@@ -1826,45 +1823,7 @@ namespace BigLineconnect
                 return;
             }
 
-            _latestMouseUx = ux;
-            _latestMouseUy = uy;
-            _hasUnsentMouseMove = true;
-
-            if (Interlocked.CompareExchange(ref _isSendingBinaryMove, 1, 0) == 0)
-            {
-                _ = Task.Run(async () =>
-                {
-                    try
-                    {
-                        while (_hasUnsentMouseMove && _ws != null && _ws.State == WebSocketState.Open)
-                        {
-                            _hasUnsentMouseMove = false;
-                            byte[] mPkt = new byte[5];
-                            mPkt[0] = 0x4D;
-                            BitConverter.TryWriteBytes(new Span<byte>(mPkt, 1, 2), _latestMouseUx);
-                            BitConverter.TryWriteBytes(new Span<byte>(mPkt, 3, 2), _latestMouseUy);
-
-                            await _sendSemaphore.WaitAsync().ConfigureAwait(false);
-                            try
-                            {
-                                if (_ws.State == WebSocketState.Open)
-                                {
-                                    await _ws.SendAsync(new ArraySegment<byte>(mPkt), WebSocketMessageType.Binary, true, CancellationToken.None).ConfigureAwait(false);
-                                }
-                            }
-                            finally
-                            {
-                                _sendSemaphore.Release();
-                            }
-                        }
-                    }
-                    catch { }
-                    finally
-                    {
-                        Interlocked.Exchange(ref _isSendingBinaryMove, 0);
-                    }
-                });
-            }
+            SendBinaryInput(pkt);
         }
 
         private void PictureBox_MouseMove(object? sender, MouseEventArgs e)
