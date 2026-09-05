@@ -1427,9 +1427,11 @@ namespace BigLineconnect
                 }
 
                 DateTime lastKeepAliveTime = DateTime.MinValue;
+                var swLoop = System.Diagnostics.Stopwatch.StartNew();
 
                 while (!token.IsCancellationRequested && _isStreaming)
                 {
+                    swLoop.Restart();
                     DesktopHelper.AttachToInputDesktop();
 
                     // Re-apply sleep prevention every 60 seconds (1 min) - 0% CPU & 0 network bytes!
@@ -1461,8 +1463,11 @@ namespace BigLineconnect
                         _lastSentFrameHash = 0;
                     }
 
-                    // Wait up to 16ms (60 FPS max speed) OR wake up INSTANTLY (0ms) on mouse/key click!
-                    _instantCaptureEvent.WaitOne(16);
+                    // Adaptive pacing to target true 60 FPS (16.6ms cycle):
+                    // Deduct capture + encode time so we don't add redundant 16ms delay on top of CPU work!
+                    int elapsed = (int)swLoop.ElapsedMilliseconds;
+                    int waitMs = Math.Max(1, 16 - elapsed);
+                    _instantCaptureEvent.WaitOne(waitMs);
                 }
                 ScreenCapturer.SuppressWallpaper(false);
                 ApplySleepPrevention(false);
@@ -1584,15 +1589,15 @@ namespace BigLineconnect
                     }
 
                     // ── In-Flight Flow Control / Anti-Bufferbloat Gate ──
-                    // Bandwidth-Delay Product for 60ms WAN: 4 frames in flight allows full 60 FPS!
+                    // Bandwidth-Delay Product for 60-100ms WAN: 6 frames in flight allows full 60 FPS!
                     // Yields with fast 2ms delay without freezing the capture pipeline.
                     if (speedProbeComplete && _lastAckedFrameSeq > 0)
                     {
                         int inFlight = unchecked((int)(_currentFrameSeq - _lastAckedFrameSeq));
-                        int maxInFlight = is3GMode ? 1 : 4;
+                        int maxInFlight = is3GMode ? 1 : 6;
                         if (inFlight >= maxInFlight)
                         {
-                            if (!_frameAckEvent.WaitOne(10))
+                            if (!_frameAckEvent.WaitOne(8))
                             {
                                 if ((DateTime.Now - _lastFrameSendTime).TotalMilliseconds > 120)
                                 {
@@ -1626,8 +1631,8 @@ namespace BigLineconnect
                         // NEVER spam full/duplicate image frames on an idle screen!
                         if (!isDuplicate || isInitialBurst || isForcedBurst)
                         {
-                            // 3G: 15 FPS | Normal: 60 FPS (Full speed, ultra akıcı)
-                            int minIntervalMs = is3GMode ? 66 : 16;
+                            // 3G: 15 FPS | Normal: 60 FPS (Full speed, ultra akıcı: 14ms threshold)
+                            int minIntervalMs = is3GMode ? 66 : 14;
                             if (isInitialBurst || isForcedBurst || (DateTime.Now - _lastSentFrameTime).TotalMilliseconds >= minIntervalMs)
                             {
                                 _isSendingFrame = true;
@@ -1664,7 +1669,7 @@ namespace BigLineconnect
                     }
 
                     // Wait for CaptureLoop to produce a new frame — 0ms wake on new frame!
-                    _frameReadyEvent.WaitOne(8);
+                    _frameReadyEvent.WaitOne(4);
                 }
                 Log("Görüntü gönderim döngüsü sonlandı.");
             }

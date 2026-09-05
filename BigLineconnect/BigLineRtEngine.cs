@@ -79,8 +79,8 @@ namespace BigLineconnect
                 forceKeyframe = true;
             }
 
-            // Periodic Keyframe every 150 frames (~4-5 seconds) for absolute sync
-            if (_frameCount == 1 || _lastTileHashes == null || (_frameCount % 150 == 0))
+            // Periodic Keyframe every 60 frames (~1-1.5 seconds at 60 FPS) for absolute sync
+            if (_frameCount == 1 || _lastTileHashes == null || (_frameCount % 60 == 0))
             {
                 forceKeyframe = true;
             }
