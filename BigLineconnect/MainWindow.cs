@@ -1066,13 +1066,31 @@ namespace BigLineconnect
             _relayUrlTextBox.ReadOnly = true;
         }
 
-        private void ConnectButton_Click(object? sender, EventArgs e)
+        private async void ConnectButton_Click(object? sender, EventArgs e)
         {
             if (_remoteIdTextBox == null || _relayUrlTextBox == null) return;
             string targetId = _remoteIdTextBox.Text.Replace(" ", "").Trim();
 
             bool isNumeric9DigitId = targetId.Length == 9 && long.TryParse(targetId, out _);
             bool isDirectHost = !isNumeric9DigitId;
+
+            if (isNumeric9DigitId)
+            {
+                AppendLog($"[Yerel Ağ] ID: {targetId} için yerel ağ taranıyor (0.5 ms LAN Direct arayışı)...");
+                string? discoveredLanIp = null;
+                try
+                {
+                    discoveredLanIp = await P2pDirectEngine.ProbeLocalLanForHostIdAsync(targetId, timeoutMs: 250);
+                }
+                catch { }
+
+                if (!string.IsNullOrEmpty(discoveredLanIp))
+                {
+                    AppendLog($"[⚡ LAN DIRECT] ID: {targetId} yerel ağda bulundu! ({discoveredLanIp}:18888) -> 100 Mbps doğrudan bağlantıya geçiliyor.");
+                    isDirectHost = true;
+                    targetId = discoveredLanIp;
+                }
+            }
 
             if (string.IsNullOrEmpty(targetId))
             {

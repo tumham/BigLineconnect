@@ -986,13 +986,75 @@ namespace BigLineconnect
         {
             try
             {
+                // Priority 1: Network interface that is UP, not virtual (no VMware/VirtualBox/vEthernet), and has an active Default Gateway
+                foreach (var ni in System.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces())
+                {
+                    if (ni.OperationalStatus != System.Net.NetworkInformation.OperationalStatus.Up) continue;
+                    if (ni.NetworkInterfaceType == System.Net.NetworkInformation.NetworkInterfaceType.Loopback) continue;
+
+                    string desc = (ni.Description + " " + ni.Name).ToLowerInvariant();
+                    if (desc.Contains("vmware") || desc.Contains("virtual") || desc.Contains("vbox") ||
+                        desc.Contains("vethernet") || desc.Contains("hyper-v") || desc.Contains("npcap") ||
+                        desc.Contains("tap") || desc.Contains("openvpn") || desc.Contains("bluetooth"))
+                    {
+                        continue;
+                    }
+
+                    var props = ni.GetIPProperties();
+                    bool hasGateway = props.GatewayAddresses.Any(g => g.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork &&
+                                                                     !g.Address.Equals(System.Net.IPAddress.Any) &&
+                                                                     !g.Address.ToString().StartsWith("0."));
+                    if (hasGateway)
+                    {
+                        foreach (var u in props.UnicastAddresses)
+                        {
+                            if (u.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
+                            {
+                                string ipStr = u.Address.ToString();
+                                if (!ipStr.StartsWith("127.") && !ipStr.StartsWith("169.254."))
+                                {
+                                    return ipStr;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Priority 2: Any interface that is UP and non-virtual
+                foreach (var ni in System.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces())
+                {
+                    if (ni.OperationalStatus != System.Net.NetworkInformation.OperationalStatus.Up) continue;
+                    if (ni.NetworkInterfaceType == System.Net.NetworkInformation.NetworkInterfaceType.Loopback) continue;
+
+                    string desc = (ni.Description + " " + ni.Name).ToLowerInvariant();
+                    if (desc.Contains("vmware") || desc.Contains("virtual") || desc.Contains("vbox") ||
+                        desc.Contains("vethernet") || desc.Contains("hyper-v"))
+                    {
+                        continue;
+                    }
+
+                    var props = ni.GetIPProperties();
+                    foreach (var u in props.UnicastAddresses)
+                    {
+                        if (u.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
+                        {
+                            string ipStr = u.Address.ToString();
+                            if (ipStr.StartsWith("192.168.") || ipStr.StartsWith("10.") || ipStr.StartsWith("172."))
+                            {
+                                return ipStr;
+                            }
+                        }
+                    }
+                }
+
+                // Priority 3: Fallback to DNS
                 var host = System.Net.Dns.GetHostEntry(System.Net.Dns.GetHostName());
                 foreach (var ip in host.AddressList)
                 {
                     if (ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
                     {
                         string s = ip.ToString();
-                        if (s.StartsWith("192.168.") || s.StartsWith("10.") || s.StartsWith("172."))
+                        if (!s.StartsWith("127.") && !s.StartsWith("169.254."))
                         {
                             return s;
                         }
