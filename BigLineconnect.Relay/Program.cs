@@ -121,13 +121,13 @@ using System.IO;
                     {
                         if (_targetSocket.State == WebSocketState.Open && !_cts.Token.IsCancellationRequested)
                         {
-                            // HARD FRAME PACING: Minimum 66ms between frame dispatches (Max 15 FPS ceiling)
+                            // HARD FRAME PACING: Minimum 125ms between frame dispatches (Max 8 FPS Alpemix ceiling)
                             long now = DateTime.UtcNow.Ticks;
                             long elapsedMs = (now - _lastSendTicks) / TimeSpan.TicksPerMillisecond;
-                            if (elapsedMs < 66)
+                            if (elapsedMs < 125)
                             {
-                                int waitMs = (int)(66 - elapsedMs);
-                                if (waitMs > 0 && waitMs <= 100)
+                                int waitMs = (int)(125 - elapsedMs);
+                                if (waitMs > 0 && waitMs <= 150)
                                 {
                                     try { await Task.Delay(waitMs, _cts.Token).ConfigureAwait(false); } catch { break; }
                                 }
@@ -891,20 +891,20 @@ using System.IO;
                                 if (msgType == WebSocketMessageType.Binary)
                                 {
                                     // SERVER-SIDE BANDWIDTH & FPS GOVERNOR (HARD TCP ZERO-WINDOW BACKPRESSURE)
-                                    // 1. Enforce minimum 66ms between binary frame reads (Max 15 FPS)
+                                    // 1. Enforce minimum 125ms between binary frame reads (Max 8 FPS Alpemix standard)
                                     long nowTicks = DateTime.UtcNow.Ticks;
                                     long elapsedMs = (nowTicks - session.LastBinaryFrameTicks) / TimeSpan.TicksPerMillisecond;
-                                    if (elapsedMs < 66)
+                                    if (elapsedMs < 125)
                                     {
-                                        int waitMs = (int)(66 - elapsedMs);
-                                        if (waitMs > 0 && waitMs <= 100)
+                                        int waitMs = (int)(125 - elapsedMs);
+                                        if (waitMs > 0 && waitMs <= 150)
                                         {
                                             try { await Task.Delay(waitMs, session.Cts.Token).ConfigureAwait(false); } catch { }
                                         }
                                     }
                                     session.LastBinaryFrameTicks = DateTime.UtcNow.Ticks;
 
-                                    // 2. Token Bucket: Max 120 KB/sec ceiling per host
+                                    // 2. Token Bucket: Max 50 KB/sec ceiling per host (~3 MB/min, ~180 MB/hour max)
                                     long currentSec = DateTime.UtcNow.Ticks / TimeSpan.TicksPerSecond;
                                     if (currentSec != session.LastBandwidthSec)
                                     {
@@ -913,8 +913,8 @@ using System.IO;
                                     }
                                     session.BytesReceivedThisSec += msgBytes.Length;
 
-                                    // If host uploads > 120 KB in this 1-sec window, pause socket read to trigger physical TCP Zero-Window backpressure on the host OS
-                                    if (session.BytesReceivedThisSec > 120 * 1024)
+                                    // If host uploads > 50 KB in this 1-sec window, pause socket read to trigger physical TCP Zero-Window backpressure on the host OS
+                                    if (session.BytesReceivedThisSec > 50 * 1024)
                                     {
                                         try { await Task.Delay(50, session.Cts.Token).ConfigureAwait(false); } catch { }
                                     }

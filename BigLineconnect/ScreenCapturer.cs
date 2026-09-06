@@ -351,24 +351,10 @@ namespace BigLineconnect
                         bool forceKf = ForceKeyframeRequested;
                         ForceKeyframeRequested = false;
 
-                        if (maxDimension > 0 && (bmp.Width > maxDimension || bmp.Height > maxDimension))
-                        {
-                            double scale = Math.Min((double)maxDimension / bmp.Width, (double)maxDimension / bmp.Height);
-                            int newW = (int)(bmp.Width * scale);
-                            int newH = (int)(bmp.Height * scale);
-
-                            using (Bitmap scaledBmp = new Bitmap(newW, newH, PixelFormat.Format32bppRgb))
-                            {
-                                using (Graphics g = Graphics.FromImage(scaledBmp))
-                                {
-                                    g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.Bilinear;
-                                    g.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.HighSpeed;
-                                    g.DrawImage(bmp, new Rectangle(0, 0, newW, newH), 0, 0, bmp.Width, bmp.Height, GraphicsUnit.Pixel);
-                                }
-                                return BigLineRtEngine.EncodeFrame(scaledBmp, quality, forceKf);
-                            }
-                        }
-
+                        // DIRECT NATIVE 1:1 TILE ENGINE (Alpemix Zero-Bandwidth Mode):
+                        // Operating directly on native bmp guarantees 100% BIT-IDENTICAL hashes for unchanged areas.
+                        // On idle screen: 0 dirty tiles -> 0 BYTES sent.
+                        // On user edit: only the changed 64x64 tiles (400 - 1500 bytes) are encoded and sent!
                         return BigLineRtEngine.EncodeFrame(bmp, quality, forceKf);
                     }
                     else

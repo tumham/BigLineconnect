@@ -1522,8 +1522,8 @@ namespace BigLineconnect
                         _frameReadyEvent.Set();
                     }
 
-                    // Wait up to 66ms on WAN (15 FPS max quota guard) or 30ms on LAN, OR wake up INSTANTLY on user input!
-                    _instantCaptureEvent.WaitOne(ActiveLanWebSocket != null ? 30 : 66);
+                    // Wait up to 125ms on WAN (8 FPS Alpemix standard quota guard) or 30ms on LAN, OR wake up INSTANTLY on user input!
+                    _instantCaptureEvent.WaitOne(ActiveLanWebSocket != null ? 30 : 125);
                 }
                 ScreenCapturer.SuppressWallpaper(false);
                 ApplySleepPrevention(false);
@@ -1631,17 +1631,17 @@ namespace BigLineconnect
                     {
                         frameToSend = _latestFrame;
                         frameHash = _latestFrameHash;
+                        _latestFrame = null; // Clear consumed frame: NEVER re-send stale frames on idle!
                     }
                     
                     if (frameToSend != null && frameToSend.Length > 0)
                     {
                         bool isDuplicate = (frameHash != 0 && frameHash == _lastSentFrameHash);
                         bool isInitialBurst = initialFrameCount < 3;
-                        bool isHeartbeat = (DateTime.Now - _lastSentFrameTime).TotalMilliseconds >= 5000;
 
-                        if (!isDuplicate || isInitialBurst || isHeartbeat)
+                        if (!isDuplicate || isInitialBurst)
                         {
-                            // HARD TOKEN BUCKET GOVERNOR: Max 120 KB/sec on WAN / Cellular connections (~400 MB/hour max)
+                            // HARD TOKEN BUCKET GOVERNOR: Max 50 KB/sec on WAN / Cellular connections (~3 MB/min, ~180 MB/hour max)
                             if (ActiveLanWebSocket == null)
                             {
                                 long currentSec = DateTime.UtcNow.Ticks / TimeSpan.TicksPerSecond;
@@ -1650,14 +1650,14 @@ namespace BigLineconnect
                                     _lastBandwidthSec = currentSec;
                                     _bytesSentThisSec = 0;
                                 }
-                                if (_bytesSentThisSec > 120 * 1024)
+                                if (_bytesSentThisSec > 50 * 1024)
                                 {
-                                    await Task.Delay(40, token).ConfigureAwait(false);
+                                    await Task.Delay(50, token).ConfigureAwait(false);
                                     continue;
                                 }
                             }
 
-                            int minIntervalMs = (ActiveLanWebSocket != null) ? 30 : 66; // 15 FPS on WAN/Cellular (strict data quota guard), 33 FPS on local LAN
+                            int minIntervalMs = (ActiveLanWebSocket != null) ? 30 : 125; // 8 FPS on WAN (Alpemix quota standard)
                             if (isInitialBurst || (DateTime.Now - _lastSentFrameTime).TotalMilliseconds >= minIntervalMs)
                             {
                                 _isSendingFrame = true;
@@ -1707,9 +1707,18 @@ namespace BigLineconnect
                             }
                         }
                     }
+                    else
+                    {
+                        // IDLE KEEPALIVE: If screen is completely idle for 15 seconds, send tiny 4-byte text ping (NEVER blast 25 KB video!)
+                        if ((DateTime.Now - _lastSentFrameTime).TotalSeconds >= 15 && ws.State == WebSocketState.Open)
+                        {
+                            _lastSentFrameTime = DateTime.Now;
+                            try { await SafeSendAsync(ws, new ArraySegment<byte>(Encoding.UTF8.GetBytes("PING")), WebSocketMessageType.Text, true, token).ConfigureAwait(false); } catch { }
+                        }
+                    }
 
                     // Strict pacing: wait for next frame ready or active pacing interval
-                    _frameReadyEvent.WaitOne(ActiveLanWebSocket != null ? 30 : 66);
+                    _frameReadyEvent.WaitOne(ActiveLanWebSocket != null ? 30 : 125);
                 }
                 Log("Görüntü gönderim döngüsü sonlandı.");
             }
