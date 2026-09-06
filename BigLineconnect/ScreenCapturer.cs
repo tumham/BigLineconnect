@@ -286,24 +286,6 @@ namespace BigLineconnect
                         try { _dxgiCapturer?.Dispose(); } catch { }
                         _dxgiCapturer = null;
                     }
-
-                    if (bmp != null && IsBitmapBlack(bmp))
-                    {
-                        _consecutiveBlackFrames++;
-                        _lastDxgiFailureTime = DateTime.UtcNow;
-                        try { _dxgiCapturer?.Dispose(); } catch { }
-                        _dxgiCapturer = null;
-                        bmp.Dispose();
-                        bmp = null;
-
-                        // Auto-Fix Headless VPS / Disconnected RDP session black screen!
-                        DesktopHelper.FixHeadlessVpsScreen();
-                        DesktopHelper.AttachToInputDesktop();
-                    }
-                    else if (bmp != null)
-                    {
-                        _consecutiveBlackFrames = 0;
-                    }
                 }
             }
 
@@ -316,11 +298,6 @@ namespace BigLineconnect
                 }
 
                 bmp = CaptureGdiRaw(quality, maxDimension);
-                if (bmp != null && IsBitmapBlack(bmp))
-                {
-                    DesktopHelper.FixHeadlessVpsScreen();
-                    DesktopHelper.AttachToInputDesktop();
-                }
             }
 
             if (bmp != null)
@@ -407,7 +384,7 @@ namespace BigLineconnect
             }
             catch
             {
-                return (ulong)DateTime.Now.Ticks;
+                return _lastCaptureHash;
             }
         }
 

@@ -213,14 +213,16 @@ namespace BigLineconnect
         private const uint SPI_SETFOREGROUNDLOCKTIMEOUT = 0x2001;
         private const int ASFW_ANY = -1;
 
+        private static bool _foregroundLockDisabled = false;
+
         public static void DisableForegroundLock()
         {
+            if (_foregroundLockDisabled) return;
+            _foregroundLockDisabled = true;
             try
             {
                 SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED | ES_DISPLAY_REQUIRED);
                 AllowSetForegroundWindow(ASFW_ANY);
-                uint zero = 0;
-                SystemParametersInfo(SPI_SETFOREGROUNDLOCKTIMEOUT, 0, ref zero, 0);
             }
             catch { }
         }
@@ -245,7 +247,14 @@ namespace BigLineconnect
         {
             try
             {
-                if (!force && (DateTime.Now - _lastAttachTime).TotalMilliseconds < 1000)
+                // In interactive user sessions (Session > 0), the process is already on the input desktop.
+                // Calling OpenInputDesktop/SetThreadDesktop causes severe User32 lock contention and freezes external apps (Excel, Mikro, Explorer).
+                if (System.Diagnostics.Process.GetCurrentProcess().SessionId != 0 && !force)
+                {
+                    return;
+                }
+
+                if (!force && (DateTime.Now - _lastAttachTime).TotalMilliseconds < 2000)
                 {
                     return;
                 }

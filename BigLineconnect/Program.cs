@@ -1507,7 +1507,6 @@ namespace BigLineconnect
                 while (!token.IsCancellationRequested && _isStreaming)
                 {
                     swLoop.Restart();
-                    DesktopHelper.AttachToInputDesktop();
 
                     // Re-apply sleep prevention every 60 seconds (1 min) - 0% CPU & 0 network bytes!
                     if ((DateTime.Now - lastKeepAliveTime).TotalSeconds >= 60)
@@ -1542,19 +1541,18 @@ namespace BigLineconnect
                     }
 
                     // INTELLIGENT IDLE PACING GOVERNOR:
-                    // If the user has NOT provided mouse/keyboard inputs in the last 1.2 seconds:
-                    // Background animations (like ad banners in Mikro, blinking cursors, clocks) are paced at 4 FPS (250ms),
-                    // slashing background quota consumption by 85%!
+                    // When the technician is typing or moving the mouse, capture at 40ms (25 FPS fluid interaction).
+                    // When idle (no user interaction), sleep for 500ms (max 2 FPS) to eliminate CPU and network usage completely!
                     // As soon as the user moves the mouse or types, _instantCaptureEvent wakes up immediately with 0ms delay!
                     bool isUserActive = (DateTime.Now - _lastViewerActivityTime).TotalMilliseconds < 1200;
                     int waitInterval;
-                    if (ActiveLanWebSocket != null || P2pDirectEngine.IsP2pConnected)
+                    if (ActiveLanWebSocket != null)
                     {
-                        waitInterval = isUserActive ? 33 : 150;
+                        waitInterval = isUserActive ? 33 : 250;
                     }
                     else
                     {
-                        waitInterval = isUserActive ? 50 : 250;
+                        waitInterval = isUserActive ? 40 : 500;
                     }
                     _instantCaptureEvent.WaitOne(waitInterval);
                 }
@@ -1710,13 +1708,9 @@ namespace BigLineconnect
                             {
                                 minIntervalMs = isUserActive ? 33 : 150;
                             }
-                            else if (P2pDirectEngine.IsP2pConnected)
-                            {
-                                minIntervalMs = isUserActive ? 40 : 150;
-                            }
                             else
                             {
-                                minIntervalMs = isUserActive ? 50 : 250;
+                                minIntervalMs = isUserActive ? 40 : 500;
                             }
                             if (isInitialBurst || (DateTime.Now - _lastSentFrameTime).TotalMilliseconds >= minIntervalMs)
                             {
