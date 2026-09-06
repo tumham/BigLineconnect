@@ -1776,6 +1776,35 @@ namespace BigLineconnect
 
         private static DateTime _lastMouseMoveTime = DateTime.MinValue;
 
+        private static ulong _lastDiscreteInputHash = 0;
+        private static DateTime _lastDiscreteInputTime = DateTime.MinValue;
+        private static readonly object _inputDedupLock = new object();
+
+        private static bool IsDuplicateInput(byte[] pkt)
+        {
+            if (pkt == null || pkt.Length < 9) return false;
+            byte cmd = pkt[1];
+            // Mouse move and Mouse scroll should never be throttled by discrete dedup
+            if (cmd == BinaryInputProtocol.CMD_MOUSE_MOVE || cmd == BinaryInputProtocol.CMD_MOUSE_SCROLL)
+            {
+                return false;
+            }
+
+            ulong hash = BitConverter.ToUInt64(pkt, 1);
+            DateTime now = DateTime.Now;
+
+            lock (_inputDedupLock)
+            {
+                if (hash == _lastDiscreteInputHash && (now - _lastDiscreteInputTime).TotalMilliseconds < 75)
+                {
+                    return true;
+                }
+                _lastDiscreteInputHash = hash;
+                _lastDiscreteInputTime = now;
+                return false;
+            }
+        }
+
         public static void ProcessBinaryRemoteInput(byte[] pkt)
         {
             if (pkt == null || pkt.Length < 5) return;
@@ -1827,6 +1856,7 @@ namespace BigLineconnect
                     if (pkt[offset] != BinaryInputProtocol.MAGIC_BYTE) break;
                     byte[] singlePkt = new byte[9];
                     Buffer.BlockCopy(pkt, offset, singlePkt, 0, 9);
+                    if (IsDuplicateInput(singlePkt)) continue; // Drop duplicate inputs within 75ms!
                     AdaptiveRateController.NotifyUserActivity(isContinuousMotion: (singlePkt[1] == BinaryInputProtocol.CMD_MOUSE_MOVE || singlePkt[1] == BinaryInputProtocol.CMD_MOUSE_SCROLL));
                     InputSimulator.SimulateBinaryInput(singlePkt, _activeDisplayIndex);
                     if (singlePkt[1] != BinaryInputProtocol.CMD_MOUSE_MOVE) hasNonMouseMove = true;

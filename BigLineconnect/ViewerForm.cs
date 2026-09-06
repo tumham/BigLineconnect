@@ -1759,19 +1759,9 @@ namespace BigLineconnect
                 udpSent = P2pDirectEngine.SendP2pPacket(data);
             }
 
-            // 2. CRITICAL FAIL-SAFE FOR 1,700 KM WAN:
-            // Clicks, Double-clicks, Mouse Ups, Keystrokes MUST NEVER BE LOST!
-            // If UDP send failed OR if it's a vital action, dispatch in parallel to WebSocket.
-            // Host deduplicates identical actions within 75ms so zero duplicate execution!
-            bool isVitalAction = data.Length >= 2 && data[0] == BinaryInputProtocol.MAGIC_BYTE &&
-                                 (data[1] == BinaryInputProtocol.CMD_MOUSE_BUTTON ||
-                                  data[1] == BinaryInputProtocol.CMD_MOUSE_DBLCLICK ||
-                                  data[1] == BinaryInputProtocol.CMD_KEY_STROKE ||
-                                  data[1] == BinaryInputProtocol.CMD_KEY_DOWN ||
-                                  data[1] == BinaryInputProtocol.CMD_KEY_UP ||
-                                  data[1] == BinaryInputProtocol.CMD_KEY_CHAR);
-
-            if (!udpSent || isVitalAction)
+            // 2. Dispatch via WebSocket ONLY if UDP was not sent (failover)
+            // NEVER send to both channels simultaneously, as that causes duplicate keystrokes and clicks!
+            if (!udpSent)
             {
                 if (_ws != null && _ws.State == WebSocketState.Open)
                 {
@@ -2231,16 +2221,8 @@ namespace BigLineconnect
 
         private void PictureBox_MouseDoubleClick(object? sender, MouseEventArgs e)
         {
-            if (_pictureBox == null) return;
-
-            var (x, y) = GetNormalizedMousePos(e, _pictureBox);
-
-            byte button = BinaryInputProtocol.MOUSE_BTN_LEFT;
-            if (e.Button == MouseButtons.Right) button = BinaryInputProtocol.MOUSE_BTN_RIGHT;
-            else if (e.Button == MouseButtons.Middle) button = BinaryInputProtocol.MOUSE_BTN_MIDDLE;
-
-            byte[] binPkt = BinaryInputProtocol.EncodeMouseDoubleClick(button, x, y);
-            SendBinaryInput(binPkt);
+            // No-op: PictureBox_MouseDown and PictureBox_MouseUp already deliver both clicks naturally.
+            // Sending an additional synthetic double-click causes duplicate clicks!
         }
 
         private void SendReleaseAllModifiers()
