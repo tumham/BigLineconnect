@@ -586,6 +586,31 @@ namespace BigLineconnect
                 return;
             }
 
+            // Terminate older / stuck instances so the newly launched version ALWAYS takes over cleanly
+            if (!isHelper && !isService && args.Length == 0)
+            {
+                int currentPid = Environment.ProcessId;
+                foreach (var name in new[] { "BigLineconnect", "BigLineconnect_Guncel", "BigLineconnect_App" })
+                {
+                    try
+                    {
+                        foreach (var p in Process.GetProcessesByName(name))
+                        {
+                            if (p.Id != currentPid)
+                            {
+                                try
+                                {
+                                    p.Kill();
+                                    p.WaitForExit(500);
+                                }
+                                catch { }
+                            }
+                        }
+                    }
+                    catch { }
+                }
+            }
+
             // Prevent duplicate GUI instances in the same user session and pass connection arguments to running instance
             using var singleInstanceMutex = new Mutex(true, "Global\\BigLineconnectSingleInstanceMutex_" + (isHelper ? "Helper" : "Gui"), out bool isNewInstance);
             if (!isNewInstance && !isHelper)
@@ -4362,7 +4387,9 @@ namespace BigLineconnect
                 uint activeSessionId = WtsHelper.GetActiveSessionId();
                 if (activeSessionId == 0) return false;
 
-                var procs = Process.GetProcessesByName("BigLineconnect");
+                var procs = Process.GetProcessesByName("BigLineconnect")
+                    .Concat(Process.GetProcessesByName("BigLineconnect_Guncel"))
+                    .Concat(Process.GetProcessesByName("BigLineconnect_App"));
                 int currentPid = Environment.ProcessId;
 
                 foreach (var p in procs)

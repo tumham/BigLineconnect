@@ -1399,6 +1399,7 @@ namespace BigLineconnect
 
         private DateTime _lastSuccessfulFrameDecodeTime = DateTime.Now;
         private DateTime _lastKeyframeRequestTime = DateTime.MinValue;
+        private DateTime _lastUserInputTime = DateTime.MinValue;
 
         private int _isDecodingFrame = 0;
 
@@ -1615,11 +1616,13 @@ namespace BigLineconnect
                     this.Text = cleanTitle;
                 }
 
-                // Anti-Freeze Auto-Healing Watchdog: If connected but no valid frame decoded for > 3000ms, request keyframe to unfreeze screen!
+                // Anti-Freeze Auto-Healing Watchdog: Only request keyframe if actively interacting and screen froze, or initial connect frame missing
                 DateTime now = DateTime.Now;
-                if (_hasConnectedOnce && 
+                bool isUserActivelyInteracting = (now - _lastUserInputTime).TotalMilliseconds < 3000;
+                bool isInitialFrameMissing = _latestDecodedImage == null;
+                if (_hasConnectedOnce && (isUserActivelyInteracting || isInitialFrameMissing) && 
                     (now - _lastSuccessfulFrameDecodeTime).TotalMilliseconds > 3000 && 
-                    (now - _lastKeyframeRequestTime).TotalMilliseconds > 2000)
+                    (now - _lastKeyframeRequestTime).TotalMilliseconds > 3000)
                 {
                     _lastKeyframeRequestTime = now;
                     if (P2pDirectEngine.IsP2pConnected)
@@ -1788,6 +1791,7 @@ namespace BigLineconnect
         public void SendBinaryInput(byte[] data)
         {
             if (data == null || data.Length == 0) return;
+            _lastUserInputTime = DateTime.Now;
 
             // 1. Instant UDP dispatch if P2P active
             bool udpSent = false;
@@ -2031,6 +2035,7 @@ namespace BigLineconnect
 
         private void SendFastMouseMove(double x, double y)
         {
+            _lastUserInputTime = DateTime.Now;
             ushort ux = (ushort)(Math.Max(0, Math.Min(1, x)) * 65535);
             ushort uy = (ushort)(Math.Max(0, Math.Min(1, y)) * 65535);
 

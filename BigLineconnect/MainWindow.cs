@@ -127,7 +127,7 @@ namespace BigLineconnect
             _instance = this;
             try { Program.SetStreamActive(false); } catch { }
             InitializeComponent();
-            this.Text = "B-Connect v4.12 ⚡ Precision WAN P2P & Pure Input";
+            this.Text = "BigLineconnect v4.19 ⚡ [SIFIR KOTA - HOTSPOT GUVENCESI]";
             LoadLogoAndIcon();
 
             // Populate connection logs that occurred during splash screen connection
