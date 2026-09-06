@@ -1704,21 +1704,21 @@ namespace BigLineconnect
 
                         if (!isDuplicate || isInitialBurst)
                         {
-                            // HARD TOKEN BUCKET GOVERNOR: Max 90 KB/sec across all connections (LAN/WAN/Cellular Hotspot)
-                            // Guarantees mobile hotspot data is never exceeded (~5.4 MB/min maximum ceiling, typical 0 - 1.2 MB/min)
+                            // ADAPTIVE TOKEN BUCKET GOVERNOR: Max 220 KB/sec during active interaction, 0 KB/s on idle
+                            // Guarantees mobile hotspot data is preserved while eliminating frame stutter and freezing
                             long currentSec = DateTime.UtcNow.Ticks / TimeSpan.TicksPerSecond;
                             if (currentSec != _lastBandwidthSec)
                             {
                                 _lastBandwidthSec = currentSec;
                                 _bytesSentThisSec = 0;
                             }
-                            if (_bytesSentThisSec > 90 * 1024)
+                            if (_bytesSentThisSec > 220 * 1024)
                             {
-                                await Task.Delay(25, token).ConfigureAwait(false);
+                                await Task.Delay(20, token).ConfigureAwait(false);
                                 continue;
                             }
 
-                            int minIntervalMs = isUserActive ? 40 : 500;
+                            int minIntervalMs = isUserActive ? 60 : 500;
                             if (isInitialBurst || (DateTime.Now - _lastSentFrameTime).TotalMilliseconds >= minIntervalMs)
                             {
                                 _isSendingFrame = true;

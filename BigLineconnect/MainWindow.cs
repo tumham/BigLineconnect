@@ -127,7 +127,7 @@ namespace BigLineconnect
             _instance = this;
             try { Program.SetStreamActive(false); } catch { }
             InitializeComponent();
-            this.Text = "BigLineconnect v4.19 ⚡ [SIFIR KOTA - HOTSPOT GUVENCESI]";
+            this.Text = "BigLineconnect v4.20 ⚡ [KUSURSUZ GORUNTU - SIFIR KOTA]";
             LoadLogoAndIcon();
 
             // Populate connection logs that occurred during splash screen connection

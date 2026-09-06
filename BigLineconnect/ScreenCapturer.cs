@@ -184,7 +184,7 @@ namespace BigLineconnect
             _jpegEncoder = GetEncoder(ImageFormat.Jpeg);
         }
 
-        public static bool UseRtTileEngine { get; set; } = true; // DeskRT 64x64 Differential SubFrames: 1.5 - 3 KB per frame, 0ms latency, zero quota bleed
+        public static bool UseRtTileEngine { get; set; } = false; // DISABLED: causes severe tile fragmentation and white box corruption on large window changes
         public static bool UseH264Mode { get; set; } = false;
         public static bool ForceKeyframeRequested { get; set; } = false;
         private static H264Encoder? _h264Encoder;
@@ -350,14 +350,14 @@ namespace BigLineconnect
                         byte* ptr = (byte*)data.Scan0;
                         int stride = data.Stride;
 
-                        // Dense scan: Sample every 4th row and 4th ulong to catch text edits & highlights in 0.05ms with 0% CPU
+                        // Dense scan: Sample every 4th row across full width to catch 100% of text edits, cursor blinks & cell highlights in 0.05ms
                         int ulongsPerRow = (w * 4) / 8;
                         for (int y = 0; y < h; y += 4)
                         {
                             ulong* row = (ulong*)(ptr + (y * stride));
-                            for (int x = 0; x < ulongsPerRow; x += 4)
+                            for (int x = 0; x < ulongsPerRow; x++)
                             {
-                                hash ^= (row[x] & 0x00FFFFFF00FFFFFFUL);
+                                hash ^= row[x];
                                 hash *= 1099511628211UL;
                             }
                         }
