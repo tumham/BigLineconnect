@@ -106,9 +106,7 @@ namespace BigLineconnect
         private Form? _activeRestartDialog;
         private bool _isLanDirectActive = false;
         private string _remoteLanIp = "";
-        private int _isDecodingFrame = 0;
-        private byte[]? _latestPendingFrameBytes = null;
-        private readonly object _pendingFrameLock = new object();
+        private readonly System.Collections.Concurrent.ConcurrentQueue<byte[]> _pendingFrameQueue = new();
         private bool _isAuthFailureClosing = false;
         private bool _isPromptOpen = false;
         private bool _isProgrammaticClose = false;
@@ -1402,13 +1400,14 @@ namespace BigLineconnect
         private DateTime _lastSuccessfulFrameDecodeTime = DateTime.Now;
         private DateTime _lastKeyframeRequestTime = DateTime.MinValue;
 
+        private int _isDecodingFrame = 0;
+
         private void QueueAndDecodeIncomingFrame(byte[] isolatedFrame)
         {
-            if (this.WindowState == FormWindowState.Minimized || isolatedFrame == null || isolatedFrame.Length == 0) return;
-
-            lock (_pendingFrameLock)
+            if (this.WindowState == FormWindowState.Minimized) return;
+            if (isolatedFrame != null && isolatedFrame.Length > 0)
             {
-                _latestPendingFrameBytes = isolatedFrame;
+                _pendingFrameQueue.Enqueue(isolatedFrame);
             }
 
             if (Interlocked.CompareExchange(ref _isDecodingFrame, 1, 0) == 0)
@@ -1417,16 +1416,9 @@ namespace BigLineconnect
                 {
                     try
                     {
-                        while (true)
+                        while (_pendingFrameQueue.TryDequeue(out var frameToDecode))
                         {
-                            byte[]? frameToDecode = null;
-                            lock (_pendingFrameLock)
-                            {
-                                frameToDecode = _latestPendingFrameBytes;
-                                _latestPendingFrameBytes = null;
-                            }
-
-                            if (frameToDecode == null) break;
+                            if (frameToDecode == null || frameToDecode.Length == 0) continue;
                             if (this.WindowState == FormWindowState.Minimized || _pictureBox == null || _pictureBox.IsDisposed) break;
 
                             Image? newImg = null;
@@ -1521,6 +1513,10 @@ namespace BigLineconnect
                     finally
                     {
                         Interlocked.Exchange(ref _isDecodingFrame, 0);
+                        if (!_pendingFrameQueue.IsEmpty)
+                        {
+                            QueueAndDecodeIncomingFrame(Array.Empty<byte>());
+                        }
                     }
                 });
             }

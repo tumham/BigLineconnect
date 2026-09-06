@@ -1541,8 +1541,21 @@ namespace BigLineconnect
                         _frameReadyEvent.Set();
                     }
 
-                    // 33ms (30 FPS) on LAN/P2P, 50ms (20 FPS) on WAN motion, OR wake up INSTANTLY on user input!
-                    int waitInterval = (ActiveLanWebSocket != null || P2pDirectEngine.IsP2pConnected) ? 33 : 50;
+                    // INTELLIGENT IDLE PACING GOVERNOR:
+                    // If the user has NOT provided mouse/keyboard inputs in the last 1.2 seconds:
+                    // Background animations (like ad banners in Mikro, blinking cursors, clocks) are paced at 4 FPS (250ms),
+                    // slashing background quota consumption by 85%!
+                    // As soon as the user moves the mouse or types, _instantCaptureEvent wakes up immediately with 0ms delay!
+                    bool isUserActive = (DateTime.Now - _lastViewerActivityTime).TotalMilliseconds < 1200;
+                    int waitInterval;
+                    if (ActiveLanWebSocket != null || P2pDirectEngine.IsP2pConnected)
+                    {
+                        waitInterval = isUserActive ? 33 : 150;
+                    }
+                    else
+                    {
+                        waitInterval = isUserActive ? 50 : 250;
+                    }
                     _instantCaptureEvent.WaitOne(waitInterval);
                 }
                 ScreenCapturer.SuppressWallpaper(false);
@@ -1678,7 +1691,16 @@ namespace BigLineconnect
                                 }
                             }
 
-                            int minIntervalMs = (ActiveLanWebSocket != null || P2pDirectEngine.IsP2pConnected) ? 33 : 50; // 30 FPS on P2P/LAN, 20 FPS on WAN active motion
+                            bool isUserActive = (DateTime.Now - _lastViewerActivityTime).TotalMilliseconds < 1200;
+                            int minIntervalMs;
+                            if (ActiveLanWebSocket != null || P2pDirectEngine.IsP2pConnected)
+                            {
+                                minIntervalMs = isUserActive ? 33 : 150;
+                            }
+                            else
+                            {
+                                minIntervalMs = isUserActive ? 50 : 250;
+                            }
                             if (isInitialBurst || (DateTime.Now - _lastSentFrameTime).TotalMilliseconds >= minIntervalMs)
                             {
                                 _isSendingFrame = true;

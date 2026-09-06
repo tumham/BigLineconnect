@@ -190,7 +190,7 @@ namespace BigLineconnect
                 uint* rowPtr = (uint*)(pBase + (y + r) * stride + x * 4);
                 for (int c = 0; c < w; c += 2)
                 {
-                    hash = (hash ^ rowPtr[c]) * 1099511628211UL;
+                    hash = (hash ^ (rowPtr[c] & 0x00FFFFFF)) * 1099511628211UL;
                 }
             }
             return hash;

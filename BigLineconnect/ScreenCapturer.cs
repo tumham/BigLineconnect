@@ -219,7 +219,7 @@ namespace BigLineconnect
                 if (screenWidth <= 0) screenWidth = 1920;
                 if (screenHeight <= 0) screenHeight = 1080;
 
-                Bitmap bmpScreen = new Bitmap(screenWidth, screenHeight, PixelFormat.Format32bppArgb);
+                Bitmap bmpScreen = new Bitmap(screenWidth, screenHeight, PixelFormat.Format32bppRgb);
                 try
                 {
                     using (Graphics gScreen = Graphics.FromImage(bmpScreen))
@@ -393,7 +393,7 @@ namespace BigLineconnect
                             ulong* row = (ulong*)(ptr + (y * stride));
                             for (int x = 0; x < ulongsPerRow; x += 4)
                             {
-                                hash ^= row[x];
+                                hash ^= (row[x] & 0x00FFFFFF00FFFFFFUL);
                                 hash *= 1099511628211UL;
                             }
                         }

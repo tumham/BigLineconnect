@@ -85,7 +85,7 @@ using System.IO;
         {
             _targetSocket = targetSocket;
             _cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            _channel = Channel.CreateBounded<byte[]>(new BoundedChannelOptions(1)
+            _channel = Channel.CreateBounded<byte[]>(new BoundedChannelOptions(64)
             {
                 FullMode = BoundedChannelFullMode.DropOldest,
                 SingleReader = true,
@@ -121,17 +121,6 @@ using System.IO;
                     {
                         if (_targetSocket.State == WebSocketState.Open && !_cts.Token.IsCancellationRequested)
                         {
-                            // HARD FRAME PACING: Minimum 50ms between frame dispatches (Max 20 FPS fluid WAN ceiling)
-                            long now = DateTime.UtcNow.Ticks;
-                            long elapsedMs = (now - _lastSendTicks) / TimeSpan.TicksPerMillisecond;
-                            if (elapsedMs < 50)
-                            {
-                                int waitMs = (int)(50 - elapsedMs);
-                                if (waitMs > 0 && waitMs <= 60)
-                                {
-                                    try { await Task.Delay(waitMs, _cts.Token).ConfigureAwait(false); } catch { break; }
-                                }
-                            }
                             _lastSendTicks = DateTime.UtcNow.Ticks;
 
                             try
