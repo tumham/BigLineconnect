@@ -353,10 +353,15 @@ namespace BigLineconnect
         private const int FileChunkSize = 262144;
         private const int FileChunkPipelineDepth = 6;
 
+        public static volatile bool IsFileTransferActive = false;
+
         public static async Task SendFileStreamFastAsync(Stream source)
         {
-            var channel = System.Threading.Channels.Channel.CreateBounded<byte[]>(
-                new System.Threading.Channels.BoundedChannelOptions(FileChunkPipelineDepth) { SingleReader = true, SingleWriter = true });
+            IsFileTransferActive = true;
+            try
+            {
+                var channel = System.Threading.Channels.Channel.CreateBounded<byte[]>(
+                    new System.Threading.Channels.BoundedChannelOptions(FileChunkPipelineDepth) { SingleReader = true, SingleWriter = true });
 
             CancellationToken token = _cts?.Token ?? CancellationToken.None;
 
@@ -393,6 +398,11 @@ namespace BigLineconnect
             catch { }
 
             try { await readTask.ConfigureAwait(false); } catch { }
+            }
+            finally
+            {
+                IsFileTransferActive = false;
+            }
         }
 
         [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
@@ -1506,6 +1516,15 @@ namespace BigLineconnect
                         ApplySleepPrevention(true);
                     }
 
+                    // ZERO-BANDWIDTH FILE TRANSFER GUARD:
+                    // While sending or receiving files, pause screen capture entirely.
+                    // This eliminates ~10-12 MB of redundant progress bar video streaming, matching Alpemix!
+                    if (IsFileTransferActive || _incomingFileStream != null || _uploadFileStream != null)
+                    {
+                        _instantCaptureEvent.WaitOne(300);
+                        continue;
+                    }
+
                     // Always preserve chosen resolution: maxDim = CurrentMaxDimension (0 = 100% native 1:1)
                     int q = CurrentQuality;
                     int maxDim = CurrentMaxDimension;
@@ -1522,8 +1541,9 @@ namespace BigLineconnect
                         _frameReadyEvent.Set();
                     }
 
-                    // Wait up to 125ms on WAN (8 FPS Alpemix standard quota guard) or 30ms on LAN, OR wake up INSTANTLY on user input!
-                    _instantCaptureEvent.WaitOne(ActiveLanWebSocket != null ? 30 : 125);
+                    // 33ms (30 FPS) on LAN/P2P, 50ms (20 FPS) on WAN motion, OR wake up INSTANTLY on user input!
+                    int waitInterval = (ActiveLanWebSocket != null || P2pDirectEngine.IsP2pConnected) ? 33 : 50;
+                    _instantCaptureEvent.WaitOne(waitInterval);
                 }
                 ScreenCapturer.SuppressWallpaper(false);
                 ApplySleepPrevention(false);
@@ -1641,8 +1661,9 @@ namespace BigLineconnect
 
                         if (!isDuplicate || isInitialBurst)
                         {
-                            // HARD TOKEN BUCKET GOVERNOR: Max 50 KB/sec on WAN / Cellular connections (~3 MB/min, ~180 MB/hour max)
-                            if (ActiveLanWebSocket == null)
+                            // HARD TOKEN BUCKET GOVERNOR: Max 100 KB/sec on WAN / Cellular connections (~6 MB/min ceiling, typical ~1.2 MB/min)
+                            // LAN and Direct P2P are completely exempt from WAN quota throttling!
+                            if (ActiveLanWebSocket == null && !P2pDirectEngine.IsP2pConnected)
                             {
                                 long currentSec = DateTime.UtcNow.Ticks / TimeSpan.TicksPerSecond;
                                 if (currentSec != _lastBandwidthSec)
@@ -1650,14 +1671,14 @@ namespace BigLineconnect
                                     _lastBandwidthSec = currentSec;
                                     _bytesSentThisSec = 0;
                                 }
-                                if (_bytesSentThisSec > 50 * 1024)
+                                if (_bytesSentThisSec > 100 * 1024)
                                 {
-                                    await Task.Delay(50, token).ConfigureAwait(false);
+                                    await Task.Delay(30, token).ConfigureAwait(false);
                                     continue;
                                 }
                             }
 
-                            int minIntervalMs = (ActiveLanWebSocket != null) ? 30 : 125; // 8 FPS on WAN (Alpemix quota standard)
+                            int minIntervalMs = (ActiveLanWebSocket != null || P2pDirectEngine.IsP2pConnected) ? 33 : 50; // 30 FPS on P2P/LAN, 20 FPS on WAN active motion
                             if (isInitialBurst || (DateTime.Now - _lastSentFrameTime).TotalMilliseconds >= minIntervalMs)
                             {
                                 _isSendingFrame = true;
@@ -1690,7 +1711,7 @@ namespace BigLineconnect
                                         ).ConfigureAwait(false);
                                     }
 
-                                    if (ActiveLanWebSocket == null)
+                                    if (ActiveLanWebSocket == null && !P2pDirectEngine.IsP2pConnected)
                                     {
                                         Interlocked.Add(ref _bytesSentThisSec, stampedPayload.Length);
                                     }

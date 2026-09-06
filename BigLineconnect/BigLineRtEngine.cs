@@ -208,8 +208,9 @@ namespace BigLineconnect
 
                 using (var imgMs = new MemoryStream(1024 * 96))
                 {
+                    int kfQuality = Math.Max(quality, 65);
                     using (EncoderParameters encoderParams = new EncoderParameters(1))
-                    using (EncoderParameter encoderParam = new EncoderParameter(Encoder.Quality, (long)quality))
+                    using (EncoderParameter encoderParam = new EncoderParameter(Encoder.Quality, (long)kfQuality))
                     {
                         encoderParams.Param[0] = encoderParam;
                         bmpScreen.Save(imgMs, _jpegEncoder ?? ImageCodecInfo.GetImageEncoders()[0], encoderParams);
@@ -241,8 +242,8 @@ namespace BigLineconnect
                 using (MemoryStream subMs = new MemoryStream(1024 * 16))
                 {
                     // Ultra-fast JPEG encoding honoring low quality when selected
-                    // Encodes in 0.5ms with tiny 1.5 - 3 KB footprint!
-                    int subQuality = quality < 50 ? quality : Math.Max(quality, 75);
+                    // High-fidelity 85% quality: razor-sharp text while subframe is still tiny (800 - 1500 bytes)!
+                    int subQuality = Math.Max(quality, 85);
                     using (EncoderParameters encoderParams = new EncoderParameters(1))
                     using (EncoderParameter encoderParam = new EncoderParameter(Encoder.Quality, (long)subQuality))
                     {
@@ -301,9 +302,9 @@ namespace BigLineconnect
 
                             using (Graphics g = Graphics.FromImage(currentCanvas))
                             {
-                                g.CompositingMode = CompositingMode.SourceOver;
-                                g.InterpolationMode = InterpolationMode.Bilinear;
-                                g.PixelOffsetMode = PixelOffsetMode.None;
+                                g.CompositingMode = CompositingMode.SourceCopy;
+                                g.InterpolationMode = InterpolationMode.NearestNeighbor;
+                                g.PixelOffsetMode = PixelOffsetMode.Half;
                                 g.SmoothingMode = SmoothingMode.None;
                                 g.DrawImage(fullBmp, 0, 0, fullBmp.Width, fullBmp.Height);
                             }
@@ -327,9 +328,9 @@ namespace BigLineconnect
                         using (var subBmp = new Bitmap(jpegMs))
                         using (Graphics g = Graphics.FromImage(currentCanvas))
                         {
-                            g.CompositingMode = CompositingMode.SourceOver;
-                            g.InterpolationMode = InterpolationMode.Bilinear;
-                            g.PixelOffsetMode = PixelOffsetMode.None;
+                            g.CompositingMode = CompositingMode.SourceCopy;
+                            g.InterpolationMode = InterpolationMode.NearestNeighbor;
+                            g.PixelOffsetMode = PixelOffsetMode.Half;
                             g.SmoothingMode = SmoothingMode.None;
                             g.DrawImage(subBmp, subX, subY, subW, subH);
                         }
