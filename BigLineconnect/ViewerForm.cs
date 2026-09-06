@@ -392,13 +392,13 @@ namespace BigLineconnect
 
             var cmsActions = new ContextMenuStrip();
             var itemCad = new ToolStripMenuItem("🔑 Ctrl + Alt + Del Gönder", null, (s, e) => {
-                SendJson("{\"type\":\"send_cad\"}");
+                TriggerSendCtrlAltDel();
             });
             var itemRestart = new ToolStripMenuItem("🔄 Karşı Bilgisayarı Yeniden Başlat", null, (s, e) => {
                 TriggerRemoteRestart();
             });
             var itemLock = new ToolStripMenuItem("🔒 Oturumu Kilitle", null, (s, e) => {
-                SendJson("{\"type\":\"lock_screen\"}");
+                TriggerLockScreen();
             });
 
             cmsActions.Items.Add(itemCad);
@@ -3154,6 +3154,34 @@ namespace BigLineconnect
             _fileManagerForm.BringToFront();
             _fileManagerForm.Activate();
             _fileManagerForm.RefreshList();
+        }
+
+        private void TriggerSendCtrlAltDel()
+        {
+            try
+            {
+                if (P2pDirectEngine.IsP2pConnected)
+                {
+                    byte[] cadPkt = System.Text.Encoding.UTF8.GetBytes("CMD:SEND_CAD");
+                    P2pDirectEngine.SendP2pPacket(cadPkt);
+                }
+                SendJson("{\"type\":\"send_cad\"}");
+            }
+            catch { }
+        }
+
+        private void TriggerLockScreen()
+        {
+            try
+            {
+                if (P2pDirectEngine.IsP2pConnected)
+                {
+                    byte[] lockPkt = System.Text.Encoding.UTF8.GetBytes("CMD:LOCK_SCREEN");
+                    P2pDirectEngine.SendP2pPacket(lockPkt);
+                }
+                SendJson("{\"type\":\"lock_screen\"}");
+            }
+            catch { }
         }
 
         private void TriggerRemoteRestart()

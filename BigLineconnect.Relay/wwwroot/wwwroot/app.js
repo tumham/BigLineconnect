@@ -793,6 +793,10 @@ if (cadBtn) {
         if (e) e.preventDefault();
         if (!connected) return;
         showToast('Ctrl + Alt + Del gönderildi.', 'info');
+        const s = (socket && socket.readyState === WebSocket.OPEN) ? socket : (window.ws && window.ws.readyState === WebSocket.OPEN ? window.ws : null);
+        if (s) {
+            s.send(JSON.stringify({ type: 'send_cad' }));
+        }
         sendKey('control', 'down');
         sendKey('alt', 'down');
         sendKey('delete', 'down');

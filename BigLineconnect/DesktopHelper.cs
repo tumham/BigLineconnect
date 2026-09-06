@@ -19,6 +19,29 @@ namespace BigLineconnect
         [DllImport("sas.dll", SetLastError = true, CallingConvention = CallingConvention.StdCall)]
         private static extern void SendSAS(bool asUser);
 
+        [DllImport("user32.dll")]
+        private static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, UIntPtr dwExtraInfo);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern bool LockWorkStation();
+
+        public static void LockScreen()
+        {
+            try
+            {
+                LogHelper("LockScreen invoked.");
+                LockWorkStation();
+                Program.TriggerInstantCapture(5);
+            }
+            catch (Exception ex)
+            {
+                LogHelper($"LockScreen exception: {ex.Message}");
+            }
+        }
+
+        private const uint KEYEVENTF_EXTENDEDKEY = 0x0001;
+        private const uint KEYEVENTF_KEYUP = 0x0002;
+
         private const uint DESKTOP_ALL_ACCESS = 0x1ff;
         private const uint MAXIMUM_ALLOWED = 0x02000000;
         private const uint GENERIC_ALL = 0x10000000;
@@ -30,12 +53,16 @@ namespace BigLineconnect
         {
             try
             {
-                using (var key = Registry.LocalMachine.CreateSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System"))
+                // Write to both 64-bit and 32-bit registry views to ensure Winlogon / Services pick it up
+                using (var base64 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
+                using (var key64 = base64.CreateSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System"))
                 {
-                    if (key != null)
-                    {
-                        key.SetValue("SoftwareSASGeneration", 3, RegistryValueKind.DWord);
-                    }
+                    key64?.SetValue("SoftwareSASGeneration", 3, RegistryValueKind.DWord);
+                }
+                using (var base32 = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32))
+                using (var key32 = base32.CreateSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System"))
+                {
+                    key32?.SetValue("SoftwareSASGeneration", 3, RegistryValueKind.DWord);
                 }
             }
             catch (Exception ex)
@@ -48,26 +75,55 @@ namespace BigLineconnect
         {
             try
             {
+                LogHelper("SendCtrlAltDel invoked.");
                 EnableSoftwareSAS();
-                AttachToInputDesktop();
+                AttachToInputDesktop(true);
 
+                // 1. Official Windows SAS API via sas.dll (Try both service mode and user mode)
                 try
                 {
                     SendSAS(false);
-                    LogHelper("SendSAS API executed successfully.");
+                    LogHelper("SendSAS(false) executed.");
                 }
                 catch (Exception ex)
                 {
-                    LogHelper($"SendSAS API exception: {ex.Message}");
+                    LogHelper($"SendSAS(false) exception: {ex.Message}");
                 }
 
-                InputSimulator.SimulateKey("ctrl", "down");
+                try
+                {
+                    SendSAS(true);
+                    LogHelper("SendSAS(true) executed.");
+                }
+                catch (Exception ex)
+                {
+                    LogHelper($"SendSAS(true) exception: {ex.Message}");
+                }
+
+                // 2. Direct Win32 Hardware Scan Code Injection
+                // (CTRL: VK 0x11, Scan 0x1D | ALT: VK 0x12, Scan 0x38 | DEL: VK 0x2E, Scan 0x53 extended)
+                keybd_event(0x11, 0x1D, 0, UIntPtr.Zero);
+                keybd_event(0x12, 0x38, 0, UIntPtr.Zero);
+                keybd_event(0x2E, 0x53, KEYEVENTF_EXTENDEDKEY, UIntPtr.Zero);
+                System.Threading.Thread.Sleep(80);
+                keybd_event(0x2E, 0x53, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, UIntPtr.Zero);
+                keybd_event(0x12, 0x38, KEYEVENTF_KEYUP, UIntPtr.Zero);
+                keybd_event(0x11, 0x1D, KEYEVENTF_KEYUP, UIntPtr.Zero);
+
+                // Also execute via InputSimulator
+                InputSimulator.SimulateKey("control", "down");
                 InputSimulator.SimulateKey("alt", "down");
                 InputSimulator.SimulateKey("delete", "down");
-                System.Threading.Thread.Sleep(50);
+                System.Threading.Thread.Sleep(80);
                 InputSimulator.SimulateKey("delete", "up");
                 InputSimulator.SimulateKey("alt", "up");
-                InputSimulator.SimulateKey("ctrl", "up");
+                InputSimulator.SimulateKey("control", "up");
+
+                // 3. If the remote session is locked or disconnected RDP, trigger tscon console recovery
+                FixHeadlessVpsScreen();
+
+                // 4. Force screen capture so the Viewer immediately sees the newly opened security screen or logon UI
+                Program.TriggerInstantCapture(5);
             }
             catch (Exception ex)
             {

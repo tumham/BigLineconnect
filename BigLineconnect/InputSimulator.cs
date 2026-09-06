@@ -102,13 +102,16 @@ namespace BigLineconnect
             { "escape", 0x1B },     // VK_ESCAPE
             { "space", 0x20 },      // VK_SPACE
             { "control", 0x11 },    // VK_CONTROL
+            { "ctrl", 0x11 },       // VK_CONTROL
             { "shift", 0x10 },      // VK_SHIFT
             { "alt", 0x12 },        // VK_MENU
+            { "menu", 0x12 },       // VK_MENU
             { "arrowleft", 0x25 },  // VK_LEFT
             { "arrowup", 0x26 },    // VK_UP
             { "arrowright", 0x27 }, // VK_RIGHT
             { "arrowdown", 0x28 },  // VK_DOWN
             { "delete", 0x2E },     // VK_DELETE
+            { "del", 0x2E },        // VK_DELETE
             { "insert", 0x2D },     // VK_INSERT
             { "home", 0x24 },       // VK_HOME
             { "end", 0x23 },        // VK_END

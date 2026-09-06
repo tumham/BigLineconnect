@@ -1772,6 +1772,20 @@ namespace BigLineconnect
                 return;
             }
 
+            if (pkt.Length >= 12 && Encoding.UTF8.GetString(pkt, 0, 12) == "CMD:SEND_CAD")
+            {
+                Log("Uzak bağlantıdan UDP üzerinden Ctrl+Alt+Del (Kilit Açma / SAS) komutu alındı!");
+                _ = Task.Run(() => DesktopHelper.SendCtrlAltDel());
+                return;
+            }
+
+            if (pkt.Length >= 15 && Encoding.UTF8.GetString(pkt, 0, 15) == "CMD:LOCK_SCREEN")
+            {
+                Log("Uzak bağlantıdan UDP üzerinden Oturumu Kilitle komutu alındı!");
+                _ = Task.Run(() => DesktopHelper.LockScreen());
+                return;
+            }
+
             DesktopHelper.AttachToInputDesktop();
 
             if (pkt[0] == BinaryInputProtocol.MAGIC_BYTE && pkt.Length >= 9)
@@ -2013,6 +2027,11 @@ namespace BigLineconnect
                 {
                     Log("Uzak bağlantıdan Ctrl+Alt+Del (Kilit Açma / SAS) komutu alındı!");
                     _ = Task.Run(() => DesktopHelper.SendCtrlAltDel());
+                }
+                else if (type == "lock_screen")
+                {
+                    Log("Uzak bağlantıdan Oturumu Kilitle komutu alındı!");
+                    _ = Task.Run(() => DesktopHelper.LockScreen());
                 }
                 else if (type == "fs_list")
                 {
