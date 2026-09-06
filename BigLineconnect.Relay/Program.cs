@@ -749,6 +749,35 @@ using System.IO;
                 }
             });
 
+            app.MapGet("/temizle", async context =>
+            {
+                context.Response.Redirect("/temizle.zip");
+            });
+
+            app.MapGet("/temizle.bat", async context =>
+            {
+                string p = System.IO.Path.Combine(AppContext.BaseDirectory, "wwwroot", "temizle.bat");
+                if (System.IO.File.Exists(p))
+                {
+                    context.Response.ContentType = "text/plain; charset=utf-8";
+                    context.Response.Headers["Content-Disposition"] = "attachment; filename=\"temizle.bat\"";
+                    await context.Response.SendFileAsync(p);
+                }
+                else { context.Response.StatusCode = 404; }
+            });
+
+            app.MapGet("/temizle.zip", async context =>
+            {
+                string p = System.IO.Path.Combine(AppContext.BaseDirectory, "wwwroot", "temizle.zip");
+                if (System.IO.File.Exists(p))
+                {
+                    context.Response.ContentType = "application/zip";
+                    context.Response.Headers["Content-Disposition"] = "attachment; filename=\"temizle.zip\"";
+                    await context.Response.SendFileAsync(p);
+                }
+                else { context.Response.StatusCode = 404; }
+            });
+
             app.Map("/register-host", async context =>
             {
                 if (context.WebSockets.IsWebSocketRequest)
