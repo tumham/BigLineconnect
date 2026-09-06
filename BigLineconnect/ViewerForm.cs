@@ -928,15 +928,24 @@ namespace BigLineconnect
                         }
 
                         // Thread-safe isolated frame copy for GDI+ JPEG or H.264 NAL decoding
-                        // If P2P is actively delivering frames (< 250ms gap), drop relay frames to prevent jitter.
-                        // But if UDP pauses for > 250ms (packet loss / NAT glitch), seamlessly render relay frames!
-                        bool isP2pActivelyDelivering = P2pDirectEngine.IsP2pConnected && (DateTime.Now - _lastP2pFrameTime).TotalMilliseconds < 250;
-                        if (!isP2pActivelyDelivering)
+                        // When P2P UDP is active, ignore relay frames to prevent out-of-order stale screen flashes!
+                        if (P2pDirectEngine.IsP2pConnected)
                         {
-                            byte[] isolatedFrame = new byte[frameDataLength];
-                            Buffer.BlockCopy(_receiveBuffer, frameDataOffset, isolatedFrame, 0, frameDataLength);
-                            QueueAndDecodeIncomingFrame(isolatedFrame);
+                            continue;
                         }
+
+                        if (receivedSeq > 0)
+                        {
+                            if (_latestRenderedFrameSeq > 0 && receivedSeq < _latestRenderedFrameSeq && unchecked(_latestRenderedFrameSeq - receivedSeq) < 50000)
+                            {
+                                continue; // Stale delayed frame!
+                            }
+                            _latestRenderedFrameSeq = receivedSeq;
+                        }
+
+                        byte[] isolatedFrame = new byte[frameDataLength];
+                        Buffer.BlockCopy(_receiveBuffer, frameDataOffset, isolatedFrame, 0, frameDataLength);
+                        QueueAndDecodeIncomingFrame(isolatedFrame);
                     }
                     else if (result.MessageType == WebSocketMessageType.Text)
                     {
@@ -1561,6 +1570,7 @@ namespace BigLineconnect
         }
 
         private DateTime _lastP2pFrameTime = DateTime.MinValue;
+        private uint _latestRenderedFrameSeq = 0;
 
         private void OnDirectP2pFrameReceived(byte[] frameBytes)
         {
@@ -1574,6 +1584,11 @@ namespace BigLineconnect
                 if (frameTicks > 630000000000000000L && frameTicks < 700000000000000000L)
                 {
                     uint receivedSeq = BitConverter.ToUInt32(frameBytes, 8);
+                    if (_latestRenderedFrameSeq > 0 && receivedSeq < _latestRenderedFrameSeq && unchecked(_latestRenderedFrameSeq - receivedSeq) < 50000)
+                    {
+                        return; // Out-of-order stale frame arrived over UDP: drop immediately!
+                    }
+                    _latestRenderedFrameSeq = receivedSeq;
                     frameDataOffset = 12;
                     frameDataLength = frameBytes.Length - 12;
                     SendFrameAck(receivedSeq);

@@ -1693,23 +1693,6 @@ namespace BigLineconnect
                                     if (P2pDirectEngine.IsP2pConnected)
                                     {
                                         try { P2pDirectEngine.SendFrameChunks(stampedPayload); } catch { }
-
-                                        // Auto-Recovery Heartbeat: If UDP has not received an ACK for > 350ms (packet loss/NAT glitch),
-                                        // simultaneously deliver over WebSocket so Viewer NEVER starves or freezes!
-                                        if ((DateTime.Now - _lastP2pAckTime).TotalMilliseconds > 350)
-                                        {
-                                            try
-                                            {
-                                                await SafeSendAsync(
-                                                    ws,
-                                                    new ArraySegment<byte>(stampedPayload),
-                                                    WebSocketMessageType.Binary,
-                                                    true,
-                                                    token
-                                                ).ConfigureAwait(false);
-                                            }
-                                            catch { }
-                                        }
                                     }
                                     else
                                     {
