@@ -355,10 +355,10 @@ namespace BigLineconnect
 
                     _udpClient.Send(packet, packet.Length, _remoteEndpoint);
 
-                    // Egress pacing: Yield every 2 chunks on multi-chunk frames to allow router/modem TX ring to drain
-                    if (totalChunks > 2 && (i & 0x01) == 1)
+                    // Egress pacing: Yield 1ms every 8 chunks (~10 KB) to prevent socket buffer and router NAT overflow
+                    if (totalChunks > 8 && (i % 8 == 7))
                     {
-                        Thread.Sleep(0);
+                        Thread.Sleep(1);
                     }
                 }
             }

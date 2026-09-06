@@ -89,6 +89,7 @@ namespace BigLineconnect
         private DateTime _lastMoveSent = DateTime.MinValue;
         private Point _lastSentMousePos = new Point(-1, -1);
         private System.Windows.Forms.Timer? _clipboardTimer;
+        private System.Windows.Forms.Timer? _watchdogStatsTimer;
         private string _lastClipboardText = "";
         private bool _hasConnectedOnce = false;
         private bool _isReconnecting = false;
@@ -688,6 +689,11 @@ namespace BigLineconnect
             _clipboardTimer.Tick += ClipboardTimer_Tick;
             _clipboardTimer.Start();
 
+            // Real-Time Stats & Anti-Freeze Watchdog Timer (Runs reliably every 1000ms regardless of socket state)
+            _watchdogStatsTimer = new System.Windows.Forms.Timer { Interval = 1000 };
+            _watchdogStatsTimer.Tick += WatchdogStatsTimer_Tick;
+            _watchdogStatsTimer.Start();
+
             // Bind keyboard and focus events on form
             this.KeyDown += ViewerForm_KeyDown;
             this.KeyUp += ViewerForm_KeyUp;
@@ -838,68 +844,8 @@ namespace BigLineconnect
                             _measuredLatencyMs = (int)Math.Max(5, Math.Min(frameGap, 150));
                         }
 
-                        _fpsCounter++;
+                        Interlocked.Increment(ref _fpsCounter);
                         _totalFramesReceivedCount++;
-                        if ((now - _lastFpsCalcTime).TotalMilliseconds >= 1000)
-                        {
-                            _currentFps = _fpsCounter;
-                            _fpsCounter = 0;
-                            _lastFpsCalcTime = now;
-
-                            int displayFps = _currentFps;
-                            int displayLatency = _measuredLatencyMs > 0 ? _measuredLatencyMs : 25;
-
-                            // Self-Healing: If connected but no valid frame decoded for > 1.5s, request immediate fresh keyframe!
-                            if (_hasConnectedOnce && 
-                                (now - _lastSuccessfulFrameDecodeTime).TotalMilliseconds > 1500 && 
-                                (now - _lastKeyframeRequestTime).TotalMilliseconds > 1000)
-                            {
-                                _lastKeyframeRequestTime = now;
-                                if (P2pDirectEngine.IsP2pConnected)
-                                {
-                                    byte[] reqPkt = Encoding.UTF8.GetBytes("CMD:KEYFRAME_REQ");
-                                    P2pDirectEngine.SendP2pPacket(reqPkt);
-                                }
-                                SendJson("{\"type\":\"request_keyframe\"}");
-                            }
-
-                            string connModeText;
-                            Color connModeColor;
-
-                            if (IsTrueLanDirect())
-                            {
-                                connModeText = " ⚡ LAN DIRECT (0.5ms) ";
-                                connModeColor = Color.FromArgb(0, 230, 118); // Bright Emerald Green
-                            }
-                            else if (P2pDirectEngine.IsP2pConnected)
-                            {
-                                connModeText = " 🌐 P2P DIRECT (UDP) ";
-                                connModeColor = Color.FromArgb(0, 229, 255); // Cyan
-                            }
-                            else
-                            {
-                                connModeText = " ☁️ BULUT TÜNELİ ";
-                                connModeColor = Color.FromArgb(255, 179, 0); // Vibrant Amber
-                            }
-
-                            this.BeginInvoke(new Action(() =>
-                            {
-                                if (_lblConnModeBadge != null && !_lblConnModeBadge.IsDisposed)
-                                {
-                                    _lblConnModeBadge.Text = connModeText;
-                                    _lblConnModeBadge.BackColor = connModeColor;
-                                }
-                                if (_lblFpsStats != null && !_lblFpsStats.IsDisposed)
-                                {
-                                    _lblFpsStats.Text = $"⚡ {displayFps} FPS | {displayLatency} ms";
-                                }
-                                string cleanTitle = LanguageManager.Get("title_viewer", _targetId);
-                                if (this.Text != cleanTitle)
-                                {
-                                    this.Text = cleanTitle;
-                                }
-                            }));
-                        }
 
                         // Deduplication for frame recording: skip identical static frames
                         ulong currentFrameHash = FastBufferHash(_receiveBuffer, totalReceived);
@@ -908,7 +854,6 @@ namespace BigLineconnect
 
                         if (Program.RecordConnections && !string.IsNullOrEmpty(_recordDir))
                         {
-                            _totalFramesReceivedCount++;
                             if (isDuplicateFrame)
                             {
                                 _skippedFramesCount++;
@@ -928,15 +873,17 @@ namespace BigLineconnect
                         }
 
                         // Thread-safe isolated frame copy for GDI+ JPEG or H.264 NAL decoding
-                        // When P2P UDP is active, ignore relay frames to prevent out-of-order stale screen flashes!
-                        if (P2pDirectEngine.IsP2pConnected)
+                        // When P2P UDP is actively delivering frames (< 350ms gap), drop relay frames to prevent jitter and stale screen flashes.
+                        // But if UDP pauses for > 350ms (packet loss / NAT freeze), seamlessly render relay frames so screen NEVER freezes!
+                        bool isP2pActivelyDelivering = P2pDirectEngine.IsP2pConnected && (DateTime.Now - _lastP2pFrameTime).TotalMilliseconds < 350;
+                        if (isP2pActivelyDelivering)
                         {
                             continue;
                         }
 
                         if (receivedSeq > 0)
                         {
-                            if (_latestRenderedFrameSeq > 0 && receivedSeq < _latestRenderedFrameSeq && unchecked(_latestRenderedFrameSeq - receivedSeq) < 50000)
+                            if (_latestRenderedFrameSeq > 0 && receivedSeq < _latestRenderedFrameSeq && unchecked(_latestRenderedFrameSeq - receivedSeq) < 15)
                             {
                                 continue; // Stale delayed frame!
                             }
@@ -1491,9 +1438,18 @@ namespace BigLineconnect
                             }
                             else
                             {
-                                using (var ms = new MemoryStream(frameToDecode, 0, frameToDecode.Length))
+                                using (var ms = new MemoryStream(frameToDecode, 0, frameToDecode.Length, false))
+                                using (var srcBmp = (Bitmap)Image.FromStream(ms))
                                 {
-                                    newImg = new Bitmap(ms);
+                                    newImg = new Bitmap(srcBmp.Width, srcBmp.Height, PixelFormat.Format32bppArgb);
+                                    using (var g = Graphics.FromImage(newImg))
+                                    {
+                                        g.CompositingMode = CompositingMode.SourceCopy;
+                                        g.InterpolationMode = InterpolationMode.NearestNeighbor;
+                                        g.PixelOffsetMode = PixelOffsetMode.None;
+                                        g.SmoothingMode = SmoothingMode.None;
+                                        g.DrawImage(srcBmp, 0, 0, srcBmp.Width, srcBmp.Height);
+                                    }
                                 }
                             }
 
@@ -1529,10 +1485,7 @@ namespace BigLineconnect
                                                 if (frameToDraw != null && this.WindowState != FormWindowState.Minimized && _pictureBox != null && !_pictureBox.IsDisposed)
                                                 {
                                                     var oldImg = _pictureBox.Image;
-                                                    if (_pictureBox.Image != frameToDraw)
-                                                    {
-                                                        _pictureBox.Image = frameToDraw;
-                                                    }
+                                                    _pictureBox.Image = frameToDraw;
                                                     _pictureBox.Invalidate();
                                                     _pictureBox.Update();
                                                     if (oldImg != null && oldImg != frameToDraw && oldImg != _rtCanvas)
@@ -1584,14 +1537,15 @@ namespace BigLineconnect
                 if (frameTicks > 630000000000000000L && frameTicks < 700000000000000000L)
                 {
                     uint receivedSeq = BitConverter.ToUInt32(frameBytes, 8);
-                    if (_latestRenderedFrameSeq > 0 && receivedSeq < _latestRenderedFrameSeq && unchecked(_latestRenderedFrameSeq - receivedSeq) < 50000)
+                    SendFrameAck(receivedSeq);
+
+                    if (_latestRenderedFrameSeq > 0 && receivedSeq < _latestRenderedFrameSeq && unchecked(_latestRenderedFrameSeq - receivedSeq) < 15)
                     {
                         return; // Out-of-order stale frame arrived over UDP: drop immediately!
                     }
                     _latestRenderedFrameSeq = receivedSeq;
                     frameDataOffset = 12;
                     frameDataLength = frameBytes.Length - 12;
-                    SendFrameAck(receivedSeq);
                 }
             }
             else if (frameBytes.Length >= 16)
@@ -1605,13 +1559,73 @@ namespace BigLineconnect
             }
 
             _hasConnectedOnce = true;
-            _fpsCounter++;
+            Interlocked.Increment(ref _fpsCounter);
             _totalFramesReceivedCount++;
 
             byte[] isolatedFrame = new byte[frameDataLength];
             Buffer.BlockCopy(frameBytes, frameDataOffset, isolatedFrame, 0, frameDataLength);
 
             QueueAndDecodeIncomingFrame(isolatedFrame);
+        }
+
+        private void WatchdogStatsTimer_Tick(object? sender, EventArgs e)
+        {
+            try
+            {
+                int currentFps = Interlocked.Exchange(ref _fpsCounter, 0);
+                int displayLatency = _measuredLatencyMs > 0 ? _measuredLatencyMs : 22;
+
+                if (_lblFpsStats != null && !_lblFpsStats.IsDisposed)
+                {
+                    _lblFpsStats.Text = $"⚡ {currentFps} FPS | {displayLatency} ms";
+                }
+
+                string connModeText;
+                Color connModeColor;
+                if (IsTrueLanDirect())
+                {
+                    connModeText = " ⚡ LAN DIRECT (0.5ms) ";
+                    connModeColor = Color.FromArgb(0, 230, 118);
+                }
+                else if (P2pDirectEngine.IsP2pConnected)
+                {
+                    connModeText = " 🌐 P2P DIRECT (UDP) ";
+                    connModeColor = Color.FromArgb(0, 229, 255);
+                }
+                else
+                {
+                    connModeText = " ☁️ BULUT TÜNELİ ";
+                    connModeColor = Color.FromArgb(255, 179, 0);
+                }
+
+                if (_lblConnModeBadge != null && !_lblConnModeBadge.IsDisposed)
+                {
+                    _lblConnModeBadge.Text = connModeText;
+                    _lblConnModeBadge.BackColor = connModeColor;
+                }
+
+                string cleanTitle = LanguageManager.Get("title_viewer", _targetId);
+                if (this.Text != cleanTitle)
+                {
+                    this.Text = cleanTitle;
+                }
+
+                // Anti-Freeze Auto-Healing Watchdog: If connected but no valid frame decoded for > 1200ms, request keyframe to unfreeze screen!
+                DateTime now = DateTime.Now;
+                if (_hasConnectedOnce && 
+                    (now - _lastSuccessfulFrameDecodeTime).TotalMilliseconds > 1200 && 
+                    (now - _lastKeyframeRequestTime).TotalMilliseconds > 800)
+                {
+                    _lastKeyframeRequestTime = now;
+                    if (P2pDirectEngine.IsP2pConnected)
+                    {
+                        byte[] reqPkt = Encoding.UTF8.GetBytes("CMD:KEYFRAME_REQ");
+                        P2pDirectEngine.SendP2pPacket(reqPkt);
+                    }
+                    SendJson("{\"type\":\"request_keyframe\"}");
+                }
+            }
+            catch { }
         }
 
         private void OnDirectP2pConnected()
@@ -2570,6 +2584,13 @@ namespace BigLineconnect
             {
                 _clipboardTimer.Stop();
                 _clipboardTimer.Dispose();
+            }
+
+            if (_watchdogStatsTimer != null)
+            {
+                _watchdogStatsTimer.Stop();
+                _watchdogStatsTimer.Dispose();
+                _watchdogStatsTimer = null;
             }
 
             _cts.Cancel();
