@@ -377,7 +377,7 @@ namespace BigLineconnect
                 int h = bmp.Height;
                 if (w <= 0 || h <= 0) return 0;
 
-                BitmapData data = bmp.LockBits(new Rectangle(0, 0, w, h), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
+                BitmapData data = bmp.LockBits(new Rectangle(0, 0, w, h), ImageLockMode.ReadOnly, bmp.PixelFormat);
                 try
                 {
                     unsafe

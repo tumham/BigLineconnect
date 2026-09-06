@@ -325,12 +325,19 @@ namespace BigLineconnect
             return false;
         }
 
+        public static void Disconnect()
+        {
+            _isP2pConnected = false;
+            _remoteEndpoint = null;
+            try { OnP2pDisconnected?.Invoke(); } catch { }
+        }
+
         /// <summary>
         /// Sends video frames over UDP in MTU-safe chunks (~1200 bytes) with 0ms HoL blocking.
         /// </summary>
-        public static void SendFrameChunks(byte[] frameData)
+        public static bool SendFrameChunks(byte[] frameData)
         {
-            if (!_isP2pConnected || _udpClient == null || _remoteEndpoint == null || frameData == null || frameData.Length == 0) return;
+            if (!_isP2pConnected || _udpClient == null || _remoteEndpoint == null || frameData == null || frameData.Length == 0) return false;
 
             try
             {
@@ -361,8 +368,12 @@ namespace BigLineconnect
                         Thread.Sleep(1);
                     }
                 }
+                return true;
             }
-            catch { }
+            catch
+            {
+                return false;
+            }
         }
 
         private static async Task ListenUdpLoop(CancellationToken token)

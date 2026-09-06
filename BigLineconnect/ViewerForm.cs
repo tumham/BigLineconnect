@@ -2603,6 +2603,22 @@ namespace BigLineconnect
                 _watchdogStatsTimer = null;
             }
 
+            if (_ws != null && _ws.State == WebSocketState.Open)
+            {
+                try
+                {
+                    byte[] stopBytes = Encoding.UTF8.GetBytes("STOP_STREAM");
+                    _ws.SendAsync(new ArraySegment<byte>(stopBytes), WebSocketMessageType.Text, true, CancellationToken.None).Wait(300);
+                }
+                catch { }
+            }
+
+            try
+            {
+                P2pDirectEngine.Disconnect();
+            }
+            catch { }
+
             _cts.Cancel();
             if (_ws != null)
             {

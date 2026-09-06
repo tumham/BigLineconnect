@@ -108,7 +108,7 @@ namespace BigLineconnect
             int dirtyTileCount = 0;
 
             // Lock bitmap bits for fast pointer hash comparison
-            BitmapData bd = bmpScreen.LockBits(new Rectangle(0, 0, width, height), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
+            BitmapData bd = bmpScreen.LockBits(new Rectangle(0, 0, width, height), ImageLockMode.ReadOnly, bmpScreen.PixelFormat);
             
             try
             {
@@ -238,7 +238,7 @@ namespace BigLineconnect
                 writer.Write((ushort)w);
                 writer.Write((ushort)h);
 
-                using (Bitmap subBmp = bmpScreen.Clone(new Rectangle(x, y, w, h), PixelFormat.Format32bppRgb))
+                using (Bitmap subBmp = bmpScreen.Clone(new Rectangle(x, y, w, h), bmpScreen.PixelFormat))
                 using (MemoryStream subMs = new MemoryStream(1024 * 16))
                 {
                     // Ultra-fast JPEG encoding honoring low quality when selected

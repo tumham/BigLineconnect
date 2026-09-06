@@ -1620,12 +1620,18 @@ namespace BigLineconnect
                 Interlocked.Exchange(ref _forceSendUntilTicks, DateTime.Now.AddMilliseconds(2000).Ticks);
                 _lastViewerActivityTime = DateTime.Now;
 
-                while (!token.IsCancellationRequested && _isStreaming && ws.State == WebSocketState.Open)
+                while (!token.IsCancellationRequested && _isStreaming && (ws.State == WebSocketState.Open || (P2pDirectEngine.IsP2pConnected && (DateTime.Now - _lastP2pAckTime).TotalSeconds < 3.0)))
                 {
                     if ((DateTime.Now - _lastViewerActivityTime).TotalSeconds > 300)
                     {
                         DesktopHelper.AttachToInputDesktop();
                         _lastViewerActivityTime = DateTime.Now;
+                    }
+
+                    // P2P Liveness Guard: If no ACK from viewer in 2.5s, drop back to WebSocket relay so viewer never freezes!
+                    if (P2pDirectEngine.IsP2pConnected && (DateTime.Now - _lastP2pAckTime).TotalSeconds > 2.5)
+                    {
+                        P2pDirectEngine.Disconnect();
                     }
 
                     // ZERO-BUFFERBLOAT PIPELINED FLOW CONTROL:
@@ -1638,7 +1644,14 @@ namespace BigLineconnect
                         inFlight = unchecked(_currentFrameSeq - _lastAckedFrameSeq);
                         if (inFlight >= 2)
                         {
-                            int maxWaitMs = P2pDirectEngine.IsP2pConnected ? 30 : 90;
+                            // If viewer is unresponsive for > 3.0 seconds, slow down capture/sending to 1 FPS instead of burning quota!
+                            if ((DateTime.Now - _lastP2pAckTime).TotalSeconds > 3.0)
+                            {
+                                await Task.Delay(200, token).ConfigureAwait(false);
+                                continue;
+                            }
+
+                            int maxWaitMs = P2pDirectEngine.IsP2pConnected ? 35 : 90;
                             if ((DateTime.Now - _lastFrameSendTime).TotalMilliseconds < maxWaitMs)
                             {
                                 await Task.Delay(2, token).ConfigureAwait(false);
@@ -1674,9 +1687,9 @@ namespace BigLineconnect
 
                         if (!isDuplicate || isInitialBurst)
                         {
-                            // HARD TOKEN BUCKET GOVERNOR: Max 100 KB/sec on WAN / Cellular connections (~6 MB/min ceiling, typical ~1.2 MB/min)
-                            // LAN and Direct P2P are completely exempt from WAN quota throttling!
-                            if (ActiveLanWebSocket == null && !P2pDirectEngine.IsP2pConnected)
+                            // HARD TOKEN BUCKET GOVERNOR: Max 90 KB/sec on WAN / Cellular connections (~5.4 MB/min ceiling, typical ~1.2 MB/min)
+                            // Only local subnet LAN (ActiveLanWebSocket != null) is exempt!
+                            if (ActiveLanWebSocket == null)
                             {
                                 long currentSec = DateTime.UtcNow.Ticks / TimeSpan.TicksPerSecond;
                                 if (currentSec != _lastBandwidthSec)
@@ -1684,18 +1697,22 @@ namespace BigLineconnect
                                     _lastBandwidthSec = currentSec;
                                     _bytesSentThisSec = 0;
                                 }
-                                if (_bytesSentThisSec > 100 * 1024)
+                                if (_bytesSentThisSec > 90 * 1024)
                                 {
-                                    await Task.Delay(30, token).ConfigureAwait(false);
+                                    await Task.Delay(25, token).ConfigureAwait(false);
                                     continue;
                                 }
                             }
 
                             bool isUserActive = (DateTime.Now - _lastViewerActivityTime).TotalMilliseconds < 1200;
                             int minIntervalMs;
-                            if (ActiveLanWebSocket != null || P2pDirectEngine.IsP2pConnected)
+                            if (ActiveLanWebSocket != null)
                             {
                                 minIntervalMs = isUserActive ? 33 : 150;
+                            }
+                            else if (P2pDirectEngine.IsP2pConnected)
+                            {
+                                minIntervalMs = isUserActive ? 40 : 150;
                             }
                             else
                             {
@@ -1716,14 +1733,16 @@ namespace BigLineconnect
 
                                     AdaptiveRateController.RecordFrameSent(seq, stampedPayload.Length);
 
-                                    // 1. Direct low-latency P2P UDP when connected (0ms cloud relay latency)
-                                    if (P2pDirectEngine.IsP2pConnected)
+                                    // 1. Direct low-latency P2P UDP when connected and active within 2.0s
+                                    bool p2pSent = false;
+                                    if (P2pDirectEngine.IsP2pConnected && (DateTime.Now - _lastP2pAckTime).TotalSeconds <= 2.0)
                                     {
-                                        try { P2pDirectEngine.SendFrameChunks(stampedPayload); } catch { }
+                                        try { p2pSent = P2pDirectEngine.SendFrameChunks(stampedPayload); } catch { }
                                     }
-                                    else
+
+                                    // 2. Guaranteed cloud relay stream over WebSocket when P2P is not connected or timed out
+                                    if (!p2pSent && ws.State == WebSocketState.Open)
                                     {
-                                        // 2. Guaranteed cloud relay stream over WebSocket when P2P is not connected
                                         await SafeSendAsync(
                                             ws,
                                             new ArraySegment<byte>(stampedPayload),
@@ -1733,7 +1752,7 @@ namespace BigLineconnect
                                         ).ConfigureAwait(false);
                                     }
 
-                                    if (ActiveLanWebSocket == null && !P2pDirectEngine.IsP2pConnected)
+                                    if (ActiveLanWebSocket == null)
                                     {
                                         Interlocked.Add(ref _bytesSentThisSec, stampedPayload.Length);
                                     }

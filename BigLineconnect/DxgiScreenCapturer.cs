@@ -146,7 +146,7 @@ namespace BigLineconnect
                 
                 _deskDupl.ReleaseFrame();
 
-                var bitmap = new Bitmap(_width, _height, PixelFormat.Format32bppArgb);
+                var bitmap = new Bitmap(_width, _height, PixelFormat.Format32bppRgb);
                 var boundsRect = new Rectangle(0, 0, _width, _height);
                 
                 var mapDest = bitmap.LockBits(boundsRect, ImageLockMode.WriteOnly, bitmap.PixelFormat);
