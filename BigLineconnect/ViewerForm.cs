@@ -849,6 +849,20 @@ namespace BigLineconnect
                             int displayFps = _currentFps;
                             int displayLatency = _measuredLatencyMs > 0 ? _measuredLatencyMs : 25;
 
+                            // Self-Healing: If connected but no valid frame decoded for > 1.5s, request immediate fresh keyframe!
+                            if (_hasConnectedOnce && 
+                                (now - _lastSuccessfulFrameDecodeTime).TotalMilliseconds > 1500 && 
+                                (now - _lastKeyframeRequestTime).TotalMilliseconds > 1000)
+                            {
+                                _lastKeyframeRequestTime = now;
+                                if (P2pDirectEngine.IsP2pConnected)
+                                {
+                                    byte[] reqPkt = Encoding.UTF8.GetBytes("CMD:KEYFRAME_REQ");
+                                    P2pDirectEngine.SendP2pPacket(reqPkt);
+                                }
+                                SendJson("{\"type\":\"request_keyframe\"}");
+                            }
+
                             string connModeText;
                             Color connModeColor;
 
@@ -1425,6 +1439,9 @@ namespace BigLineconnect
             }
         }
 
+        private DateTime _lastSuccessfulFrameDecodeTime = DateTime.Now;
+        private DateTime _lastKeyframeRequestTime = DateTime.MinValue;
+
         private void QueueAndDecodeIncomingFrame(byte[] isolatedFrame)
         {
             if (this.WindowState == FormWindowState.Minimized || isolatedFrame == null || isolatedFrame.Length == 0) return;
@@ -1473,6 +1490,7 @@ namespace BigLineconnect
 
                             if (newImg != null && _pictureBox != null && !_pictureBox.IsDisposed)
                             {
+                                _lastSuccessfulFrameDecodeTime = DateTime.Now;
                                 Image? oldUnpainted = null;
                                 lock (_decodedImageLock)
                                 {

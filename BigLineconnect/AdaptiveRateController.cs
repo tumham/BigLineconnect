@@ -55,10 +55,9 @@ namespace BigLineconnect
                         if (ni.NetworkInterfaceType == NetworkInterfaceType.Wwanpp ||
                             ni.NetworkInterfaceType == NetworkInterfaceType.Wwanpp2 ||
                             ni.Description.IndexOf("cellular", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                            ni.Description.IndexOf("mobile", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                            ni.Description.IndexOf("modem", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                            ni.Description.IndexOf("huawei", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                            ni.Description.IndexOf("zte", StringComparison.OrdinalIgnoreCase) >= 0)
+                            ni.Description.IndexOf("mobile broadband", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                            ni.Description.IndexOf("huawei mobile", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                            ni.Description.IndexOf("zte mobile", StringComparison.OrdinalIgnoreCase) >= 0)
                         {
                             _isCellularDetected = true;
                             _currentTier = NetworkTier.Slow3G;

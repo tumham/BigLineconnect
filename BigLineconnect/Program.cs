@@ -1590,6 +1590,7 @@ namespace BigLineconnect
         private static volatile uint _lastAckedFrameSeq = 0;
         private static readonly AutoResetEvent _frameAckEvent = new AutoResetEvent(false);
         private static DateTime _lastFrameSendTime = DateTime.MinValue;
+        private static DateTime _lastP2pAckTime = DateTime.Now;
         private static volatile bool _is3GSlowLink = false; // Auto-detected from ACK latency in SendStreamLoop
 
         private static async Task SendStreamLoop(WebSocket ws, CancellationToken token)
@@ -1602,6 +1603,7 @@ namespace BigLineconnect
                 _lastSentFrameHash = 0;
                 _currentFrameSeq = 0;
                 _lastAckedFrameSeq = 0;
+                _lastP2pAckTime = DateTime.Now;
                 _frameAckEvent.Reset();
                 BigLineRtEngine.Reset();
                 _lastSentFrameTime = DateTime.MinValue;
@@ -1618,17 +1620,17 @@ namespace BigLineconnect
                         _lastViewerActivityTime = DateTime.Now;
                     }
 
-                    // ZERO-BUFFERBLOAT FLOW CONTROL:
-                    // Never allow multiple stale frames to stack in the network pipe!
-                    // Wait for viewer to acknowledge previous frame, or timeout and send ONLY the fresh frame!
+                    // ZERO-BUFFERBLOAT PIPELINED FLOW CONTROL:
+                    // Allow up to 2 frames in-flight for smooth pipelined WAN delivery (Ağrı 1700km / Istanbul 600km)
+                    // Never stall the send loop for 350ms on dropped packets!
                     uint inFlight = unchecked(_currentFrameSeq - _lastAckedFrameSeq);
-                    if (inFlight >= 1)
+                    if (inFlight >= 2)
                     {
-                        _frameAckEvent.WaitOne(20);
+                        _frameAckEvent.WaitOne(8);
                         inFlight = unchecked(_currentFrameSeq - _lastAckedFrameSeq);
-                        if (inFlight >= 1)
+                        if (inFlight >= 2)
                         {
-                            int maxWaitMs = P2pDirectEngine.IsP2pConnected ? 60 : 350;
+                            int maxWaitMs = P2pDirectEngine.IsP2pConnected ? 30 : 90;
                             if ((DateTime.Now - _lastFrameSendTime).TotalMilliseconds < maxWaitMs)
                             {
                                 await Task.Delay(2, token).ConfigureAwait(false);
@@ -1636,8 +1638,8 @@ namespace BigLineconnect
                             }
                             else
                             {
-                                // Network timeout / drop: skip forward to current seq so we send the single fresh frame!
-                                _lastAckedFrameSeq = _currentFrameSeq;
+                                // Advance to newest frame sequence: drop stale backlog and send fresh frame immediately!
+                                _lastAckedFrameSeq = unchecked(_currentFrameSeq - 1);
                             }
                         }
                     }
@@ -1685,10 +1687,29 @@ namespace BigLineconnect
                                     Buffer.BlockCopy(BitConverter.GetBytes(seq), 0, stampedPayload, 8, 4);
                                     Buffer.BlockCopy(frameToSend, 0, stampedPayload, 12, frameToSend.Length);
 
+                                    AdaptiveRateController.RecordFrameSent(seq, stampedPayload.Length);
+
                                     // 1. Direct low-latency P2P UDP when connected (0ms cloud relay latency)
                                     if (P2pDirectEngine.IsP2pConnected)
                                     {
                                         try { P2pDirectEngine.SendFrameChunks(stampedPayload); } catch { }
+
+                                        // Auto-Recovery Heartbeat: If UDP has not received an ACK for > 350ms (packet loss/NAT glitch),
+                                        // simultaneously deliver over WebSocket so Viewer NEVER starves or freezes!
+                                        if ((DateTime.Now - _lastP2pAckTime).TotalMilliseconds > 350)
+                                        {
+                                            try
+                                            {
+                                                await SafeSendAsync(
+                                                    ws,
+                                                    new ArraySegment<byte>(stampedPayload),
+                                                    WebSocketMessageType.Binary,
+                                                    true,
+                                                    token
+                                                ).ConfigureAwait(false);
+                                            }
+                                            catch { }
+                                        }
                                     }
                                     else
                                     {
@@ -1762,6 +1783,7 @@ namespace BigLineconnect
 
             if (pkt[0] == 0x41 && pkt.Length >= 5) // 'A' for Frame-ACK
             {
+                _lastP2pAckTime = DateTime.Now;
                 uint ackSeq = BitConverter.ToUInt32(pkt, 1);
                 if (ackSeq > _lastAckedFrameSeq)
                 {
@@ -1769,6 +1791,13 @@ namespace BigLineconnect
                 }
                 AdaptiveRateController.RecordAck(ackSeq);
                 _frameAckEvent.Set(); // Wake SendStreamLoop immediately on receiving ACK!
+                return;
+            }
+
+            if (pkt.Length >= 16 && Encoding.UTF8.GetString(pkt, 0, 16) == "CMD:KEYFRAME_REQ")
+            {
+                BigLineRtEngine.Reset();
+                TriggerInstantCapture(2);
                 return;
             }
 
@@ -1852,6 +1881,13 @@ namespace BigLineconnect
                         AdaptiveRateController.RecordAck(seq);
                         _frameAckEvent.Set();
                     }
+                    return;
+                }
+
+                if (type == "request_keyframe")
+                {
+                    BigLineRtEngine.Reset();
+                    TriggerInstantCapture(2);
                     return;
                 }
 

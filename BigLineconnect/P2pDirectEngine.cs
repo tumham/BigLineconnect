@@ -123,12 +123,12 @@ namespace BigLineconnect
                     {
                         try { await Task.Delay(1500, token).ConfigureAwait(false); } catch { break; }
                         double silenceSec = (DateTime.UtcNow - _lastUdpTrafficTime).TotalSeconds;
-                        if (_isP2pConnected && silenceSec > 4.0)
+                        if (_isP2pConnected && silenceSec > 2.0)
                         {
                             // Trigger background re-punch to refresh router NAT mappings before dropping!
                             TriggerAutoRePunch();
                         }
-                        if (_isP2pConnected && silenceSec > 12.0)
+                        if (_isP2pConnected && silenceSec > 4.0)
                         {
                             _isP2pConnected = false;
                             OnP2pDisconnected?.Invoke();
@@ -355,10 +355,10 @@ namespace BigLineconnect
 
                     _udpClient.Send(packet, packet.Length, _remoteEndpoint);
 
-                    // Micro-pacing: brief spin every 4 chunks to prevent domestic router buffer overflow
-                    if ((i & 0x03) == 0 && totalChunks > 10)
+                    // Egress pacing: Yield every 2 chunks on multi-chunk frames to allow router/modem TX ring to drain
+                    if (totalChunks > 2 && (i & 0x01) == 1)
                     {
-                        Thread.SpinWait(100);
+                        Thread.Sleep(0);
                     }
                 }
             }
@@ -463,10 +463,10 @@ namespace BigLineconnect
                                 }
                             }
 
-                            // Cleanup stale frames older than 500ms
-                            if (_reassemblyBuffers.Count > 10)
+                            // Cleanup stale frames older than 250ms
+                            if (_reassemblyBuffers.Count > 6)
                             {
-                                DateTime cutOff = DateTime.UtcNow.AddMilliseconds(-500);
+                                DateTime cutOff = DateTime.UtcNow.AddMilliseconds(-250);
                                 foreach (var kvp in _reassemblyBuffers)
                                 {
                                     if (kvp.Value.CreatedAt < cutOff)
