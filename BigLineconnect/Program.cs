@@ -1545,15 +1545,7 @@ namespace BigLineconnect
                     // When idle (no user interaction), sleep for 500ms (max 2 FPS) to eliminate CPU and network usage completely!
                     // As soon as the user moves the mouse or types, _instantCaptureEvent wakes up immediately with 0ms delay!
                     bool isUserActive = (DateTime.Now - _lastViewerActivityTime).TotalMilliseconds < 1200;
-                    int waitInterval;
-                    if (ActiveLanWebSocket != null)
-                    {
-                        waitInterval = isUserActive ? 33 : 250;
-                    }
-                    else
-                    {
-                        waitInterval = isUserActive ? 40 : 500;
-                    }
+                    int waitInterval = isUserActive ? 40 : 500;
                     _instantCaptureEvent.WaitOne(waitInterval);
                 }
                 ScreenCapturer.SuppressWallpaper(false);
@@ -1620,6 +1612,8 @@ namespace BigLineconnect
 
                 while (!token.IsCancellationRequested && _isStreaming && (ws.State == WebSocketState.Open || (P2pDirectEngine.IsP2pConnected && (DateTime.Now - _lastP2pAckTime).TotalSeconds < 3.0)))
                 {
+                    bool isUserActive = (DateTime.Now - _lastViewerActivityTime).TotalMilliseconds < 1200;
+
                     if ((DateTime.Now - _lastViewerActivityTime).TotalSeconds > 300)
                     {
                         DesktopHelper.AttachToInputDesktop();
@@ -1685,33 +1679,21 @@ namespace BigLineconnect
 
                         if (!isDuplicate || isInitialBurst)
                         {
-                            // HARD TOKEN BUCKET GOVERNOR: Max 90 KB/sec on WAN / Cellular connections (~5.4 MB/min ceiling, typical ~1.2 MB/min)
-                            // Only local subnet LAN (ActiveLanWebSocket != null) is exempt!
-                            if (ActiveLanWebSocket == null)
+                            // HARD TOKEN BUCKET GOVERNOR: Max 90 KB/sec across all connections (LAN/WAN/Cellular Hotspot)
+                            // Guarantees mobile hotspot data is never exceeded (~5.4 MB/min maximum ceiling, typical 0 - 1.2 MB/min)
+                            long currentSec = DateTime.UtcNow.Ticks / TimeSpan.TicksPerSecond;
+                            if (currentSec != _lastBandwidthSec)
                             {
-                                long currentSec = DateTime.UtcNow.Ticks / TimeSpan.TicksPerSecond;
-                                if (currentSec != _lastBandwidthSec)
-                                {
-                                    _lastBandwidthSec = currentSec;
-                                    _bytesSentThisSec = 0;
-                                }
-                                if (_bytesSentThisSec > 90 * 1024)
-                                {
-                                    await Task.Delay(25, token).ConfigureAwait(false);
-                                    continue;
-                                }
+                                _lastBandwidthSec = currentSec;
+                                _bytesSentThisSec = 0;
+                            }
+                            if (_bytesSentThisSec > 90 * 1024)
+                            {
+                                await Task.Delay(25, token).ConfigureAwait(false);
+                                continue;
                             }
 
-                            bool isUserActive = (DateTime.Now - _lastViewerActivityTime).TotalMilliseconds < 1200;
-                            int minIntervalMs;
-                            if (ActiveLanWebSocket != null)
-                            {
-                                minIntervalMs = isUserActive ? 33 : 150;
-                            }
-                            else
-                            {
-                                minIntervalMs = isUserActive ? 40 : 500;
-                            }
+                            int minIntervalMs = isUserActive ? 40 : 500;
                             if (isInitialBurst || (DateTime.Now - _lastSentFrameTime).TotalMilliseconds >= minIntervalMs)
                             {
                                 _isSendingFrame = true;
@@ -1746,10 +1728,7 @@ namespace BigLineconnect
                                         ).ConfigureAwait(false);
                                     }
 
-                                    if (ActiveLanWebSocket == null)
-                                    {
-                                        Interlocked.Add(ref _bytesSentThisSec, stampedPayload.Length);
-                                    }
+                                    Interlocked.Add(ref _bytesSentThisSec, stampedPayload.Length);
 
                                     _lastSentFrameBytes = frameToSend;
                                     _lastSentFrameHash = frameHash;
@@ -1774,7 +1753,7 @@ namespace BigLineconnect
                     }
 
                     // Strict pacing: wait for next frame ready or active pacing interval
-                    _frameReadyEvent.WaitOne(ActiveLanWebSocket != null ? 30 : 125);
+                    _frameReadyEvent.WaitOne(isUserActive ? 40 : 250);
                 }
                 Log("Görüntü gönderim döngüsü sonlandı.");
             }

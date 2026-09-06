@@ -193,7 +193,6 @@ namespace BigLineconnect
         {
             try
             {
-                DesktopHelper.AttachToInputDesktop();
                 int screenWidth = 1920;
                 int screenHeight = 1080;
                 int startX = 0;
@@ -220,33 +219,21 @@ namespace BigLineconnect
                 if (screenHeight <= 0) screenHeight = 1080;
 
                 Bitmap bmpScreen = new Bitmap(screenWidth, screenHeight, PixelFormat.Format32bppRgb);
-                try
+                using (Graphics gScreen = Graphics.FromImage(bmpScreen))
                 {
-                    using (Graphics gScreen = Graphics.FromImage(bmpScreen))
+                    IntPtr hdcDest = gScreen.GetHdc();
+                    IntPtr hdcSrc = GetDC(IntPtr.Zero);
+                    try
                     {
-                        gScreen.CopyFromScreen(startX, startY, 0, 0, new Size(screenWidth, screenHeight), CopyPixelOperation.SourceCopy);
+                        BitBlt(hdcDest, 0, 0, screenWidth, screenHeight, hdcSrc, startX, startY, 0x00CC0020); // SRCCOPY
                     }
-                    return bmpScreen;
-                }
-                catch
-                {
-                    // WIN32 BITBLT DC FALLBACK (Guarantees desktop capture on UAC, Lock Screen & Service Sessions!)
-                    using (Graphics gScreen = Graphics.FromImage(bmpScreen))
+                    finally
                     {
-                        IntPtr hdcDest = gScreen.GetHdc();
-                        IntPtr hdcSrc = GetDC(IntPtr.Zero);
-                        try
-                        {
-                            BitBlt(hdcDest, 0, 0, screenWidth, screenHeight, hdcSrc, startX, startY, 0x00CC0020); // SRCCOPY
-                        }
-                        finally
-                        {
-                            ReleaseDC(IntPtr.Zero, hdcSrc);
-                            gScreen.ReleaseHdc(hdcDest);
-                        }
+                        ReleaseDC(IntPtr.Zero, hdcSrc);
+                        gScreen.ReleaseHdc(hdcDest);
                     }
-                    return bmpScreen;
                 }
+                return bmpScreen;
             }
             catch
             {
