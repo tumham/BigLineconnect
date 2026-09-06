@@ -607,18 +607,8 @@ namespace BigLineconnect
             // Sanitize relay URL
             _currentRelayUrl = SanitizeRelayUrl(_currentRelayUrl);
 
-            // Automatically register Windows Service if running interactively as Admin (not helper or service)
-            if (!isService && !isHelper && IsUserAnAdmin())
-            {
-                Task.Run(() =>
-                {
-                    try
-                    {
-                        RunSetupInstallation(true);
-                    }
-                    catch { }
-                });
-            }
+            // Do NOT automatically register Windows Service in the background.
+            // Service should only be registered if explicitly requested via setup/installer.
 
             // Run as Session Helper (Headless) if requested
             if (isHelper)
@@ -1460,8 +1450,8 @@ namespace BigLineconnect
             }
         }
 
-        public static int CurrentQuality { get; set; } = 55; // Ultra-fast lightweight frames (~40 KB, 0ms transfer)
-        public static int CurrentMaxDimension { get; set; } = 0; // 0 = 100% Native Pixel-Perfect Resolution (No Blurring/Downscaling)
+        public static int CurrentQuality { get; set; } = 50; // Optimized lightweight frames (~25 KB, instant transfer)
+        public static int CurrentMaxDimension { get; set; } = 1600; // Smart default: 1600 max width (crystal clear text while preventing 2.5K/4K data explosions)
         public static bool SuppressWallpaperEnabled { get; set; } = false;
 
         private static long _forceSendUntilTicks = 0;
@@ -1472,14 +1462,10 @@ namespace BigLineconnect
         public static volatile int _forcedRefreshCount = 0;
         public static DateTime _lastViewerActivityTime = DateTime.Now;
 
-        public static void TriggerInstantCapture(int count = 3)
+        public static void TriggerInstantCapture(int count = 1)
         {
             try
             {
-                _forcedRefreshCount = Math.Max(_forcedRefreshCount, count);
-                _lastSentFrameBytes = null;
-                _lastSentFrameHash = 0;
-                Interlocked.Exchange(ref _forceSendUntilTicks, DateTime.Now.AddMilliseconds(800).Ticks);
                 _instantCaptureEvent.Set();
             }
             catch { }
@@ -1489,14 +1475,7 @@ namespace BigLineconnect
         {
             try
             {
-                TriggerInstantCapture(2);
-                _ = Task.Run(async () =>
-                {
-                    await Task.Delay(25).ConfigureAwait(false);
-                    TriggerInstantCapture(2);
-                    await Task.Delay(45).ConfigureAwait(false);
-                    TriggerInstantCapture(2);
-                });
+                _instantCaptureEvent.Set();
             }
             catch { }
         }
@@ -1542,15 +1521,9 @@ namespace BigLineconnect
                         }
                         _frameReadyEvent.Set();
                     }
-                    else
-                    {
-                        // Reset frame cache so next frame is immediately sent upon recovery
-                        _lastSentFrameBytes = null;
-                        _lastSentFrameHash = 0;
-                    }
 
-                    // Wait up to 16ms (60 FPS max speed) OR wake up INSTANTLY (0ms) on mouse/key click!
-                    _instantCaptureEvent.WaitOne(16);
+                    // Wait up to 66ms on WAN (15 FPS max quota guard) or 30ms on LAN, OR wake up INSTANTLY on user input!
+                    _instantCaptureEvent.WaitOne(ActiveLanWebSocket != null ? 30 : 66);
                 }
                 ScreenCapturer.SuppressWallpaper(false);
                 ApplySleepPrevention(false);
@@ -1592,6 +1565,8 @@ namespace BigLineconnect
         private static DateTime _lastFrameSendTime = DateTime.MinValue;
         private static DateTime _lastP2pAckTime = DateTime.Now;
         private static volatile bool _is3GSlowLink = false; // Auto-detected from ACK latency in SendStreamLoop
+        private static long _lastBandwidthSec = 0;
+        private static long _bytesSentThisSec = 0;
 
         private static async Task SendStreamLoop(WebSocket ws, CancellationToken token)
         {
@@ -1660,21 +1635,30 @@ namespace BigLineconnect
                     
                     if (frameToSend != null && frameToSend.Length > 0)
                     {
-                        bool isUserActive = (DateTime.Now - _lastMouseMoveTime).TotalMilliseconds < 1000 ||
-                                            DateTime.Now.Ticks < Interlocked.Read(ref _forceSendUntilTicks);
                         bool isDuplicate = (frameHash != 0 && frameHash == _lastSentFrameHash);
-                        bool isInitialBurst = initialFrameCount < 5;
-                        bool isForcedBurst = _forcedRefreshCount > 0;
-                        bool isHeartbeat = (DateTime.Now - _lastSentFrameTime).TotalMilliseconds >= 200;
-                        if (isForcedBurst) _forcedRefreshCount--;
+                        bool isInitialBurst = initialFrameCount < 3;
+                        bool isHeartbeat = (DateTime.Now - _lastSentFrameTime).TotalMilliseconds >= 5000;
 
-                        // During active user interaction (mouse move, click, typing), guarantee a 30 FPS floor (every 33ms) so hover & text edits flow seamlessly!
-                        bool allowActivePacing = isUserActive && (DateTime.Now - _lastSentFrameTime).TotalMilliseconds >= 33;
-
-                        if (!isDuplicate || isInitialBurst || isForcedBurst || isHeartbeat || allowActivePacing)
+                        if (!isDuplicate || isInitialBurst || isHeartbeat)
                         {
-                            int minIntervalMs = 16; // 60 FPS maximum pacing
-                            if (isInitialBurst || isForcedBurst || (DateTime.Now - _lastSentFrameTime).TotalMilliseconds >= minIntervalMs)
+                            // HARD TOKEN BUCKET GOVERNOR: Max 120 KB/sec on WAN / Cellular connections (~400 MB/hour max)
+                            if (ActiveLanWebSocket == null)
+                            {
+                                long currentSec = DateTime.UtcNow.Ticks / TimeSpan.TicksPerSecond;
+                                if (currentSec != _lastBandwidthSec)
+                                {
+                                    _lastBandwidthSec = currentSec;
+                                    _bytesSentThisSec = 0;
+                                }
+                                if (_bytesSentThisSec > 120 * 1024)
+                                {
+                                    await Task.Delay(40, token).ConfigureAwait(false);
+                                    continue;
+                                }
+                            }
+
+                            int minIntervalMs = (ActiveLanWebSocket != null) ? 30 : 66; // 15 FPS on WAN/Cellular (strict data quota guard), 33 FPS on local LAN
+                            if (isInitialBurst || (DateTime.Now - _lastSentFrameTime).TotalMilliseconds >= minIntervalMs)
                             {
                                 _isSendingFrame = true;
                                 try
@@ -1693,23 +1677,6 @@ namespace BigLineconnect
                                     if (P2pDirectEngine.IsP2pConnected)
                                     {
                                         try { P2pDirectEngine.SendFrameChunks(stampedPayload); } catch { }
-
-                                        // Fail-Safe Recovery: If UDP has not received an ACK for > 400ms (packet loss / NAT freeze),
-                                        // simultaneously deliver over WebSocket so Viewer NEVER starves or freezes!
-                                        if ((DateTime.Now - _lastP2pAckTime).TotalMilliseconds > 400)
-                                        {
-                                            try
-                                            {
-                                                await SafeSendAsync(
-                                                    ws,
-                                                    new ArraySegment<byte>(stampedPayload),
-                                                    WebSocketMessageType.Binary,
-                                                    true,
-                                                    token
-                                                ).ConfigureAwait(false);
-                                            }
-                                            catch { }
-                                        }
                                     }
                                     else
                                     {
@@ -1721,6 +1688,11 @@ namespace BigLineconnect
                                             true,
                                             token
                                         ).ConfigureAwait(false);
+                                    }
+
+                                    if (ActiveLanWebSocket == null)
+                                    {
+                                        Interlocked.Add(ref _bytesSentThisSec, stampedPayload.Length);
                                     }
 
                                     _lastSentFrameBytes = frameToSend;
@@ -1737,20 +1709,54 @@ namespace BigLineconnect
                     }
 
                     // Strict pacing: wait for next frame ready or active pacing interval
-                    if (P2pDirectEngine.IsP2pConnected)
-                    {
-                        _frameReadyEvent.WaitOne(4);
-                    }
-                    else
-                    {
-                        _frameReadyEvent.WaitOne(15);
-                    }
+                    _frameReadyEvent.WaitOne(ActiveLanWebSocket != null ? 30 : 66);
                 }
                 Log("Görüntü gönderim döngüsü sonlandı.");
             }
             catch (Exception ex)
             {
                 Log($"Gönderim döngüsü hatası: {ex.Message}");
+            }
+        }
+
+        private static readonly System.Collections.Concurrent.BlockingCollection<byte[]> _remoteInputQueue =
+            new System.Collections.Concurrent.BlockingCollection<byte[]>(new System.Collections.Concurrent.ConcurrentQueue<byte[]>());
+        private static Thread? _remoteInputWorkerThread = null;
+        private static readonly object _inputWorkerInitLock = new object();
+
+        private static void EnsureInputWorkerRunning()
+        {
+            if (_remoteInputWorkerThread == null || !_remoteInputWorkerThread.IsAlive)
+            {
+                lock (_inputWorkerInitLock)
+                {
+                    if (_remoteInputWorkerThread == null || !_remoteInputWorkerThread.IsAlive)
+                    {
+                        _remoteInputWorkerThread = new Thread(RemoteInputWorkerLoop)
+                        {
+                            IsBackground = true,
+                            Name = "BigLineconnectInputWorker",
+                            Priority = ThreadPriority.Highest
+                        };
+                        _remoteInputWorkerThread.Start();
+                    }
+                }
+            }
+        }
+
+        private static void RemoteInputWorkerLoop()
+        {
+            DesktopHelper.AttachToInputDesktop();
+            foreach (var data in _remoteInputQueue.GetConsumingEnumerable())
+            {
+                try
+                {
+                    ProcessBinaryRemoteInput(data);
+                }
+                catch (Exception ex)
+                {
+                    Log($"[InputWorker] Hata: {ex.Message}");
+                }
             }
         }
 
@@ -1767,43 +1773,14 @@ namespace BigLineconnect
                 }
                 else
                 {
-                    // Input events (moves, clicks, keys): dispatch to ThreadPool immediately so UDP socket thread NEVER stalls!
-                    ThreadPool.QueueUserWorkItem(_ => ProcessBinaryRemoteInput(data));
+                    EnsureInputWorkerRunning();
+                    _remoteInputQueue.TryAdd(data);
                 }
             }
             catch { }
         }
 
         private static DateTime _lastMouseMoveTime = DateTime.MinValue;
-
-        private static ulong _lastDiscreteInputHash = 0;
-        private static DateTime _lastDiscreteInputTime = DateTime.MinValue;
-        private static readonly object _inputDedupLock = new object();
-
-        private static bool IsDuplicateInput(byte[] pkt)
-        {
-            if (pkt == null || pkt.Length < 9) return false;
-            byte cmd = pkt[1];
-            // Mouse move and Mouse scroll should never be throttled by discrete dedup
-            if (cmd == BinaryInputProtocol.CMD_MOUSE_MOVE || cmd == BinaryInputProtocol.CMD_MOUSE_SCROLL)
-            {
-                return false;
-            }
-
-            ulong hash = BitConverter.ToUInt64(pkt, 1);
-            DateTime now = DateTime.Now;
-
-            lock (_inputDedupLock)
-            {
-                if (hash == _lastDiscreteInputHash && (now - _lastDiscreteInputTime).TotalMilliseconds < 75)
-                {
-                    return true;
-                }
-                _lastDiscreteInputHash = hash;
-                _lastDiscreteInputTime = now;
-                return false;
-            }
-        }
 
         public static void ProcessBinaryRemoteInput(byte[] pkt)
         {
@@ -1849,22 +1826,20 @@ namespace BigLineconnect
             if (pkt[0] == BinaryInputProtocol.MAGIC_BYTE && pkt.Length >= 9)
             {
                 // BATCH SUPPORT: Process all 9-byte chunks in the message
-                // Viewer may send multiple keystrokes in one WebSocket message for efficiency
+                // Viewer may send multiple keystrokes in one message for efficiency
                 bool hasNonMouseMove = false;
                 for (int offset = 0; offset + 9 <= pkt.Length; offset += 9)
                 {
                     if (pkt[offset] != BinaryInputProtocol.MAGIC_BYTE) break;
                     byte[] singlePkt = new byte[9];
                     Buffer.BlockCopy(pkt, offset, singlePkt, 0, 9);
-                    if (IsDuplicateInput(singlePkt)) continue; // Drop duplicate inputs within 75ms!
                     AdaptiveRateController.NotifyUserActivity(isContinuousMotion: (singlePkt[1] == BinaryInputProtocol.CMD_MOUSE_MOVE || singlePkt[1] == BinaryInputProtocol.CMD_MOUSE_SCROLL));
                     InputSimulator.SimulateBinaryInput(singlePkt, _activeDisplayIndex);
                     if (singlePkt[1] != BinaryInputProtocol.CMD_MOUSE_MOVE) hasNonMouseMove = true;
                 }
                 if (hasNonMouseMove)
                 {
-                    Interlocked.Exchange(ref _forceSendUntilTicks, DateTime.Now.AddMilliseconds(800).Ticks);
-                    TriggerStaggeredCapture();
+                    TriggerInstantCapture();
                 }
                 return;
             }
@@ -2071,6 +2046,7 @@ namespace BigLineconnect
                 {
                     int q = root.GetProperty("quality").GetInt32();
                     int maxDim = root.TryGetProperty("maxDim", out var md) ? md.GetInt32() : 0;
+                    if (CurrentQuality == q && CurrentMaxDimension == maxDim) return; // Ignore duplicate unchanged quality packets!
                     CurrentQuality = q;
                     CurrentMaxDimension = maxDim;
                     _lastSentFrameBytes = null;
@@ -2079,7 +2055,7 @@ namespace BigLineconnect
                     _frameAckEvent.Set(); // Wake up SendStreamLoop immediately!
                     BigLineRtEngine.Reset(); // Wipe tile hash cache so EVERY tile is immediately re-encoded with the new chosen quality!
                     ScreenCapturer.ForceKeyframeRequested = true;
-                    TriggerInstantCapture(5);
+                    TriggerInstantCapture(1);
                     Log($"[BigLine-RT] Görüntü kalitesi anında devreye alındı: %{q} (MaxDim: {maxDim})");
                 }
                 else if (type == "toggle_wallpaper")

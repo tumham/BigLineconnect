@@ -254,6 +254,8 @@ namespace BigLineconnect
         private DateTime _lastFpsCalcTime = DateTime.Now;
         private DateTime _lastFrameReceivedTime = DateTime.Now;
         private int _measuredLatencyMs = 25;
+        private long _sessionTotalBytesReceived = 0;
+        private long _bytesReceivedLastSecond = 0;
         private Label? _lblFpsStats;
         private Label? _lblConnModeBadge;
         private string _connectionStatusText = "";
@@ -600,14 +602,14 @@ namespace BigLineconnect
 
             _lblFpsStats = new Label
             {
-                Text = "⚡ -- FPS | -- ms",
-                Size = new Size(130, 28),
+                Text = "⚡ -- FPS | -- ms | 📦 0.0 MB (0 KB/s)",
+                Size = new Size(240, 28),
                 ForeColor = Color.FromArgb(0, 229, 255),
                 Font = new Font("Segoe UI", 9F, FontStyle.Bold),
                 TextAlign = ContentAlignment.MiddleLeft,
                 Margin = new Padding(4, 4, 2, 0)
             };
-            _toolTip.SetToolTip(_lblFpsStats, "Anlık Canlı Akış Hızı ve Bağlantı Gecikmesi");
+            _toolTip.SetToolTip(_lblFpsStats, "Anlık Canlı Akış, Gecikme ve Canlı Oturum Veri / Kota Kullanımı");
 
             flowTop.Controls.Add(btnChat);
             flowTop.Controls.Add(btnFileManager);
@@ -742,8 +744,8 @@ namespace BigLineconnect
             {
                 await _ws.ConnectAsync(new Uri(_wsUrl), CancellationToken.None);
                 
-                // Enforce default quality mode (Native res / Q=55 HD) for razor-sharp fonts and crystal-clear text
-                SendJson("{\"type\":\"set_quality\",\"quality\":55,\"maxDim\":0}");
+                // Enforce smart quota-safe quality mode (MaxDim:1600 / Q=50 HD) for crystal-clear text without bandwidth leakage
+                SendJson("{\"type\":\"set_quality\",\"quality\":50,\"maxDim\":1600}");
 
                 // Launch immediate parallel LAN Direct probe for 0ms local socket auto-switch
                 StartP2pAndLanProbe();
@@ -846,6 +848,8 @@ namespace BigLineconnect
 
                         Interlocked.Increment(ref _fpsCounter);
                         _totalFramesReceivedCount++;
+                        Interlocked.Add(ref _sessionTotalBytesReceived, totalReceived);
+                        Interlocked.Add(ref _bytesReceivedLastSecond, totalReceived);
 
                         // Deduplication for frame recording: skip identical static frames
                         ulong currentFrameHash = FastBufferHash(_receiveBuffer, totalReceived);
@@ -1561,6 +1565,8 @@ namespace BigLineconnect
             _hasConnectedOnce = true;
             Interlocked.Increment(ref _fpsCounter);
             _totalFramesReceivedCount++;
+            Interlocked.Add(ref _sessionTotalBytesReceived, frameBytes.Length);
+            Interlocked.Add(ref _bytesReceivedLastSecond, frameBytes.Length);
 
             byte[] isolatedFrame = new byte[frameDataLength];
             Buffer.BlockCopy(frameBytes, frameDataOffset, isolatedFrame, 0, frameDataLength);
@@ -1574,10 +1580,13 @@ namespace BigLineconnect
             {
                 int currentFps = Interlocked.Exchange(ref _fpsCounter, 0);
                 int displayLatency = _measuredLatencyMs > 0 ? _measuredLatencyMs : 22;
+                long bytesSec = Interlocked.Exchange(ref _bytesReceivedLastSecond, 0);
+                double kbSec = bytesSec / 1024.0;
+                double totalMb = (double)Interlocked.Read(ref _sessionTotalBytesReceived) / (1024.0 * 1024.0);
 
                 if (_lblFpsStats != null && !_lblFpsStats.IsDisposed)
                 {
-                    _lblFpsStats.Text = $"⚡ {currentFps} FPS | {displayLatency} ms";
+                    _lblFpsStats.Text = $"⚡ {currentFps} FPS | {displayLatency} ms | 📦 {totalMb:F1} MB ({kbSec:F0} KB/s)";
                 }
 
                 string connModeText;
@@ -1610,11 +1619,11 @@ namespace BigLineconnect
                     this.Text = cleanTitle;
                 }
 
-                // Anti-Freeze Auto-Healing Watchdog: If connected but no valid frame decoded for > 1200ms, request keyframe to unfreeze screen!
+                // Anti-Freeze Auto-Healing Watchdog: If connected but no valid frame decoded for > 3000ms, request keyframe to unfreeze screen!
                 DateTime now = DateTime.Now;
                 if (_hasConnectedOnce && 
-                    (now - _lastSuccessfulFrameDecodeTime).TotalMilliseconds > 1200 && 
-                    (now - _lastKeyframeRequestTime).TotalMilliseconds > 800)
+                    (now - _lastSuccessfulFrameDecodeTime).TotalMilliseconds > 3000 && 
+                    (now - _lastKeyframeRequestTime).TotalMilliseconds > 2000)
                 {
                     _lastKeyframeRequestTime = now;
                     if (P2pDirectEngine.IsP2pConnected)
@@ -1622,7 +1631,10 @@ namespace BigLineconnect
                         byte[] reqPkt = Encoding.UTF8.GetBytes("CMD:KEYFRAME_REQ");
                         P2pDirectEngine.SendP2pPacket(reqPkt);
                     }
-                    SendJson("{\"type\":\"request_keyframe\"}");
+                    else
+                    {
+                        SendJson("{\"type\":\"request_keyframe\"}");
+                    }
                 }
             }
             catch { }
@@ -1706,7 +1718,7 @@ namespace BigLineconnect
                     }));
 
                     // Re-send quality mode
-                    SendJson("{\"type\":\"set_quality\",\"quality\":68,\"maxDim\":0}");
+                    SendJson("{\"type\":\"set_quality\",\"quality\":50,\"maxDim\":1600}");
 
                     // If we have saved password, re-authenticate automatically
                     if (!string.IsNullOrEmpty(_savedPassword))
@@ -2096,6 +2108,16 @@ namespace BigLineconnect
             SendBinaryInput(binPkt);
         }
 
+        private static bool IsCmdNavigationKey(Keys key)
+        {
+            Keys baseKey = key & Keys.KeyCode;
+            return baseKey == Keys.Tab || baseKey == Keys.Enter || baseKey == Keys.Return ||
+                   (baseKey >= Keys.F1 && baseKey <= Keys.F12) ||
+                   baseKey == Keys.Escape || baseKey == Keys.Delete || baseKey == Keys.Back || baseKey == Keys.Insert ||
+                   baseKey == Keys.Left || baseKey == Keys.Right || baseKey == Keys.Up || baseKey == Keys.Down ||
+                   baseKey == Keys.Home || baseKey == Keys.End || baseKey == Keys.PageUp || baseKey == Keys.PageDown;
+        }
+
         private void ViewerForm_KeyDown(object? sender, KeyEventArgs e)
         {
             if (e.Control && e.KeyCode == Keys.V)
@@ -2118,7 +2140,6 @@ namespace BigLineconnect
                             if (files.Count > 0)
                             {
                                 _ = Task.Run(async () => await SendPathsBatchAsyncV2(files));
-                                SendJson("{\"type\":\"key\",\"key\":\"control\",\"action\":\"up\"}");
                                 return;
                             }
                         }
@@ -2126,7 +2147,7 @@ namespace BigLineconnect
                     else if (Clipboard.ContainsText())
                     {
                         string txt = Clipboard.GetText();
-                        if (!string.IsNullOrEmpty(txt))
+                        if (!string.IsNullOrEmpty(txt) && txt != _lastClipboardText)
                         {
                             _lastClipboardText = txt;
                             SendJson($"{{\"type\":\"clipboard\",\"text\":\"{EscapeJson(txt)}\"}}");
@@ -2135,10 +2156,8 @@ namespace BigLineconnect
                 }
                 catch { }
 
-                SendJson("{\"type\":\"key\",\"key\":\"control\",\"action\":\"down\"}");
-                SendJson("{\"type\":\"key\",\"key\":\"v\",\"action\":\"down\"}");
-                SendJson("{\"type\":\"key\",\"key\":\"v\",\"action\":\"up\"}");
-                SendJson("{\"type\":\"key\",\"key\":\"control\",\"action\":\"up\"}");
+                byte[] binPkt = BinaryInputProtocol.EncodeKeyStroke((ushort)Keys.V, e.Shift, ctrl: true, alt: false, isStroke: true);
+                SendBinaryInput(binPkt);
                 return;
             }
 
@@ -2146,11 +2165,8 @@ namespace BigLineconnect
             {
                 e.Handled = true;
                 e.SuppressKeyPress = true;
-
-                SendJson("{\"type\":\"key\",\"key\":\"control\",\"action\":\"down\"}");
-                SendJson("{\"type\":\"key\",\"key\":\"c\",\"action\":\"down\"}");
-                SendJson("{\"type\":\"key\",\"key\":\"c\",\"action\":\"up\"}");
-                SendJson("{\"type\":\"key\",\"key\":\"control\",\"action\":\"up\"}");
+                byte[] binPkt = BinaryInputProtocol.EncodeKeyStroke((ushort)Keys.C, e.Shift, ctrl: true, alt: false, isStroke: true);
+                SendBinaryInput(binPkt);
                 return;
             }
 
@@ -2158,11 +2174,8 @@ namespace BigLineconnect
             {
                 e.Handled = true;
                 e.SuppressKeyPress = true;
-
-                SendJson("{\"type\":\"key\",\"key\":\"control\",\"action\":\"down\"}");
-                SendJson("{\"type\":\"key\",\"key\":\"z\",\"action\":\"down\"}");
-                SendJson("{\"type\":\"key\",\"key\":\"z\",\"action\":\"up\"}");
-                SendJson("{\"type\":\"key\",\"key\":\"control\",\"action\":\"up\"}");
+                byte[] binPkt = BinaryInputProtocol.EncodeKeyStroke((ushort)Keys.Z, e.Shift, ctrl: true, alt: false, isStroke: true);
+                SendBinaryInput(binPkt);
                 return;
             }
 
@@ -2170,11 +2183,8 @@ namespace BigLineconnect
             {
                 e.Handled = true;
                 e.SuppressKeyPress = true;
-
-                SendJson("{\"type\":\"key\",\"key\":\"control\",\"action\":\"down\"}");
-                SendJson("{\"type\":\"key\",\"key\":\"a\",\"action\":\"down\"}");
-                SendJson("{\"type\":\"key\",\"key\":\"a\",\"action\":\"up\"}");
-                SendJson("{\"type\":\"key\",\"key\":\"control\",\"action\":\"up\"}");
+                byte[] binPkt = BinaryInputProtocol.EncodeKeyStroke((ushort)Keys.A, e.Shift, ctrl: true, alt: false, isStroke: true);
+                SendBinaryInput(binPkt);
                 return;
             }
 
@@ -2226,6 +2236,13 @@ namespace BigLineconnect
 
         private void ViewerForm_KeyUp(object? sender, KeyEventArgs e)
         {
+            if (IsCmdNavigationKey(e.KeyCode))
+            {
+                e.Handled = true;
+                e.SuppressKeyPress = true;
+                return;
+            }
+
             if (e.Control && (e.KeyCode == Keys.C || e.KeyCode == Keys.V || e.KeyCode == Keys.Z || e.KeyCode == Keys.A))
             {
                 e.Handled = true;
@@ -2238,13 +2255,10 @@ namespace BigLineconnect
 
             if (isSpecial || isShortcut)
             {
-                string keyName = MapKey(e.KeyCode);
-                if (!string.IsNullOrEmpty(keyName))
-                {
-                    SendJson($"{{\"type\":\"key\",\"key\":\"{keyName}\",\"action\":\"up\"}}");
-                    e.Handled = true;
-                    e.SuppressKeyPress = true;
-                }
+                byte[] binPkt = BinaryInputProtocol.EncodeKeyUp((ushort)e.KeyCode);
+                SendBinaryInput(binPkt);
+                e.Handled = true;
+                e.SuppressKeyPress = true;
             }
         }
 
@@ -2278,7 +2292,6 @@ namespace BigLineconnect
                 case Keys.Back:
                 case Keys.Tab:
                 case Keys.Escape:
-                case Keys.Space:
                 case Keys.ControlKey:
                 case Keys.LControlKey:
                 case Keys.RControlKey:
@@ -2380,9 +2393,10 @@ namespace BigLineconnect
         {
             try
             {
-                SendJson("{\"type\":\"key\",\"key\":\"control\",\"action\":\"up\"}");
-                SendJson("{\"type\":\"key\",\"key\":\"shift\",\"action\":\"up\"}");
-                SendJson("{\"type\":\"key\",\"key\":\"alt\",\"action\":\"up\"}");
+                SendBinaryInput(BinaryInputProtocol.EncodeKeyUp(0x11)); // VK_CONTROL
+                SendBinaryInput(BinaryInputProtocol.EncodeKeyUp(0x10)); // VK_SHIFT
+                SendBinaryInput(BinaryInputProtocol.EncodeKeyUp(0x12)); // VK_MENU (ALT)
+                SendJson("{\"type\":\"release_modifiers\"}");
             }
             catch { }
         }

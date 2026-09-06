@@ -79,6 +79,7 @@ using System.IO;
         private readonly Channel<byte[]> _channel;
         private readonly CancellationTokenSource _cts;
         private readonly Task _pumpTask;
+        private long _lastSendTicks;
 
         public FrameRelayPump(WebSocket targetSocket, CancellationToken cancellationToken)
         {
@@ -114,12 +115,25 @@ using System.IO;
             try
             {
                 var reader = _channel.Reader;
-                while (await reader.WaitToReadAsync(_cts.Token))
+                while (await reader.WaitToReadAsync(_cts.Token).ConfigureAwait(false))
                 {
                     while (reader.TryRead(out var frameBytes))
                     {
                         if (_targetSocket.State == WebSocketState.Open && !_cts.Token.IsCancellationRequested)
                         {
+                            // HARD FRAME PACING: Minimum 66ms between frame dispatches (Max 15 FPS ceiling)
+                            long now = DateTime.UtcNow.Ticks;
+                            long elapsedMs = (now - _lastSendTicks) / TimeSpan.TicksPerMillisecond;
+                            if (elapsedMs < 66)
+                            {
+                                int waitMs = (int)(66 - elapsedMs);
+                                if (waitMs > 0 && waitMs <= 100)
+                                {
+                                    try { await Task.Delay(waitMs, _cts.Token).ConfigureAwait(false); } catch { break; }
+                                }
+                            }
+                            _lastSendTicks = DateTime.UtcNow.Ticks;
+
                             try
                             {
                                 await _targetSocket.SendAsync(
@@ -127,7 +141,7 @@ using System.IO;
                                     WebSocketMessageType.Binary,
                                     true,
                                     _cts.Token
-                                );
+                                ).ConfigureAwait(false);
                             }
                             catch { }
                         }
@@ -623,6 +637,9 @@ using System.IO;
             public string IpAddress { get; set; } = "Bilinmeyen";
             public string LanIp { get; set; } = "";
             public DateTime ConnectedAt { get; set; } = DateTime.Now;
+            public long LastBinaryFrameTicks { get; set; }
+            public long LastBandwidthSec { get; set; }
+            public long BytesReceivedThisSec { get; set; }
         }
 
         public static void Main(string[] args)
@@ -844,8 +861,36 @@ using System.IO;
                             {
                                 if (msgType == WebSocketMessageType.Binary)
                                 {
+                                    // SERVER-SIDE BANDWIDTH & FPS GOVERNOR (HARD TCP ZERO-WINDOW BACKPRESSURE)
+                                    // 1. Enforce minimum 66ms between binary frame reads (Max 15 FPS)
+                                    long nowTicks = DateTime.UtcNow.Ticks;
+                                    long elapsedMs = (nowTicks - session.LastBinaryFrameTicks) / TimeSpan.TicksPerMillisecond;
+                                    if (elapsedMs < 66)
+                                    {
+                                        int waitMs = (int)(66 - elapsedMs);
+                                        if (waitMs > 0 && waitMs <= 100)
+                                        {
+                                            try { await Task.Delay(waitMs, session.Cts.Token).ConfigureAwait(false); } catch { }
+                                        }
+                                    }
+                                    session.LastBinaryFrameTicks = DateTime.UtcNow.Ticks;
+
+                                    // 2. Token Bucket: Max 120 KB/sec ceiling per host
+                                    long currentSec = DateTime.UtcNow.Ticks / TimeSpan.TicksPerSecond;
+                                    if (currentSec != session.LastBandwidthSec)
+                                    {
+                                        session.LastBandwidthSec = currentSec;
+                                        session.BytesReceivedThisSec = 0;
+                                    }
+                                    session.BytesReceivedThisSec += msgBytes.Length;
+
+                                    // If host uploads > 120 KB in this 1-sec window, pause socket read to trigger physical TCP Zero-Window backpressure on the host OS
+                                    if (session.BytesReceivedThisSec > 120 * 1024)
+                                    {
+                                        try { await Task.Delay(50, session.Cts.Token).ConfigureAwait(false); } catch { }
+                                    }
+
                                     // Newest Frame Wins via FrameRelayPump:
-                                    // Host receive loop NEVER blocks! If viewer is slow, stale frames are dropped in 0ms!
                                     if (session.ClientSocket != null && session.ClientSocket.State == WebSocketState.Open)
                                     {
                                         if (session.FramePump == null)
@@ -972,6 +1017,10 @@ using System.IO;
 
                             if (ms.Length > 0 && lcSessions.TryGetValue(hostId, out var activeSess) && activeSess.ClientSocket != null && activeSess.ClientSocket.State == WebSocketState.Open)
                             {
+                                if (res.MessageType == WebSocketMessageType.Binary)
+                                {
+                                    await Task.Delay(66, cts.Token).ConfigureAwait(false);
+                                }
                                 await activeSess.ClientSocket.SendAsync(new ArraySegment<byte>(ms.ToArray()), res.MessageType, true, cts.Token);
                             }
                         }

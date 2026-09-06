@@ -573,12 +573,6 @@ namespace BigLineconnect
 
         public static void SimulateChar(char ch)
         {
-            if (ch == _lastChar && (DateTime.UtcNow - _lastCharTime).TotalMilliseconds < 75)
-            {
-                return; // Discard parallel duplicate from backup channel
-            }
-            _lastChar = ch;
-            _lastCharTime = DateTime.UtcNow;
 
             // Direct Unicode injection: 100x faster, zero modifier spam, perfectly supports Turkish chars in Mikro ERP & Excel cells
             INPUT[] inputs = new INPUT[2];
@@ -666,14 +660,6 @@ namespace BigLineconnect
         {
             if (vkCode == 0) return;
 
-            if (vkCode == _lastVkCode && isUp == _lastVkUp && (DateTime.UtcNow - _lastVkTime).TotalMilliseconds < 75)
-            {
-                return; // Discard parallel duplicate from backup channel
-            }
-            _lastVkCode = vkCode;
-            _lastVkUp = isUp;
-            _lastVkTime = DateTime.UtcNow;
-
             uint scanCode = MapVirtualKey(vkCode, 0);
             uint extFlag = 0;
             if (vkCode == 0x25 || vkCode == 0x26 || vkCode == 0x27 || vkCode == 0x28 || 
@@ -696,6 +682,11 @@ namespace BigLineconnect
 
                 if (isStroke)
                 {
+                    // Send KeyDown first
+                    SendInput((uint)inputs.Count, inputs.ToArray(), Marshal.SizeOf<INPUT>());
+                    // Small natural dwell time (10ms) so Windows and ERP message pump process KeyDown cleanly
+                    Thread.Sleep(10);
+                    inputs.Clear();
                     inputs.Add(CreateKeyInput(vkCode, (ushort)scanCode, extFlag | KEYEVENTF_KEYUP));
                     if (shift) inputs.Add(CreateKeyInput(0x10, 0, KEYEVENTF_KEYUP));
                     if (alt) inputs.Add(CreateKeyInput(0x12, 0, KEYEVENTF_KEYUP));
@@ -707,7 +698,10 @@ namespace BigLineconnect
                 inputs.Add(CreateKeyInput(vkCode, (ushort)scanCode, extFlag | KEYEVENTF_KEYUP));
             }
 
-            SendInput((uint)inputs.Count, inputs.ToArray(), Marshal.SizeOf<INPUT>());
+            if (inputs.Count > 0)
+            {
+                SendInput((uint)inputs.Count, inputs.ToArray(), Marshal.SizeOf<INPUT>());
+            }
         }
     }
 }

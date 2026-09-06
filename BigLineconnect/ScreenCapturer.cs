@@ -184,7 +184,7 @@ namespace BigLineconnect
             _jpegEncoder = GetEncoder(ImageFormat.Jpeg);
         }
 
-        public static bool UseRtTileEngine { get; set; } = false; // Stateless full-frame: zero black boxes, zero desync, 100% clean display
+        public static bool UseRtTileEngine { get; set; } = true; // DeskRT 64x64 Differential SubFrames: 1.5 - 3 KB per frame, 0ms latency, zero quota bleed
         public static bool UseH264Mode { get; set; } = false;
         public static bool ForceKeyframeRequested { get; set; } = false;
         private static H264Encoder? _h264Encoder;
@@ -255,6 +255,7 @@ namespace BigLineconnect
         }
 
         private static DateTime _lastDxgiFailureTime = DateTime.MinValue;
+        private static ulong _lastCaptureHash = 0;
 
         public static byte[] Capture(int quality = 75, int maxDimension = 0)
         {
@@ -308,6 +309,12 @@ namespace BigLineconnect
 
             if (bmp == null)
             {
+                // If DXGI is active and timed out because desktop is static, DO NOT FALL BACK TO GDI!
+                if (_dxgiCapturer != null && _dxgiCapturer.LastCaptureTimedOut)
+                {
+                    return Array.Empty<byte>();
+                }
+
                 bmp = CaptureGdiRaw(quality, maxDimension);
                 if (bmp != null && IsBitmapBlack(bmp))
                 {
@@ -320,7 +327,16 @@ namespace BigLineconnect
             {
                 using (bmp)
                 {
-                    LastCapturedFrameHash = CalculateFastScreenHash(bmp);
+                    ulong hash = CalculateFastScreenHash(bmp);
+                    LastCapturedFrameHash = hash;
+
+                    // Bandwidth & Quota Guard: If screen hash did not change at all, avoid JPEG compression & network transmission!
+                    if (hash != 0 && hash == _lastCaptureHash && !ForceKeyframeRequested)
+                    {
+                        return Array.Empty<byte>();
+                    }
+                    _lastCaptureHash = hash;
+                    ForceKeyframeRequested = false;
 
                     if (UseH264Mode)
                     {
@@ -626,6 +642,7 @@ namespace BigLineconnect
                 _h264Encoder = null;
                 ForceKeyframeRequested = true;
                 LastCapturedFrameHash = 0;
+                _lastCaptureHash = 0;
                 BigLineRtEngine.Reset();
             }
             catch { }

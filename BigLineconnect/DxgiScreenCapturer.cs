@@ -102,6 +102,8 @@ namespace BigLineconnect
             _isInitialized = true;
         }
 
+        public bool LastCaptureTimedOut { get; private set; } = false;
+
         public Bitmap? CaptureFrame(int timeoutMs = 10)
         {
             if (!_isInitialized)
@@ -124,7 +126,12 @@ namespace BigLineconnect
                 OutputDuplicateFrameInformation frameInfo;
 
                 var result = _deskDupl.TryAcquireNextFrame(timeoutMs, out frameInfo, out desktopResource);
-                if (result.Failure) return null;
+                if (result.Failure)
+                {
+                    LastCaptureTimedOut = (result == SharpDX.DXGI.ResultCode.WaitTimeout || result.Code == unchecked((int)0x887A0027));
+                    return null;
+                }
+                LastCaptureTimedOut = false;
 
                 using (desktopResource)
                 {

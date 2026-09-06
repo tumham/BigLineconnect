@@ -296,12 +296,12 @@ namespace BigLineconnect
                             {
                                 if (currentCanvas == null || currentCanvas.Width != fullBmp.Width || currentCanvas.Height != fullBmp.Height)
                                 {
-                                    currentCanvas = new Bitmap(fullBmp.Width, fullBmp.Height, PixelFormat.Format32bppArgb);
+                                    currentCanvas = new Bitmap(fullBmp.Width, fullBmp.Height, PixelFormat.Format32bppRgb);
                                 }
 
                             using (Graphics g = Graphics.FromImage(currentCanvas))
                             {
-                                g.CompositingMode = CompositingMode.SourceCopy;
+                                g.CompositingMode = CompositingMode.SourceOver;
                                 g.InterpolationMode = InterpolationMode.Bilinear;
                                 g.PixelOffsetMode = PixelOffsetMode.None;
                                 g.SmoothingMode = SmoothingMode.None;
@@ -327,7 +327,7 @@ namespace BigLineconnect
                         using (var subBmp = new Bitmap(jpegMs))
                         using (Graphics g = Graphics.FromImage(currentCanvas))
                         {
-                            g.CompositingMode = CompositingMode.SourceCopy;
+                            g.CompositingMode = CompositingMode.SourceOver;
                             g.InterpolationMode = InterpolationMode.Bilinear;
                             g.PixelOffsetMode = PixelOffsetMode.None;
                             g.SmoothingMode = SmoothingMode.None;
