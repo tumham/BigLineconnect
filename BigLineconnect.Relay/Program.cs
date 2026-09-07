@@ -85,7 +85,7 @@ using System.IO;
         {
             _targetSocket = targetSocket;
             _cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            _channel = Channel.CreateBounded<byte[]>(new BoundedChannelOptions(64)
+            _channel = Channel.CreateBounded<byte[]>(new BoundedChannelOptions(1)
             {
                 FullMode = BoundedChannelFullMode.DropOldest,
                 SingleReader = true,
@@ -117,23 +117,26 @@ using System.IO;
                 var reader = _channel.Reader;
                 while (await reader.WaitToReadAsync(_cts.Token).ConfigureAwait(false))
                 {
+                    byte[]? latestFrame = null;
                     while (reader.TryRead(out var frameBytes))
                     {
-                        if (_targetSocket.State == WebSocketState.Open && !_cts.Token.IsCancellationRequested)
-                        {
-                            _lastSendTicks = DateTime.UtcNow.Ticks;
+                        latestFrame = frameBytes;
+                    }
 
-                            try
-                            {
-                                await _targetSocket.SendAsync(
-                                    new ArraySegment<byte>(frameBytes),
-                                    WebSocketMessageType.Binary,
-                                    true,
-                                    _cts.Token
-                                ).ConfigureAwait(false);
-                            }
-                            catch { }
+                    if (latestFrame != null && _targetSocket.State == WebSocketState.Open && !_cts.Token.IsCancellationRequested)
+                    {
+                        _lastSendTicks = DateTime.UtcNow.Ticks;
+
+                        try
+                        {
+                            await _targetSocket.SendAsync(
+                                new ArraySegment<byte>(latestFrame),
+                                WebSocketMessageType.Binary,
+                                true,
+                                _cts.Token
+                            ).ConfigureAwait(false);
                         }
+                        catch { }
                     }
                 }
             }
@@ -898,35 +901,7 @@ using System.IO;
                                     }
                                     else
                                     {
-                                        // 2. VIDEO STREAM BANDWIDTH & FPS GOVERNOR (HARD TCP ZERO-WINDOW BACKPRESSURE)
-                                        // 50ms between binary frame reads (Max 20 FPS fluid WAN)
-                                        long nowTicks = DateTime.UtcNow.Ticks;
-                                        long elapsedMs = (nowTicks - session.LastBinaryFrameTicks) / TimeSpan.TicksPerMillisecond;
-                                        if (elapsedMs < 50)
-                                        {
-                                            int waitMs = (int)(50 - elapsedMs);
-                                            if (waitMs > 0 && waitMs <= 60)
-                                            {
-                                                try { await Task.Delay(waitMs, session.Cts.Token).ConfigureAwait(false); } catch { }
-                                            }
-                                        }
-                                        session.LastBinaryFrameTicks = DateTime.UtcNow.Ticks;
-
-                                        // Token Bucket: Max 120 KB/sec ceiling per host
-                                        long currentSec = DateTime.UtcNow.Ticks / TimeSpan.TicksPerSecond;
-                                        if (currentSec != session.LastBandwidthSec)
-                                        {
-                                            session.LastBandwidthSec = currentSec;
-                                            session.BytesReceivedThisSec = 0;
-                                        }
-                                        session.BytesReceivedThisSec += msgBytes.Length;
-
-                                        if (session.BytesReceivedThisSec > 120 * 1024)
-                                        {
-                                            try { await Task.Delay(30, session.Cts.Token).ConfigureAwait(false); } catch { }
-                                        }
-
-                                        // Newest Frame Wins via FrameRelayPump:
+                                        // Newest Frame Wins via FrameRelayPump (Zero server-side delay):
                                         if (session.ClientSocket != null && session.ClientSocket.State == WebSocketState.Open)
                                         {
                                             if (session.FramePump == null)
