@@ -78,6 +78,8 @@ namespace BigLineconnect
             return s.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\r", "\\r").Replace("\n", "\\n").Replace("\t", "\\t");
         }
 
+        public static ViewerForm? Instance { get; private set; }
+
         private string _wsUrl;
         public readonly string _targetId;
         public string ActiveTicketId = "";
@@ -106,7 +108,12 @@ namespace BigLineconnect
         private Form? _activeRestartDialog;
         private bool _isLanDirectActive = false;
         private string _remoteLanIp = "";
-        private readonly System.Collections.Concurrent.ConcurrentQueue<byte[]> _pendingFrameQueue = new();
+        private struct PendingFrame
+        {
+            public byte[] Data;
+            public uint Seq;
+        }
+        private readonly System.Collections.Concurrent.ConcurrentQueue<PendingFrame> _pendingFrameQueue = new();
         private bool _isAuthFailureClosing = false;
         private bool _isPromptOpen = false;
         private bool _isProgrammaticClose = false;
@@ -130,6 +137,7 @@ namespace BigLineconnect
         private bool IsTrueLanDirect()
         {
             if (_isLanDirectActive) return true;
+            if (P2pDirectEngine.IsP2pConnected && P2pDirectEngine.IsLanDirect) return true;
             if (string.IsNullOrEmpty(_wsUrl)) return false;
             if (_wsUrl.Contains("relay.biglineconnect.com") || _wsUrl.StartsWith("wss://")) return false;
             return _wsUrl.StartsWith("ws://192.168.") || _wsUrl.StartsWith("ws://10.") || _wsUrl.StartsWith("ws://172.") || _wsUrl.StartsWith("ws://127.") || _wsUrl.Contains(":18888");
@@ -263,8 +271,48 @@ namespace BigLineconnect
 
 
         private Image? _latestDecodedImage = null;
+        private Rectangle? _latestDirtyRect = null;
         private readonly object _decodedImageLock = new object();
         private int _isUiPaintPending = 0;
+
+        private Rectangle TransformImageRectToClient(Rectangle imgRect)
+        {
+            if (_pictureBox == null || _pictureBox.Image == null) return imgRect;
+            if (_pictureBox.SizeMode != PictureBoxSizeMode.Zoom) return imgRect;
+
+            int imgWidth = _pictureBox.Image.Width;
+            int imgHeight = _pictureBox.Image.Height;
+            if (imgWidth <= 0 || imgHeight <= 0) return imgRect;
+
+            double imgAspect = (double)imgWidth / imgHeight;
+            double boxAspect = (double)_pictureBox.Width / Math.Max(1, _pictureBox.Height);
+            double renderedWidth, renderedHeight, offsetX, offsetY;
+
+            if (boxAspect > imgAspect)
+            {
+                renderedHeight = _pictureBox.Height;
+                renderedWidth = _pictureBox.Height * imgAspect;
+                offsetX = (_pictureBox.Width - renderedWidth) / 2.0;
+                offsetY = 0;
+            }
+            else
+            {
+                renderedWidth = _pictureBox.Width;
+                renderedHeight = _pictureBox.Width / imgAspect;
+                offsetX = 0;
+                offsetY = (_pictureBox.Height - renderedHeight) / 2.0;
+            }
+
+            double scaleX = renderedWidth / imgWidth;
+            double scaleY = renderedHeight / imgHeight;
+
+            int clientX = (int)Math.Floor(offsetX + imgRect.X * scaleX) - 1;
+            int clientY = (int)Math.Floor(offsetY + imgRect.Y * scaleY) - 1;
+            int clientW = (int)Math.Ceiling(imgRect.Width * scaleX) + 2;
+            int clientH = (int)Math.Ceiling(imgRect.Height * scaleY) + 2;
+
+            return new Rectangle(Math.Max(0, clientX), Math.Max(0, clientY), clientW, clientH);
+        }
 
         private static ulong FastBufferHash(byte[] buffer, int count)
         {
@@ -281,8 +329,27 @@ namespace BigLineconnect
             }
         }
 
+        public void RequestKeyframe()
+        {
+            try
+            {
+                _lastKeyframeRequestTime = DateTime.Now;
+                if (P2pDirectEngine.IsP2pConnected)
+                {
+                    byte[] reqPkt = Encoding.UTF8.GetBytes("CMD:KEYFRAME_REQ");
+                    P2pDirectEngine.SendP2pPacket(reqPkt);
+                }
+                else
+                {
+                    SendJson("{\"type\":\"request_keyframe\"}");
+                }
+            }
+            catch { }
+        }
+
         public ViewerForm(string wsUrl, string targetId, string savedPassword = "")
         {
+            Instance = this;
             _wsUrl = wsUrl;
             _targetId = targetId;
             _savedPassword = savedPassword;
@@ -742,8 +809,8 @@ namespace BigLineconnect
             {
                 await _ws.ConnectAsync(new Uri(_wsUrl), CancellationToken.None);
                 
-                // Enforce smart quota-safe quality mode (MaxDim:1600 / Q=50 HD) for crystal-clear text without bandwidth leakage
-                SendJson("{\"type\":\"set_quality\",\"quality\":50,\"maxDim\":1600}");
+                // Enforce razor-sharp native 1:1 HD quality mode (MaxDim:0 / Q=72 HD) for crystal-clear Mikro & Excel text
+                SendJson("{\"type\":\"set_quality\",\"quality\":72,\"maxDim\":0}");
 
                 // Launch immediate parallel LAN Direct probe for 0ms local socket auto-switch
                 StartP2pAndLanProbe();
@@ -818,9 +885,6 @@ namespace BigLineconnect
                                 receivedSeq = BitConverter.ToUInt32(_receiveBuffer, 8);
                                 frameDataOffset = 12;
                                 frameDataLength = totalReceived - 12;
-
-                                // 0ms Frame ACK back to Host for zero-backlog flow control
-                                SendFrameAck(receivedSeq);
                             }
                         }
                         else if (totalReceived >= 16)
@@ -894,7 +958,7 @@ namespace BigLineconnect
 
                         byte[] isolatedFrame = new byte[frameDataLength];
                         Buffer.BlockCopy(_receiveBuffer, frameDataOffset, isolatedFrame, 0, frameDataLength);
-                        QueueAndDecodeIncomingFrame(isolatedFrame);
+                        QueueAndDecodeIncomingFrame(isolatedFrame, receivedSeq);
                     }
                     else if (result.MessageType == WebSocketMessageType.Text)
                     {
@@ -1403,12 +1467,13 @@ namespace BigLineconnect
 
         private int _isDecodingFrame = 0;
 
-        private void QueueAndDecodeIncomingFrame(byte[] isolatedFrame)
+        private void QueueAndDecodeIncomingFrame(byte[] isolatedFrame, uint seq = 0)
         {
             if (this.WindowState == FormWindowState.Minimized) return;
             if (isolatedFrame != null && isolatedFrame.Length > 0)
             {
-                _pendingFrameQueue.Enqueue(isolatedFrame);
+                while (_pendingFrameQueue.Count > 1 && _pendingFrameQueue.TryDequeue(out _)) { }
+                _pendingFrameQueue.Enqueue(new PendingFrame { Data = isolatedFrame, Seq = seq });
             }
 
             if (Interlocked.CompareExchange(ref _isDecodingFrame, 1, 0) == 0)
@@ -1417,8 +1482,10 @@ namespace BigLineconnect
                 {
                     try
                     {
-                        while (_pendingFrameQueue.TryDequeue(out var frameToDecode))
+                        while (_pendingFrameQueue.TryDequeue(out var pending))
                         {
+                            var frameToDecode = pending.Data;
+                            var currentSeq = pending.Seq;
                             if (frameToDecode == null || frameToDecode.Length == 0) continue;
                             if (this.WindowState == FormWindowState.Minimized || _pictureBox == null || _pictureBox.IsDisposed) break;
 
@@ -1448,6 +1515,13 @@ namespace BigLineconnect
                                         g.DrawImage(srcBmp, 0, 0, srcBmp.Width, srcBmp.Height);
                                     }
                                 }
+                            }
+
+                            // SEND FLOW-CONTROL ACK IMMEDIATELY AFTER DECODE:
+                            // The frame is fully decoded into canvas. Host is now allowed to capture and stream the next frame!
+                            if (currentSeq > 0)
+                            {
+                                SendFrameAck(currentSeq);
                             }
 
                             if (newImg != null && _pictureBox != null && !_pictureBox.IsDisposed)
@@ -1484,7 +1558,8 @@ namespace BigLineconnect
                                                     var oldImg = _pictureBox.Image;
                                                     _pictureBox.Image = frameToDraw;
                                                     _pictureBox.Invalidate();
-                                                    _pictureBox.Update();
+                                                    try { _pictureBox.Update(); } catch { }
+
                                                     if (oldImg != null && oldImg != frameToDraw && oldImg != _rtCanvas)
                                                     {
                                                         try { oldImg.Dispose(); } catch { }
@@ -1514,10 +1589,6 @@ namespace BigLineconnect
                     finally
                     {
                         Interlocked.Exchange(ref _isDecodingFrame, 0);
-                        if (!_pendingFrameQueue.IsEmpty)
-                        {
-                            QueueAndDecodeIncomingFrame(Array.Empty<byte>());
-                        }
                     }
                 });
             }
@@ -1538,7 +1609,6 @@ namespace BigLineconnect
                 if (frameTicks > 630000000000000000L && frameTicks < 700000000000000000L)
                 {
                     uint receivedSeq = BitConverter.ToUInt32(frameBytes, 8);
-                    SendFrameAck(receivedSeq);
 
                     if (_latestRenderedFrameSeq > 0 && receivedSeq < _latestRenderedFrameSeq && unchecked(_latestRenderedFrameSeq - receivedSeq) < 15)
                     {
@@ -1568,7 +1638,12 @@ namespace BigLineconnect
             byte[] isolatedFrame = new byte[frameDataLength];
             Buffer.BlockCopy(frameBytes, frameDataOffset, isolatedFrame, 0, frameDataLength);
 
-            QueueAndDecodeIncomingFrame(isolatedFrame);
+            uint seqToAck = 0;
+            if (frameBytes.Length >= 20)
+            {
+                seqToAck = BitConverter.ToUInt32(frameBytes, 8);
+            }
+            QueueAndDecodeIncomingFrame(isolatedFrame, seqToAck);
         }
 
         private void WatchdogStatsTimer_Tick(object? sender, EventArgs e)
@@ -1717,7 +1792,7 @@ namespace BigLineconnect
                     }));
 
                     // Re-send quality mode
-                    SendJson("{\"type\":\"set_quality\",\"quality\":50,\"maxDim\":1600}");
+                    SendJson("{\"type\":\"set_quality\",\"quality\":72,\"maxDim\":0}");
 
                     // If we have saved password, re-authenticate automatically
                     if (!string.IsNullOrEmpty(_savedPassword))
@@ -1814,15 +1889,9 @@ namespace BigLineconnect
 
         public void SendFrameAck(uint seq)
         {
-            if (P2pDirectEngine.IsP2pConnected)
-            {
-                byte[] ackPkt = new byte[5];
-                ackPkt[0] = 0x41; // 'A'
-                BitConverter.TryWriteBytes(new Span<byte>(ackPkt, 1, 4), seq);
-                P2pDirectEngine.SendP2pPacket(ackPkt);
-                return;
-            }
-
+            // 1. ALWAYS dispatch ACK over reliable WebSocket connection (TCP)
+            // This guarantees the Host ALWAYS receives flow-control ACKs in 10-25ms,
+            // completely immune to cellular 4G CGNAT firewall UDP packet drops!
             uint cur;
             do
             {
@@ -1830,6 +1899,15 @@ namespace BigLineconnect
                 if (seq <= cur) break;
             } while (Interlocked.CompareExchange(ref _latestPendingAckSeq, seq, cur) != cur);
             _senderWakeEvent.Set();
+
+            // 2. Also send over P2P UDP if direct UDP link is established
+            if (P2pDirectEngine.IsP2pConnected)
+            {
+                byte[] ackPkt = new byte[5];
+                ackPkt[0] = 0x41; // 'A'
+                BitConverter.TryWriteBytes(new Span<byte>(ackPkt, 1, 4), seq);
+                P2pDirectEngine.SendP2pPacket(ackPkt);
+            }
         }
 
         private async Task StartSenderLoopAsync(ClientWebSocket ws, CancellationToken token)
@@ -2561,6 +2639,17 @@ namespace BigLineconnect
 
         private void ViewerForm_FormClosing(object? sender, FormClosingEventArgs e)
         {
+            if (Instance == this) Instance = null;
+            try
+            {
+                byte[] stopBytes = Encoding.UTF8.GetBytes("STOP_STREAM");
+                if (_ws != null && _ws.State == WebSocketState.Open)
+                {
+                    _ws.SendAsync(new ArraySegment<byte>(stopBytes), WebSocketMessageType.Text, true, CancellationToken.None).Wait(200);
+                }
+            }
+            catch { }
+
             try
             {
                 P2pDirectEngine.OnFrameReceived -= OnDirectP2pFrameReceived;

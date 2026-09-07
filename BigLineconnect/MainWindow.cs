@@ -88,6 +88,7 @@ namespace BigLineconnect
         private bool _userManuallyRestored = false;
         private static RemoteOverlayBannerForm? _overlayBannerForm = null;
         public static bool IsBannerDismissedByUser = false;
+        private DateTime _lastHttpPollTime = DateTime.MinValue;
 
         public class SupportTicket
         {
@@ -127,7 +128,7 @@ namespace BigLineconnect
             _instance = this;
             try { Program.SetStreamActive(false); } catch { }
             InitializeComponent();
-            this.Text = "BigLineconnect v4.22 ⚡ [TAM ALPEMIX - 10MB KOTA & KRISTAL NETLIK]";
+            this.Text = "BigLineconnect v4.35 ⚡ [SIFIR GECİKME & TIKANMA ÖNLEYİCİ]";
             LoadLogoAndIcon();
 
             // Populate connection logs that occurred during splash screen connection
@@ -1280,6 +1281,10 @@ namespace BigLineconnect
             }
             catch { }
 
+            if (_logTextBox.TextLength > 30000)
+            {
+                _logTextBox.Text = _logTextBox.Text.Substring(_logTextBox.Text.Length - 10000);
+            }
             _logTextBox.AppendText($"[{DateTime.Now:HH:mm:ss}] {safeMessage}{Environment.NewLine}");
         }
 
@@ -1512,38 +1517,44 @@ namespace BigLineconnect
             }
             catch { }
 
-            if (_hasActiveSubmittedTicket && _idLabel != null && _idLabel.Text != "--- --- ---")
+            // Network HTTP polling (Tickets, CRM, Support Check) throttled to 30 seconds to prevent eating mobile quota!
+            if ((DateTime.Now - _lastHttpPollTime).TotalSeconds >= 30)
             {
-                string hostId = _idLabel.Text.Replace(" ", "").Trim();
-                string checkUrl = GetRelayHttpUrl($"/api/support/check?id={hostId}");
+                _lastHttpPollTime = DateTime.Now;
 
-                Task.Run(async () =>
+                if (_hasActiveSubmittedTicket && _idLabel != null && _idLabel.Text != "--- --- ---")
                 {
-                    try
+                    string hostId = _idLabel.Text.Replace(" ", "").Trim();
+                    string checkUrl = GetRelayHttpUrl($"/api/support/check?id={hostId}");
+
+                    Task.Run(async () =>
                     {
-                        using (var client = new System.Net.Http.HttpClient())
+                        try
                         {
-                            var resp = await client.GetAsync(checkUrl);
-                            if (resp.IsSuccessStatusCode)
+                            using (var client = new System.Net.Http.HttpClient())
                             {
-                                string text = await resp.Content.ReadAsStringAsync();
-                                if (text.Trim().Equals("false", StringComparison.OrdinalIgnoreCase))
+                                var resp = await client.GetAsync(checkUrl);
+                                if (resp.IsSuccessStatusCode)
                                 {
-                                    ResetSupportButton();
+                                    string text = await resp.Content.ReadAsStringAsync();
+                                    if (text.Trim().Equals("false", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        ResetSupportButton();
+                                    }
                                 }
                             }
                         }
-                    }
-                    catch { }
-                });
-            }
+                        catch { }
+                    });
+                }
 
-            if (LicenseSystem.IsSpecialistMode)
-            {
-                RefreshSupportTickets();
-                if (_currentTabMode == 2)
+                if (LicenseSystem.IsSpecialistMode)
                 {
-                    RefreshCrmHistory();
+                    RefreshSupportTickets();
+                    if (_currentTabMode == 2)
+                    {
+                        RefreshCrmHistory();
+                    }
                 }
             }
         }
