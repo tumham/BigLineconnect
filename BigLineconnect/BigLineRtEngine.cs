@@ -81,7 +81,7 @@ namespace BigLineconnect
 
             // Periodic Keyframe: ONLY on first frame or when explicitly requested / dimension changed!
             // NEVER force a periodic massive 80 KB full-screen tsunami over 1700km mobile/ADSL links!
-            if (_frameCount == 1 || _lastTileHashes == null)
+            if (_frameCount == 1 || _lastTileHashes == null || (_frameCount % 60 == 0))
             {
                 forceKeyframe = true;
             }

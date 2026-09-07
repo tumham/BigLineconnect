@@ -127,7 +127,7 @@ namespace BigLineconnect
             _instance = this;
             try { Program.SetStreamActive(false); } catch { }
             InitializeComponent();
-            this.Text = "BigLineconnect v4.21 ⚡ [ALPEMIX SEVIYESI - KRISTAL NETLIK & 10MB KOTA]";
+            this.Text = "BigLineconnect v4.22 ⚡ [TAM ALPEMIX - 10MB KOTA & KRISTAL NETLIK]";
             LoadLogoAndIcon();
 
             // Populate connection logs that occurred during splash screen connection
