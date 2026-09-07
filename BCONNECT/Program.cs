@@ -199,7 +199,6 @@ namespace BigLineconnect
         public static string CurrentHostId = "--- --- ---";
         public static readonly System.Collections.Generic.List<string> InitialLogs = new();
         private static CancellationTokenSource _cts = new CancellationTokenSource();
-        private static CancellationTokenSource? _streamCts;
         public static bool _isStreaming = false;
         public static string _currentRelayUrl = "wss://biglineconnect-production.up.railway.app/register-host";
         private static readonly object ReconnectLock = new();
@@ -1227,7 +1226,6 @@ namespace BigLineconnect
                             catch { }
                             finally
                             {
-                                SetStreamActive(false);
                                 if (ActiveLanWebSocket == ws) ActiveLanWebSocket = null;
                             }
                         });
@@ -1439,15 +1437,16 @@ namespace BigLineconnect
                                 MainWindow.Instance?.ResetSupportButton();
                                 try { File.WriteAllText(GetSharedFlagPath(), "1"); } catch { }
                             }
-                            else if (message == "STOP_STREAM" || message.StartsWith("STOP_STREAM"))
+                            else if (message == "STOP_STREAM")
                             {
-                                Log("İstemci ayrıldı. Ekran paylaşımı derhal durduruldu.");
+                                Log("İstemci ayrıldı. Ekran paylaşımı durduruldu.");
                                 SetStreamActive(false);
+                                _isStreaming = false;
                             }
                             else
                             {
                                 _lastViewerActivityTime = DateTime.Now;
-                                if (message != "PING" && !message.StartsWith("ID:") && !message.StartsWith("START_STREAM"))
+                                if (message != "PING")
                                 {
                                     ProcessRemoteInput(message);
                                 }
@@ -1455,19 +1454,13 @@ namespace BigLineconnect
                         }
                         else if (result.MessageType == WebSocketMessageType.Binary && ms.Length >= 1)
                         {
+                            _lastViewerActivityTime = DateTime.Now;
                             byte[] binPkt = ms.ToArray();
-                            if (binPkt.Length >= 5 && (binPkt[0] == 0x41 || binPkt[0] == 0x4D || binPkt[0] == BinaryInputProtocol.MAGIC_BYTE))
+                            if (binPkt.Length > 1 && binPkt[0] == FileTransferTag)
                             {
-                                _lastViewerActivityTime = DateTime.Now;
-                            }
-                            else if (binPkt.Length > 1 && binPkt[0] == FileTransferTag)
-                            {
-                                _lastViewerActivityTime = DateTime.Now;
                                 HandleIncomingFileChunkBinary(binPkt);
-                                continue;
                             }
-
-                            if (binPkt.Length >= 5)
+                            else if (binPkt.Length >= 5)
                             {
                                 ProcessBinaryRemoteInput(binPkt);
                             }
@@ -1484,7 +1477,6 @@ namespace BigLineconnect
                 }
                 finally
                 {
-                    SetStreamActive(false);
                     if (!token.IsCancellationRequested)
                     {
                         TriggerReconnect();
@@ -1693,33 +1685,31 @@ namespace BigLineconnect
                     }
 
                     // ZERO-BUFFERBLOAT STRICT FLOW CONTROL (ALPEMIX 10MB MODEL):
-                    // Over Cloud Relay: NEVER send frame N+1 while frame N is in-flight!
-                    // Strictly wait for the Viewer's ACK before sending the next frame.
+                    // Over Cloud Relay (!P2pDirectEngine.IsP2pConnected):
+                    // NEVER send frame N+1 while frame N is in-flight!
+                    // Wait for the Viewer's ACK before sending the next frame.
                     // This strictly guarantees: Host Upload Volume == Viewer Download Volume (0 bytes dropped by relay, 0 buffer bloat).
+                    // TIER-AWARE STRICT FLOW CONTROL (ALPEMIX MODEL via AdaptiveRateController):
+                    // On Slow3G/Cellular: Max 1 in-flight frame. Strictly wait for Viewer ACK before sending next!
+                    // On VDSL: Max 2 in-flight frames.
+                    // On Fiber: Max 3 in-flight frames.
                     if (!AdaptiveRateController.CanSendNextFrame(_currentFrameSeq, out _))
                     {
-                        // Wait for viewer ACK (up to 30ms per loop iteration)
-                        _frameAckEvent.WaitOne(30);
+                        // Wait for viewer ACK (up to 40ms per loop iteration)
+                        _frameAckEvent.WaitOne(40);
                         if (!AdaptiveRateController.CanSendNextFrame(_currentFrameSeq, out _))
                         {
                             double elapsedSinceSend = (DateTime.Now - _lastFrameSendTime).TotalMilliseconds;
-                            if (elapsedSinceSend > 600 && elapsedSinceSend < 4000)
-                            {
-                                // Self-healing: if an ACK was delayed in mobile network for >600ms, unblock and send fresh Keyframe!
-                                AdaptiveRateController.RecordAck(_currentFrameSeq);
-                                ScreenCapturer.ForceKeyframeRequested = true;
-                            }
-                            else if (elapsedSinceSend < 4000)
+                            if (elapsedSinceSend < 600)
                             {
                                 await Task.Delay(5, token).ConfigureAwait(false);
                                 continue;
                             }
                             else
                             {
-                                // 4 seconds without an ACK: Viewer is gone or connection dead!
-                                Log("[Kota Koruması] 4 saniye boyunca ACK onayı gelmedi. Bağlantı koptu, akış durduruluyor.");
-                                SetStreamActive(false);
-                                break;
+                                // 600ms safety timeout: network lost an ACK or experienced jitter.
+                                _lastAckedFrameSeq = _currentFrameSeq;
+                                AdaptiveRateController.RecordAck(_currentFrameSeq);
                             }
                         }
                     }
@@ -1743,8 +1733,9 @@ namespace BigLineconnect
                     if (frameToSend != null && frameToSend.Length > 0)
                     {
                         bool isDuplicate = (frameHash != 0 && frameHash == _lastSentFrameHash);
+                        bool isInitialBurst = initialFrameCount < 3;
 
-                        if (!isDuplicate)
+                        if (!isDuplicate || isInitialBurst)
                         {
                             // HARD BANDWIDTH CEILING GOVERNOR (ALPEMIX 10MB TARGET):
                             // Video always travels over WebSocket Relay (SendFrameChunks over P2P UDP is unused).
@@ -1757,7 +1748,7 @@ namespace BigLineconnect
                                 _lastBandwidthSec = currentSec;
                                 _bytesSentThisSec = 0;
                             }
-                            int maxAllowedBytesSec = (AdaptiveRateController.CurrentTier == NetworkTier.Slow3G) ? (45 * 1024) : (60 * 1024);
+                            int maxAllowedBytesSec = (AdaptiveRateController.CurrentTier == NetworkTier.Slow3G) ? (60 * 1024) : (70 * 1024);
                             if (_bytesSentThisSec >= maxAllowedBytesSec)
                             {
                                 await Task.Delay(25, token).ConfigureAwait(false);
@@ -1771,7 +1762,7 @@ namespace BigLineconnect
                             bool isLargeFrame = frameToSend.Length >= 20 * 1024;
                             int minIntervalMs = isLargeFrame ? Math.Max(targetInterval * 3, 160) : targetInterval;
 
-                            if ((DateTime.Now - _lastSentFrameTime).TotalMilliseconds >= minIntervalMs)
+                            if (isInitialBurst || (DateTime.Now - _lastSentFrameTime).TotalMilliseconds >= minIntervalMs)
                             {
                                 _isSendingFrame = true;
                                 try
@@ -2788,15 +2779,9 @@ namespace BigLineconnect
                     byte[] okMsg = Encoding.UTF8.GetBytes("AUTH_SUCCESS");
                     await SafeSendAsync(ws, new ArraySegment<byte>(okMsg), WebSocketMessageType.Text, true, token).ConfigureAwait(false);
 
-                    _streamCts?.Cancel();
-                    _streamCts = new CancellationTokenSource();
-                    var streamToken = _streamCts.Token;
-
                     _isStreaming = true;
                     SetStreamActive(true);
                     _lastSentFrameBytes = null;
-                    BigLineRtEngine.Reset();
-                    ScreenCapturer.ForceKeyframeRequested = true;
                     byte[] firstFrame = ScreenCapturer.Capture(quality: CurrentQuality, maxDimension: CurrentMaxDimension);
                     if (firstFrame != null && firstFrame.Length > 0)
                     {
@@ -2805,7 +2790,7 @@ namespace BigLineconnect
                     TriggerInstantCapture();
                     
                     // Start capture thread (dedicated)
-                    var captureThread = new Thread(() => CaptureLoop(streamToken))
+                    var captureThread = new Thread(() => CaptureLoop(token))
                     {
                         IsBackground = true,
                         Name = "BigLineconnectCaptureThread"
@@ -2813,9 +2798,9 @@ namespace BigLineconnect
                     captureThread.Start();
                     
                     // Start sender task, host info & displays list in parallel
-                    _ = Task.Run(() => SendHostInfoAsync(ws, streamToken));
-                    _ = Task.Run(() => SendStreamLoop(ws, streamToken));
-                    _ = Task.Run(() => SendDisplaysListAsync(ws, streamToken));
+                    _ = Task.Run(() => SendHostInfoAsync(ws, token));
+                    _ = Task.Run(() => SendStreamLoop(ws, token));
+                    _ = Task.Run(() => SendDisplaysListAsync(ws, token));
 
                     if (MainWindow.Instance != null)
                     {
@@ -2879,26 +2864,20 @@ namespace BigLineconnect
                                 byte[] okMsg = Encoding.UTF8.GetBytes("AUTH_SUCCESS");
                                 await SafeSendAsync(ws, new ArraySegment<byte>(okMsg), WebSocketMessageType.Text, true, token).ConfigureAwait(false);
 
-                                _streamCts?.Cancel();
-                                _streamCts = new CancellationTokenSource();
-                                var streamToken = _streamCts.Token;
-
                                 _isStreaming = true;
                                 SetStreamActive(true);
-                                BigLineRtEngine.Reset();
-                                ScreenCapturer.ForceKeyframeRequested = true;
                                 TriggerInstantCapture();
 
-                                var captureThread = new Thread(() => CaptureLoop(streamToken))
+                                var captureThread = new Thread(() => CaptureLoop(token))
                                 {
                                     IsBackground = true,
                                     Name = "BigLineconnectCaptureThread"
                                 };
                                 captureThread.Start();
 
-                                _ = Task.Run(() => SendHostInfoAsync(ws, streamToken));
-                                _ = Task.Run(() => SendStreamLoop(ws, streamToken));
-                                _ = Task.Run(() => SendDisplaysListAsync(ws, streamToken));
+                                _ = Task.Run(() => SendHostInfoAsync(ws, token));
+                                _ = Task.Run(() => SendStreamLoop(ws, token));
+                                _ = Task.Run(() => SendDisplaysListAsync(ws, token));
                                 return;
                             }
                             else
@@ -2932,26 +2911,20 @@ namespace BigLineconnect
                     byte[] okMsg = Encoding.UTF8.GetBytes("AUTH_SUCCESS");
                     await SafeSendAsync(ws, new ArraySegment<byte>(okMsg), WebSocketMessageType.Text, true, token).ConfigureAwait(false);
 
-                    _streamCts?.Cancel();
-                    _streamCts = new CancellationTokenSource();
-                    var streamToken = _streamCts.Token;
-
                     _isStreaming = true;
                     SetStreamActive(true);
-                    BigLineRtEngine.Reset();
-                    ScreenCapturer.ForceKeyframeRequested = true;
                     TriggerInstantCapture();
                     
-                    var captureThread = new Thread(() => CaptureLoop(streamToken))
+                    var captureThread = new Thread(() => CaptureLoop(token))
                     {
                         IsBackground = true,
                         Name = "BigLineconnectCaptureThread"
                     };
                     captureThread.Start();
                     
-                    _ = Task.Run(() => SendHostInfoAsync(ws, streamToken));
-                    _ = Task.Run(() => SendStreamLoop(ws, streamToken));
-                    _ = Task.Run(() => SendDisplaysListAsync(ws, streamToken));
+                    _ = Task.Run(() => SendHostInfoAsync(ws, token));
+                    _ = Task.Run(() => SendStreamLoop(ws, token));
+                    _ = Task.Run(() => SendDisplaysListAsync(ws, token));
                     return;
                 }
             }
@@ -2974,10 +2947,6 @@ namespace BigLineconnect
         public static void SetStreamActive(bool active)
         {
             _isStreaming = active;
-            if (!active)
-            {
-                try { _streamCts?.Cancel(); } catch { }
-            }
             try
             {
                 string path = GetSharedStreamActivePath();
