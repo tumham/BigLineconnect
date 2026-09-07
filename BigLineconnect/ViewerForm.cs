@@ -508,22 +508,22 @@ namespace BigLineconnect
                 if (mode == "low")
                 {
                     btnQuality.Text = "⚡ Düşük";
-                    if (sendPacket) SendJson("{\"type\":\"set_quality\",\"quality\":45,\"maxDim\":1280}");
+                    if (sendPacket) SendJson("{\"type\":\"set_quality\",\"quality\":55,\"maxDim\":1600}");
                 }
                 else if (mode == "mid")
                 {
                     btnQuality.Text = "🎨 İyi (HD)";
-                    if (sendPacket) SendJson("{\"type\":\"set_quality\",\"quality\":55,\"maxDim\":0}");
+                    if (sendPacket) SendJson("{\"type\":\"set_quality\",\"quality\":72,\"maxDim\":0}");
                 }
                 else if (mode == "high")
                 {
                     btnQuality.Text = "💎 En İyi";
-                    if (sendPacket) SendJson("{\"type\":\"set_quality\",\"quality\":80,\"maxDim\":0}");
+                    if (sendPacket) SendJson("{\"type\":\"set_quality\",\"quality\":85,\"maxDim\":0}");
                 }
                 else if (mode == "auto")
                 {
                     btnQuality.Text = "🚀 Otomatik";
-                    if (sendPacket) SendJson("{\"type\":\"set_quality\",\"quality\":55,\"maxDim\":0}");
+                    if (sendPacket) SendJson("{\"type\":\"set_quality\",\"quality\":72,\"maxDim\":0}");
                 }
             }
 

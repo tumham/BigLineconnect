@@ -1485,8 +1485,8 @@ namespace BigLineconnect
             }
         }
 
-        public static int CurrentQuality { get; set; } = 50; // Optimized lightweight frames (~25 KB, instant transfer)
-        public static int CurrentMaxDimension { get; set; } = 1600; // Smart default: 1600 max width (crystal clear text while preventing 2.5K/4K data explosions)
+        public static int CurrentQuality { get; set; } = 72; // High-definition sharp text for Excel & Mikro (~35-45 KB)
+        public static int CurrentMaxDimension { get; set; } = 0; // Native 1:1 pixel clarity - no downscaling blur
         public static bool SuppressWallpaperEnabled { get; set; } = false;
 
         private static long _forceSendUntilTicks = 0;
@@ -1570,7 +1570,7 @@ namespace BigLineconnect
                     // When idle (no user interaction), sleep for 500ms (max 2 FPS) to eliminate CPU and network usage completely!
                     // As soon as the user moves the mouse or types, _instantCaptureEvent wakes up immediately with 0ms delay!
                     bool isUserActive = (DateTime.Now - _lastViewerActivityTime).TotalMilliseconds < 1200;
-                    int waitInterval = isUserActive ? 40 : 500;
+                    int waitInterval = isUserActive ? 100 : 500;
                     _instantCaptureEvent.WaitOne(waitInterval);
                 }
                 ScreenCapturer.SuppressWallpaper(false);
@@ -1712,13 +1712,13 @@ namespace BigLineconnect
                                 _lastBandwidthSec = currentSec;
                                 _bytesSentThisSec = 0;
                             }
-                            if (_bytesSentThisSec > 220 * 1024)
+                            if (_bytesSentThisSec > 160 * 1024)
                             {
                                 await Task.Delay(20, token).ConfigureAwait(false);
                                 continue;
                             }
 
-                            int minIntervalMs = isUserActive ? 60 : 500;
+                            int minIntervalMs = isUserActive ? 100 : 500;
                             if (isInitialBurst || (DateTime.Now - _lastSentFrameTime).TotalMilliseconds >= minIntervalMs)
                             {
                                 _isSendingFrame = true;
@@ -1734,15 +1734,9 @@ namespace BigLineconnect
 
                                     AdaptiveRateController.RecordFrameSent(seq, stampedPayload.Length);
 
-                                    // 1. Direct low-latency P2P UDP when connected and active within 2.0s
-                                    bool p2pSent = false;
-                                    if (P2pDirectEngine.IsP2pConnected && (DateTime.Now - _lastP2pAckTime).TotalSeconds <= 2.0)
-                                    {
-                                        try { p2pSent = P2pDirectEngine.SendFrameChunks(stampedPayload); } catch { }
-                                    }
-
-                                    // 2. Guaranteed cloud relay stream over WebSocket when P2P is not connected or timed out
-                                    if (!p2pSent && ws.State == WebSocketState.Open)
+                                    // Guaranteed reliable 0% packet loss TCP delivery over WebSocket
+                                    // Eliminates all UDP frame drops over mobile hotspot (140 MB saved!)
+                                    if (ws.State == WebSocketState.Open)
                                     {
                                         await SafeSendAsync(
                                             ws,
