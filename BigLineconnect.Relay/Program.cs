@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Net.WebSockets;
@@ -359,6 +359,7 @@ using System.IO;
             public string TenantId { get; set; } = "BIGLINE";
             public bool RequiresConfirmation { get; set; } = false;
             public DateTime CreatedAt { get; set; } = DateTime.Now;
+            public string ImageBase64 { get; set; } = "";
         }
 
         public class SupportCreateDto
@@ -370,6 +371,7 @@ using System.IO;
             public string? Token { get; set; }
             public string? TenantId { get; set; }
             public bool RequiresConfirmation { get; set; }
+            public string? ImageBase64 { get; set; }
         }
 
         public class SupportHistoryEntry
@@ -385,6 +387,7 @@ using System.IO;
             public string ResolvedAt { get; set; } = "";
             public string Status { get; set; } = "Bekliyor";
             public string Notes { get; set; } = "";
+            public string ImageBase64 { get; set; } = "";
         }
 
         public class LicenseEntry
@@ -1260,7 +1263,8 @@ using System.IO;
                         Priority = priority,
                         Token = dto.Token ?? "",
                         TenantId = tenantId,
-                        RequiresConfirmation = dto.RequiresConfirmation
+                        RequiresConfirmation = dto.RequiresConfirmation,
+                        ImageBase64 = dto.ImageBase64 ?? ""
                     };
                     string reqKey = !string.IsNullOrEmpty(dto.Token) ? dto.Token : dto.Id;
                     ActiveSupportRequests[reqKey] = req;
