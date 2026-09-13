@@ -1,4 +1,4 @@
-using System.Net.Http;
+﻿using System.Net.Http;
 using System.Text;
 using System.Text.Json;
 
@@ -128,6 +128,30 @@ public static class TelegramNotifier
 ⏰ Zaman: {DateTime.Now:dd.MM.yyyy HH:mm}
 
 _Destek uzmanı müşteriye bağlandı_
+""";
+
+        await BroadcastToTenantAsync(tenantId, message);
+    }
+
+    /// <summary>
+    /// Destek uzmani talebi incelemeye aldiginda (goruldu / siraya alindi) ilgili ekibe bildirim gonderir.
+    /// </summary>
+    public static async Task NotifyTicketAcknowledgedAsync(string customerName, string issue, string hostId, string operatorName, string notes, string tenantId = "BIGLINE")
+    {
+        if (string.IsNullOrEmpty(_botToken)) return;
+
+        string message = $"""
+ğŸ‘ï¸ *TALEP SIRAYA ALINDI / Ä°NCELENÄ°YOR*
+
+ğŸ¢ Firma: *{EscapeMarkdown(customerName)}*
+ğŸ“‹ Konu: {EscapeMarkdown(issue)}
+ğŸ’» Bilgisayar ID: {hostId}
+ğŸ‘¨â€ğŸ’» Ä°nceleyen Uzman: *{EscapeMarkdown(operatorName)}*
+ğŸ’¬ Not: {EscapeMarkdown(notes)}
+ğŸ·ï¸ Tenant: {EscapeMarkdown(tenantId)}
+â±ï¸ Zaman: {DateTime.Now:dd.MM.yyyy HH:mm}
+
+_MÃ¼ÅŸteriye sÄ±raya alÄ±ndÄ±ÄŸÄ± ve kÄ±sa sÃ¼rede baÄŸlanÄ±lacaÄŸÄ± bilgisi iletildi._
 """;
 
         await BroadcastToTenantAsync(tenantId, message);

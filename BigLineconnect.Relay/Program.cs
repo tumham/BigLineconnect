@@ -360,6 +360,9 @@ using System.IO;
             public bool RequiresConfirmation { get; set; } = false;
             public DateTime CreatedAt { get; set; } = DateTime.Now;
             public string ImageBase64 { get; set; } = "";
+            public string Status { get; set; } = "SÄ±rada Bekliyor";
+            public string Notes { get; set; } = "";
+            public string OperatorName { get; set; } = "";
         }
 
         public class SupportCreateDto
@@ -388,6 +391,7 @@ using System.IO;
             public string Status { get; set; } = "Bekliyor";
             public string Notes { get; set; } = "";
             public string ImageBase64 { get; set; } = "";
+            public string OperatorName { get; set; } = "";
         }
 
         public class LicenseEntry
@@ -1320,6 +1324,145 @@ using System.IO;
                 bool exists = !string.IsNullOrEmpty(id) && ActiveSupportRequests.Values.Any(r => r.Id == id || r.Token == id);
                 context.Response.ContentType = "application/json";
                 await context.Response.WriteAsync(exists ? "true" : "false");
+            });
+
+            // ğŸ‘ï¸ CanlÄ± Destek Talep Durumu Sorgulama (MÃ¼ÅŸteri iÃ§in anlÄ±k bilgilendirme)
+            app.MapGet("/api/support/status", async context =>
+            {
+                context.Response.ContentType = "application/json; charset=utf-8";
+                string id = context.Request.Query["id"].ToString() ?? "";
+                string token = context.Request.Query["token"].ToString() ?? "";
+                string cleanId = id.Replace(" ", "").Trim();
+
+                SupportRequest? req = ActiveSupportRequests.Values.FirstOrDefault(r =>
+                    (!string.IsNullOrEmpty(token) && r.Token.Equals(token, StringComparison.OrdinalIgnoreCase)) ||
+                    (!string.IsNullOrEmpty(cleanId) && r.Id.Replace(" ", "").Trim().Equals(cleanId, StringComparison.OrdinalIgnoreCase)));
+
+                if (req != null)
+                {
+                    var resp = new
+                    {
+                        exists = true,
+                        active = true,
+                        status = string.IsNullOrEmpty(req.Status) ? "SÄ±rada Bekliyor" : req.Status,
+                        notes = string.IsNullOrEmpty(req.Notes) ? "Talebiniz uzman havuzunda beklemektedir." : req.Notes,
+                        operatorName = req.OperatorName ?? "",
+                        token = req.Token,
+                        id = req.Id
+                    };
+                    await context.Response.WriteAsJsonAsync(resp);
+                    return;
+                }
+
+                // ArÅŸiv/GeÃ§miÅŸ kontrolÃ¼ (Ã‡Ã¶zÃ¼ldÃ¼ mÃ¼, iptal mi edildi?)
+                try
+                {
+                    var history = LoadSupportHistory();
+                    var hist = history.LastOrDefault(h =>
+                        (!string.IsNullOrEmpty(token) && h.Token.Equals(token, StringComparison.OrdinalIgnoreCase)) ||
+                        (!string.IsNullOrEmpty(cleanId) && h.HostId.Replace(" ", "").Trim().Equals(cleanId, StringComparison.OrdinalIgnoreCase)));
+
+                    if (hist != null)
+                    {
+                        var resp = new
+                        {
+                            exists = true,
+                            active = false,
+                            status = string.IsNullOrEmpty(hist.Status) ? "Ã‡Ã¶zÃ¼ldÃ¼" : hist.Status,
+                            notes = hist.Notes ?? "",
+                            operatorName = "",
+                            token = hist.Token,
+                            id = hist.HostId
+                        };
+                        await context.Response.WriteAsJsonAsync(resp);
+                        return;
+                    }
+                }
+                catch { }
+
+                await context.Response.WriteAsJsonAsync(new { exists = false, active = false, status = "NONE", notes = "", operatorName = "" });
+            });
+
+            // ğŸ‘ï¸ Uzman Talebi GÃ¶rdÃ¼ / Ä°ncelemeye AldÄ± / SÄ±raya AldÄ± Bildirimi
+            app.MapPost("/api/support/acknowledge", async context =>
+            {
+                try
+                {
+                    using var reader = new StreamReader(context.Request.Body);
+                    string body = await reader.ReadToEndAsync();
+                    using var doc = System.Text.Json.JsonDocument.Parse(body);
+                    var root = doc.RootElement;
+                    string id = root.TryGetProperty("id", out var pId) ? pId.GetString() ?? "" : "";
+                    string token = root.TryGetProperty("token", out var pToken) ? pToken.GetString() ?? "" : "";
+                    string opName = root.TryGetProperty("operatorName", out var pOp) ? pOp.GetString() ?? "Uzman Mahmut" : "Uzman Mahmut";
+                    string notes = root.TryGetProperty("notes", out var pNotes) ? pNotes.GetString() ?? "" : "";
+                    if (string.IsNullOrWhiteSpace(notes))
+                    {
+                        notes = "Talebiniz " + opName + " tarafÄ±ndan gÃ¶rÃ¼ldÃ¼ ve teknik incelemeye alÄ±ndÄ±. En kÄ±sa sÃ¼rede tarafÄ±nÄ±za baÄŸlantÄ± saÄŸlanacaktÄ±r.";
+                    }
+
+                    string cleanId = id.Replace(" ", "").Trim();
+
+                    SupportRequest? ticket = null;
+                    var matchKey = ActiveSupportRequests.FirstOrDefault(kv => 
+                        (!string.IsNullOrEmpty(token) && (kv.Key.Equals(token, StringComparison.OrdinalIgnoreCase) || kv.Value.Token.Equals(token, StringComparison.OrdinalIgnoreCase))) ||
+                        (!string.IsNullOrEmpty(cleanId) && (kv.Key.Equals(cleanId, StringComparison.OrdinalIgnoreCase) || kv.Value.Id.Replace(" ", "").Trim().Equals(cleanId, StringComparison.OrdinalIgnoreCase)))).Key;
+
+                    if (matchKey != null && ActiveSupportRequests.TryGetValue(matchKey, out ticket) && ticket != null)
+                    {
+                        ticket.Status = "Ä°ncelemede";
+                        ticket.OperatorName = opName;
+                        ticket.Notes = notes;
+                    }
+
+                    // ArÅŸivde varsa da gÃ¼ncelle
+                    try
+                    {
+                        var history = LoadSupportHistory();
+                        var entry = history.FirstOrDefault(h => 
+                            (!string.IsNullOrEmpty(token) && h.Token.Equals(token, StringComparison.OrdinalIgnoreCase)) ||
+                            (!string.IsNullOrEmpty(cleanId) && h.HostId.Replace(" ", "").Trim().Equals(cleanId, StringComparison.OrdinalIgnoreCase)));
+                        if (entry != null)
+                        {
+                            entry.Status = "Ä°ncelemede";
+                            entry.Notes = notes;
+                            SaveSupportHistory(history);
+                        }
+                    }
+                    catch { }
+
+                                        // Host soketine anlik push bildirimi gonder
+                    if (ActiveHosts.TryGetValue(cleanId, out var session) && session.HostSocket != null && session.HostSocket.State == System.Net.WebSockets.WebSocketState.Open)
+                    {
+                        try
+                        {
+                            byte[] msg = Encoding.UTF8.GetBytes($"TICKET_ACKNOWLEDGED|{opName}|{notes}");
+                            await session.HostSocket.SendAsync(new ArraySegment<byte>(msg), System.Net.WebSockets.WebSocketMessageType.Text, true, CancellationToken.None);
+                        }
+                        catch { }
+                    }
+
+                    // Telegram kanalina bilgilendirme
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            string targetName = ticket != null ? ticket.Name : ("MÃ¼ÅŸteri (" + id + ")");
+                            string targetIssue = ticket != null ? ticket.Issue : "Genel Destek";
+                            string targetTenant = ticket != null ? ticket.TenantId : "BIGLINE";
+                            await TelegramNotifier.NotifyTicketAcknowledgedAsync(targetName, targetIssue, cleanId, opName, notes, targetTenant);
+                        }
+                        catch { }
+                    });
+
+                    context.Response.StatusCode = StatusCodes.Status200OK;
+                    await context.Response.WriteAsJsonAsync(new { success = true, status = "Ä°ncelemede", notes = notes, operatorName = opName });
+                }
+                catch (Exception ex)
+                {
+                    context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                    await context.Response.WriteAsJsonAsync(new { success = false, error = ex.Message });
+                }
             });
 
             app.MapGet("/api/support/list", async context =>
