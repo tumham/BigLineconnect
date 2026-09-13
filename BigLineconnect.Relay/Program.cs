@@ -1292,7 +1292,8 @@ using System.IO;
                         Token = dto.Token ?? "",
                         TenantId = tenantId,
                         RequiresConfirmation = dto.RequiresConfirmation,
-                        ImageBase64 = dto.ImageBase64 ?? ""
+                        ImageBase64 = dto.ImageBase64 ?? "",
+                        PreferredOperator = dto.PreferredOperator ?? ""
                     };
                     string reqKey = !string.IsNullOrEmpty(dto.Token) ? dto.Token : dto.Id;
                     ActiveSupportRequests[reqKey] = req;
@@ -1329,7 +1330,9 @@ using System.IO;
                                 CreatedAt = GetTurkeyTimeString(),
                                 ResolvedAt = "—",
                                 Status = "⏳ Sırada Bekliyor",
-                                Notes = "Uzman tarafından incelemeye alınması bekleniyor."
+                                Notes = "Uzman taraf\u0131ndan incelemeye al\u0131nmas\u0131 bekleniyor.",
+                                ImageBase64 = dto.ImageBase64 ?? "",
+                                PreferredOperator = dto.PreferredOperator ?? ""
                             });
                             SaveSupportHistory(history);
                         }
