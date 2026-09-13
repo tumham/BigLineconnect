@@ -349,6 +349,15 @@ using System.IO;
         private static string AdminPassword = "BigLineAdmin2026!";
         private static string AdminSessionToken = Guid.NewGuid().ToString();
 
+                public class OperatorPresence
+        {
+            public string Name { get; set; } = "";
+            public string TenantId { get; set; } = "BIGLINE";
+            public bool IsOnline { get; set; } = true;
+            public DateTime LastSeen { get; set; } = DateTime.Now;
+            public string Title { get; set; } = "Destek UzmanÄ±";
+        }
+
         public class SupportRequest
         {
             public string Id { get; set; } = "";
@@ -363,8 +372,8 @@ using System.IO;
             public string Status { get; set; } = "SÄ±rada Bekliyor";
             public string Notes { get; set; } = "";
             public string OperatorName { get; set; } = "";
+            public string PreferredOperator { get; set; } = "";
         }
-
         public class SupportCreateDto
         {
             public string? Id { get; set; }
@@ -375,6 +384,7 @@ using System.IO;
             public string? TenantId { get; set; }
             public bool RequiresConfirmation { get; set; }
             public string? ImageBase64 { get; set; }
+            public string? PreferredOperator { get; set; }
         }
 
         public class SupportHistoryEntry
@@ -392,6 +402,7 @@ using System.IO;
             public string Notes { get; set; } = "";
             public string ImageBase64 { get; set; } = "";
             public string OperatorName { get; set; } = "";
+            public string PreferredOperator { get; set; } = "";
         }
 
         public class LicenseEntry
@@ -615,7 +626,20 @@ using System.IO;
             public static void ClearAllTickets() { }
         }
 
-        private static readonly ConcurrentDictionary<string, SupportRequest> ActiveSupportRequests = new();
+                private static readonly ConcurrentDictionary<string, SupportRequest> ActiveSupportRequests = new();
+        public static readonly ConcurrentDictionary<string, List<OperatorPresence>> TenantOperators = new();
+
+        public static List<OperatorPresence> GetTenantOperators(string tenantId)
+        {
+            string t = string.IsNullOrEmpty(tenantId) ? "BIGLINE" : tenantId.Trim().ToUpperInvariant();
+            return TenantOperators.GetOrAdd(t, key => new List<OperatorPresence>
+            {
+                new OperatorPresence { Name = "Uzman Mahmut", TenantId = key, IsOnline = true, Title = "KÄ±demli Destek UzmanÄ±" },
+                new OperatorPresence { Name = "Uzman Berivan", TenantId = key, IsOnline = true, Title = "ERP & Sistem UzmanÄ±" },
+                new OperatorPresence { Name = "Uzman Saliha", TenantId = key, IsOnline = true, Title = "Destek UzmanÄ±" },
+                new OperatorPresence { Name = "Uzman Mehmet", TenantId = key, IsOnline = true, Title = "Teknik Destek UzmanÄ±" }
+            });
+        }
 
         public class HostSession
         {
@@ -1278,8 +1302,7 @@ using System.IO;
                     {
                         try
                         {
-                            await TelegramNotifier.NotifySupportRequestAsync(
-                                req.Name, req.Issue, req.Priority, req.Id, req.TenantId);
+                            await TelegramNotifier.NotifySupportRequestAsync(req.Name, req.Issue, req.Priority, req.Id, req.TenantId, req.PreferredOperator);
                         }
                         catch (Exception ex)
                         {
@@ -1316,6 +1339,14 @@ using System.IO;
                     return Results.Ok("Success");
                 }
                 return Results.BadRequest("Invalid Data");
+            });
+
+                        app.MapGet("/api/support/operators", async context =>
+            {
+                string tenantId = context.Request.Query["tenantId"].ToString() ?? "BIGLINE";
+                var list = GetTenantOperators(tenantId);
+                context.Response.StatusCode = StatusCodes.Status200OK;
+                await context.Response.WriteAsJsonAsync(list);
             });
 
             app.MapGet("/api/support/check", async context =>

@@ -66,7 +66,7 @@ public static class TelegramNotifier
     /// <summary>
     /// Yeni destek talebi geldiğinde ilgili tenant'ın ve ana merkezin destek uzmanlarına push bildirimi gönderir.
     /// </summary>
-    public static async Task NotifySupportRequestAsync(string customerName, string issue, string priority, string hostId, string tenantId)
+    public static async Task NotifySupportRequestAsync(string customerName, string issue, string priority, string hostId, string tenantId, string preferredOperator = "")
     {
         if (string.IsNullOrEmpty(_botToken)) return;
 
@@ -86,7 +86,7 @@ public static class TelegramNotifier
 
 📋 Firma: *{EscapeMarkdown(customerName)}*
 🎯 Konu: {EscapeMarkdown(issue)}
-{priorityEmoji} Öncelik: *{EscapeMarkdown(priority)}*
+{priorityEmoji} Öncelik: *{EscapeMarkdown(priority)}*" + (!string.IsNullOrEmpty(preferredOperator) ? $"\nğŸ¯ *Tercih Edilen Uzman:* {EscapeMarkdown(preferredOperator)}" : "") + $@"
 💻 Bilgisayar ID: `{cleanHostId}`
 🏢 Tenant: {EscapeMarkdown(tenantId)}
 ⏰ Zaman: {DateTime.Now:dd.MM.yyyy HH:mm}
