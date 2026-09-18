@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
@@ -364,9 +364,7 @@
             <button type="button" id="mobile-send-btn" style="background: linear-gradient(135deg, #00e5ff, #10b981); border: none; border-radius: 12px; color: #000; font-weight: 900; font-size: 0.88rem; padding: 9px 14px; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; gap: 4px;">
                 <i class="fa-solid fa-paper-plane"></i> <span>Yaz</span>
             </button>
-            <button type="button" id="mobile-tab-btn" style="background: rgba(245, 158, 11, 0.3); border: 1.5px solid #f59e0b; border-radius: 12px; color: #fbbf24; font-weight: 800; font-size: 0.85rem; padding: 9px 10px; cursor: pointer; flex-shrink: 0;">
-                <span>TAB â‡¥</span>
-            </button>
+            <button type="button" id="mobile-tab-btn" style="background: rgba(245, 158, 11, 0.3); border: 1.5px solid #f59e0b; border-radius: 12px; color: #fbbf24; font-weight: 800; font-size: 0.85rem; padding: 9px 10px; cursor: pointer; flex-shrink: 0;"><span>TAB &#10140;</span></button>
             <button type="button" id="mobile-close-input-btn" style="background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; border-radius: 12px; color: #ef4444; font-size: 0.9rem; padding: 9px 10px; cursor: pointer; flex-shrink: 0;">
                 <i class="fa-solid fa-xmark"></i>
             </button>
@@ -1112,7 +1110,7 @@
                 console.log('[BigLine] WS Connected!');
                 isConnecting = false;
                 try {
-                    ws.send(JSON.stringify({ type: 'set_quality', quality: 70, maxDim: 0 }));
+                    ws.send(JSON.stringify({ type: 'set_quality', quality: 92, maxDim: 0 }));
                 } catch(e) {}
                 if (pingInterval) clearInterval(pingInterval);
                 pingInterval = setInterval(function() {
@@ -1152,7 +1150,7 @@
                         try { ws.close(); } catch(e) {}
                     } else if (ev.data === 'AUTH_SUCCESS' || ev.data === 'AUTH_OK') {
                         try {
-                            ws.send(JSON.stringify({ type: 'set_quality', quality: 70, maxDim: 0 }));
+                            ws.send(JSON.stringify({ type: 'set_quality', quality: 92, maxDim: 0 }));
                         } catch(e) {}
                         if (typeof window.startFreeSessionTimer === 'function') window.startFreeSessionTimer();
                         var landing = document.getElementById('landing-page');
@@ -1455,38 +1453,44 @@
                 baseFitH = containerW / (nativeW / nativeH);
             }
 
-            var baseLeft = Math.max(0, (containerW - baseFitW) / 2);
-            var baseTop = Math.max(0, (containerH - baseFitH) / 2);
+            // 10/10 KRÄ°STAL NETLÄ°K (GERÃ‡EK PÄ°KSEL Ã–LÃ‡EKLEME):
+            // transform: scale() yerine CSS width/height'Ä± bÃ¼yÃ¼terek Retina ekranlarda
+            // 1920x1080 canvas tamponunun tam Ã§Ã¶zÃ¼nÃ¼rlÃ¼kte (sÄ±fÄ±r bulanÄ±klÄ±kla) Ã§izilmesini saÄŸlar.
+            var targetW = Math.round(baseFitW * currentScale);
+            var targetH = Math.round(baseFitH * currentScale);
+
+            cv.style.position = 'absolute';
+            cv.style.left = '0px';
+            cv.style.top = '0px';
+            cv.style.width = targetW + 'px';
+            cv.style.height = targetH + 'px';
+            cv.style.maxWidth = 'none';
+            cv.style.maxHeight = 'none';
 
             if (currentScale <= 1.02) {
                 currentScale = 1.0;
-                panX = 0;
-                panY = 0;
+                panX = Math.round(Math.max(0, (containerW - baseFitW) / 2));
+                panY = Math.round(Math.max(0, (containerH - baseFitH) / 2));
+                cv.style.transform = 'translate3d(' + panX + 'px, ' + panY + 'px, 0)';
+                cv.style.filter = 'none';
             } else {
-                var visW = baseFitW * currentScale;
-                var visH = baseFitH * currentScale;
-                if (visW > containerW) {
-                    panX = Math.max(containerW - baseLeft - visW, Math.min(-baseLeft, panX));
+                if (targetW > containerW) {
+                    var minPanX = containerW - targetW;
+                    panX = Math.max(minPanX, Math.min(0, panX));
                 } else {
-                    panX = 0;
+                    panX = Math.round((containerW - targetW) / 2);
                 }
-                if (visH > containerH) {
-                    panY = Math.max(containerH - baseTop - visH, Math.min(-baseTop, panY));
+                if (targetH > containerH) {
+                    var minPanY = containerH - targetH;
+                    panY = Math.max(minPanY, Math.min(0, panY));
                 } else {
-                    panY = 0;
+                    panY = Math.round((containerH - targetH) / 2);
                 }
-            }
 
-            cv.style.position = 'absolute';
-            cv.style.left = baseLeft + 'px';
-            cv.style.top = baseTop + 'px';
-            cv.style.width = baseFitW + 'px';
-            cv.style.height = baseFitH + 'px';
-            cv.style.maxWidth = 'none';
-            cv.style.maxHeight = 'none';
-            cv.style.transformOrigin = '0 0';
-            cv.style.transform = 'translate3d(' + panX.toFixed(2) + 'px, ' + panY.toFixed(2) + 'px, 0) scale(' + currentScale.toFixed(4) + ')';
-            cv.style.filter = (currentScale > 1.05) ? 'contrast(106%) saturate(103%)' : 'none';
+                cv.style.transform = 'translate3d(' + Math.round(panX) + 'px, ' + Math.round(panY) + 'px, 0)';
+                // Font keskinleÅŸtirme & Mikro Jump muhasebe kontrast artÄ±rÄ±cÄ±
+                cv.style.filter = 'contrast(108%) saturate(104%)';
+            }
 
             var zoomBtn = document.getElementById('zoom-reset-btn');
             if (zoomBtn) {
@@ -1496,12 +1500,12 @@
                     zoomBtn.style.borderColor = '#00e5ff';
                     zoomBtn.style.background = 'linear-gradient(135deg, rgba(0, 229, 255, 0.25), rgba(16, 185, 129, 0.25))';
                 } else if (currentScale < 2.8) {
-                    zoomBtn.innerHTML = '<i class="fa-solid fa-compress"></i> <span>ğŸ” %250 HD</span>';
+                    zoomBtn.innerHTML = '<i class="fa-solid fa-compress"></i> <span>ğŸ” %' + Math.round(currentScale * 100) + ' HD</span>';
                     zoomBtn.style.color = '#2ecc71';
                     zoomBtn.style.borderColor = '#2ecc71';
                     zoomBtn.style.background = 'linear-gradient(135deg, rgba(46, 204, 113, 0.35), rgba(0, 229, 255, 0.35))';
                 } else {
-                    zoomBtn.innerHTML = '<i class="fa-solid fa-expand"></i> <span>ğŸ” 1:1 Ultra</span>';
+                    zoomBtn.innerHTML = '<i class="fa-solid fa-expand"></i> <span>ğŸ’ 1:1 Ultra</span>';
                     zoomBtn.style.color = '#f59e0b';
                     zoomBtn.style.borderColor = '#f59e0b';
                     zoomBtn.style.background = 'linear-gradient(135deg, rgba(245, 158, 11, 0.35), rgba(239, 68, 68, 0.35))';
@@ -1526,14 +1530,14 @@
             var container = document.getElementById('canvas-container');
             var containerW = (container && container.clientWidth) || window.innerWidth;
             var containerH = (container && container.clientHeight) || (window.innerHeight - 60);
-            var baseLeft = Math.max(0, (containerW - baseFitW) / 2);
-            var baseTop = Math.max(0, (containerH - baseFitH) / 2);
 
             if (currentScale <= 1.02) {
                 // 1. AdÄ±m: %250 HD Netlik (Merkeze odaklÄ±)
                 currentScale = 2.5;
-                panX = (containerW / 2) - baseLeft - ((baseFitW / 2) * currentScale);
-                panY = (containerH / 2) - baseTop - ((baseFitH / 2) * currentScale);
+                var targetW = baseFitW * currentScale;
+                var targetH = baseFitH * currentScale;
+                panX = (containerW - targetW) / 2;
+                panY = (containerH - targetH) / 2;
                 if (typeof showToast === 'function') {
                     showToast('ğŸ” %250 HD Netlik: Mikro yazÄ±lar bÃ¼yÃ¼tÃ¼ldÃ¼! (KaydÄ±rmak iÃ§in sÃ¼rÃ¼kleyin)', 'success');
                 }
@@ -1542,18 +1546,20 @@
                 var cv = document.getElementById('screen-canvas');
                 var nativeW = (cv && cv.width) || 1920;
                 currentScale = Math.max(3.2, nativeW / (baseFitW || 390));
-                panX = (containerW / 2) - baseLeft - ((baseFitW / 2) * currentScale);
-                panY = (containerH / 2) - baseTop - ((baseFitH / 2) * currentScale);
+                var targetW = baseFitW * currentScale;
+                var targetH = baseFitH * currentScale;
+                panX = (containerW - targetW) / 2;
+                panY = (containerH - targetH) / 2;
                 if (typeof showToast === 'function') {
-                    showToast('ğŸ” 1:1 Ultra Kristal: GerÃ§ek masaÃ¼stÃ¼ piksel netliÄŸi!', 'success');
+                    showToast('ğŸ’ 1:1 Ultra Kristal: GerÃ§ek masaÃ¼stÃ¼ piksel netliÄŸi!', 'success');
                 }
             } else {
                 // 3. AdÄ±m: Tam ekran sÄ±ÄŸdÄ±rma
                 currentScale = 1.0;
-                panX = 0;
-                panY = 0;
+                panX = Math.round(Math.max(0, (containerW - baseFitW) / 2));
+                panY = Math.round(Math.max(0, (containerH - baseFitH) / 2));
                 if (typeof showToast === 'function') {
-                    showToast('ğŸ” Tam Ekran SÄ±ÄŸdÄ±rÄ±ldÄ±', 'info');
+                    showToast('ğŸ“± Tam Ekran SÄ±ÄŸdÄ±rÄ±ldÄ±', 'info');
                 }
             }
             applyZoomTransform();
@@ -2062,17 +2068,15 @@
                     initialPinchDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
                     initialPinchScale = currentScale;
 
-                    var midX = (t1.clientX + t2.clientX) / 2;
-                    var midY = (t1.clientY + t2.clientY) / 2;
-                    var focalContainerX = midX - cRect.left;
-                    var focalContainerY = midY - cRect.top;
+                    var midX = (t1.clientX + t2.clientX) / 2 - cRect.left;
+                    var midY = (t1.clientY + t2.clientY) / 2 - cRect.top;
 
-                    var baseLeft = Math.max(0, (cRect.width - baseFitW) / 2);
-                    var baseTop = Math.max(0, (cRect.height - baseFitH) / 2);
+                    var curW = baseFitW * currentScale;
+                    var curH = baseFitH * currentScale;
 
-                    // ParmaklarÄ±n altÄ±ndaki tam canvas noktasÄ±nÄ± hesapla (Focal Anchor Point)
-                    pinchFocalCanvasX = (focalContainerX - baseLeft - panX) / (currentScale || 1.0);
-                    pinchFocalCanvasY = (focalContainerY - baseTop - panY) / (currentScale || 1.0);
+                    // ParmaklarÄ±n altÄ±ndaki tam canvas oranÄ±nÄ± yakala (0.0 - 1.0)
+                    pinchFocalCanvasNormX = Math.max(0, Math.min(1, (midX - panX) / (curW || 1)));
+                    pinchFocalCanvasNormY = Math.max(0, Math.min(1, (midY - panY) / (curH || 1)));
 
                 } else if (e.touches.length === 1) {
                     isPinchZooming = false;
@@ -2095,22 +2099,20 @@
                     var t1 = e.touches[0];
                     var t2 = e.touches[1];
                     var dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
-                    var midX = (t1.clientX + t2.clientX) / 2;
-                    var midY = (t1.clientY + t2.clientY) / 2;
+                    var midX = (t1.clientX + t2.clientX) / 2 - cRect.left;
+                    var midY = (t1.clientY + t2.clientY) / 2 - cRect.top;
 
                     if (initialPinchDist > 0) {
                         var factor = dist / initialPinchDist;
                         var newScale = Math.max(1.0, Math.min(6.0, initialPinchScale * factor));
-
-                        var focalContainerX = midX - cRect.left;
-                        var focalContainerY = midY - cRect.top;
-                        var baseLeft = Math.max(0, (cRect.width - baseFitW) / 2);
-                        var baseTop = Math.max(0, (cRect.height - baseFitH) / 2);
-
-                        // Kusursuz Odaklama (Focal Point Math): Parmaklar nereye odaklandÄ±ysa TAM ORASI bÃ¼yÃ¼r!
                         currentScale = newScale;
-                        panX = focalContainerX - baseLeft - (pinchFocalCanvasX * newScale);
-                        panY = focalContainerY - baseTop - (pinchFocalCanvasY * newScale);
+
+                        var newTargetW = baseFitW * newScale;
+                        var newTargetH = baseFitH * newScale;
+
+                        // Kusursuz Odaklama (Focal Point Math): Ä°ki parmak nereye dokunduysa TAM ORASI odaklanÄ±p bÃ¼yÃ¼r!
+                        panX = midX - (pinchFocalCanvasNormX * newTargetW);
+                        panY = midY - (pinchFocalCanvasNormY * newTargetH);
 
                         applyZoomTransform();
                     }
@@ -2122,12 +2124,12 @@
                     if (Math.abs(dx) > 6 || Math.abs(dy) > 6) {
                         isTouchDragging = true;
                         if (currentScale > 1.05) {
-                            // Zoomlu mod: MasaÃ¼stÃ¼nde pÃ¼rÃ¼zsÃ¼z GPU kaydÄ±rma (Pan)
+                            // Zoomlu mod: MasaÃ¼stÃ¼nde pÃ¼rÃ¼zsÃ¼z kaydÄ±rma (Pan)
                             panX = startPanX + dx;
                             panY = startPanY + dy;
                             applyZoomTransform();
                         } else {
-                            // Tam ekran modu: Fare imlecini hareket ettir
+                            // Normal mod: Fare imlecini hareket ettir
                             var pos = getMousePos(t.clientX, t.clientY);
                             safeSendMove(pos.x, pos.y);
                         }
