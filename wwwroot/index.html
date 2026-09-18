@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
@@ -358,6 +358,20 @@
             <img id="screen-img" style="width: auto; height: auto; margin: auto; display: none;">
         </div>
 
+                <!-- Mobile Live Text Input Bar (Excel / ERP / Muhasebe DoÄŸrudan Metin GiriÅŸi) -->
+        <div id="mobile-text-bar" style="display: none; position: fixed; bottom: 72px; left: 50%; transform: translateX(-50%); width: 95vw; max-width: 520px; z-index: 2147483647; background: rgba(11, 15, 25, 0.98); backdrop-filter: blur(25px); border: 2px solid #00e5ff; border-radius: 20px; padding: 7px 10px; box-shadow: 0 15px 40px rgba(0,0,0,0.95); align-items: center; gap: 7px;">
+            <input type="text" id="mobile-live-input" placeholder="HÃ¼creye metin yazÄ±n (Ã¶rn: KRUVAZE 8 D)..." autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" style="flex: 1; min-width: 0; background: rgba(15, 23, 42, 0.95); border: 1.5px solid rgba(0,229,255,0.5); border-radius: 12px; color: #fff; padding: 9px 12px; font-size: 16px; outline: none;">
+            <button type="button" id="mobile-send-btn" style="background: linear-gradient(135deg, #00e5ff, #10b981); border: none; border-radius: 12px; color: #000; font-weight: 900; font-size: 0.88rem; padding: 9px 14px; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; gap: 4px;">
+                <i class="fa-solid fa-paper-plane"></i> <span>Yaz</span>
+            </button>
+            <button type="button" id="mobile-tab-btn" style="background: rgba(245, 158, 11, 0.3); border: 1.5px solid #f59e0b; border-radius: 12px; color: #fbbf24; font-weight: 800; font-size: 0.85rem; padding: 9px 10px; cursor: pointer; flex-shrink: 0;">
+                <span>TAB â‡¥</span>
+            </button>
+            <button type="button" id="mobile-close-input-btn" style="background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; border-radius: 12px; color: #ef4444; font-size: 0.9rem; padding: 9px 10px; cursor: pointer; flex-shrink: 0;">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
         <!-- Floating Controls for Mobile & Actions (Stationary at bottom, never zooms, highest z-index) -->
         <div class="floating-controls" id="floating-controls" style="position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); display: flex; gap: 5px; background: rgba(11, 15, 25, 0.96); backdrop-filter: blur(25px); padding: 7px 10px; border-radius: 35px; border: 1.5px solid rgba(0, 229, 255, 0.6); box-shadow: 0 15px 40px rgba(0,0,0,0.95); z-index: 2147483647 !important; pointer-events: auto !important; max-width: 98vw; overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; scrollbar-width: none; touch-action: manipulation;">
             <!-- 123 Numpad -->
@@ -594,7 +608,7 @@
         </style>
 
         <!-- Hidden input to capture keyboard events on mobile -->
-        <input type="text" id="hidden-keyboard-input" autocomplete="off" autocapitalize="off" spellcheck="false">
+        <input type="text" id="hidden-keyboard-input" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" style="position: fixed; top: 0; left: 0; width: 1px; height: 1px; opacity: 0.01; pointer-events: none; border: none; font-size: 16px; background: transparent; z-index: -1;">
     </div>
 
     <!-- Password Prompt Dialog -->
@@ -1081,9 +1095,10 @@
                 }
             }, 5000);
 
-            var wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            var wsHost = (location.host && !location.host.includes('localhost') && !location.host.startsWith('127.0.0.1')) ? location.host : 'biglineconnect-production.up.railway.app';
+            var wsProtocol = (window.location.protocol === 'https:' || wsHost.includes('railway.app')) ? 'wss:' : 'ws:';
             try {
-                ws = new WebSocket(wsProtocol + '//' + location.host + '/connect-client?id=' + encodeURIComponent(cleanId));
+                ws = new WebSocket(wsProtocol + '//' + wsHost + '/connect-client?id=' + encodeURIComponent(cleanId));
                 ws.binaryType = 'arraybuffer';
             } catch(wsErr) {
                 console.error('[BigLine] WebSocket create error:', wsErr);
@@ -1117,7 +1132,7 @@
                         resetConnectButton();
                         alert('⚠️ UYARI: Bu bilgisayara şu an başka bir operatör bağlı.');
                         ws.close();
-                    } else if (ev.data === 'AUTH_REQUIRED') {
+                    } else if (ev.data === 'AUTH_REQUIRED' || ev.data === 'AUTH_REQ') {
                         var pass = prompt('🔒 Lütfen karşı bilgisayarın ekranında yazan 6 haneli erişim şifresini girin:', '');
                         if (pass) {
                             ws.send(pass);
@@ -1126,7 +1141,16 @@
                             resetConnectButton();
                             ws.close();
                         }
-                    } else if (ev.data === 'AUTH_SUCCESS') {
+                    } else if (ev.data === 'WAITING_APPROVAL') {
+                        if (typeof showToast === 'function') showToast('⏳ Karşı bilgisayardan bağlantı onayı bekleniyor...', 'info');
+                    } else if (ev.data === 'APPROVAL_OK') {
+                        if (typeof showToast === 'function') showToast('✅ Müşteri bağlantıyı onayladı! Yayın başlatılıyor...', 'success');
+                        try { ws.send("START_STREAM"); } catch(e) {}
+                    } else if (ev.data === 'APPROVAL_REJECTED') {
+                        resetConnectButton();
+                        alert('⚠️ Bağlantı isteği karşı bilgisayar tarafından reddedildi.');
+                        try { ws.close(); } catch(e) {}
+                    } else if (ev.data === 'AUTH_SUCCESS' || ev.data === 'AUTH_OK') {
                         try {
                             ws.send(JSON.stringify({ type: 'set_quality', quality: 70, maxDim: 0 }));
                         } catch(e) {}
@@ -1431,58 +1455,53 @@
                 baseFitH = containerW / (nativeW / nativeH);
             }
 
-            // Gerçek piksel ölçekleme:
-            // CSS piksel boyutunu doğrudan büyüterek Retina ekranlarda 1920x1080 canvas tamponunun
-            // tam çözünürlükte (sıfır bulanıklıkla) çizilmesini sağlar.
-            var targetW = Math.round(baseFitW * currentScale);
-            var targetH = Math.round(baseFitH * currentScale);
-
-            cv.style.width = targetW + 'px';
-            cv.style.height = targetH + 'px';
-            cv.style.maxWidth = 'none';
-            cv.style.maxHeight = 'none';
+            var baseLeft = Math.max(0, (containerW - baseFitW) / 2);
+            var baseTop = Math.max(0, (containerH - baseFitH) / 2);
 
             if (currentScale <= 1.02) {
+                currentScale = 1.0;
                 panX = 0;
                 panY = 0;
-                container.style.alignItems = 'center';
-                container.style.justifyContent = 'center';
-                cv.style.position = 'relative';
-                cv.style.top = 'auto';
-                cv.style.left = 'auto';
-                cv.style.margin = 'auto';
-                cv.style.transform = 'translate3d(0px, 0px, 0)';
-                cv.style.filter = 'none';
             } else {
-                container.style.alignItems = 'flex-start';
-                container.style.justifyContent = 'flex-start';
-                cv.style.position = 'absolute';
-                cv.style.top = '0';
-                cv.style.left = '0';
-                cv.style.margin = '0';
-                var minPanX = Math.min(0, containerW - targetW);
-                var minPanY = Math.min(0, containerH - targetH);
-                panX = Math.max(minPanX, Math.min(0, panX));
-                panY = Math.max(minPanY, Math.min(0, panY));
-                cv.style.transform = 'translate3d(' + Math.round(panX) + 'px, ' + Math.round(panY) + 'px, 0)';
-                // Font keskinleştirme & Mikro Jump muhasebe kontrast artırıcı
-                cv.style.filter = 'contrast(108%) saturate(104%)';
+                var visW = baseFitW * currentScale;
+                var visH = baseFitH * currentScale;
+                if (visW > containerW) {
+                    panX = Math.max(containerW - baseLeft - visW, Math.min(-baseLeft, panX));
+                } else {
+                    panX = 0;
+                }
+                if (visH > containerH) {
+                    panY = Math.max(containerH - baseTop - visH, Math.min(-baseTop, panY));
+                } else {
+                    panY = 0;
+                }
             }
+
+            cv.style.position = 'absolute';
+            cv.style.left = baseLeft + 'px';
+            cv.style.top = baseTop + 'px';
+            cv.style.width = baseFitW + 'px';
+            cv.style.height = baseFitH + 'px';
+            cv.style.maxWidth = 'none';
+            cv.style.maxHeight = 'none';
+            cv.style.transformOrigin = '0 0';
+            cv.style.transform = 'translate3d(' + panX.toFixed(2) + 'px, ' + panY.toFixed(2) + 'px, 0) scale(' + currentScale.toFixed(4) + ')';
+            cv.style.filter = (currentScale > 1.05) ? 'contrast(106%) saturate(103%)' : 'none';
 
             var zoomBtn = document.getElementById('zoom-reset-btn');
             if (zoomBtn) {
                 if (currentScale <= 1.02) {
-                    zoomBtn.innerHTML = '<i class="fa-solid fa-magnifying-glass-plus"></i> <span>🔍 Büyüt (HD)</span>';
+                    zoomBtn.innerHTML = '<i class="fa-solid fa-magnifying-glass-plus"></i> <span>ğŸ” BÃ¼yÃ¼t (HD)</span>';
                     zoomBtn.style.color = '#00e5ff';
                     zoomBtn.style.borderColor = '#00e5ff';
                     zoomBtn.style.background = 'linear-gradient(135deg, rgba(0, 229, 255, 0.25), rgba(16, 185, 129, 0.25))';
                 } else if (currentScale < 2.8) {
-                    zoomBtn.innerHTML = '<i class="fa-solid fa-compress"></i> <span>🔍 %250 HD</span>';
+                    zoomBtn.innerHTML = '<i class="fa-solid fa-compress"></i> <span>ğŸ” %250 HD</span>';
                     zoomBtn.style.color = '#2ecc71';
                     zoomBtn.style.borderColor = '#2ecc71';
                     zoomBtn.style.background = 'linear-gradient(135deg, rgba(46, 204, 113, 0.35), rgba(0, 229, 255, 0.35))';
                 } else {
-                    zoomBtn.innerHTML = '<i class="fa-solid fa-expand"></i> <span>💎 1:1 Ultra</span>';
+                    zoomBtn.innerHTML = '<i class="fa-solid fa-expand"></i> <span>ğŸ” 1:1 Ultra</span>';
                     zoomBtn.style.color = '#f59e0b';
                     zoomBtn.style.borderColor = '#f59e0b';
                     zoomBtn.style.background = 'linear-gradient(135deg, rgba(245, 158, 11, 0.35), rgba(239, 68, 68, 0.35))';
@@ -1504,37 +1523,42 @@
         window.zoomOut = zoomOut;
 
         function resetZoom() {
+            var container = document.getElementById('canvas-container');
+            var containerW = (container && container.clientWidth) || window.innerWidth;
+            var containerH = (container && container.clientHeight) || (window.innerHeight - 60);
+            var baseLeft = Math.max(0, (containerW - baseFitW) / 2);
+            var baseTop = Math.max(0, (containerH - baseFitH) / 2);
+
             if (currentScale <= 1.02) {
-                // 1. Adım: %250 HD Netlik (Mikro Jump / Logo muhasebe menüleri için ideal okuma boyutu)
+                // 1. AdÄ±m: %250 HD Netlik (Merkeze odaklÄ±)
                 currentScale = 2.5;
-                panX = 0;
-                panY = 0; // Sol üst köşedeki menülere odaklan
+                panX = (containerW / 2) - baseLeft - ((baseFitW / 2) * currentScale);
+                panY = (containerH / 2) - baseTop - ((baseFitH / 2) * currentScale);
                 if (typeof showToast === 'function') {
-                    showToast('🔍 %250 HD Netlik: Mikro yazıları büyütüldü! (Kaydırmak için sürükleyin)', 'success');
+                    showToast('ğŸ” %250 HD Netlik: Mikro yazÄ±lar bÃ¼yÃ¼tÃ¼ldÃ¼! (KaydÄ±rmak iÃ§in sÃ¼rÃ¼kleyin)', 'success');
                 }
             } else if (currentScale < 2.8) {
-                // 2. Adım: 1:1 Ultra Kristal Masaüstü
+                // 2. AdÄ±m: 1:1 Ultra Kristal MasaÃ¼stÃ¼
                 var cv = document.getElementById('screen-canvas');
                 var nativeW = (cv && cv.width) || 1920;
                 currentScale = Math.max(3.2, nativeW / (baseFitW || 390));
-                panX = 0;
-                panY = 0;
+                panX = (containerW / 2) - baseLeft - ((baseFitW / 2) * currentScale);
+                panY = (containerH / 2) - baseTop - ((baseFitH / 2) * currentScale);
                 if (typeof showToast === 'function') {
-                    showToast('💎 1:1 Ultra Kristal: Gerçek masaüstü piksel netliği!', 'success');
+                    showToast('ğŸ” 1:1 Ultra Kristal: GerÃ§ek masaÃ¼stÃ¼ piksel netliÄŸi!', 'success');
                 }
             } else {
-                // 3. Adım: Tam ekran sığdırma
+                // 3. AdÄ±m: Tam ekran sÄ±ÄŸdÄ±rma
                 currentScale = 1.0;
                 panX = 0;
                 panY = 0;
                 if (typeof showToast === 'function') {
-                    showToast('📱 Tam Ekran Sığdırıldı', 'info');
+                    showToast('ğŸ” Tam Ekran SÄ±ÄŸdÄ±rÄ±ldÄ±', 'info');
                 }
             }
             applyZoomTransform();
         }
         window.resetZoom = resetZoom;
-
         function toggleHdQuality() {
             if (ws && ws.readyState === WebSocket.OPEN) {
                 ws.send(JSON.stringify({ type: 'set_quality', quality: 95, maxDim: 0 }));
@@ -1568,18 +1592,54 @@
         window.toggleMouseMode = toggleMouseMode;
         window.toggleRightClickMode = toggleMouseMode;
 
-        function openMobileKeyboard() {
-            var hiddenInput = document.getElementById('hidden-keyboard-input');
-            if (hiddenInput) {
-                hiddenInput.focus();
-                hiddenInput.click();
+        function toggleMobileTextInput() {
+            var bar = document.getElementById('mobile-text-bar');
+            var inp = document.getElementById('mobile-live-input');
+            var btn = document.getElementById('toggle-keyboard-btn');
+            if (!bar || !inp) {
+                var hiddenInput = document.getElementById('hidden-keyboard-input');
+                if (hiddenInput) hiddenInput.focus();
+                return;
+            }
+            if (bar.style.display === 'none' || !bar.style.display) {
+                bar.style.display = 'flex';
+                if (btn) {
+                    btn.style.background = 'linear-gradient(135deg, #00e5ff, #3b82f6)';
+                    btn.style.color = '#000';
+                }
+                setTimeout(function() { inp.focus(); }, 60);
+            } else {
+                bar.style.display = 'none';
+                inp.blur();
+                if (btn) {
+                    btn.style.background = 'rgba(255,255,255,0.12)';
+                    btn.style.color = '#fff';
+                }
             }
         }
-        window.openMobileKeyboard = openMobileKeyboard;
+        window.toggleMobileTextInput = toggleMobileTextInput;
+        window.openMobileKeyboard = toggleMobileTextInput;
 
-        // ═══════════════════════════════════════════════════════════════
-        // ERP & MUHASEBE SAYISAL GİRİŞ VE HIZLI TARİH FONKSİYONLARI
-        // ═══════════════════════════════════════════════════════════════
+        function submitMobileLiveInput(sendTab) {
+            var inp = document.getElementById('mobile-live-input');
+            if (!inp || !ws || ws.readyState !== WebSocket.OPEN) return;
+            var text = inp.value;
+            if (text && text.length > 0) {
+                ws.send(JSON.stringify({ type: 'text', text: text }));
+                if (typeof showToast === 'function') {
+                    showToast('âœï¸ Metin yazÄ±ldÄ±: ' + text, 'success');
+                }
+                inp.value = '';
+            }
+            if (sendTab) {
+                setTimeout(function() {
+                    sendRemoteSpecialKey('tab');
+                }, 40);
+            }
+            inp.focus();
+        }
+        window.submitMobileLiveInput = submitMobileLiveInput;
+
         function toggleErpNumpad() {
             var panel = document.getElementById('erp-numpad-panel');
             var btn = document.getElementById('erp-numpad-btn');
@@ -1628,19 +1688,11 @@
 
         function sendRemoteTextString(text, autoTab) {
             if (!ws || ws.readyState !== WebSocket.OPEN || !text) return;
-            var delay = 0;
-            for (var i = 0; i < text.length; i++) {
-                (function(charToSend, d) {
-                    setTimeout(function() {
-                        sendRemoteKey(charToSend);
-                    }, d);
-                })(text.charAt(i), delay);
-                delay += 40;
-            }
+            ws.send(JSON.stringify({ type: 'text', text: text }));
             if (autoTab) {
                 setTimeout(function() {
                     sendRemoteSpecialKey('tab');
-                }, delay + 60);
+                }, 50);
             }
         }
         window.sendRemoteTextString = sendRemoteTextString;
@@ -1914,7 +1966,7 @@
             bindTouchButton('session-result-btn', openSessionResultModal);
 
             // Floating controls, Numpad ve Modallara yapılan dokunmalar ASLA arkadaki canvas'a sızmasın!
-            var isolatedPanels = ['floating-controls', 'erp-numpad-panel', 'quick-date-modal', 'session-result-modal'];
+            var isolatedPanels = ['floating-controls', 'erp-numpad-panel', 'quick-date-modal', 'session-result-modal', 'mobile-text-bar'];
             isolatedPanels.forEach(function(panelId) {
                 var p = document.getElementById(panelId);
                 if (p) {
@@ -1995,9 +2047,13 @@
             // Mobile Touch Engine: Focal Point Pinch Zoom + Pan + Tap & Hold
             var touchStartX = 0, touchStartY = 0, touchStartTime = 0, isTouchDragging = false;
             var startPanX = 0, startPanY = 0;
+            var pinchFocalCanvasX = 0, pinchFocalCanvasY = 0;
 
             targetHost.addEventListener('touchstart', function(e) {
                 if (!ws || ws.readyState !== WebSocket.OPEN) return;
+                var container = document.getElementById('canvas-container');
+                var cRect = container ? container.getBoundingClientRect() : { left: 0, top: 0, width: window.innerWidth, height: window.innerHeight };
+
                 if (e.touches.length === 2) {
                     isPinchZooming = true;
                     isTouchDragging = false;
@@ -2005,8 +2061,19 @@
                     var t2 = e.touches[1];
                     initialPinchDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
                     initialPinchScale = currentScale;
-                    lastTouchMidX = (t1.clientX + t2.clientX) / 2;
-                    lastTouchMidY = (t1.clientY + t2.clientY) / 2;
+
+                    var midX = (t1.clientX + t2.clientX) / 2;
+                    var midY = (t1.clientY + t2.clientY) / 2;
+                    var focalContainerX = midX - cRect.left;
+                    var focalContainerY = midY - cRect.top;
+
+                    var baseLeft = Math.max(0, (cRect.width - baseFitW) / 2);
+                    var baseTop = Math.max(0, (cRect.height - baseFitH) / 2);
+
+                    // ParmaklarÄ±n altÄ±ndaki tam canvas noktasÄ±nÄ± hesapla (Focal Anchor Point)
+                    pinchFocalCanvasX = (focalContainerX - baseLeft - panX) / (currentScale || 1.0);
+                    pinchFocalCanvasY = (focalContainerY - baseTop - panY) / (currentScale || 1.0);
+
                 } else if (e.touches.length === 1) {
                     isPinchZooming = false;
                     isTouchDragging = false;
@@ -2021,6 +2088,9 @@
 
             targetHost.addEventListener('touchmove', function(e) {
                 if (!ws || ws.readyState !== WebSocket.OPEN) return;
+                var container = document.getElementById('canvas-container');
+                var cRect = container ? container.getBoundingClientRect() : { left: 0, top: 0, width: window.innerWidth, height: window.innerHeight };
+
                 if (e.touches.length === 2 && isPinchZooming) {
                     var t1 = e.touches[0];
                     var t2 = e.touches[1];
@@ -2030,11 +2100,18 @@
 
                     if (initialPinchDist > 0) {
                         var factor = dist / initialPinchDist;
-                        currentScale = Math.max(1.0, Math.min(5.5, initialPinchScale * factor));
-                        panX += (midX - lastTouchMidX);
-                        panY += (midY - lastTouchMidY);
-                        lastTouchMidX = midX;
-                        lastTouchMidY = midY;
+                        var newScale = Math.max(1.0, Math.min(6.0, initialPinchScale * factor));
+
+                        var focalContainerX = midX - cRect.left;
+                        var focalContainerY = midY - cRect.top;
+                        var baseLeft = Math.max(0, (cRect.width - baseFitW) / 2);
+                        var baseTop = Math.max(0, (cRect.height - baseFitH) / 2);
+
+                        // Kusursuz Odaklama (Focal Point Math): Parmaklar nereye odaklandÄ±ysa TAM ORASI bÃ¼yÃ¼r!
+                        currentScale = newScale;
+                        panX = focalContainerX - baseLeft - (pinchFocalCanvasX * newScale);
+                        panY = focalContainerY - baseTop - (pinchFocalCanvasY * newScale);
+
                         applyZoomTransform();
                     }
                     e.preventDefault();
@@ -2042,10 +2119,10 @@
                     var t = e.touches[0];
                     var dx = t.clientX - touchStartX;
                     var dy = t.clientY - touchStartY;
-                    if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
+                    if (Math.abs(dx) > 6 || Math.abs(dy) > 6) {
                         isTouchDragging = true;
                         if (currentScale > 1.05) {
-                            // Zoomlu mod: Masaüstünde pürüzsüz kaydırma
+                            // Zoomlu mod: MasaÃ¼stÃ¼nde pÃ¼rÃ¼zsÃ¼z GPU kaydÄ±rma (Pan)
                             panX = startPanX + dx;
                             panY = startPanY + dy;
                             applyZoomTransform();
@@ -2076,12 +2153,12 @@
                 }
 
                 var moveDist = Math.hypot(t.clientX - touchStartX, t.clientY - touchStartY);
-                var isTap = moveDist < 40 && duration < 700;
+                var isTap = moveDist < 25 && duration < 500 && !isTouchDragging;
 
                 if (isTap) {
                     var pos = getMousePos(t.clientX, t.clientY);
 
-                    // 1. Toolbar Çift Tık Modu
+                    // 1. Toolbar Ã‡ift TÄ±k Modu
                     if (clickMode === 1) {
                         showTouchFeedback(t.clientX, t.clientY, 'double');
                         ws.send(JSON.stringify({ type: 'move', x: pos.x, y: pos.y }));
@@ -2095,8 +2172,8 @@
                         return;
                     }
 
-                    // 2. Toolbar Sağ Tık Modu VEYA Uzun Basma (>= 600ms)
-                    if (clickMode === 2 || duration >= 600) {
+                    // 2. Toolbar SaÄŸ TÄ±k Modu VEYA Uzun Basma (>= 500ms)
+                    if (clickMode === 2 || duration >= 500) {
                         showTouchFeedback(t.clientX, t.clientY, 'right');
                         ws.send(JSON.stringify({ type: 'move', x: pos.x, y: pos.y }));
                         ws.send(JSON.stringify({ type: 'click', button: 'right', action: 'down', x: pos.x, y: pos.y }));
@@ -2114,16 +2191,16 @@
                         return;
                     }
 
-                    // 3. DOĞAL PARMAKLA ÇİFT TIKLAMA TESPİTİ (Dosya / Program / Klasör Açma)
-                    var isDoubleTap = (now - lastTapTime < 500) && lastTapPos &&
-                                      (Math.hypot(t.clientX - lastTapPos.clientX, t.clientY - lastTapPos.clientY) < 70);
+                    // 3. DOÄAL PARMAKLA Ã‡Ä°FT TIKLAMA TESPÄ°TÄ° (9/10 beÄŸeni alan altÄ±n mimari)
+                    var isDoubleTap = (now - lastTapTime < 450) && lastTapPos &&
+                                      (Math.hypot(t.clientX - lastTapPos.clientX, t.clientY - lastTapPos.clientY) < 50);
 
                     if (isDoubleTap) {
                         showTouchFeedback(t.clientX, t.clientY, 'double');
                         var fixedPos = lastTapPos.normPos || pos;
                         ws.send(JSON.stringify({ type: 'move', x: fixedPos.x, y: fixedPos.y }));
                         ws.send(JSON.stringify({ type: 'double_click', button: 'left', x: fixedPos.x, y: fixedPos.y }));
-                        // Dual fallback: Hem double_click hem de ardışık click gönder (eski/yeni tüm hostlar için tam uyum)
+                        // Dual fallback
                         ws.send(JSON.stringify({ type: 'click', button: 'left', action: 'down', x: fixedPos.x, y: fixedPos.y }));
                         setTimeout(function() {
                             if (ws && ws.readyState === WebSocket.OPEN) {
@@ -2149,19 +2226,69 @@
                 isTouchDragging = false;
                 isPinchZooming = false;
             }, { passive: false });
+            // Mobile Live Text Bar Buton ve TuÅŸ Dinleyicileri
+            var sendBtn = document.getElementById('mobile-send-btn');
+            if (sendBtn) {
+                ['touchstart', 'click'].forEach(function(evt) {
+                    sendBtn.addEventListener(evt, function(e) {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        submitMobileLiveInput(false);
+                    }, { passive: false });
+                });
+            }
+            var tabBtn = document.getElementById('mobile-tab-btn');
+            if (tabBtn) {
+                ['touchstart', 'click'].forEach(function(evt) {
+                    tabBtn.addEventListener(evt, function(e) {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        submitMobileLiveInput(true);
+                    }, { passive: false });
+                });
+            }
+            var closeBtn = document.getElementById('mobile-close-input-btn');
+            if (closeBtn) {
+                ['touchstart', 'click'].forEach(function(evt) {
+                    closeBtn.addEventListener(evt, function(e) {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        toggleMobileTextInput();
+                    }, { passive: false });
+                });
+            }
+            var liveInp = document.getElementById('mobile-live-input');
+            if (liveInp) {
+                liveInp.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        submitMobileLiveInput(false);
+                    } else if (e.key === 'Tab') {
+                        e.preventDefault();
+                        submitMobileLiveInput(true);
+                    }
+                });
+            }
 
-            // Virtual Keyboard Touch Input Listener
+            // Virtual Keyboard Touch Input Listener (DoÄŸrudan TuÅŸ GiriÅŸi DesteÄŸi)
             var hiddenInput = document.getElementById('hidden-keyboard-input');
             if (hiddenInput) {
+                hiddenInput.addEventListener('beforeinput', function(e) {
+                    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+                    if (e.data) {
+                        ws.send(JSON.stringify({ type: 'text', text: e.data }));
+                    } else if (e.inputType === 'deleteContentBackward') {
+                        ws.send(JSON.stringify({ type: 'key', key: 'backspace', action: 'down' }));
+                    } else if (e.inputType === 'insertLineBreak') {
+                        ws.send(JSON.stringify({ type: 'key', key: 'enter', action: 'down' }));
+                    }
+                });
+
                 hiddenInput.addEventListener('input', function(e) {
                     if (!ws || ws.readyState !== WebSocket.OPEN) return;
                     var val = hiddenInput.value;
                     if (val && val.length > 0) {
-                        for (var i = 0; i < val.length; i++) {
-                            var ch = val.charAt(i);
-                            ws.send(JSON.stringify({ type: 'key', key: ch, action: 'down' }));
-                            ws.send(JSON.stringify({ type: 'key', key: ch, action: 'up' }));
-                        }
+                        ws.send(JSON.stringify({ type: 'text', text: val }));
                         hiddenInput.value = '';
                     }
                 });
@@ -2170,10 +2297,8 @@
                     if (!ws || ws.readyState !== WebSocket.OPEN) return;
                     if (e.key === 'Backspace') {
                         ws.send(JSON.stringify({ type: 'key', key: 'backspace', action: 'down' }));
-                        ws.send(JSON.stringify({ type: 'key', key: 'backspace', action: 'up' }));
                     } else if (e.key === 'Enter') {
                         ws.send(JSON.stringify({ type: 'key', key: 'enter', action: 'down' }));
-                        ws.send(JSON.stringify({ type: 'key', key: 'enter', action: 'up' }));
                     }
                 });
             }
