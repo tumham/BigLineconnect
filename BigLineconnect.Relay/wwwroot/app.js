@@ -1,4 +1,4 @@
-var socket = null;
+﻿var socket = null;
 var connected = false;
 var currentMouseMode = 'left'; // 'left' or 'right'
 
@@ -187,7 +187,7 @@ function connectToHost(id) {
                 resetConnectButton();
                 alert('⚠️ UYARI: Bu bilgisayara şu an başka bir operatör bağlı.');
                 socket.close();
-            } else if (ev.data === 'AUTH_REQUIRED') {
+            } else if (ev.data === 'AUTH_REQUIRED' || ev.data === 'AUTH_REQ') {
                 var pass = prompt('🔒 Lütfen karşı bilgisayarın ekranında yazan 6 haneli erişim şifresini girin:', '');
                 if (pass) {
                     socket.send(pass);
@@ -195,7 +195,7 @@ function connectToHost(id) {
                     resetConnectButton();
                     socket.close();
                 }
-            } else if (ev.data === 'AUTH_SUCCESS') {
+            } else if (ev.data === 'AUTH_SUCCESS' || ev.data === 'AUTH_OK') {
                 showToast('Erişim Onaylandı! Ekran ve Kontrol Açılıyor...', 'success');
                 try {
                     if (socket && socket.readyState === WebSocket.OPEN) {
