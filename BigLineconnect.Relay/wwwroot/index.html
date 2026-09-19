@@ -661,45 +661,194 @@
         </div>
     </div>
 
-    <!-- Instant Checkout & Payment Notification Modal -->
+    <!-- Dual-Tab Instant Checkout Modal (Kredi KartÄ± 7/24 + Havale/WhatsApp) -->
     <div id="checkout-modal" class="hidden" style="display: none !important; pointer-events: none !important; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(11,14,20,0.92); z-index:999999; justify-content:center; align-items:center; backdrop-filter:blur(15px); padding:20px;">
-        <div style="background:var(--card-bg); border:1px solid var(--accent-cyan); border-radius:20px; padding:25px; max-width:460px; width:100%; text-align:center; box-shadow:0 25px 50px rgba(0,0,0,0.9); position:relative; max-height:90vh; overflow-y:auto;">
+        <div style="background:var(--card-bg); border:1.5px solid var(--accent-cyan); border-radius:24px; padding:24px; max-width:500px; width:100%; text-align:center; box-shadow:0 25px 60px rgba(0,0,0,0.95); position:relative; max-height:92vh; overflow-y:auto;">
             <button type="button" onclick="closeCheckoutModal()" style="position:absolute; top:15px; right:15px; background:none; border:none; color:#a0aec0; font-size:1.2rem; cursor:pointer;"><i class="fa-solid fa-xmark"></i></button>
-            <img src="logo.png" alt="BigLineconnect" style="height:40px; margin-bottom:10px;">
-            <h3 style="font-weight:800; font-size:1.3rem; color:#fff; margin-bottom:4px;">Lisans Al & �-deme Bildirimi</h3>
-            <p style="color:#00e5ff; font-size:0.85rem; font-weight:700; margin-bottom:16px;">Ayda Sadece �,�125 TL ($4/Ay) �?� Yıllık �,�1.490 TL</p>
+            <img src="logo.png" alt="BigLineconnect" style="height:36px; margin-bottom:8px;">
+            <h3 style="font-weight:800; font-size:1.3rem; color:#fff; margin-bottom:2px;">BigLineconnect Ticari Lisans</h3>
+            <p style="color:#00e5ff; font-size:0.85rem; font-weight:700; margin-bottom:16px;">YÄ±llÄ±k Sadece â‚º1.490 TL (Ayda â‚º124 TL) â€¢ SÄ±nÄ±rsÄ±z 7/24 KullanÄ±m</p>
 
-            <!-- Bank / IBAN Info Box -->
-            <div style="background:rgba(0, 229, 255, 0.08); border:1px solid rgba(0, 229, 255, 0.3); border-radius:12px; padding:12px; text-align:left; margin-bottom:16px; font-size:0.82rem;">
-                <div style="color:#00e5ff; font-weight:800; margin-bottom:4px;"><i class="fa-solid fa-building-columns"></i> HAVALE / EFT BANKA HESAP BİLGİLERİ:</div>
-                <div style="color:#fff; font-weight:700;">Alıcı: Bigus Mobil Yazılım Teknolojileri</div>
-                <div style="color:#fff; font-weight:700; margin-top:2px;">Banka: Ziraat Bankası</div>
-                <div style="color:#2ecc71; font-family:monospace; font-weight:800; font-size:0.9rem; margin-top:4px; letter-spacing:1px;">IBAN: TR76 0001 0090 1023 4567 8901</div>
-                <div style="color:#a0aec0; font-size:0.75rem; margin-top:4px;">Açıklama: Ad Soyad / Telefon Yazınız</div>
+            <!-- Checkout Tabs -->
+            <div style="display:flex; gap:8px; margin-bottom:16px; background:rgba(0,0,0,0.4); padding:4px; border-radius:14px; border:1px solid rgba(255,255,255,0.08);">
+                <button type="button" id="tab-btn-card" onclick="switchCheckoutTab('card')" style="flex:1; padding:9px; border:none; border-radius:10px; background:linear-gradient(135deg, #00e5ff, #10b981); color:#000; font-weight:800; font-size:0.85rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;">
+                    <i class="fa-solid fa-credit-card"></i> <span>Kredi KartÄ± (7/24 AnÄ±nda)</span>
+                </button>
+                <button type="button" id="tab-btn-bank" onclick="switchCheckoutTab('bank')" style="flex:1; padding:9px; border:none; border-radius:10px; background:transparent; color:#94a3b8; font-weight:800; font-size:0.85rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;">
+                    <i class="fa-solid fa-building-columns"></i> <span>Havale / WhatsApp</span>
+                </button>
             </div>
-            
-            <form id="checkout-form" onsubmit="submitOnlineCheckout(event)">
-                <div style="margin-bottom:10px; text-align:left;">
-                    <label style="font-size:0.75rem; color:#a0aec0; font-weight:700;">AD SOYAD / FİRMA ADI</label>
-                    <input type="text" id="checkout-name" required placeholder="Ahmet Yılmaz / Yılmaz Bili�Yim" style="width:100%; padding:10px; background:rgba(0,0,0,0.5); border:1px solid var(--border-color); border-radius:8px; color:#fff; margin-top:3px; outline:none;">
-                </div>
-                <div style="margin-bottom:10px; text-align:left;">
-                    <label style="font-size:0.75rem; color:#a0aec0; font-weight:700;">E-POSTA ADRESİ (Lisans Gönderilecek)</label>
-                    <input type="email" id="checkout-email" required placeholder="ahmet@firma.com" style="width:100%; padding:10px; background:rgba(0,0,0,0.5); border:1px solid var(--border-color); border-radius:8px; color:#fff; margin-top:3px; outline:none;">
-                </div>
-                <div style="margin-bottom:14px; text-align:left;">
-                    <label style="font-size:0.75rem; color:#a0aec0; font-weight:700;">TELEFON</label>
-                    <input type="tel" id="checkout-phone" required placeholder="0555 123 45 67" style="width:100%; padding:10px; background:rgba(0,0,0,0.5); border:1px solid var(--border-color); border-radius:8px; color:#fff; margin-top:3px; outline:none;">
+
+            <!-- TAB 1: KREDÄ° KARTI (7/24 Otomatik AnÄ±nda Aktivasyon) -->
+            <div id="checkout-tab-card">
+                <form id="card-checkout-form" onsubmit="submitInstantCardOrder(event)">
+                    <div style="margin-bottom:10px; text-align:left;">
+                        <label style="font-size:0.75rem; color:#a0aec0; font-weight:700;">AD SOYAD / FÄ°RMA ADI</label>
+                        <input type="text" id="card-name" required placeholder="Ahmet YÄ±lmaz / YÄ±lmaz BiliÅŸim" style="width:100%; padding:10px; background:rgba(0,0,0,0.5); border:1px solid var(--border-color); border-radius:8px; color:#fff; margin-top:3px; outline:none;">
+                    </div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; text-align:left;">
+                        <div>
+                            <label style="font-size:0.75rem; color:#a0aec0; font-weight:700;">E-POSTA</label>
+                            <input type="email" id="card-email" required placeholder="ahmet@firma.com" style="width:100%; padding:10px; background:rgba(0,0,0,0.5); border:1px solid var(--border-color); border-radius:8px; color:#fff; margin-top:3px; outline:none;">
+                        </div>
+                        <div>
+                            <label style="font-size:0.75rem; color:#a0aec0; font-weight:700;">TELEFON</label>
+                            <input type="tel" id="card-phone" required placeholder="0555 123 45 67" style="width:100%; padding:10px; background:rgba(0,0,0,0.5); border:1px solid var(--border-color); border-radius:8px; color:#fff; margin-top:3px; outline:none;">
+                        </div>
+                    </div>
+                    <div style="margin-bottom:10px; text-align:left;">
+                        <label style="font-size:0.75rem; color:#a0aec0; font-weight:700;">KART NUMARASI</label>
+                        <input type="text" id="card-number" required maxlength="19" placeholder="â€¢â€¢â€¢â€¢ â€¢â€¢â€¢â€¢ â€¢â€¢â€¢â€¢ â€¢â€¢â€¢â€¢" style="width:100%; padding:10px; background:rgba(0,0,0,0.5); border:1px solid var(--border-color); border-radius:8px; color:#fff; margin-top:3px; outline:none; font-family:monospace; letter-spacing:1px;">
+                    </div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:14px; text-align:left;">
+                        <div>
+                            <label style="font-size:0.75rem; color:#a0aec0; font-weight:700;">AY / YIL</label>
+                            <input type="text" id="card-expiry" required maxlength="5" placeholder="AA/YY" style="width:100%; padding:10px; background:rgba(0,0,0,0.5); border:1px solid var(--border-color); border-radius:8px; color:#fff; margin-top:3px; outline:none; font-family:monospace;">
+                        </div>
+                        <div>
+                            <label style="font-size:0.75rem; color:#a0aec0; font-weight:700;">CVC / CVV</label>
+                            <input type="text" id="card-cvc" required maxlength="4" placeholder="â€¢â€¢â€¢" style="width:100%; padding:10px; background:rgba(0,0,0,0.5); border:1px solid var(--border-color); border-radius:8px; color:#fff; margin-top:3px; outline:none; font-family:monospace;">
+                        </div>
+                    </div>
+
+                    <button type="submit" id="card-submit-btn" style="width:100%; padding:13px; font-size:0.92rem; background:linear-gradient(135deg, #00e5ff, #10b981); color:#000; border:none; border-radius:12px; font-weight:900; cursor:pointer; box-shadow:0 0 20px rgba(0,229,255,0.4); display:flex; align-items:center; justify-content:center; gap:8px;">
+                        <i class="fa-solid fa-lock"></i> <span>â‚º1.490 TL GÃ¼venli Ã–de & LisansÄ± Hemen Al</span>
+                    </button>
+                    <p style="color:#64748b; font-size:0.72rem; margin-top:8px;">
+                        ğŸ”’ 256-Bit SSL & 3D Secure ile korunan BDDK lisanslÄ± gÃ¼venli Ã¶deme. Ã–demeniz anÄ±nda onaylanÄ±r ve lisansÄ±nÄ±z hemen Ã¼retilir.
+                    </p>
+                </form>
+            </div>
+
+            <!-- TAB 2: HAVALE / EFT & WHATSAPP SÄ°PARÄ°Å -->
+            <div id="checkout-tab-bank" style="display:none;">
+                <div style="background:rgba(0, 229, 255, 0.08); border:1px solid rgba(0, 229, 255, 0.3); border-radius:14px; padding:14px; text-align:left; margin-bottom:14px; font-size:0.83rem;">
+                    <div style="color:#00e5ff; font-weight:800; margin-bottom:6px;"><i class="fa-solid fa-building-columns"></i> BIGUS BÄ°LÄ°ÅÄ°M RESMÄ° BANKA HESABI:</div>
+                    <div style="color:#fff; font-weight:700;">AlÄ±cÄ±: BigUS Mobil YazÄ±lÄ±m Teknolojileri Ltd. Åti.</div>
+                    <div style="color:#fff; font-weight:700; margin-top:2px;">Banka: Ziraat BankasÄ±</div>
+                    <div style="color:#2ecc71; font-family:monospace; font-weight:800; font-size:0.95rem; margin-top:6px; letter-spacing:1px;">IBAN: TR76 0001 0090 1023 4567 8901</div>
+                    <div style="color:#a0aec0; font-size:0.75rem; margin-top:4px;">Tutar: â‚º1.490 TL â€¢ AÃ§Ä±klama: Ad Soyad / Telefon YazÄ±nÄ±z</div>
                 </div>
 
-                <div style="display:flex; flex-direction:column; gap:8px;">
-                    <button type="submit" class="primary-btn" style="width:100%; padding:12px; font-size:0.85rem; background:linear-gradient(135deg, #2ecc71, #00e5ff); color:#000; border:none; border-radius:10px; font-weight:800; cursor:pointer;">
-                        <i class="fa-solid fa-paper-plane"></i> �-deme Bildirimi Yap (Havale / EFT �f¶demeniz kontrol edildikten sonra (ortalama 5-10 dk) Lisans Anahtar�"±n�"±z e-postan�"±za ve WhatsApp hatt�"±n�"±za g�f¶nderilecektir.
-                </p>
+                <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:14px;">
+                    <button type="button" onclick="checkoutViaWhatsApp()" style="width:100%; padding:13px; font-size:0.92rem; background:linear-gradient(135deg, #25D366, #128C7E); color:#fff; border:none; border-radius:12px; font-weight:900; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 0 20px rgba(37,211,102,0.4);">
+                        <i class="fa-brands fa-whatsapp" style="font-size:1.2rem;"></i> <span>WhatsApp ile HÄ±zlÄ± SipariÅŸ Ver</span>
+                    </button>
+                </div>
+
+                <form id="checkout-form" onsubmit="submitOnlineCheckout(event)">
+                    <div style="margin-bottom:8px; text-align:left;">
+                        <label style="font-size:0.75rem; color:#a0aec0; font-weight:700;">AD SOYAD / FÄ°RMA ADI</label>
+                        <input type="text" id="checkout-name" required placeholder="Ahmet YÄ±lmaz / YÄ±lmaz BiliÅŸim" style="width:100%; padding:9px; background:rgba(0,0,0,0.5); border:1px solid var(--border-color); border-radius:8px; color:#fff; margin-top:2px; outline:none;">
+                    </div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px; text-align:left;">
+                        <div>
+                            <label style="font-size:0.75rem; color:#a0aec0; font-weight:700;">E-POSTA</label>
+                            <input type="email" id="checkout-email" required placeholder="ahmet@firma.com" style="width:100%; padding:9px; background:rgba(0,0,0,0.5); border:1px solid var(--border-color); border-radius:8px; color:#fff; margin-top:2px; outline:none;">
+                        </div>
+                        <div>
+                            <label style="font-size:0.75rem; color:#a0aec0; font-weight:700;">TELEFON</label>
+                            <input type="tel" id="checkout-phone" required placeholder="0555 123 45 67" style="width:100%; padding:9px; background:rgba(0,0,0,0.5); border:1px solid var(--border-color); border-radius:8px; color:#fff; margin-top:2px; outline:none;">
+                        </div>
+                    </div>
+                    <button type="submit" style="width:100%; padding:11px; font-size:0.85rem; background:rgba(0, 229, 255, 0.15); border:1.5px solid #00e5ff; color:#00e5ff; border-radius:10px; font-weight:800; cursor:pointer;">
+                        <i class="fa-solid fa-paper-plane"></i> Havale / EFT Bildirimi Ä°let
+                    </button>
+                </form>
+            </div>
+
+            <!-- SUCCESS NOTIFICATION BOX -->
+            <div id="checkout-success-box" style="display:none; background:rgba(46, 204, 113, 0.1); border:1.5px solid #2ecc71; border-radius:16px; padding:18px; margin-top:14px; text-align:center;">
+                <div style="font-size:2rem; color:#2ecc71; margin-bottom:6px;"><i class="fa-solid fa-circle-check"></i></div>
+                <h4 style="color:#2ecc71; font-weight:800; font-size:1.1rem; margin-bottom:4px;">Ã–deme OnaylandÄ±! LisansÄ±nÄ±z HazÄ±r.</h4>
+                <p style="color:#e2e8f0; font-size:0.85rem; margin-bottom:12px;">1 YÄ±llÄ±k Ticari Lisans AnahtarÄ±nÄ±z baÅŸarÄ±yla oluÅŸturuldu ve cihazÄ±nÄ±za tanÄ±mlandÄ±:</p>
+                <div id="generated-license-key" style="background:#0f172a; border:1.5px dashed #00e5ff; border-radius:10px; padding:10px; color:#00e5ff; font-family:monospace; font-weight:900; font-size:1.1rem; letter-spacing:1px; margin-bottom:12px; user-select:all;">
+                    BIGLINE-PRO-YUKLENIYOR
+                </div>
+                <div style="display:flex; gap:8px;">
+                    <button type="button" onclick="copyGeneratedLicenseKey()" style="flex:1; padding:9px; background:#00e5ff; color:#000; border:none; border-radius:8px; font-weight:800; cursor:pointer;">
+                        <i class="fa-solid fa-copy"></i> Kopyala
+                    </button>
+                    <button type="button" onclick="closeCheckoutModal()" style="flex:1; padding:9px; background:#2ecc71; color:#000; border:none; border-radius:8px; font-weight:800; cursor:pointer;">
+                        Kapat ve Kullan
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 
+    <!-- License Activation Modal (Lisans AnahtarÄ± Girme) -->
+    <div id="license-activation-modal" class="hidden" style="display: none !important; pointer-events: none !important; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(11,14,20,0.92); z-index:999999; justify-content:center; align-items:center; backdrop-filter:blur(15px); padding:20px;">
+        <div style="background:var(--card-bg); border:1.5px solid #d500f9; border-radius:24px; padding:24px; max-width:440px; width:100%; text-align:center; box-shadow:0 25px 60px rgba(0,0,0,0.95); position:relative;">
+            <button type="button" onclick="closeLicenseActivationModal()" style="position:absolute; top:15px; right:15px; background:none; border:none; color:#a0aec0; font-size:1.2rem; cursor:pointer;"><i class="fa-solid fa-xmark"></i></button>
+            <div style="font-size:2.2rem; color:#d500f9; margin-bottom:8px;"><i class="fa-solid fa-key"></i></div>
+            <h3 style="font-weight:800; font-size:1.25rem; color:#fff; margin-bottom:4px;">Lisans AnahtarÄ± EtkinleÅŸtir</h3>
+            <p style="color:#94a3b8; font-size:0.83rem; margin-bottom:16px;">SatÄ±n aldÄ±ÄŸÄ±nÄ±z veya size iletilen 1 yÄ±llÄ±k lisans anahtarÄ±nÄ±zÄ± girin:</p>
+            
+            <div style="margin-bottom:16px; text-align:left;">
+                <input type="text" id="license-key-input" placeholder="BIGLINE-PRO-XXXX-XXXX-XXXX" style="width:100%; padding:12px; background:rgba(0,0,0,0.6); border:1.5px solid #d500f9; border-radius:10px; color:#fff; font-family:monospace; font-size:1rem; font-weight:800; text-align:center; text-transform:uppercase; outline:none; letter-spacing:1.5px;">
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:8px;">
+                <button type="button" onclick="submitLicenseActivation()" style="width:100%; padding:12px; background:linear-gradient(135deg, #d500f9, #00e5ff); color:#000; border:none; border-radius:10px; font-weight:900; font-size:0.92rem; cursor:pointer; box-shadow:0 0 20px rgba(213,0,249,0.4);">
+                    <i class="fa-solid fa-circle-check"></i> LisansÄ± EtkinleÅŸtir
+                </button>
+                <button type="button" onclick="closeLicenseActivationModal(); openCheckoutModal();" style="width:100%; padding:10px; background:transparent; border:1px solid rgba(255,255,255,0.15); color:#94a3b8; border-radius:10px; font-weight:700; font-size:0.82rem; cursor:pointer;">
+                    HenÃ¼z lisansÄ±nÄ±z yok mu? Lisans SatÄ±n Al
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 31-33. GÃ¼nler: Grace Period (Acil Uzatma) ModalÄ± -->
+    <div id="grace-period-modal" class="hidden" style="display: none !important; pointer-events: none !important; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(11,14,20,0.94); z-index:999999; justify-content:center; align-items:center; backdrop-filter:blur(18px); padding:20px;">
+        <div style="background:var(--card-bg); border:2px solid #f59e0b; border-radius:24px; padding:26px; max-width:460px; width:100%; text-align:center; box-shadow:0 25px 60px rgba(245,158,11,0.25); position:relative;">
+            <button type="button" onclick="closeGracePeriodModal()" style="position:absolute; top:15px; right:15px; background:none; border:none; color:#a0aec0; font-size:1.2rem; cursor:pointer;"><i class="fa-solid fa-xmark"></i></button>
+            <div style="font-size:2.4rem; color:#f59e0b; margin-bottom:8px;"><i class="fa-solid fa-triangle-exclamation"></i></div>
+            <h3 style="font-weight:800; font-size:1.25rem; color:#fff; margin-bottom:6px;">30 GÃ¼nlÃ¼k Ãœcretsiz Deneme SÃ¼reniz Doldu!</h3>
+            <p style="color:#e2e8f0; font-size:0.85rem; line-height:1.5; margin-bottom:14px;">
+                MÃ¼ÅŸterilerinize kesintisiz destek vermeye devam etmek iÃ§in lÃ¼tfen Ã¼rÃ¼nÃ¼nÃ¼zÃ¼ lisanslayÄ±n.
+            </p>
+            <div style="background:rgba(245, 158, 11, 0.12); border:1.5px dashed #f59e0b; border-radius:14px; padding:12px; margin-bottom:16px;">
+                <div style="color:#f59e0b; font-weight:800; font-size:0.85rem;">â±ï¸ 3 GÃ¼nlÃ¼k Acil Uzatma Modu:</div>
+                <div id="grace-daily-info" style="color:#fff; font-weight:900; font-size:0.95rem; margin-top:4px;">
+                    BugÃ¼nkÃ¼ Kalan HakkÄ±nÄ±z: 3 / 3 Oturum (Maksimum 5 Dakika)
+                </div>
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:8px;">
+                <button type="button" onclick="closeGracePeriodModal(); confirmStartGraceSession();" style="width:100%; padding:12px; background:linear-gradient(135deg, #f59e0b, #d97706); color:#000; border:none; border-radius:12px; font-weight:900; font-size:0.9rem; cursor:pointer; box-shadow:0 0 15px rgba(245,158,11,0.35);">
+                    <i class="fa-solid fa-play"></i> 5 DakikalÄ±k Acil Oturumu BaÅŸlat
+                </button>
+                <button type="button" onclick="closeGracePeriodModal(); openCheckoutModal();" style="width:100%; padding:12px; background:linear-gradient(135deg, #00e5ff, #10b981); color:#000; border:none; border-radius:12px; font-weight:900; font-size:0.9rem; cursor:pointer;">
+                    <i class="fa-solid fa-key"></i> 1 YÄ±llÄ±k SÄ±nÄ±rsÄ±z Lisans SatÄ±n Al
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 34. GÃ¼n ve SonrasÄ±: Hard Lock (KullanÄ±m SÃ¼resi Tamamen Doldu) ModalÄ± -->
+    <div id="trial-expired-modal" class="hidden" style="display: none !important; pointer-events: none !important; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(11,14,20,0.96); z-index:999999; justify-content:center; align-items:center; backdrop-filter:blur(20px); padding:20px;">
+        <div style="background:var(--card-bg); border:2px solid #ef4444; border-radius:24px; padding:28px; max-width:460px; width:100%; text-align:center; box-shadow:0 25px 60px rgba(239,68,68,0.35); position:relative;">
+            <div style="font-size:2.8rem; color:#ef4444; margin-bottom:8px;"><i class="fa-solid fa-lock"></i></div>
+            <h3 style="font-weight:900; font-size:1.3rem; color:#fff; margin-bottom:6px;">KullanÄ±m SÃ¼reniz Tamamen Sona Erdi</h3>
+            <p style="color:#e2e8f0; font-size:0.85rem; line-height:1.5; margin-bottom:16px;">
+                30 gÃ¼nlÃ¼k Ã¼cretsiz deneme ve 3 gÃ¼nlÃ¼k ek kullanÄ±m sÃ¼reniz tamamlanmÄ±ÅŸtÄ±r. Yeni bir cihaza baÄŸlanÄ±p destek verebilmek iÃ§in lÃ¼tfen lisansÄ±nÄ±zÄ± aktif edin.
+            </p>
+            <div style="background:rgba(239, 68, 68, 0.1); border:1px solid rgba(239,68,68,0.3); border-radius:12px; padding:10px; font-size:0.8rem; color:#94a3b8; margin-bottom:16px;">
+                ğŸ’¡ <b style="color:#fff;">Not:</b> BaÅŸkalarÄ±nÄ±n bu bilgisayara baÄŸlanarak size destek vermesi her zaman %100 Ã¼cretsizdir.
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:8px;">
+                <button type="button" onclick="closeTrialExpiredModal(); openCheckoutModal();" style="width:100%; padding:13px; background:linear-gradient(135deg, #00e5ff, #10b981); color:#000; border:none; border-radius:12px; font-weight:900; font-size:0.92rem; cursor:pointer; box-shadow:0 0 20px rgba(0,229,255,0.4);">
+                    <i class="fa-solid fa-credit-card"></i> 7/24 Lisans SatÄ±n Al (â‚º1.490 TL)
+                </button>
+                <button type="button" onclick="closeTrialExpiredModal(); openLicenseActivationModal();" style="width:100%; padding:11px; background:rgba(213, 0, 249, 0.2); border:1.5px solid #d500f9; color:#fff; border-radius:12px; font-weight:800; font-size:0.88rem; cursor:pointer;">
+                    <i class="fa-solid fa-key"></i> Lisans AnahtarÄ±m Var (EtkinleÅŸtir)
+                </button>
+            </div>
+        </div>
+    </div>
     <!-- App JS Engine -->
     
     <script>
