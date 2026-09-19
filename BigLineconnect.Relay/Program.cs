@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Net.WebSockets;
@@ -340,6 +340,239 @@ using System.IO;
             {
                 return Resellers.Find(r => (r.TenantId.Equals(idOrEmail, StringComparison.OrdinalIgnoreCase) || r.Email.Equals(idOrEmail, StringComparison.OrdinalIgnoreCase)) && r.Password == password);
             }
+        }
+    }
+
+    public class ViewerTrialRecord
+    {
+        public string ViewerId { get; set; } = "";
+        public string ClientIp { get; set; } = "";
+        public DateTime FirstSeenAt { get; set; } = DateTime.Now;
+        public bool IsLicensed { get; set; } = false;
+        public string LicenseKey { get; set; } = "";
+        public string LicenseExpiresAt { get; set; } = "";
+        public string CustomerName { get; set; } = "";
+        public Dictionary<string, int> GraceDailyUsage { get; set; } = new();
+    }
+
+    public class ViewerTrialStatusDto
+    {
+        public string Status { get; set; } = "TRIAL_ACTIVE"; // LICENSED, TRIAL_ACTIVE, GRACE_PERIOD, EXPIRED
+        public int DaysRemaining { get; set; } = 30;
+        public int GraceDaysRemaining { get; set; } = 3;
+        public int TodaySessionsUsed { get; set; } = 0;
+        public int TodaySessionsMax { get; set; } = 3;
+        public int SessionDurationSeconds { get; set; } = 0; // 0 = unlimited, 300 = 5 mins in grace period
+        public bool IsLicensed { get; set; } = false;
+        public string LicenseKey { get; set; } = "";
+        public string LicenseExpiresAt { get; set; } = "";
+        public string Message { get; set; } = "";
+    }
+
+    public static class ViewerTrialManager
+    {
+        private static readonly string DbPath = System.IO.Path.Combine(AppContext.BaseDirectory, "viewer_trials.json");
+        private static readonly Dictionary<string, ViewerTrialRecord> Trials = new(StringComparer.OrdinalIgnoreCase);
+        private static readonly object Lock = new();
+
+        static ViewerTrialManager()
+        {
+            Load();
+        }
+
+        private static void Load()
+        {
+            try
+            {
+                lock (Lock)
+                {
+                    if (System.IO.File.Exists(DbPath))
+                    {
+                        string json = System.IO.File.ReadAllText(DbPath);
+                        var list = System.Text.Json.JsonSerializer.Deserialize<List<ViewerTrialRecord>>(json);
+                        if (list != null)
+                        {
+                            Trials.Clear();
+                            foreach (var item in list)
+                            {
+                                if (!string.IsNullOrEmpty(item.ViewerId))
+                                    Trials[item.ViewerId] = item;
+                            }
+                        }
+                    }
+                }
+            }
+            catch { }
+        }
+
+        public static void Save()
+        {
+            try
+            {
+                lock (Lock)
+                {
+                    string json = System.Text.Json.JsonSerializer.Serialize(Trials.Values.ToList());
+                    System.IO.File.WriteAllText(DbPath, json);
+                }
+            }
+            catch { }
+        }
+
+        public static ViewerTrialRecord GetOrCreate(string viewerId, string clientIp)
+        {
+            if (string.IsNullOrWhiteSpace(viewerId))
+            {
+                viewerId = "anon_" + Math.Abs((clientIp ?? "unknown").GetHashCode()).ToString();
+            }
+
+            lock (Lock)
+            {
+                if (!Trials.TryGetValue(viewerId, out var record))
+                {
+                    record = new ViewerTrialRecord
+                    {
+                        ViewerId = viewerId,
+                        ClientIp = clientIp ?? "",
+                        FirstSeenAt = DateTime.Now
+                    };
+                    Trials[viewerId] = record;
+                    Save();
+                }
+                return record;
+            }
+        }
+
+        public static ViewerTrialStatusDto GetStatus(string viewerId, string clientIp)
+        {
+            var record = GetOrCreate(viewerId, clientIp);
+            lock (Lock)
+            {
+                if (record.IsLicensed)
+                {
+                    DateTime? expDate = null;
+                    if (!string.IsNullOrEmpty(record.LicenseExpiresAt) && DateTime.TryParse(record.LicenseExpiresAt, out var d))
+                    {
+                        expDate = d;
+                    }
+
+                    if (expDate == null || expDate.Value > DateTime.Now)
+                    {
+                        return new ViewerTrialStatusDto
+                        {
+                            Status = "LICENSED",
+                            IsLicensed = true,
+                            LicenseKey = record.LicenseKey,
+                            LicenseExpiresAt = record.LicenseExpiresAt,
+                            DaysRemaining = 999,
+                            SessionDurationSeconds = 0,
+                            Message = "LisanslÄ± Ticari SÃ¼rÃ¼m"
+                        };
+                    }
+                    else
+                    {
+                        record.IsLicensed = false;
+                        Save();
+                    }
+                }
+
+                var elapsedDays = (int)(DateTime.Now - record.FirstSeenAt).TotalDays;
+                string todayKey = DateTime.Now.ToString("yyyy-MM-dd");
+                record.GraceDailyUsage.TryGetValue(todayKey, out int todaySessions);
+
+                if (elapsedDays < 30)
+                {
+                    int daysLeft = Math.Max(1, 30 - elapsedDays);
+                    return new ViewerTrialStatusDto
+                    {
+                        Status = "TRIAL_ACTIVE",
+                        DaysRemaining = daysLeft,
+                        TodaySessionsUsed = todaySessions,
+                        SessionDurationSeconds = 0,
+                        Message = $"30 GÃ¼nlÃ¼k Deneme SÃ¼rÃ¼mÃ¼ ({daysLeft} gÃ¼n kaldÄ±)"
+                    };
+                }
+                else if (elapsedDays < 33)
+                {
+                    int graceDaysLeft = Math.Max(1, 33 - elapsedDays);
+                    return new ViewerTrialStatusDto
+                    {
+                        Status = "GRACE_PERIOD",
+                        DaysRemaining = 0,
+                        GraceDaysRemaining = graceDaysLeft,
+                        TodaySessionsUsed = todaySessions,
+                        TodaySessionsMax = 3,
+                        SessionDurationSeconds = 300,
+                        Message = $"30 GÃ¼nlÃ¼k SÃ¼reniz Doldu! 3 GÃ¼nlÃ¼k Uzatma KapsamÄ±nda BugÃ¼n: {todaySessions}/3 Hak (5'er dk)"
+                    };
+                }
+                else
+                {
+                    return new ViewerTrialStatusDto
+                    {
+                        Status = "EXPIRED",
+                        DaysRemaining = 0,
+                        GraceDaysRemaining = 0,
+                        TodaySessionsUsed = todaySessions,
+                        TodaySessionsMax = 3,
+                        SessionDurationSeconds = 0,
+                        Message = "30 gÃ¼nlÃ¼k deneme ve 3 gÃ¼nlÃ¼k ek sÃ¼reniz tamamen dolmuÅŸtur. LÃ¼tfen lisanslayÄ±n."
+                    };
+                }
+            }
+        }
+
+        public static bool TryStartSession(string viewerId, string clientIp, out ViewerTrialStatusDto statusDto)
+        {
+            statusDto = GetStatus(viewerId, clientIp);
+            if (statusDto.Status == "LICENSED" || statusDto.Status == "TRIAL_ACTIVE")
+            {
+                return true;
+            }
+
+            if (statusDto.Status == "GRACE_PERIOD")
+            {
+                lock (Lock)
+                {
+                    string todayKey = DateTime.Now.ToString("yyyy-MM-dd");
+                    var record = GetOrCreate(viewerId, clientIp);
+                    record.GraceDailyUsage.TryGetValue(todayKey, out int count);
+                    if (count >= 3)
+                    {
+                        return false;
+                    }
+                    record.GraceDailyUsage[todayKey] = count + 1;
+                    Save();
+                    statusDto.TodaySessionsUsed = count + 1;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        public static bool ActivateLicense(string viewerId, string licenseKey, List<Program.LicenseEntry> allLicenses, out string customerName, out string expiresAt)
+        {
+            customerName = "";
+            expiresAt = "";
+            if (string.IsNullOrWhiteSpace(licenseKey)) return false;
+
+            var cleanKey = licenseKey.Trim().ToUpperInvariant();
+            var lic = allLicenses.FirstOrDefault(l => l.LicenseKey.Equals(cleanKey, StringComparison.OrdinalIgnoreCase) && l.IsActive);
+            if (lic == null) return false;
+
+            customerName = lic.CustomerName;
+            expiresAt = lic.ExpiresAt;
+
+            lock (Lock)
+            {
+                var record = GetOrCreate(viewerId, "");
+                record.IsLicensed = true;
+                record.LicenseKey = cleanKey;
+                record.LicenseExpiresAt = lic.ExpiresAt;
+                record.CustomerName = lic.CustomerName;
+                Save();
+            }
+            return true;
         }
     }
 
@@ -1166,6 +1399,52 @@ using System.IO;
                         session.FramePump = new FrameRelayPump(clientSocket, session.Cts.Token);
                         Console.WriteLine($"[Relay] Client connected to Host ID: {targetId}");
                         string clientIp = context.Connection.RemoteIpAddress?.ToString() ?? "Bilinmeyen";
+                        
+                        // 30 GÃ¼nlÃ¼k Deneme, 3 GÃ¼nlÃ¼k Uzatma (3x5 dk) & Lisans KontrolÃ¼
+                        string viewerId = context.Request.Query["viewerId"].ToString().Trim();
+                        string adminToken = context.Request.Query["adminToken"].ToString().Trim();
+                        string tenantIdParam = context.Request.Query["tenantId"].ToString().Trim();
+                        bool isExempt = (adminToken == "authenticated" || !string.IsNullOrEmpty(tenantIdParam));
+
+                        if (!isExempt)
+                        {
+                            bool allowed = ViewerTrialManager.TryStartSession(viewerId, clientIp, out var trialStatus);
+                            if (!allowed)
+                            {
+                                string errCode = (trialStatus.Status == "GRACE_PERIOD") ? "ERROR:GRACE_LIMIT_REACHED" : "ERROR:TRIAL_EXPIRED";
+                                byte[] errBytes = Encoding.UTF8.GetBytes(errCode);
+                                await clientSocket.SendAsync(new ArraySegment<byte>(errBytes), WebSocketMessageType.Text, true, CancellationToken.None);
+                                await Task.Delay(400);
+                                await clientSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, errCode, CancellationToken.None);
+                                return;
+                            }
+
+                            // Ä°stemciye lisans ve deneme durum bilgisini ilet
+                            string infoMsg = $"SESSION_STATUS:{trialStatus.Status}:{trialStatus.DaysRemaining}:{trialStatus.GraceDaysRemaining}:{trialStatus.TodaySessionsUsed}:{trialStatus.SessionDurationSeconds}";
+                            byte[] infoBytes = Encoding.UTF8.GetBytes(infoMsg);
+                            try { await clientSocket.SendAsync(new ArraySegment<byte>(infoBytes), WebSocketMessageType.Text, true, CancellationToken.None); } catch { }
+
+                            // 31-33. GÃ¼nler (Acil Uzatma): 5 dakika (300 saniye) sonra sunucu tarafÄ±nda oturumu otomatik kapat
+                            if (trialStatus.Status == "GRACE_PERIOD")
+                            {
+                                var activeCts = session.ClientCts;
+                                _ = Task.Run(async () =>
+                                {
+                                    try
+                                    {
+                                        await Task.Delay(TimeSpan.FromSeconds(300), activeCts.Token);
+                                        if (session.ClientSocket != null && session.ClientSocket.State == WebSocketState.Open)
+                                        {
+                                            byte[] timeoutBytes = Encoding.UTF8.GetBytes("ERROR:GRACE_TIMEOUT");
+                                            try { await session.ClientSocket.SendAsync(new ArraySegment<byte>(timeoutBytes), WebSocketMessageType.Text, true, CancellationToken.None); } catch { }
+                                            await Task.Delay(300);
+                                            activeCts.Cancel();
+                                        }
+                                    }
+                                    catch { }
+                                });
+                            }
+                        }
                         TelemetryManager.LogEvent(session.Hwid, session.IpAddress, session.ComputerName, session.Username, session.OsVersion, session.AppVersion, "connect", $"İstemci bağlandı. İstemci IP: {clientIp}, Hedef ID: {targetId}");
 
                         // Send host_info JSON packet to viewer so viewer can auto-upgrade to 0.5ms LAN Direct if on same subnet
@@ -1248,6 +1527,52 @@ using System.IO;
                     {
                         Console.WriteLine($"[Relay] View-only Client connected to Host ID: {targetId}");
                         string clientIp = context.Connection.RemoteIpAddress?.ToString() ?? "Bilinmeyen";
+                        
+                        // 30 GÃ¼nlÃ¼k Deneme, 3 GÃ¼nlÃ¼k Uzatma (3x5 dk) & Lisans KontrolÃ¼
+                        string viewerId = context.Request.Query["viewerId"].ToString().Trim();
+                        string adminToken = context.Request.Query["adminToken"].ToString().Trim();
+                        string tenantIdParam = context.Request.Query["tenantId"].ToString().Trim();
+                        bool isExempt = (adminToken == "authenticated" || !string.IsNullOrEmpty(tenantIdParam));
+
+                        if (!isExempt)
+                        {
+                            bool allowed = ViewerTrialManager.TryStartSession(viewerId, clientIp, out var trialStatus);
+                            if (!allowed)
+                            {
+                                string errCode = (trialStatus.Status == "GRACE_PERIOD") ? "ERROR:GRACE_LIMIT_REACHED" : "ERROR:TRIAL_EXPIRED";
+                                byte[] errBytes = Encoding.UTF8.GetBytes(errCode);
+                                await clientSocket.SendAsync(new ArraySegment<byte>(errBytes), WebSocketMessageType.Text, true, CancellationToken.None);
+                                await Task.Delay(400);
+                                await clientSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, errCode, CancellationToken.None);
+                                return;
+                            }
+
+                            // Ä°stemciye lisans ve deneme durum bilgisini ilet
+                            string infoMsg = $"SESSION_STATUS:{trialStatus.Status}:{trialStatus.DaysRemaining}:{trialStatus.GraceDaysRemaining}:{trialStatus.TodaySessionsUsed}:{trialStatus.SessionDurationSeconds}";
+                            byte[] infoBytes = Encoding.UTF8.GetBytes(infoMsg);
+                            try { await clientSocket.SendAsync(new ArraySegment<byte>(infoBytes), WebSocketMessageType.Text, true, CancellationToken.None); } catch { }
+
+                            // 31-33. GÃ¼nler (Acil Uzatma): 5 dakika (300 saniye) sonra sunucu tarafÄ±nda oturumu otomatik kapat
+                            if (trialStatus.Status == "GRACE_PERIOD")
+                            {
+                                var activeCts = session.ClientCts;
+                                _ = Task.Run(async () =>
+                                {
+                                    try
+                                    {
+                                        await Task.Delay(TimeSpan.FromSeconds(300), activeCts.Token);
+                                        if (session.ClientSocket != null && session.ClientSocket.State == WebSocketState.Open)
+                                        {
+                                            byte[] timeoutBytes = Encoding.UTF8.GetBytes("ERROR:GRACE_TIMEOUT");
+                                            try { await session.ClientSocket.SendAsync(new ArraySegment<byte>(timeoutBytes), WebSocketMessageType.Text, true, CancellationToken.None); } catch { }
+                                            await Task.Delay(300);
+                                            activeCts.Cancel();
+                                        }
+                                    }
+                                    catch { }
+                                });
+                            }
+                        }
                         TelemetryManager.LogEvent(session.Hwid, session.IpAddress, session.ComputerName, session.Username, session.OsVersion, session.AppVersion, "connect_viewonly", $"İzleyici bağlandı. İstemci IP: {clientIp}, Hedef ID: {targetId}");
 
                         lock (session.ViewOnlyClients)
@@ -2207,6 +2532,104 @@ using System.IO;
                         context.Response.ContentType = "application/json; charset=utf-8";
                         await context.Response.WriteAsync("{\"success\":false,\"message\":\"Bu e-posta adresi zaten kayıtlı!\"}");
                     }
+                }
+                catch (Exception ex)
+                {
+                    context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                    await context.Response.WriteAsync(System.Text.Json.JsonSerializer.Serialize(new { success = false, message = ex.Message }));
+                }
+            });
+
+            app.MapGet("/api/trial/status", async context =>
+            {
+                string viewerId = context.Request.Query["viewerId"].ToString().Trim();
+                string clientIp = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+                var status = ViewerTrialManager.GetStatus(viewerId, clientIp);
+                context.Response.ContentType = "application/json; charset=utf-8";
+                await context.Response.WriteAsync(System.Text.Json.JsonSerializer.Serialize(status));
+            });
+
+            app.MapPost("/api/license/activate", async context =>
+            {
+                try
+                {
+                    using var reader = new StreamReader(context.Request.Body);
+                    string body = await reader.ReadToEndAsync();
+                    using var doc = System.Text.Json.JsonDocument.Parse(body);
+                    string viewerId = doc.RootElement.TryGetProperty("viewerId", out var p1) ? p1.GetString() ?? "" : "";
+                    string licenseKey = doc.RootElement.TryGetProperty("licenseKey", out var p2) ? p2.GetString() ?? "" : "";
+
+                    var allLicenses = LoadLicenses();
+                    bool success = ViewerTrialManager.ActivateLicense(viewerId, licenseKey, allLicenses, out string customerName, out string expiresAt);
+
+                    context.Response.ContentType = "application/json; charset=utf-8";
+                    if (success)
+                    {
+                        await context.Response.WriteAsync(System.Text.Json.JsonSerializer.Serialize(new { success = true, customerName, expiresAt, message = "Lisans baÅŸarÄ±yla etkinleÅŸtirildi! 1 YÄ±llÄ±k sÄ±nÄ±rsÄ±z ticari sÃ¼rÃ¼m aktif." }));
+                    }
+                    else
+                    {
+                        await context.Response.WriteAsync(System.Text.Json.JsonSerializer.Serialize(new { success = false, message = "GeÃ§ersiz veya sÃ¼resi dolmuÅŸ lisans anahtarÄ±!" }));
+                    }
+                }
+                catch (Exception ex)
+                {
+                    context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                    await context.Response.WriteAsync(System.Text.Json.JsonSerializer.Serialize(new { success = false, message = ex.Message }));
+                }
+            });
+
+            app.MapPost("/api/payment/instant-order", async context =>
+            {
+                try
+                {
+                    using var reader = new StreamReader(context.Request.Body);
+                    string body = await reader.ReadToEndAsync();
+                    using var doc = System.Text.Json.JsonDocument.Parse(body);
+                    var root = doc.RootElement;
+
+                    string fullName = root.TryGetProperty("fullName", out var p1) ? p1.GetString() ?? "" : "";
+                    string email = root.TryGetProperty("email", out var p2) ? p2.GetString() ?? "" : "";
+                    string phone = root.TryGetProperty("phone", out var p3) ? p3.GetString() ?? "" : "";
+                    string viewerId = root.TryGetProperty("viewerId", out var p4) ? p4.GetString() ?? "" : "";
+                    string plan = root.TryGetProperty("plan", out var p5) ? p5.GetString() ?? "PRO" : "PRO";
+
+                    string randomPart1 = Random.Shared.Next(1000, 9999).ToString();
+                    string randomPart2 = Random.Shared.Next(1000, 9999).ToString();
+                    string randomPart3 = Random.Shared.Next(1000, 9999).ToString();
+                    string licenseKey = $"BIGLINE-{plan.ToUpper()}-{randomPart1}-{randomPart2}-{randomPart3}";
+
+                    var entry = new LicenseEntry
+                    {
+                        LicenseKey = licenseKey,
+                        CustomerName = string.IsNullOrEmpty(fullName) ? "Online MÃ¼ÅŸteri" : fullName,
+                        TierName = "Pro YÄ±llÄ±k (1.490 TL)",
+                        MaxOperators = 2,
+                        MaxChannels = 10,
+                        MaxUnattendedHosts = 100,
+                        CreatedAt = DateTime.Now.ToString("dd.MM.yyyy HH:mm"),
+                        ExpiresAt = DateTime.Now.AddYears(1).ToString("dd.MM.yyyy HH:mm"),
+                        IsActive = true
+                    };
+
+                    var licenses = LoadLicenses();
+                    licenses.Add(entry);
+                    SaveLicenses(licenses);
+
+                    if (!string.IsNullOrEmpty(viewerId))
+                    {
+                        ViewerTrialManager.ActivateLicense(viewerId, licenseKey, licenses, out _, out _);
+                    }
+
+                    context.Response.ContentType = "application/json; charset=utf-8";
+                    await context.Response.WriteAsync(System.Text.Json.JsonSerializer.Serialize(new
+                    {
+                        success = true,
+                        licenseKey = licenseKey,
+                        customerName = entry.CustomerName,
+                        expiresAt = entry.ExpiresAt,
+                        message = "Ã–demeniz baÅŸarÄ±yla tamamlandÄ±! 1 YÄ±llÄ±k LisansÄ±nÄ±z hazÄ±r ve cihazÄ±nÄ±za tanÄ±mlandÄ±."
+                    }));
                 }
                 catch (Exception ex)
                 {

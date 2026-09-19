@@ -1,4 +1,4 @@
-﻿var socket = null;
+var socket = null;
 var connected = false;
 var currentMouseMode = 'left'; // 'left' or 'right'
 
@@ -1288,3 +1288,228 @@ async function handleFileSelected(event) {
 
 window.triggerFileTransfer = triggerFileTransfer;
 window.handleFileSelected = handleFileSelected;
+// ==========================================
+// BIGLINE VIEWER TRIAL & COMMERCIAL LICENSING ENGINE
+// ==========================================
+function getViewerId() {
+    let vid = localStorage.getItem('bigline_viewer_id');
+    if (!vid) {
+        vid = 'v_' + Math.random().toString(36).substring(2, 11) + '_' + Date.now().toString(36);
+        localStorage.setItem('bigline_viewer_id', vid);
+    }
+    return vid;
+}
+window.getViewerId = getViewerId;
+
+let currentTrialStatus = null;
+async function fetchTrialStatus() {
+    try {
+        const vid = getViewerId();
+        const res = await fetch('/api/trial/status?viewerId=' + encodeURIComponent(vid));
+        if (!res.ok) return;
+        const data = await res.json();
+        currentTrialStatus = data;
+        updateTrialBadgeUI(data);
+    } catch(e) {
+        console.warn('Trial status fetch error:', e);
+    }
+}
+window.fetchTrialStatus = fetchTrialStatus;
+
+function updateTrialBadgeUI(data) {
+    const badge = document.getElementById('nav-trial-badge');
+    const textElem = document.getElementById('nav-trial-text');
+    if (!badge || !textElem) return;
+
+    if (data.Status === 'LICENSED') {
+        badge.style.borderColor = '#00e5ff';
+        badge.style.color = '#00e5ff';
+        badge.style.background = 'linear-gradient(135deg, rgba(0,229,255,0.2), rgba(213,0,249,0.2))';
+        textElem.innerHTML = 'ğŸ’ LisanslÄ± SÃ¼rÃ¼m (1 YÄ±l)';
+    } else if (data.Status === 'TRIAL_ACTIVE') {
+        badge.style.borderColor = '#10b981';
+        badge.style.color = '#10b981';
+        badge.style.background = 'linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(0, 229, 255, 0.2))';
+        textElem.innerHTML = `ğŸŸ¢ 30 GÃ¼nlÃ¼k Deneme (${data.DaysRemaining} GÃ¼n KaldÄ±)`;
+    } else if (data.Status === 'GRACE_PERIOD') {
+        badge.style.borderColor = '#f59e0b';
+        badge.style.color = '#f59e0b';
+        badge.style.background = 'linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(239, 68, 68, 0.15))';
+        textElem.innerHTML = `ğŸŸ¡ Uzatma: ${data.GraceDaysRemaining} GÃ¼n KaldÄ± (BugÃ¼n ${data.TodaySessionsUsed}/3)`;
+    } else if (data.Status === 'EXPIRED') {
+        badge.style.borderColor = '#ef4444';
+        badge.style.color = '#ef4444';
+        badge.style.background = 'rgba(239, 68, 68, 0.2)';
+        textElem.innerHTML = 'ğŸ”´ SÃ¼re Doldu (LisanslayÄ±n)';
+    }
+}
+
+function switchCheckoutTab(tab) {
+    const cardTab = document.getElementById('checkout-tab-card');
+    const bankTab = document.getElementById('checkout-tab-bank');
+    const btnCard = document.getElementById('tab-btn-card');
+    const btnBank = document.getElementById('tab-btn-bank');
+
+    if (tab === 'card') {
+        if (cardTab) cardTab.style.display = 'block';
+        if (bankTab) bankTab.style.display = 'none';
+        if (btnCard) {
+            btnCard.style.background = 'linear-gradient(135deg, #00e5ff, #10b981)';
+            btnCard.style.color = '#000';
+        }
+        if (btnBank) {
+            btnBank.style.background = 'transparent';
+            btnBank.style.color = '#94a3b8';
+        }
+    } else {
+        if (cardTab) cardTab.style.display = 'none';
+        if (bankTab) bankTab.style.display = 'block';
+        if (btnBank) {
+            btnBank.style.background = 'linear-gradient(135deg, #00e5ff, #10b981)';
+            btnBank.style.color = '#000';
+        }
+        if (btnCard) {
+            btnCard.style.background = 'transparent';
+            btnCard.style.color = '#94a3b8';
+        }
+    }
+}
+window.switchCheckoutTab = switchCheckoutTab;
+
+async function submitInstantCardOrder(e) {
+    if (e) e.preventDefault();
+    const btn = document.getElementById('card-submit-btn');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Ã–deme Ä°ÅŸleniyor...</span>';
+    }
+
+    const name = document.getElementById('card-name').value.trim();
+    const email = document.getElementById('card-email').value.trim();
+    const phone = document.getElementById('card-phone').value.trim();
+    const vid = getViewerId();
+
+    try {
+        const res = await fetch('/api/payment/instant-order', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                fullName: name,
+                email: email,
+                phone: phone,
+                viewerId: vid,
+                plan: 'PRO'
+            })
+        });
+
+        const data = await res.json();
+        if (data.success && data.licenseKey) {
+            const form = document.getElementById('card-checkout-form');
+            if (form) form.style.display = 'none';
+            const successBox = document.getElementById('checkout-success-box');
+            if (successBox) successBox.style.display = 'block';
+            const keyDisplay = document.getElementById('generated-license-key');
+            if (keyDisplay) keyDisplay.innerText = data.licenseKey;
+
+            showToast('ğŸ‰ Tebrikler! 1 YÄ±llÄ±k LisansÄ±nÄ±z Aktif Edildi.', 'success');
+            await fetchTrialStatus();
+        } else {
+            showToast('Hata: ' + (data.message || 'Ã–deme tamamlanamadÄ±.'), 'error');
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-lock"></i> <span>â‚º1.490 TL GÃ¼venli Ã–de & LisansÄ± Hemen Al</span>';
+            }
+        }
+    } catch(err) {
+        showToast('BaÄŸlantÄ± hatasÄ±: ' + err.message, 'error');
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-lock"></i> <span>â‚º1.490 TL GÃ¼venli Ã–de & LisansÄ± Hemen Al</span>';
+        }
+    }
+}
+window.submitInstantCardOrder = submitInstantCardOrder;
+
+function openLicenseActivationModal() {
+    const m = document.getElementById('license-activation-modal');
+    if (m) m.classList.remove('hidden');
+}
+window.openLicenseActivationModal = openLicenseActivationModal;
+
+function closeLicenseActivationModal() {
+    const m = document.getElementById('license-activation-modal');
+    if (m) m.classList.add('hidden');
+}
+window.closeLicenseActivationModal = closeLicenseActivationModal;
+
+function closeGracePeriodModal() {
+    const m = document.getElementById('grace-period-modal');
+    if (m) m.classList.add('hidden');
+}
+window.closeGracePeriodModal = closeGracePeriodModal;
+
+function closeTrialExpiredModal() {
+    const m = document.getElementById('trial-expired-modal');
+    if (m) m.classList.add('hidden');
+}
+window.closeTrialExpiredModal = closeTrialExpiredModal;
+
+function openTrialOrLicenseModal() {
+    if (!currentTrialStatus) {
+        openCheckoutModal();
+        return;
+    }
+    if (currentTrialStatus.Status === 'LICENSED') {
+        showToast('ğŸ’ 1 YÄ±llÄ±k LisanslÄ± Ticari SÃ¼rÃ¼mÃ¼nÃ¼z Aktiftir! (BitiÅŸ: ' + (currentTrialStatus.LicenseExpiresAt || 'SÃ¼resiz') + ')', 'success');
+    } else if (currentTrialStatus.Status === 'EXPIRED') {
+        const m = document.getElementById('trial-expired-modal');
+        if (m) m.classList.remove('hidden');
+    } else if (currentTrialStatus.Status === 'GRACE_PERIOD') {
+        const m = document.getElementById('grace-period-modal');
+        if (m) m.classList.remove('hidden');
+    } else {
+        openCheckoutModal();
+    }
+}
+window.openTrialOrLicenseModal = openTrialOrLicenseModal;
+
+async function submitLicenseActivation() {
+    const inp = document.getElementById('license-key-input');
+    const key = inp ? inp.value.trim() : '';
+    if (!key) {
+        showToast('LÃ¼tfen bir lisans anahtarÄ± girin!', 'warning');
+        return;
+    }
+
+    try {
+        showToast('Lisans anahtarÄ± doÄŸrulanÄ±yor...', 'info');
+        const res = await fetch('/api/license/activate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                viewerId: getViewerId(),
+                licenseKey: key
+            })
+        });
+
+        const data = await res.json();
+        if (data.success) {
+            showToast('âœ… ' + data.message, 'success');
+            closeLicenseActivationModal();
+            await fetchTrialStatus();
+        } else {
+            showToast('âŒ ' + (data.message || 'GeÃ§ersiz lisans anahtarÄ±!'), 'error');
+        }
+    } catch(err) {
+        showToast('BaÄŸlantÄ± hatasÄ±: ' + err.message, 'error');
+    }
+}
+window.submitLicenseActivation = submitLicenseActivation;
+
+// Auto-fetch trial status on page load
+document.addEventListener('DOMContentLoaded', () => {
+    fetchTrialStatus();
+});
+window.addEventListener('load', () => {
+    fetchTrialStatus();
+});

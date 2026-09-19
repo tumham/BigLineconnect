@@ -1096,7 +1096,7 @@
             var wsHost = (location.host && !location.host.includes('localhost') && !location.host.startsWith('127.0.0.1')) ? location.host : 'biglineconnect-production.up.railway.app';
             var wsProtocol = (window.location.protocol === 'https:' || wsHost.includes('railway.app')) ? 'wss:' : 'ws:';
             try {
-                ws = new WebSocket(wsProtocol + '//' + wsHost + '/connect-client?id=' + encodeURIComponent(cleanId));
+                var vid = (typeof getViewerId === 'function') ? getViewerId() : ''; ws = new WebSocket(wsProtocol + '//' + wsHost + '/connect-client?id=' + encodeURIComponent(cleanId) + '&viewerId=' + encodeURIComponent(vid));
                 ws.binaryType = 'arraybuffer';
             } catch(wsErr) {
                 console.error('[BigLine] WebSocket create error:', wsErr);
@@ -1144,6 +1144,30 @@
                     } else if (ev.data === 'APPROVAL_OK') {
                         if (typeof showToast === 'function') showToast('✅ Müşteri bağlantıyı onayladı! Yayın başlatılıyor...', 'success');
                         try { ws.send("START_STREAM"); } catch(e) {}
+                    } else if (ev.data === 'ERROR:TRIAL_EXPIRED') {
+                        resetConnectButton();
+                        var m = document.getElementById('trial-expired-modal');
+                        if (m) m.classList.remove('hidden');
+                        else alert('30 gÃ¼nlÃ¼k deneme ve 3 gÃ¼nlÃ¼k ek sÃ¼reniz tamamen dolmuÅŸtur. LÃ¼tfen Ã¼rÃ¼nÃ¼ lisanslayÄ±n.');
+                        try { ws.close(); } catch(e) {}
+                    } else if (ev.data === 'ERROR:GRACE_LIMIT_REACHED') {
+                        resetConnectButton();
+                        alert('âš ï¸ BugÃ¼nkÃ¼ 3 oturumluk (5\'er dakika) acil kullanÄ±m hakkÄ±nÄ±z doldu!\nLÃ¼tfen sÄ±nÄ±rsÄ±z ticari lisans satÄ±n alÄ±n veya yarÄ±n tekrar deneyin.');
+                        try { ws.close(); } catch(e) {}
+                    } else if (ev.data === 'ERROR:GRACE_TIMEOUT') {
+                        resetConnectButton();
+                        alert('âŒ› 5 dakikalÄ±k acil oturum sÃ¼reniz doldu! BaÄŸlantÄ± sonlandÄ±rÄ±ldÄ±.\nKesintisiz destek iÃ§in lÃ¼tfen lisansÄ±nÄ±zÄ± aktif edin.');
+                        try { ws.close(); } catch(e) {}
+                    } else if (typeof ev.data === 'string' && ev.data.startsWith('SESSION_STATUS:')) {
+                        var parts = ev.data.split(':');
+                        var sType = parts[1];
+                        var dLeft = parseInt(parts[2], 10) || 0;
+                        var gUsed = parseInt(parts[4], 10) || 0;
+                        if (sType === 'GRACE_PERIOD') {
+                            if (typeof showToast === 'function') showToast('â±ï¸ Acil Uzatma Modu: 5 dakikalÄ±k oturumunuz baÅŸladÄ±! (BugÃ¼n ' + gUsed + '/3 hak)', 'warning');
+                        } else if (sType === 'TRIAL_ACTIVE') {
+                            if (typeof showToast === 'function') showToast('ğŸŸ¢ 30 GÃ¼nlÃ¼k Deneme SÃ¼rÃ¼mÃ¼: ' + dLeft + ' gÃ¼n kaldÄ±', 'info');
+                        }
                     } else if (ev.data === 'APPROVAL_REJECTED') {
                         resetConnectButton();
                         alert('⚠️ Bağlantı isteği karşı bilgisayar tarafından reddedildi.');
