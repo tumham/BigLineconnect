@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Net.WebSockets;
@@ -1070,7 +1070,6 @@ using System.IO;
                                 existingSession.HostSocket.Dispose();
                             }
                             catch { }
-                            ActiveHosts.TryRemove(rawId, out _);
                         }
                         isExisting = true;
                     }
@@ -1147,7 +1146,7 @@ using System.IO;
                                 if (msgType == WebSocketMessageType.Binary)
                                 {
                                     // 1. FAST-PATH FILE TRANSFER: Tagged 0x46 ('F') -> Forward directly without pump dropping or delay!
-                                    if (msgBytes.Length > 0 && msgBytes[0] == 0x46)
+                                    if (msgBytes.Length > 0 && (msgBytes[0] == 0x46 || msgBytes[0] == 0xBC || msgBytes[0] == 0x53))
                                     {
                                         if (session.ClientSocket != null && session.ClientSocket.State == WebSocketState.Open)
                                         {
@@ -1225,10 +1224,16 @@ using System.IO;
                     finally
                     {
                         session.Cts.Cancel();
-                        ActiveHosts.TryRemove(rawId, out _);
-                        Console.WriteLine($"[Relay] Host disconnected. ID: {formattedId}");
-                        TelemetryManager.LogEvent(session.Hwid, session.IpAddress, session.ComputerName, session.Username, session.OsVersion, session.AppVersion, "disconnect", $"Host bağlantısı kesildi. ID: {formattedId}, Süre: {(DateTime.Now - session.ConnectedAt).TotalMinutes:F1} dk");
-                        
+                        if (ActiveHosts.TryGetValue(rawId, out var curSession) && ReferenceEquals(curSession, session))
+                        {
+                            ActiveHosts.TryRemove(rawId, out _);
+                            Console.WriteLine($"[Relay] Host disconnected. ID: {formattedId}");
+                            TelemetryManager.LogEvent(session.Hwid, session.IpAddress, session.ComputerName, session.Username, session.OsVersion, session.AppVersion, "disconnect", $"Host baÄŸlantÄ±sÄ± kesildi. ID: {formattedId}, SÃ¼re: {(DateTime.Now - session.ConnectedAt).TotalMinutes:F1} dk");
+                        }
+                        else
+                        {
+                            Console.WriteLine($"[Relay] Old host session cleaned up for ID: {formattedId}, but newer session is active. ActiveHosts preserved.");
+                        }
                         if (session.ClientSocket != null && session.ClientSocket.State == WebSocketState.Open)
                         {
                             try
