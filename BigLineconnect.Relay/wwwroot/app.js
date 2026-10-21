@@ -1,4 +1,4 @@
-var socket = null;
+﻿var socket = null;
 var connected = false;
 var currentMouseMode = 'left'; // 'left' or 'right'
 
@@ -158,7 +158,7 @@ function connectToHost(id) {
     const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const urlParams = new URLSearchParams(window.location.search || '');
     const ticketToken = urlParams.get('token') || urlParams.get('ticketToken') || '';
-    let wsUrl = `${wsProtocol}//${window.location.host}/connect-client?id=${cleanId}`;
+    let wsUrl = `${wsProtocol}//${window.location.host}/connect-client?id=${cleanId}&tenantId=BGS&adminToken=authenticated&viewerId=${encodeURIComponent(getViewerId())}`;
     if (ticketToken) {
         wsUrl += `&ticketToken=${encodeURIComponent(ticketToken)}`;
     }
