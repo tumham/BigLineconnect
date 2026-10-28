@@ -1,4 +1,4 @@
-var socket = null;
+﻿var socket = null;
 var connected = false;
 var currentMouseMode = 'left'; // 'left' or 'right'
 
@@ -188,12 +188,20 @@ function connectToHost(id) {
                 alert('⚠️ UYARI: Bu bilgisayara şu an başka bir operatör bağlı.');
                 socket.close();
             } else if (ev.data === 'AUTH_REQUIRED' || ev.data === 'AUTH_REQ') {
-                var pass = prompt('🔒 Lütfen karşı bilgisayarın ekranında yazan 6 haneli erişim şifresini girin:', '');
-                if (pass) {
-                    socket.send(pass);
+                const prefill = document.getElementById('target-password');
+                const prefillVal = prefill ? prefill.value.trim() : '';
+                if (prefillVal && prefillVal.length >= 4) {
+                    socket.send("AUTH_PASS:" + prefillVal);
+                    socket.send(prefillVal);
+                } else if (typeof window.openPasswordModal === 'function') {
+                    window.openPasswordModal();
                 } else {
-                    resetConnectButton();
-                    socket.close();
+                    const m = document.getElementById('password-modal');
+                    if (m) {
+                        m.style.setProperty('display', 'flex', 'important');
+                        m.style.setProperty('pointer-events', 'auto', 'important');
+                        m.classList.remove('hidden');
+                    }
                 }
             } else if (ev.data === 'AUTH_SUCCESS' || ev.data === 'AUTH_OK') {
                 showToast('Erişim Onaylandı! Ekran ve Kontrol Açılıyor...', 'success');
@@ -653,6 +661,7 @@ document.querySelectorAll('.numpad-btn').forEach(btn => {
 
 // Password submit actions
 function sendPassword() {
+    const activeSocket = (window.ws && window.ws.readyState === WebSocket.OPEN) ? window.ws : socket;
     const inputElem = document.getElementById('access-password-input');
     const btnElem = document.getElementById('submit-password-btn');
 
@@ -660,40 +669,34 @@ function sendPassword() {
     const pass = inputElem.value.replace(/\D/g, '');
 
     if (!pass || pass.length === 0) {
-        showToast('Lütfen uzaktaki bilgisayarın 6 haneli şifresini giriniz.', 'error');
+        showToast('LÃ¼tfen uzaktaki bilgisayarÄ±n 6 haneli ÅŸifresini giriniz.', 'error');
         return;
     }
 
-    if (!socket || socket.readyState !== WebSocket.OPEN) {
-        showToast('Sunucuya yeniden bağlanılıyor...', 'info');
-        const rawId = targetIdInput ? targetIdInput.value.replace(/\D/g, '') : '';
-        if (rawId) {
-            connectToHost(rawId);
-            setTimeout(() => {
-                if (socket && socket.readyState === WebSocket.OPEN) {
-                    socket.send("AUTH_PASS:" + pass);
-                }
-            }, 1000);
+    if (!activeSocket || activeSocket.readyState !== WebSocket.OPEN) {
+        showToast('Sunucuya yeniden baÄŸlanÄ±lÄ±yor...', 'info');
+        if (typeof window.doConnect === 'function') {
+            window.doConnect();
         }
         return;
     }
 
     if (btnElem) {
         btnElem.disabled = true;
-        btnElem.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Doğrulanıyor...</span>';
+        btnElem.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>DoÄŸrulanÄ±yor...</span>';
     }
 
-    socket.send("AUTH_PASS:" + pass);
-    showToast('Şifre gönderildi, doğrulanıyor...', 'info');
+    activeSocket.send("AUTH_PASS:" + pass);
+    activeSocket.send(pass);
+    showToast('Åifre gÃ¶nderildi, doÄŸrulanÄ±yor...', 'info');
 
     setTimeout(() => {
         if (btnElem) {
             btnElem.disabled = false;
-            btnElem.innerHTML = 'Doğrula & Bağlan <i class="fa-solid fa-arrow-right-to-bracket"></i>';
+            btnElem.innerHTML = 'DoÄŸrula & BaÄŸlan <i class="fa-solid fa-arrow-right-to-bracket"></i>';
         }
     }, 3000);
 }
-
 if (submitPasswordBtn) {
     submitPasswordBtn.addEventListener('click', (e) => {
         if (e) e.preventDefault();

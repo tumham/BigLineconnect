@@ -118,6 +118,14 @@
                             <!-- Auto-Suggest Dropdown Popup -->
                             <div id="id-suggestions-box" style="display: none; pointer-events: none; position: absolute; top: 100%; left: 0; right: 0; background: #0f172a; border: 1.5px solid #00e5ff; border-radius: 12px; margin-top: 4px; max-height: 200px; overflow-y: auto; z-index: 99999; box-shadow: 0 10px 25px rgba(0,0,0,0.8); padding: 6px;"></div>
                         </div>
+                        <div class="input-group" style="margin-top: 10px; position: relative;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                <label for="target-password" style="font-weight: 700; font-size: 0.8rem; color: #94a3b8;">
+                                    <i class="fa-solid fa-key"></i> ERÄ°ÅÄ°M ÅÄ°FRESÄ° (ÅÄ°FRELÄ° HOST Ä°Ã‡Ä°N)
+                                </label>
+                            </div>
+                            <input type="password" maxlength="16" autocomplete="off" id="target-password" placeholder="Varsa ÅŸifreyi buraya yazabilirsiniz" style="text-align: center; letter-spacing: 4px; font-weight: 700; font-size: 1.05rem; padding: 10px; height: 46px; border-radius: 12px; border: 1.5px solid rgba(255, 255, 255, 0.15); background: rgba(15, 23, 42, 0.7); color: #00e5ff; width: 100%;">
+                        </div>
                         
                         <button id="connect-btn" type="button" onclick="doConnect()" class="primary-btn" style="position: relative; z-index: 9999; pointer-events: auto !important; cursor: pointer; height: 54px; font-size: 1.15rem; font-weight: 800; margin-top: 10px; touch-action: manipulation;">
                             <span data-i18n="widget.connect">Bağlan</span> <i class="fa-solid fa-arrow-right-to-bracket"></i>
@@ -639,6 +647,7 @@
             </div>
 
             <button id="submit-password-btn" type="button" class="primary-btn" onclick="sendPassword()" style="width: 100%; padding: 16px; font-size: 1.1rem; font-weight: 800; border-radius: 18px;">Do�Yrula & Ba�Ylan <i class="fa-solid fa-arrow-right-to-bracket"></i></button>
+            <button type="button" class="btn-cancel" onclick="cancelPasswordModal()" style="margin-top: 10px; width: 100%; padding: 12px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 18px; color: #cbd5e1; font-weight: 700; cursor: pointer; transition: all 0.2s;">VazgeÃ§</button>
         </div>
     </div>
 
@@ -1186,6 +1195,105 @@
 
         var isConnecting = false;
 
+                function openPasswordModal() {
+            var m = document.getElementById('password-modal');
+            if (m) {
+                m.style.setProperty('display', 'flex', 'important');
+                m.style.setProperty('pointer-events', 'auto', 'important');
+                m.classList.remove('hidden');
+                var inp = document.getElementById('access-password-input');
+                if (inp) {
+                    inp.value = '';
+                    setTimeout(function() { inp.focus(); }, 120);
+                }
+            }
+        }
+        window.openPasswordModal = openPasswordModal;
+
+        function closePasswordModal() {
+            var m = document.getElementById('password-modal');
+            if (m) {
+                m.style.setProperty('display', 'none', 'important');
+                m.style.setProperty('pointer-events', 'none', 'important');
+                m.classList.add('hidden');
+            }
+        }
+        window.closePasswordModal = closePasswordModal;
+
+        function cancelPasswordModal() {
+            closePasswordModal();
+            if (typeof resetConnectButton === 'function') resetConnectButton();
+            if (ws) {
+                try { ws.close(); } catch(e) {}
+            }
+        }
+        window.cancelPasswordModal = cancelPasswordModal;
+
+        function sendPassword() {
+            var inp = document.getElementById('access-password-input');
+            if (!inp) return;
+            var pass = inp.value.replace(/\D/g, '');
+            if (!pass || pass.length === 0) {
+                if (typeof showToast === 'function') showToast('LÃ¼tfen 6 haneli eriÅŸim ÅŸifresini girin.', 'warning');
+                return;
+            }
+            var activeSocket = (ws && ws.readyState === WebSocket.OPEN) ? ws : (window.socket && window.socket.readyState === WebSocket.OPEN ? window.socket : null);
+            if (activeSocket) {
+                var btn = document.getElementById('submit-password-btn');
+                if (btn) {
+                    btn.disabled = true;
+                    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>DoÄŸrulanÄ±yor...</span>';
+                }
+                activeSocket.send("AUTH_PASS:" + pass);
+                activeSocket.send(pass);
+                if (typeof showToast === 'function') showToast('Åifre gÃ¶nderildi, doÄŸrulanÄ±yor...', 'info');
+                setTimeout(function() {
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.innerHTML = 'DoÄŸrula & BaÄŸlan <i class="fa-solid fa-arrow-right-to-bracket"></i>';
+                    }
+                }, 3000);
+            } else {
+                if (typeof showToast === 'function') showToast('BaÄŸlantÄ± koptu, yeniden baÄŸlanÄ±lÄ±yor...', 'warning');
+                closePasswordModal();
+                if (typeof doConnect === 'function') doConnect();
+            }
+        }
+        window.sendPassword = sendPassword;
+
+        // Auto-hook numpad buttons for mobile touch & click
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.numpad-btn').forEach(function(btn) {
+                function handlePress(e) {
+                    if (e) { e.preventDefault(); e.stopPropagation(); }
+                    var val = btn.getAttribute('data-val');
+                    var inp = document.getElementById('access-password-input');
+                    if (!inp) return;
+                    btn.classList.add('pressed');
+                    setTimeout(function() { btn.classList.remove('pressed'); }, 120);
+
+                    if (val === 'clear') {
+                        inp.value = '';
+                    } else if (val === 'backspace') {
+                        inp.value = inp.value.slice(0, -1);
+                    } else if (val && inp.value.length < 6) {
+                        inp.value += val;
+                    }
+                    if (inp.value.length === 6) {
+                        setTimeout(sendPassword, 150);
+                    }
+                }
+                btn.addEventListener('touchstart', handlePress, { passive: false });
+                btn.addEventListener('click', handlePress);
+            });
+            var inp = document.getElementById('access-password-input');
+            if (inp) {
+                inp.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter') sendPassword();
+                });
+            }
+        });
+
         function doConnect() {
             console.log('[BigLine] doConnect triggered');
 
@@ -1280,14 +1388,28 @@
                         alert('⚠️ UYARI: Bu bilgisayara şu an başka bir operatör bağlı.');
                         ws.close();
                     } else if (ev.data === 'AUTH_REQUIRED' || ev.data === 'AUTH_REQ') {
-                        var pass = prompt('🔒 Lütfen karşı bilgisayarın ekranında yazan 6 haneli erişim şifresini girin:', '');
-                        if (pass) {
-                            ws.send(pass);
-                            ws.send("AUTH_PASS:" + pass);
+                        var prefill = document.getElementById('target-password');
+                        var prefillVal = prefill ? prefill.value.trim() : '';
+                        if (prefillVal && prefillVal.length >= 4) {
+                            ws.send("AUTH_PASS:" + prefillVal);
+                            ws.send(prefillVal);
+                            if (typeof showToast === 'function') showToast('Åifre gÃ¶nderildi, doÄŸrulanÄ±yor...', 'info');
                         } else {
-                            resetConnectButton();
-                            ws.close();
+                            openPasswordModal();
                         }
+                    } else if (ev.data === 'AUTH_FAIL') {
+                        if (typeof showToast === 'function') showToast('âŒ HatalÄ± ÅŸifre! LÃ¼tfen kontrol edip tekrar deneyin.', 'error');
+                        var passInput = document.getElementById('access-password-input');
+                        if (passInput) {
+                            passInput.value = '';
+                            passInput.focus();
+                        }
+                        var subBtn = document.getElementById('submit-password-btn');
+                        if (subBtn) {
+                            subBtn.disabled = false;
+                            subBtn.innerHTML = 'DoÄŸrula & BaÄŸlan <i class="fa-solid fa-arrow-right-to-bracket"></i>';
+                        }
+                        openPasswordModal();
                     } else if (ev.data === 'WAITING_APPROVAL') {
                         if (typeof showToast === 'function') showToast('⏳ Karşı bilgisayardan bağlantı onayı bekleniyor...', 'info');
                     } else if (ev.data === 'APPROVAL_OK') {
@@ -1322,7 +1444,11 @@
                         alert('⚠️ Bağlantı isteği karşı bilgisayar tarafından reddedildi.');
                         try { ws.close(); } catch(e) {}
                     } else if (ev.data === 'AUTH_SUCCESS' || ev.data === 'AUTH_OK') {
-                        try {
+                        
+                        closePasswordModal();
+                        if (typeof showToast === 'function') showToast('âœ… EriÅŸim OnaylandÄ±! MasaÃ¼stÃ¼ aÃ§Ä±lÄ±yor...', 'success');
+                        try { ws.send('CLIENT:WEB'); ws.send('START_STREAM'); ws.send('KEYFRAME_REQ'); } catch(e) {}
+try {
                             ws.send(JSON.stringify({ type: 'set_quality', quality: 92, maxDim: 0 }));
                         } catch(e) {}
                         if (typeof window.startFreeSessionTimer === 'function') window.startFreeSessionTimer();
@@ -1469,16 +1595,29 @@
                         var blob = new Blob([jpegBytes], { type: 'image/jpeg' });
                         if (window.createImageBitmap) {
                             createImageBitmap(blob).then(function(bmp) {
-                                if (cv) {
-                                    if (cv.width !== bmp.width || cv.height !== bmp.height) {
-                                        cv.width = bmp.width;
-                                        cv.height = bmp.height;
-                                        updateCanvasCssLayout();
-                                    }
-                                    if (ctx) {
+                                if (cv && ctx) {
+                                    var subX = (view && view.byteLength >= 8) ? view.getUint16(0, true) : 0;
+                                    var subY = (view && view.byteLength >= 8) ? view.getUint16(2, true) : 0;
+                                    var subW = (view && view.byteLength >= 8) ? view.getUint16(4, true) : 0;
+                                    var subH = (view && view.byteLength >= 8) ? view.getUint16(6, true) : 0;
+
+                                    var isKeyframe = (subX === 0 && subY === 0 && (subW === 0 || subW >= 640)) || (cv.width === 0 || cv.height === 0);
+                                    if (isKeyframe) {
+                                        if (cv.width !== bmp.width || cv.height !== bmp.height) {
+                                            cv.width = bmp.width;
+                                            cv.height = bmp.height;
+                                            updateCanvasCssLayout();
+                                        }
                                         ctx.imageSmoothingEnabled = true;
                                         ctx.imageSmoothingQuality = 'high';
                                         ctx.drawImage(bmp, 0, 0);
+                                    } else {
+                                        // SUBFRAME DELTA: Never resize canvas, draw at exact subframe coordinates!
+                                        ctx.imageSmoothingEnabled = true;
+                                        ctx.imageSmoothingQuality = 'high';
+                                        var dW = subW > 0 ? subW : bmp.width;
+                                        var dH = subH > 0 ? subH : bmp.height;
+                                        ctx.drawImage(bmp, subX, subY, dW, dH);
                                     }
                                     if (cv.style.display !== 'block') cv.style.display = 'block';
                                 }
