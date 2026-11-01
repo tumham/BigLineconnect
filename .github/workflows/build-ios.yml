@@ -33,14 +33,19 @@ jobs:
             -configuration Release \
             -destination "generic/platform=iOS" \
             -derivedDataPath build/DerivedData \
-            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGN_STYLE="Manual" \
+            CODE_SIGN_IDENTITY="-" \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY="" \
             AD_HOC_CODE_SIGNING_ALLOWED=YES > build.log 2>&1
           BUILD_EXIT=$?
-          echo "=== XCODEBUILD LOG TAIL ==="
-          tail -n 120 build.log
+          echo "=== XCODEBUILD BUILD FINISHED WITH CODE: $BUILD_EXIT ==="
           if [ $BUILD_EXIT -ne 0 ]; then
+            echo "::group::Full Xcodebuild Log"
+            cat build.log
+            echo "::endgroup::"
+            grep -i -E "error:|fatal error:" build.log | while IFS= read -r line; do
+              echo "::error::$line"
+            done
             exit $BUILD_EXIT
           fi
 
@@ -60,3 +65,10 @@ jobs:
           name: B-Connect-iOS-IPA
           path: build/B-Connect-iOS.ipa
           retention-days: 30
+
+      - name: Upload Build Log Artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Build-Logs
+          path: build.log
