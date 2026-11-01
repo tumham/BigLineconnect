@@ -22,22 +22,24 @@ jobs:
           sudo xcode-select -s /Applications/Xcode.app
           xcodebuild -version
 
-      - name: Build Xcode Archive
+      - name: Build iOS Application (.app)
         run: |
-          xcodebuild archive \
+          xcodebuild build \
             -project BConnect_iOS/BConnect.xcodeproj \
             -scheme BConnect \
             -configuration Release \
+            -sdk iphoneos \
             -destination "generic/platform=iOS" \
-            -archivePath build/BConnect.xcarchive \
+            -derivedDataPath build/DerivedData \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY=""
+            CODE_SIGN_IDENTITY="" \
+            AD_HOC_CODE_SIGNING_ALLOWED=YES
 
       - name: Package Payload into .IPA
         run: |
           mkdir -p build/Payload
-          cp -R "build/BConnect.xcarchive/Products/Applications/BConnect.app" build/Payload/
+          cp -R "build/DerivedData/Build/Products/Release-iphoneos/BConnect.app" build/Payload/
           cd build
           zip -qr9 B-Connect-iOS.ipa Payload
           ls -lh B-Connect-iOS.ipa
@@ -48,12 +50,3 @@ jobs:
           name: B-Connect-iOS-IPA
           path: build/B-Connect-iOS.ipa
           retention-days: 30
-
-      - name: Publish Direct Release (Optional Automatic Distribution)
-        uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/')
-        with:
-          files: build/B-Connect-iOS.ipa
-          name: "B-Connect iOS Release ${{ github.ref_name }}"
-          draft: false
-          prerelease: false
