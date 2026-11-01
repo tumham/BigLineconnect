@@ -16,6 +16,8 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
       - name: Inspect Environment & Targets
         run: |
@@ -25,6 +27,7 @@ jobs:
 
       - name: Build iOS Application (.app)
         run: |
+          set +e
           xcodebuild build \
             -project BConnect_iOS/BConnect.xcodeproj \
             -target BConnect \
@@ -35,7 +38,13 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
-            AD_HOC_CODE_SIGNING_ALLOWED=YES
+            AD_HOC_CODE_SIGNING_ALLOWED=YES > build.log 2>&1
+          BUILD_EXIT=$?
+          echo "=== XCODEBUILD LOG TAIL ==="
+          tail -n 120 build.log
+          if [ $BUILD_EXIT -ne 0 ]; then
+            exit $BUILD_EXIT
+          fi
 
       - name: Package Payload into .IPA
         run: |
