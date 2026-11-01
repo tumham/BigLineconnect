@@ -19,25 +19,30 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Inspect Environment & Targets
+      - name: Inspect Xcode Environment
         run: |
-          sudo xcode-select -s /Applications/Xcode.app
           xcodebuild -version
           xcodebuild -project BConnect_iOS/BConnect.xcodeproj -list
 
       - name: Build iOS Application (.app)
         run: |
+          set +e
           xcodebuild build \
             -project BConnect_iOS/BConnect.xcodeproj \
-            -target BConnect \
+            -scheme BConnect \
             -configuration Release \
-            -sdk iphoneos \
             -destination "generic/platform=iOS" \
             -derivedDataPath build/DerivedData \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
-            AD_HOC_CODE_SIGNING_ALLOWED=YES
+            AD_HOC_CODE_SIGNING_ALLOWED=YES > build.log 2>&1
+          BUILD_EXIT=$?
+          echo "=== XCODEBUILD LOG TAIL ==="
+          tail -n 120 build.log
+          if [ $BUILD_EXIT -ne 0 ]; then
+            exit $BUILD_EXIT
+          fi
 
       - name: Package Payload into .IPA
         run: |
