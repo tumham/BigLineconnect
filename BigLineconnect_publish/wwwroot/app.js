@@ -1,36 +1,36 @@
-let socket = null;
-let connected = false;
-let currentMouseMode = 'left'; // 'left' or 'right'
+var socket = null;
+var connected = false;
+var currentMouseMode = 'left'; // 'left' or 'right'
 
 // Zoom & Pan State
-let scale = 1.0;
-let panX = 0;
-let panY = 0;
-let startTouchDistance = 0;
-let startScale = 1.0;
-let startMidX = 0;
-let startMidY = 0;
-let startPanX = 0;
-let startPanY = 0;
+var scale = 1.0;
+var panX = 0;
+var panY = 0;
+var startTouchDistance = 0;
+var startScale = 1.0;
+var startMidX = 0;
+var startMidY = 0;
+var startPanX = 0;
+var startPanY = 0;
 
 // DOM Element References (safely initialized)
-let landingPage = null;
-let viewerScreen = null;
-let targetIdInput = null;
-let connectBtn = null;
-let disconnectBtn = null;
-let fullscreenBtn = null;
-let screenImg = null;
-let canvasContainer = null;
-let connectionStatus = null;
-let toggleKeyboardBtn = null;
-let hiddenKeyboardInput = null;
-let mouseModeBtn = null;
-let mouseModeText = null;
-let toastElement = null;
-let passwordModal = null;
-let accessPasswordInput = null;
-let submitPasswordBtn = null;
+var landingPage = null;
+var viewerScreen = null;
+var targetIdInput = null;
+var connectBtn = null;
+var disconnectBtn = null;
+var fullscreenBtn = null;
+var screenImg = null;
+var canvasContainer = null;
+var connectionStatus = null;
+var toggleKeyboardBtn = null;
+var hiddenKeyboardInput = null;
+var mouseModeBtn = null;
+var mouseModeText = null;
+var toastElement = null;
+var passwordModal = null;
+var accessPasswordInput = null;
+var submitPasswordBtn = null;
 
 function initDOMElements() {
     landingPage = document.getElementById('landing-page');
@@ -65,19 +65,24 @@ const getElem = (id) => document.getElementById(id);
 
 // Toast system
 function showToast(message, type = 'info') {
-    const tElem = getElem('toast');
+    if (!message || typeof message !== 'string') return;
+    var trimmed = message.trim();
+    if (trimmed.startsWith('{') && trimmed.endsWith('}')) return; // Never show raw JSON as toast or alert!
+
+    var tElem = document.getElementById('toast');
     if (!tElem) {
-        try { alert(message); } catch(e) {}
-        return;
+        tElem = document.createElement('div');
+        tElem.id = 'toast';
+        document.body.appendChild(tElem);
     }
     tElem.textContent = message;
-    tElem.className = `toast ${type}`;
-    tElem.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:999999;padding:12px 24px;border-radius:10px;font-weight:700;font-size:14px;box-shadow:0 8px 24px rgba(0,0,0,0.8);background:' + (type === 'error' ? '#e74c3c' : (type === 'success' ? '#2ecc71' : '#00e5ff')) + ';color:' + (type === 'info' ? '#000' : '#fff');
-    tElem.classList.remove('hidden');
+    tElem.className = 'toast ' + type;
+    tElem.style.cssText = 'position:fixed;top:24px;left:50%;transform:translateX(-50%);z-index:9999999;padding:10px 20px;border-radius:12px;font-weight:700;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,0.8);background:' + (type === 'error' ? '#ef4444' : (type === 'success' ? '#10b981' : 'rgba(15,23,42,0.92)')) + ';color:#fff;border:1px solid rgba(0,229,255,0.5);backdrop-filter:blur(10px);pointer-events:none;transition:opacity 0.3s ease;opacity:1;';
     
-    setTimeout(() => {
-        if (tElem) tElem.classList.add('hidden');
-    }, 4000);
+    if (window._toastTimer) clearTimeout(window._toastTimer);
+    window._toastTimer = setTimeout(function() {
+        if (tElem) tElem.style.opacity = '0';
+    }, 2800);
 }
 
 // Actions bound at end of file
@@ -144,8 +149,19 @@ if (disconnectBtn) {
 // Connect to C# Relay WebSockets (100% test.html Reference Engine)
 function connectToHost(id) {
     const cleanId = String(id).replace(/\D/g, '');
+    window.currentConnectedHostId = cleanId;
+    window.closeAppSocket = function() {
+        if (socket) {
+            try { socket.close(); } catch(e) {}
+        }
+    };
     const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${wsProtocol}//${window.location.host}/connect-client?id=${cleanId}`;
+    const urlParams = new URLSearchParams(window.location.search || '');
+    const ticketToken = urlParams.get('token') || urlParams.get('ticketToken') || '';
+    let wsUrl = `${wsProtocol}//${window.location.host}/connect-client?id=${cleanId}&tenantId=BGS&adminToken=authenticated&viewerId=${encodeURIComponent(getViewerId())}`;
+    if (ticketToken) {
+        wsUrl += `&ticketToken=${encodeURIComponent(ticketToken)}`;
+    }
     
     if (socket) {
         try { socket.close(); } catch(e) {}
@@ -171,16 +187,29 @@ function connectToHost(id) {
                 resetConnectButton();
                 alert('⚠️ UYARI: Bu bilgisayara şu an başka bir operatör bağlı.');
                 socket.close();
-            } else if (ev.data === 'AUTH_REQUIRED') {
-                var pass = prompt('🔒 Lütfen karşı bilgisayarın ekranında yazan 6 haneli erişim şifresini girin:', '');
-                if (pass) {
-                    socket.send(pass);
+            } else if (ev.data === 'AUTH_REQUIRED' || ev.data === 'AUTH_REQ') {
+                const prefill = document.getElementById('target-password');
+                const prefillVal = prefill ? prefill.value.trim() : '';
+                if (prefillVal && prefillVal.length >= 4) {
+                    socket.send("AUTH_PASS:" + prefillVal);
+                    socket.send(prefillVal);
+                } else if (typeof window.openPasswordModal === 'function') {
+                    window.openPasswordModal();
                 } else {
-                    resetConnectButton();
-                    socket.close();
+                    const m = document.getElementById('password-modal');
+                    if (m) {
+                        m.style.setProperty('display', 'flex', 'important');
+                        m.style.setProperty('pointer-events', 'auto', 'important');
+                        m.classList.remove('hidden');
+                    }
                 }
-            } else if (ev.data === 'AUTH_SUCCESS') {
+            } else if (ev.data === 'AUTH_SUCCESS' || ev.data === 'AUTH_OK') {
                 showToast('Erişim Onaylandı! Ekran ve Kontrol Açılıyor...', 'success');
+                try {
+                    if (socket && socket.readyState === WebSocket.OPEN) {
+                        socket.send(JSON.stringify({ type: 'set_quality', quality: 85, maxDim: 0 }));
+                    }
+                } catch(e) {}
                 const landing = document.getElementById('landing-page');
                 const viewer = document.getElementById('viewer-screen');
                 if (landing) landing.style.setProperty('display', 'none', 'important');
@@ -188,6 +217,7 @@ function connectToHost(id) {
                     viewer.style.setProperty('display', 'flex', 'important');
                     viewer.style.setProperty('pointer-events', 'auto', 'important');
                     viewer.style.setProperty('z-index', '999999', 'important');
+                    setTimeout(() => { if (typeof window.updateCanvasCssLayout === 'function') window.updateCanvasCssLayout(); }, 100);
                 }
             } else {
                 showToast(ev.data, 'info');
@@ -206,22 +236,137 @@ function connectToHost(id) {
 
             const screenCanvas = document.getElementById('screen-canvas');
             const ctx = screenCanvas ? screenCanvas.getContext('2d', { alpha: false, desynchronized: true }) : null;
+            const fallbackImg = document.getElementById('screen-img');
 
-            const blob = new Blob([ev.data], { type: 'image/jpeg' });
-            const url = URL.createObjectURL(blob);
-            const img = new Image();
-            img.onload = () => {
-                if (screenCanvas && ctx) {
-                    if (screenCanvas.width !== img.width || screenCanvas.height !== img.height) {
-                        screenCanvas.width = img.width;
-                        screenCanvas.height = img.height;
+            let frameBytes = ev.data;
+            if (frameBytes && frameBytes.byteLength > 12) {
+                const u8 = new Uint8Array(frameBytes);
+                if (u8.length >= 20) {
+                    const dv = new DataView(frameBytes);
+                    const seq = dv.getUint32(8, true);
+                    const ackPkt = new Uint8Array([0x41, seq & 0xFF, (seq >> 8) & 0xFF, (seq >> 16) & 0xFF, (seq >> 24) & 0xFF]);
+                    if (socket && socket.readyState === WebSocket.OPEN) {
+                        try { socket.send(ackPkt.buffer); } catch (e) {}
                     }
-                    ctx.drawImage(img, 0, 0);
+                }
+
+                // Check for BigLine-RT (BRTE) Tile/Delta Packet: 'B' 0x42, 'R' 0x52, 'T' 0x54, 'E' 0x45
+                if (u8[0] === 0x42 && u8[1] === 0x52 && u8[2] === 0x54 && u8[3] === 0x45) {
+                    const dv = new DataView(frameBytes);
+                    const flag = u8[4];
+                    const w = dv.getUint16(5, true);
+                    const h = dv.getUint16(7, true);
+
+                    if (screenCanvas && (screenCanvas.width !== w || screenCanvas.height !== h)) {
+                        screenCanvas.width = w;
+                        screenCanvas.height = h;
+                    }
+
+                    if (flag === 1) { // KEYFRAME
+                        const len = dv.getInt32(9, true);
+                        const jpegBytes = frameBytes.slice(13, 13 + len);
+                        const blob = new Blob([jpegBytes], { type: 'image/jpeg' });
+                        const url = URL.createObjectURL(blob);
+                        const img = new Image();
+                        img.onload = () => {
+                            if (ctx) ctx.drawImage(img, 0, 0);
+                            URL.revokeObjectURL(url);
+                        };
+                        img.onerror = () => URL.revokeObjectURL(url);
+                        img.src = url;
+                        return;
+                    } else if (flag === 2) { // DIRTY TILES
+                        const tileCount = dv.getUint16(9, true);
+                        let offset = 11;
+                        for (let t = 0; t < tileCount; t++) {
+                            if (offset + 8 > u8.length) break;
+                            const col = dv.getUint16(offset, true);
+                            const row = dv.getUint16(offset + 2, true);
+                            const tileLen = dv.getInt32(offset + 4, true);
+                            offset += 8;
+                            if (offset + tileLen > u8.length) break;
+
+                            const tileBytes = frameBytes.slice(offset, offset + tileLen);
+                            offset += tileLen;
+
+                            const tileBlob = new Blob([tileBytes], { type: 'image/jpeg' });
+                            const tileUrl = URL.createObjectURL(tileBlob);
+                            const tileImg = new Image();
+                            const destX = col * 64;
+                            const destY = row * 64;
+                            tileImg.onload = () => {
+                                if (ctx) ctx.drawImage(tileImg, destX, destY);
+                                URL.revokeObjectURL(tileUrl);
+                            };
+                            tileImg.onerror = () => URL.revokeObjectURL(tileUrl);
+                            tileImg.src = tileUrl;
+                        }
+                        return;
+                    }
+                }
+            }
+
+            let receivedSeq = 0;
+            if (frameBytes && frameBytes.byteLength >= 12) {
+                const u8 = new Uint8Array(frameBytes);
+                if (u8[12] === 0xFF && u8[13] === 0xD8) {
+                    const dv = new DataView(frameBytes);
+                    receivedSeq = dv.getUint32(8, true);
+                    frameBytes = frameBytes.slice(12);
+                } else {
+                    for (let i = 0; i < Math.min(16, u8.length - 1); i++) {
+                        if (u8[i] === 0xFF && u8[i + 1] === 0xD8) {
+                            if (i === 12) {
+                                const dv = new DataView(frameBytes);
+                                receivedSeq = dv.getUint32(8, true);
+                            }
+                            if (i > 0) frameBytes = frameBytes.slice(i);
+                            break;
+                        }
+                    }
+                }
+            }
+
+            const blob = new Blob([frameBytes], { type: 'image/jpeg' });
+            const url = URL.createObjectURL(blob);
+
+            const tempImg = new Image();
+            tempImg.onload = () => {
+                if (screenCanvas && ctx) {
+                    if (screenCanvas.width !== tempImg.width || screenCanvas.height !== tempImg.height) {
+                        screenCanvas.width = tempImg.width;
+                        screenCanvas.height = tempImg.height;
+                        if (typeof window.updateCanvasCssLayout === 'function') {
+                            window.updateCanvasCssLayout();
+                        }
+                    }
+                    ctx.imageSmoothingEnabled = true;
+                    ctx.imageSmoothingQuality = 'high';
+                    ctx.drawImage(tempImg, 0, 0);
+                    if (fallbackImg && fallbackImg.style.display !== 'none') {
+                        fallbackImg.style.display = 'none';
+                    }
+                } else if (fallbackImg) {
+                    fallbackImg.src = url;
+                    if (fallbackImg.style.display === 'none') {
+                        fallbackImg.style.display = 'block';
+                    }
                 }
                 URL.revokeObjectURL(url);
+
+                // Send 0ms Frame ACK to Host for 3G/5Mbps backpressure control
+                if (receivedSeq > 0 && socket && socket.readyState === WebSocket.OPEN) {
+                    const ackPkt = new Uint8Array(5);
+                    ackPkt[0] = 0x41; // 'A'
+                    ackPkt[1] = receivedSeq & 0xFF;
+                    ackPkt[2] = (receivedSeq >> 8) & 0xFF;
+                    ackPkt[3] = (receivedSeq >> 16) & 0xFF;
+                    ackPkt[4] = (receivedSeq >> 24) & 0xFF;
+                    try { socket.send(ackPkt.buffer); } catch (e) {}
+                }
             };
-            img.onerror = () => URL.revokeObjectURL(url);
-            img.src = url;
+            tempImg.onerror = () => URL.revokeObjectURL(url);
+            tempImg.src = url;
         }
     };
 
@@ -241,62 +386,6 @@ function connectToHost(id) {
         showToast('Bağlantı sonlandırıldı.', 'info');
         socket = null;
     };
-}
-                    const btnElem = document.getElementById('submit-password-btn');
-                    if (btnElem) {
-                        btnElem.disabled = false;
-                        btnElem.innerHTML = 'Doğrula & Bağlan <i class="fa-solid fa-arrow-right-to-bracket"></i>';
-                    }
-                    if (passwordModal) {
-                        passwordModal.classList.add('hidden');
-                        passwordModal.style.display = 'none';
-                        passwordModal.style.pointerEvents = 'none';
-                    }
-                    if (hiddenKeyboardInput) hiddenKeyboardInput.disabled = false;
-                    showToast('Bağlantı başarılı! Ekran yükleniyor...', 'success');
-                } else if (event.data === 'AUTH_FAILED') {
-                    const btnElem = document.getElementById('submit-password-btn');
-                    if (btnElem) {
-                        btnElem.disabled = false;
-                        btnElem.innerHTML = 'Doğrula & Bağlan <i class="fa-solid fa-arrow-right-to-bracket"></i>';
-                    }
-                    showToast('❌ Hatalı Erişim Şifresi! Lütfen doğru şifreyi giriniz.', 'error');
-                    let errLabel = document.getElementById('password-error-label');
-                    if (!errLabel) {
-                        errLabel = document.createElement('div');
-                        errLabel.id = 'password-error-label';
-                        errLabel.style.cssText = 'color:#e74c3c;font-weight:700;font-size:13px;margin-top:12px;padding:10px;background:rgba(231,76,60,0.15);border-radius:10px;border:1px solid rgba(231,76,60,0.3);';
-                        const container = document.querySelector('#password-modal .glass-card');
-                        if (container) container.appendChild(errLabel);
-                    }
-                    if (errLabel) {
-                        errLabel.textContent = '❌ Hatalı Şifre! Lütfen karşı bilgisayarın ekranındaki 6 haneli şifreyi doğru girdiğinizden emin olun.';
-                    }
-                    if (accessPasswordInput) {
-                        accessPasswordInput.value = '';
-                        accessPasswordInput.focus();
-                    }
-                } else if (event.data === 'AUTH_REJECTED') {
-                    customCloseReason = 'Bağlantı isteği kullanıcı tarafından reddedildi!';
-                    if (passwordModal) passwordModal.classList.add('hidden');
-                    if (hiddenKeyboardInput) hiddenKeyboardInput.disabled = false;
-                    socket.close();
-                } else if (event.data.startsWith('{')) {
-                    try {
-                        const json = JSON.parse(event.data);
-                        if (json.type === 'clipboard') {
-                            navigator.clipboard.writeText(json.text).then(() => {
-                                showToast('Pano Eşitlendi', 'success');
-                            }).catch(err => {});
-                        }
-                    } catch (e) {}
-                }
-            }
-        };
-    } catch (e) {
-        showToast('Bağlantı hatası!', 'error');
-        console.error(e);
-    }
 }
 
 // Fullscreen Button
@@ -384,85 +473,69 @@ if (hiddenKeyboardInput) {
 
 // Helper functions to send inputs via WS
 function sendMove(x, y) {
-    if (socket && socket.readyState === WebSocket.OPEN) {
-        socket.send(JSON.stringify({ type: 'move', x, y }));
+    const s = (socket && socket.readyState === WebSocket.OPEN) ? socket : (window.ws && window.ws.readyState === WebSocket.OPEN ? window.ws : null);
+    if (s) {
+        s.send(JSON.stringify({ type: 'move', x, y }));
     }
 }
 
 function sendClick(button, action, x = null, y = null) {
-    if (socket && socket.readyState === WebSocket.OPEN) {
+    const s = (socket && socket.readyState === WebSocket.OPEN) ? socket : (window.ws && window.ws.readyState === WebSocket.OPEN ? window.ws : null);
+    if (s) {
         const payload = { type: 'click', button, action };
         if (x !== null && y !== null) {
             payload.x = x;
             payload.y = y;
         }
-        socket.send(JSON.stringify(payload));
+        s.send(JSON.stringify(payload));
     }
 }
 
 function sendDoubleClick(button = 'left', x = null, y = null) {
-    if (socket && socket.readyState === WebSocket.OPEN) {
+    const s = (socket && socket.readyState === WebSocket.OPEN) ? socket : (window.ws && window.ws.readyState === WebSocket.OPEN ? window.ws : null);
+    if (s) {
         const payload = { type: 'double_click', button };
         if (x !== null && y !== null) {
             payload.x = x;
             payload.y = y;
         }
-        socket.send(JSON.stringify(payload));
+        s.send(JSON.stringify(payload));
     }
 }
 
 function sendScroll(deltaY) {
-    if (socket && socket.readyState === WebSocket.OPEN) {
-        socket.send(JSON.stringify({ type: 'scroll', deltaY }));
+    const s = (socket && socket.readyState === WebSocket.OPEN) ? socket : (window.ws && window.ws.readyState === WebSocket.OPEN ? window.ws : null);
+    if (s) {
+        s.send(JSON.stringify({ type: 'scroll', deltaY }));
     }
 }
 
 function sendKey(key, action) {
-    if (socket && socket.readyState === WebSocket.OPEN) {
-        socket.send(JSON.stringify({ type: 'key', key, action }));
+    const s = (socket && socket.readyState === WebSocket.OPEN) ? socket : (window.ws && window.ws.readyState === WebSocket.OPEN ? window.ws : null);
+    if (s) {
+        s.send(JSON.stringify({ type: 'key', key, action }));
     }
 }
 
-// Mouse Event listeners on canvas
-function getMousePos(canvas, clientX, clientY) {
-    const elem = document.getElementById('screen-canvas') || canvasContainer;
-    const rect = elem.getBoundingClientRect();
-    const naturalWidth = (elem.width && elem.width > 300) ? elem.width : 1920;
-    const naturalHeight = (elem.height && elem.height > 150) ? elem.height : 1080;
-    
-    if (rect.width <= 0 || rect.height <= 0) return { x: 0, y: 0 };
-
-    const imageAspect = naturalWidth / naturalHeight;
-    const containerAspect = rect.width / rect.height;
-    
-    let renderedWidth, renderedHeight, offsetX, offsetY;
-    
-    if (containerAspect > imageAspect) {
-        // Black bars on left & right
-        renderedHeight = rect.height;
-        renderedWidth = rect.height * imageAspect;
-        offsetX = (rect.width - renderedWidth) / 2;
-        offsetY = 0;
-    } else {
-        // Black bars on top & bottom
-        renderedWidth = rect.width;
-        renderedHeight = rect.width / imageAspect;
-        offsetX = 0;
-        offsetY = (rect.height - renderedHeight) / 2;
+// Mouse coordinate normalization (Universal, never returns NaN)
+function getMousePos(a, b, c) {
+    if (typeof window.getMousePos === 'function' && window.getMousePos !== getMousePos) {
+        return window.getMousePos(a, b, c);
     }
-    
-    // getBoundingClientRect() already incorporates panX, panY, and CSS scale transforms
-    const mouseX = clientX - rect.left - offsetX;
-    const mouseY = clientY - rect.top - offsetY;
-    
-    const x = mouseX / renderedWidth;
-    const y = mouseY / renderedHeight;
-    
+    const clientX = (typeof c === 'number') ? b : a;
+    const clientY = (typeof c === 'number') ? c : b;
+    const elem = document.getElementById('screen-canvas') || document.getElementById('canvas-container');
+    if (!elem) return { x: 0.5, y: 0.5 };
+    const rect = elem.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return { x: 0.5, y: 0.5 };
+    const normX = (clientX - rect.left) / rect.width;
+    const normY = (clientY - rect.top) / rect.height;
     return {
-        x: Math.max(0, Math.min(1, x)),
-        y: Math.max(0, Math.min(1, y))
+        x: Math.max(0.0, Math.min(1.0, isNaN(normX) ? 0.5 : normX)),
+        y: Math.max(0.0, Math.min(1.0, isNaN(normY) ? 0.5 : normY))
     };
 }
+window.getMousePos = getMousePos;
 
 // Global Desktop Physical Keyboard Listeners
 window.addEventListener('keydown', (e) => {
@@ -487,187 +560,9 @@ window.addEventListener('keyup', (e) => {
     e.preventDefault();
 });
 
-let lastMouseMoveTime = 0;
-let isBoundCanvasInteraction = false;
-
+// Canvas interaction is handled authoritatively by index.html
 function bindCanvasInteraction() {
-    if (isBoundCanvasInteraction) return;
-    const canvasElem = document.getElementById('screen-canvas');
-    const containerElem = document.getElementById('canvas-container');
-    const targets = [canvasElem, containerElem].filter(Boolean);
-    if (targets.length === 0) return;
-    
-    isBoundCanvasInteraction = true;
-    targets.forEach(elem => {
-        elem.addEventListener('mousedown', (e) => {
-            if (!connected) return;
-            const targetElem = document.getElementById('screen-canvas') || elem;
-            const pos = getMousePos(targetElem, e.clientX, e.clientY);
-            
-            let button = 'left';
-            if (e.button === 2) button = 'right';
-            else if (e.button === 1) button = 'middle';
-            
-            sendClick(button, 'down', pos.x, pos.y);
-            e.preventDefault();
-        });
-
-        elem.addEventListener('mouseup', (e) => {
-            if (!connected) return;
-            const targetElem = document.getElementById('screen-canvas') || elem;
-            const pos = getMousePos(targetElem, e.clientX, e.clientY);
-            let button = 'left';
-            if (e.button === 2) button = 'right';
-            else if (e.button === 1) button = 'middle';
-            
-            sendClick(button, 'up', pos.x, pos.y);
-            e.preventDefault();
-        });
-
-        elem.addEventListener('dblclick', (e) => {
-            if (!connected) return;
-            const targetElem = document.getElementById('screen-canvas') || elem;
-            const pos = getMousePos(targetElem, e.clientX, e.clientY);
-            sendDoubleClick('left', pos.x, pos.y);
-            e.preventDefault();
-        });
-
-        elem.addEventListener('mousemove', (e) => {
-            if (!connected) return;
-            const now = performance.now();
-            if (now - lastMouseMoveTime < 16) return; // 60 FPS max rate limit
-            lastMouseMoveTime = now;
-
-            const targetElem = document.getElementById('screen-canvas') || elem;
-            const pos = getMousePos(targetElem, e.clientX, e.clientY);
-            sendMove(pos.x, pos.y);
-        });
-
-        elem.addEventListener('contextmenu', (e) => {
-            e.preventDefault();
-        });
-
-        elem.addEventListener('wheel', (e) => {
-            if (!connected) return;
-            const delta = e.deltaY < 0 ? 120 : -120;
-            sendScroll(delta);
-            e.preventDefault();
-        }, { passive: false });
-    });
-}
-
-    // Mobile Touch Events & Bulletproof Tap Engine
-    let startTouch1X = null, startTouch1Y = null, startPan1X = 0, startPan1Y = 0;
-    let touchStartX = 0, touchStartY = 0, touchStartTime = 0, isMultiTouch = false;
-    let lastTapTime = 0, lastTapX = 0, lastTapY = 0;
-
-    activeInteractionElem.addEventListener('touchstart', (e) => {
-        if (!connected) return;
-        
-        if (e.touches.length === 1) {
-            isMultiTouch = false;
-            const touch = e.touches[0];
-            touchStartX = touch.clientX;
-            touchStartY = touch.clientY;
-            touchStartTime = Date.now();
-
-            startTouch1X = touch.clientX;
-            startTouch1Y = touch.clientY;
-            startPan1X = panX;
-            startPan1Y = panY;
-        } else if (e.touches.length === 2) {
-            isMultiTouch = true;
-            startTouch1X = null;
-            
-            const dx = e.touches[0].clientX - e.touches[1].clientX;
-            const dy = e.touches[0].clientY - e.touches[1].clientY;
-            startTouchDistance = Math.sqrt(dx * dx + dy * dy);
-            startScale = scale;
-            
-            startMidX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
-            startMidY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-            startPanX = panX;
-            startPanY = panY;
-        }
-        e.preventDefault();
-    }, { passive: false });
-
-    activeInteractionElem.addEventListener('touchmove', (e) => {
-        if (!connected) return;
-        
-        if (e.touches.length === 1) {
-            const touch = e.touches[0];
-            if (scale > 1.0 && startTouch1X !== null) {
-                panX = startPan1X + (touch.clientX - startTouch1X);
-                panY = startPan1Y + (touch.clientY - startTouch1Y);
-                updateTransform();
-            } else {
-                const canvasElem = document.getElementById('screen-canvas') || activeInteractionElem;
-                const pos = getMousePos(canvasElem, touch.clientX, touch.clientY);
-                sendMove(pos.x, pos.y);
-            }
-        } else if (e.touches.length === 2) {
-            const dx = e.touches[0].clientX - e.touches[1].clientX;
-            const dy = e.touches[0].clientY - e.touches[1].clientY;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-            
-            const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
-            const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-            
-            scale = Math.max(1.0, Math.min(6.0, startScale * (distance / startTouchDistance)));
-            panX = startPanX + (midX - startMidX);
-            panY = startPanY + (midY - startMidY);
-            
-            updateTransform();
-        }
-        e.preventDefault();
-    }, { passive: false });
-
-    activeInteractionElem.addEventListener('touchend', (e) => {
-        if (!connected || isMultiTouch) return;
-        
-        const now = Date.now();
-        const duration = now - touchStartTime;
-        
-        if (duration < 600 && e.changedTouches.length === 1) {
-            const touch = e.changedTouches[0];
-            const moveDist = Math.sqrt((touch.clientX - touchStartX) ** 2 + (touch.clientY - touchStartY) ** 2);
-            
-            if (moveDist < 60) {
-                const canvasElem = document.getElementById('screen-canvas') || activeInteractionElem;
-                const pos = getMousePos(canvasElem, touch.clientX, touch.clientY);
-                sendMove(pos.x, pos.y);
-
-                if (currentMouseMode === 'double') {
-                    sendDoubleClick('left', pos.x, pos.y);
-                    showToast('Çift Tıklama Yollandı ⚡', 'info');
-                    lastTapTime = 0;
-                } else if (currentMouseMode === 'right') {
-                    sendClick('right', 'down');
-                    setTimeout(() => sendClick('right', 'up'), 40);
-                    showToast('Sağ Tıklama Yollandı 🔴', 'info');
-                    lastTapTime = 0;
-                } else {
-                    sendClick('left', 'down');
-                    setTimeout(() => sendClick('left', 'up'), 40);
-                    lastTapTime = now;
-                    lastTapX = touch.clientX;
-                    lastTapY = touch.clientY;
-                }
-            }
-        }
-        
-        startTouch1X = null;
-        e.preventDefault();
-    }, { passive: false });
-
-    screenImg.addEventListener('touchcancel', (e) => {
-        if (!connected) return;
-        startTouch1X = null;
-    });
-
-    screenImg.style.transformOrigin = 'center center';
-    screenImg.style.transition = 'none';
+    // No-op: index.html handles canvas and mobile touch interaction cleanly
 }
 
 // Global Key Listeners
@@ -710,6 +605,10 @@ if (cadBtn) {
         if (e) e.preventDefault();
         if (!connected) return;
         showToast('Ctrl + Alt + Del gönderildi.', 'info');
+        const s = (socket && socket.readyState === WebSocket.OPEN) ? socket : (window.ws && window.ws.readyState === WebSocket.OPEN ? window.ws : null);
+        if (s) {
+            s.send(JSON.stringify({ type: 'send_cad' }));
+        }
         sendKey('control', 'down');
         sendKey('alt', 'down');
         sendKey('delete', 'down');
@@ -719,49 +618,86 @@ if (cadBtn) {
             sendKey('control', 'up');
         }, 100);
     };
-    cadBtn.addEventListener('click', triggerCad);
-    cadBtn.addEventListener('touchstart', triggerCad);
+        let lastCadTouch = 0;
+    const safeTriggerCad = (e) => {
+        if (e && e.type === 'touchstart') {
+            lastCadTouch = Date.now();
+        } else if (e && e.type === 'click' && Date.now() - lastCadTouch < 600) {
+            if (e.preventDefault) e.preventDefault();
+            return;
+        }
+        triggerCad(e);
+    };
+    cadBtn.addEventListener('touchstart', safeTriggerCad, { passive: false });
+    cadBtn.addEventListener('click', safeTriggerCad);
 }
 
-// On-Screen Touch Numpad Actions with Instant Touch Feedback & Auto-Submit
+// On-Screen Touch Numpad Actions with Instant Touch Feedback & Anti-Double-Tap Guard
+let lastNumpadTouchTime = 0;
+let lastNumpadActionTime = 0;
+
 document.querySelectorAll('.numpad-btn').forEach(btn => {
     const handlePress = (e) => {
         if (e) {
             e.preventDefault();
             e.stopPropagation();
         }
+        const now = Date.now();
+        // Prevent duplicate firing within 350ms (kills synthetic iOS delayed click)
+        if (now - lastNumpadActionTime < 350) return;
+        lastNumpadActionTime = now;
+
         btn.classList.add('pressed');
-        setTimeout(() => btn.classList.remove('pressed'), 150);
+        setTimeout(() => btn.classList.remove('pressed'), 120);
 
         const val = btn.getAttribute('data-val');
-        if (!accessPasswordInput) return;
+        const inp = document.getElementById('access-password-input');
+        if (!inp) return;
 
         if (val === 'clear') {
-            accessPasswordInput.value = '';
+            inp.value = '';
         } else if (val === 'backspace') {
-            accessPasswordInput.value = accessPasswordInput.value.slice(0, -1);
-        } else {
-            if (accessPasswordInput.value.length < 6) {
-                accessPasswordInput.value += val;
-            }
+            inp.value = inp.value.slice(0, -1);
+        } else if (val && inp.value.length < 6) {
+            inp.value += val;
         }
 
-        // Auto-Submit when 6th digit is pressed
-        if (accessPasswordInput.value.length === 6) {
-            setTimeout(sendPassword, 180);
+        // Auto-Submit when 6th digit is entered (debounced)
+        if (inp.value.length === 6) {
+            setTimeout(() => {
+                if (inp.value.length === 6) {
+                    sendPassword();
+                }
+            }, 200);
         }
     };
 
-    btn.addEventListener('touchstart', handlePress, { passive: false });
+    btn.addEventListener('touchstart', (e) => {
+        lastNumpadTouchTime = Date.now();
+        handlePress(e);
+    }, { passive: false });
+
     btn.addEventListener('click', (e) => {
-        if (e.detail !== 0 && !('ontouchstart' in window)) {
-            handlePress(e);
+        // If a touch event occurred in the last 600ms, IGNORE this synthetic click!
+        if (Date.now() - lastNumpadTouchTime < 600) {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            return;
         }
+        handlePress(e);
     });
 });
 
-// Password submit actions
+// Password submit actions with anti-double-submission guard
+let lastSendPassTime = 0;
 function sendPassword() {
+    const now = Date.now();
+    if (now - lastSendPassTime < 800) return; // Prevent double submit
+    lastSendPassTime = now;
+
+    const activeSocket = (window.ws && window.ws.readyState === WebSocket.OPEN) ? window.ws : ((window.socket && window.socket.readyState === WebSocket.OPEN) ? window.socket : socket);
     const inputElem = document.getElementById('access-password-input');
     const btnElem = document.getElementById('submit-password-btn');
 
@@ -769,20 +705,14 @@ function sendPassword() {
     const pass = inputElem.value.replace(/\D/g, '');
 
     if (!pass || pass.length === 0) {
-        showToast('Lütfen uzaktaki bilgisayarın 6 haneli şifresini giriniz.', 'error');
+        showToast('Lütfen hedef bilgisayarın 6 haneli şifresini giriniz.', 'error');
         return;
     }
 
-    if (!socket || socket.readyState !== WebSocket.OPEN) {
+    if (!activeSocket || activeSocket.readyState !== WebSocket.OPEN) {
         showToast('Sunucuya yeniden bağlanılıyor...', 'info');
-        const rawId = targetIdInput ? targetIdInput.value.replace(/\D/g, '') : '';
-        if (rawId) {
-            connectToHost(rawId);
-            setTimeout(() => {
-                if (socket && socket.readyState === WebSocket.OPEN) {
-                    socket.send("AUTH_PASS:" + pass);
-                }
-            }, 1000);
+        if (typeof window.doConnect === 'function') {
+            window.doConnect();
         }
         return;
     }
@@ -792,24 +722,37 @@ function sendPassword() {
         btnElem.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Doğrulanıyor...</span>';
     }
 
-    socket.send("AUTH_PASS:" + pass);
+    activeSocket.send("AUTH_PASS:" + pass);
     showToast('Şifre gönderildi, doğrulanıyor...', 'info');
 
     setTimeout(() => {
         if (btnElem) {
             btnElem.disabled = false;
-            btnElem.innerHTML = 'Doğrula & Bağlan <i class="fa-solid fa-arrow-right-to-bracket"></i>';
+            btnElem.innerHTML = 'Doğrula &amp; Bağlan <i class="fa-solid fa-arrow-right-to-bracket"></i>';
         }
-    }, 3000);
+    }, 2500);
 }
+window.sendPassword = sendPassword;
 
 if (submitPasswordBtn) {
-    submitPasswordBtn.addEventListener('click', (e) => {
-        if (e) e.preventDefault();
+    let lastSubmitTouch = 0;
+    submitPasswordBtn.addEventListener('touchstart', (e) => {
+        lastSubmitTouch = Date.now();
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
         sendPassword();
-    });
-    submitPasswordBtn.addEventListener('touchend', (e) => {
-        if (e) e.preventDefault();
+    }, { passive: false });
+
+    submitPasswordBtn.addEventListener('click', (e) => {
+        if (Date.now() - lastSubmitTouch < 600) {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            return;
+        }
         sendPassword();
     });
 }
@@ -865,20 +808,75 @@ function updateTransform() {
 
 // 1. Magic Link Auto-Detect (?id=393215720 or ?remoteid=...)
 function checkMagicLink() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const magicId = urlParams.get('id') || urlParams.get('remoteid');
-    if (magicId && targetIdInput) {
-        const clean = magicId.replace(/\D/g, '');
-        if (clean.length >= 6) {
-            targetIdInput.value = clean;
-            targetIdInput.dispatchEvent(new Event('input'));
-            
-            // Scroll to connect widget
-            setTimeout(() => {
-                document.getElementById('baglan')?.scrollIntoView({ behavior: 'smooth' });
-                showToast('Uzak Masaüstü ID algılandı! Bağlan butonuna basın.', 'info');
-            }, 300);
+    try {
+        const search = window.location.search || '';
+        const hash = window.location.hash || '';
+        const fullHref = window.location.href || '';
+        let magicId = '';
+
+        // 1. Regex match for ?id=, &id=, #id=, ?remoteid=, ?hostid=, ?target=
+        const match = fullHref.match(/[?&#](?:id|remoteid|hostid|target)=([0-9\s]+)/i);
+        if (match && match[1]) {
+            magicId = match[1];
         }
+
+        // 2. Query fallback
+        if (!magicId && search) {
+            const urlParams = new URLSearchParams(search);
+            magicId = urlParams.get('id') || urlParams.get('remoteid') || urlParams.get('hostid') || urlParams.get('target') ||
+                      urlParams.get('ID') || urlParams.get('Id') || '';
+        }
+        if (!magicId && hash) {
+            const qIdx = hash.indexOf('?');
+            const hashQuery = qIdx !== -1 ? hash.substring(qIdx) : ('?' + hash.substring(1));
+            const hParams = new URLSearchParams(hashQuery);
+            magicId = hParams.get('id') || hParams.get('remoteid') || hParams.get('hostid') || hParams.get('target') ||
+                      hParams.get('ID') || hParams.get('Id') || '';
+        }
+
+        const inputElem = document.getElementById('target-id') || targetIdInput;
+        if (magicId && inputElem) {
+            const clean = String(magicId).replace(/\D/g, '');
+            if (clean.length >= 4) {
+                if (clean.length === 9) {
+                    inputElem.value = clean.substring(0, 3) + ' ' + clean.substring(3, 6) + ' ' + clean.substring(6);
+                } else {
+                    inputElem.value = clean;
+                }
+                
+                // Switch to client connect tab if needed
+                if (typeof switchConnectTab === 'function') {
+                    switchConnectTab('client');
+                }
+
+                // Hide auto-suggestions so connect button is never blocked
+                const suggestBox = document.getElementById('id-suggestions-box');
+                if (suggestBox) {
+                    suggestBox.style.display = 'none';
+                    suggestBox.style.pointerEvents = 'none';
+                }
+
+                // Scroll to connect widget
+                setTimeout(() => {
+                    document.getElementById('baglan')?.scrollIntoView({ behavior: 'smooth' });
+                }, 150);
+
+                // Auto-trigger connection seamlessly from Telegram / Magic Link!
+                if (!window._magicAutoConnected) {
+                    window._magicAutoConnected = true;
+                    showToast('🚀 Otomatik Bağlanılıyor: ' + inputElem.value, 'info');
+                    setTimeout(() => {
+                        if (typeof doConnect === 'function') {
+                            doConnect();
+                        } else if (typeof startConnectionProcess === 'function') {
+                            startConnectionProcess();
+                        }
+                    }, 350);
+                }
+            }
+        }
+    } catch(err) {
+        console.warn('[app.js] checkMagicLink error:', err);
     }
 }
 
@@ -919,9 +917,14 @@ function copyMagicLink() {
     }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    checkMagicLink();
-});
+if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    setTimeout(checkMagicLink, 50);
+} else {
+    document.addEventListener('DOMContentLoaded', () => {
+        checkMagicLink();
+    });
+}
+window.addEventListener('load', checkMagicLink);
 
 // 4. Tab Switcher Logic
 function switchConnectTab(mode) {
@@ -1185,7 +1188,7 @@ function copyGeneratedLicenseKey() {
 }
 
 // Global Window Function Bindings for Mobile & HTML Event Handlers
-window.startConnectionProcess = startConnectionProcess;
+window.startConnectionProcess = window.doConnect || startConnectionProcess;
 window.connectToHost = connectToHost;
 window.sendPassword = sendPassword;
 window.switchConnectTab = switchConnectTab;
@@ -1197,3 +1200,368 @@ window.submitOnlineCheckout = submitOnlineCheckout;
 window.checkoutViaWhatsApp = checkoutViaWhatsApp;
 window.extendFreeSessionTimer = extendFreeSessionTimer;
 window.startFreeSessionTimer = startFreeSessionTimer;
+
+
+// --- FILE TRANSFER CHUNKING INTEGRATION ---
+let fileUploadInProgress = false;
+
+function triggerFileTransfer() {
+    if (!connected || !socket || socket.readyState !== WebSocket.OPEN) {
+        showToast('Lütfen önce bir cihaza bağlanın.', 'error');
+        return;
+    }
+    if (fileUploadInProgress) {
+        showToast('Zaten aktif bir dosya gönderimi var.', 'warning');
+        return;
+    }
+    let fileInput = document.getElementById('file-transfer-input');
+    if (!fileInput) {
+        fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.id = 'file-transfer-input';
+        fileInput.style.display = 'none';
+        fileInput.addEventListener('change', handleFileSelected);
+        document.body.appendChild(fileInput);
+    }
+    fileInput.click();
+}
+
+async function handleFileSelected(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    fileUploadInProgress = true;
+    
+    const progressContainer = document.getElementById('upload-progress-container');
+    const progressText = document.getElementById('upload-progress-text');
+    const progressBar = document.getElementById('upload-progress-bar');
+    
+    if (progressContainer) {
+        progressContainer.style.setProperty('display', 'flex', 'important');
+    }
+    if (progressText) {
+        progressText.innerText = 'Dosya Gönderiliyor: %0';
+    }
+    if (progressBar) {
+        progressBar.style.width = '0%';
+    }
+
+    try {
+        const totalSize = file.size;
+        const fileName = file.name;
+        const chunkSize = 64 * 1024; // 64KB chunks
+        
+        // 1. Send batch_start
+        const batchStart = {
+            type: "batch_start",
+            totalFiles: 1,
+            totalSize: totalSize,
+            senderId: "WebClient",
+            targetFolder: "DOWNLOADS"
+        };
+        socket.send(JSON.stringify(batchStart));
+        
+        // 2. Send file_start
+        const fileStart = {
+            type: "file_start",
+            name: fileName,
+            size: totalSize,
+            isFolder: false
+        };
+        socket.send(JSON.stringify(fileStart));
+        
+        // Let host process headers
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        let offset = 0;
+        
+        while (offset < totalSize) {
+            const currentChunkSize = Math.min(chunkSize, totalSize - offset);
+            const blobSlice = file.slice(offset, offset + currentChunkSize);
+            
+            const arrayBuffer = await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsArrayBuffer(blobSlice);
+            });
+            
+            // Format packet: 0x46 ('F') byte followed by chunk bytes
+            const packet = new Uint8Array(1 + currentChunkSize);
+            packet[0] = 0x46; // FileTransferTag
+            packet.set(new Uint8Array(arrayBuffer), 1);
+            
+            socket.send(packet.buffer);
+            
+            offset += currentChunkSize;
+            
+            const percent = Math.round((offset / totalSize) * 100);
+            if (progressText) {
+                progressText.innerText = 'Dosya Gönderiliyor: %' + percent;
+            }
+            if (progressBar) {
+                progressBar.style.width = percent + '%';
+            }
+            
+            await new Promise(resolve => setTimeout(resolve, 5));
+        }
+        
+        // 3. Send file_end
+        const fileEnd = {
+            type: "file_end"
+        };
+        socket.send(JSON.stringify(fileEnd));
+        
+        // 4. Send batch_end
+        const batchEnd = {
+            type: "batch_end"
+        };
+        socket.send(JSON.stringify(batchEnd));
+        
+        showToast('"' + fileName + '" başarıyla gönderildi!', 'success');
+        
+    } catch (e) {
+        console.error('File upload error:', e);
+        showToast('Dosya gönderiminde hata oluştu!', 'error');
+        try {
+            socket.send(JSON.stringify({ type: "transfer_cancel" }));
+        } catch (_) {}
+    } finally {
+        fileUploadInProgress = false;
+        if (event.target) event.target.value = '';
+        
+        setTimeout(() => {
+            if (!fileUploadInProgress && progressContainer) {
+                progressContainer.style.setProperty('display', 'none', 'important');
+            }
+        }, 2000);
+    }
+}
+
+window.triggerFileTransfer = triggerFileTransfer;
+window.handleFileSelected = handleFileSelected;
+// ==========================================
+// BIGLINE VIEWER TRIAL & COMMERCIAL LICENSING ENGINE
+// ==========================================
+function getViewerId() {
+    let vid = localStorage.getItem('bigline_viewer_id');
+    if (!vid) {
+        vid = 'v_' + Math.random().toString(36).substring(2, 11) + '_' + Date.now().toString(36);
+        localStorage.setItem('bigline_viewer_id', vid);
+    }
+    return vid;
+}
+window.getViewerId = getViewerId;
+
+let currentTrialStatus = null;
+async function fetchTrialStatus() {
+    try {
+        const vid = getViewerId();
+        const res = await fetch('/api/trial/status?viewerId=' + encodeURIComponent(vid));
+        if (!res.ok) return;
+        const data = await res.json();
+        currentTrialStatus = data;
+        updateTrialBadgeUI(data);
+    } catch(e) {
+        console.warn('Trial status fetch error:', e);
+    }
+}
+window.fetchTrialStatus = fetchTrialStatus;
+
+function updateTrialBadgeUI(data) {
+    const badge = document.getElementById('nav-trial-badge');
+    const textElem = document.getElementById('nav-trial-text');
+    if (!badge || !textElem) return;
+
+    if (data.Status === 'LICENSED') {
+        badge.style.borderColor = '#00e5ff';
+        badge.style.color = '#00e5ff';
+        badge.style.background = 'linear-gradient(135deg, rgba(0,229,255,0.2), rgba(213,0,249,0.2))';
+        textElem.innerHTML = '’ Lisanslı Sürüm (1 Yıl)';
+    } else if (data.Status === 'TRIAL_ACTIVE') {
+        badge.style.borderColor = '#10b981';
+        badge.style.color = '#10b981';
+        badge.style.background = 'linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(0, 229, 255, 0.2))';
+        textElem.innerHTML = `🟢 30 Günlük Deneme (${data.DaysRemaining} Gün Kaldı)`;
+    } else if (data.Status === 'GRACE_PERIOD') {
+        badge.style.borderColor = '#f59e0b';
+        badge.style.color = '#f59e0b';
+        badge.style.background = 'linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(239, 68, 68, 0.15))';
+        textElem.innerHTML = `🟡 Uzatma: ${data.GraceDaysRemaining} Gün Kaldı (Bugün ${data.TodaySessionsUsed}/3)`;
+    } else if (data.Status === 'EXPIRED') {
+        badge.style.borderColor = '#ef4444';
+        badge.style.color = '#ef4444';
+        badge.style.background = 'rgba(239, 68, 68, 0.2)';
+        textElem.innerHTML = '🔴 Süre Doldu (Lisanslayın)';
+    }
+}
+
+function switchCheckoutTab(tab) {
+    const cardTab = document.getElementById('checkout-tab-card');
+    const bankTab = document.getElementById('checkout-tab-bank');
+    const btnCard = document.getElementById('tab-btn-card');
+    const btnBank = document.getElementById('tab-btn-bank');
+
+    if (tab === 'card') {
+        if (cardTab) cardTab.style.display = 'block';
+        if (bankTab) bankTab.style.display = 'none';
+        if (btnCard) {
+            btnCard.style.background = 'linear-gradient(135deg, #00e5ff, #10b981)';
+            btnCard.style.color = '#000';
+        }
+        if (btnBank) {
+            btnBank.style.background = 'transparent';
+            btnBank.style.color = '#94a3b8';
+        }
+    } else {
+        if (cardTab) cardTab.style.display = 'none';
+        if (bankTab) bankTab.style.display = 'block';
+        if (btnBank) {
+            btnBank.style.background = 'linear-gradient(135deg, #00e5ff, #10b981)';
+            btnBank.style.color = '#000';
+        }
+        if (btnCard) {
+            btnCard.style.background = 'transparent';
+            btnCard.style.color = '#94a3b8';
+        }
+    }
+}
+window.switchCheckoutTab = switchCheckoutTab;
+
+async function submitInstantCardOrder(e) {
+    if (e) e.preventDefault();
+    const btn = document.getElementById('card-submit-btn');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Ödeme İşleniyor...</span>';
+    }
+
+    const name = document.getElementById('card-name').value.trim();
+    const email = document.getElementById('card-email').value.trim();
+    const phone = document.getElementById('card-phone').value.trim();
+    const vid = getViewerId();
+
+    try {
+        const res = await fetch('/api/payment/instant-order', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                fullName: name,
+                email: email,
+                phone: phone,
+                viewerId: vid,
+                plan: 'PRO'
+            })
+        });
+
+        const data = await res.json();
+        if (data.success && data.licenseKey) {
+            const form = document.getElementById('card-checkout-form');
+            if (form) form.style.display = 'none';
+            const successBox = document.getElementById('checkout-success-box');
+            if (successBox) successBox.style.display = 'block';
+            const keyDisplay = document.getElementById('generated-license-key');
+            if (keyDisplay) keyDisplay.innerText = data.licenseKey;
+
+            showToast('‰ Tebrikler! 1 Yıllık Lisansınız Aktif Edildi.', 'success');
+            await fetchTrialStatus();
+        } else {
+            showToast('Hata: ' + (data.message || 'Ödeme tamamlanamadı.'), 'error');
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-lock"></i> <span>₺1.490 TL Güvenli Öde & Lisansı Hemen Al</span>';
+            }
+        }
+    } catch(err) {
+        showToast('Bağlantı hatası: ' + err.message, 'error');
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-lock"></i> <span>₺1.490 TL Güvenli Öde & Lisansı Hemen Al</span>';
+        }
+    }
+}
+window.submitInstantCardOrder = submitInstantCardOrder;
+
+function openLicenseActivationModal() {
+    const m = document.getElementById('license-activation-modal');
+    if (m) m.classList.remove('hidden');
+}
+window.openLicenseActivationModal = openLicenseActivationModal;
+
+function closeLicenseActivationModal() {
+    const m = document.getElementById('license-activation-modal');
+    if (m) m.classList.add('hidden');
+}
+window.closeLicenseActivationModal = closeLicenseActivationModal;
+
+function closeGracePeriodModal() {
+    const m = document.getElementById('grace-period-modal');
+    if (m) m.classList.add('hidden');
+}
+window.closeGracePeriodModal = closeGracePeriodModal;
+
+function closeTrialExpiredModal() {
+    const m = document.getElementById('trial-expired-modal');
+    if (m) m.classList.add('hidden');
+}
+window.closeTrialExpiredModal = closeTrialExpiredModal;
+
+function openTrialOrLicenseModal() {
+    if (!currentTrialStatus) {
+        openCheckoutModal();
+        return;
+    }
+    if (currentTrialStatus.Status === 'LICENSED') {
+        showToast('’ 1 Yıllık Lisanslı Ticari Sürümünüz Aktiftir! (Bitiş: ' + (currentTrialStatus.LicenseExpiresAt || 'Süresiz') + ')', 'success');
+    } else if (currentTrialStatus.Status === 'EXPIRED') {
+        const m = document.getElementById('trial-expired-modal');
+        if (m) m.classList.remove('hidden');
+    } else if (currentTrialStatus.Status === 'GRACE_PERIOD') {
+        const m = document.getElementById('grace-period-modal');
+        if (m) m.classList.remove('hidden');
+    } else {
+        openCheckoutModal();
+    }
+}
+window.openTrialOrLicenseModal = openTrialOrLicenseModal;
+
+async function submitLicenseActivation() {
+    const inp = document.getElementById('license-key-input');
+    const key = inp ? inp.value.trim() : '';
+    if (!key) {
+        showToast('Lütfen bir lisans anahtarı girin!', 'warning');
+        return;
+    }
+
+    try {
+        showToast('Lisans anahtarı doğrulanıyor...', 'info');
+        const res = await fetch('/api/license/activate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                viewerId: getViewerId(),
+                licenseKey: key
+            })
+        });
+
+        const data = await res.json();
+        if (data.success) {
+            showToast('✅ ' + data.message, 'success');
+            closeLicenseActivationModal();
+            await fetchTrialStatus();
+        } else {
+            showToast('❌ ' + (data.message || 'Geçersiz lisans anahtarı!'), 'error');
+        }
+    } catch(err) {
+        showToast('Bağlantı hatası: ' + err.message, 'error');
+    }
+}
+window.submitLicenseActivation = submitLicenseActivation;
+
+// Auto-fetch trial status on page load
+document.addEventListener('DOMContentLoaded', () => {
+    fetchTrialStatus();
+});
+window.addEventListener('load', () => {
+    fetchTrialStatus();
+});

@@ -618,12 +618,24 @@ if (cadBtn) {
             sendKey('control', 'up');
         }, 100);
     };
-    cadBtn.addEventListener('click', triggerCad);
-    cadBtn.addEventListener('touchstart', triggerCad);
+        let lastCadTouch = 0;
+    const safeTriggerCad = (e) => {
+        if (e && e.type === 'touchstart') {
+            lastCadTouch = Date.now();
+        } else if (e && e.type === 'click' && Date.now() - lastCadTouch < 600) {
+            if (e.preventDefault) e.preventDefault();
+            return;
+        }
+        triggerCad(e);
+    };
+    cadBtn.addEventListener('touchstart', safeTriggerCad, { passive: false });
+    cadBtn.addEventListener('click', safeTriggerCad);
 }
 
-// On-Screen Touch Numpad Actions with Instant Touch Feedback & Debounced Auto-Submit
-let lastNumpadTapTime = 0;
+// On-Screen Touch Numpad Actions with Instant Touch Feedback & Anti-Double-Tap Guard
+let lastNumpadTouchTime = 0;
+let lastNumpadActionTime = 0;
+
 document.querySelectorAll('.numpad-btn').forEach(btn => {
     const handlePress = (e) => {
         if (e) {
@@ -631,8 +643,9 @@ document.querySelectorAll('.numpad-btn').forEach(btn => {
             e.stopPropagation();
         }
         const now = Date.now();
-        if (now - lastNumpadTapTime < 140) return;
-        lastNumpadTapTime = now;
+        // Prevent duplicate firing within 350ms (kills synthetic iOS delayed click)
+        if (now - lastNumpadActionTime < 350) return;
+        lastNumpadActionTime = now;
 
         btn.classList.add('pressed');
         setTimeout(() => btn.classList.remove('pressed'), 120);
@@ -649,19 +662,42 @@ document.querySelectorAll('.numpad-btn').forEach(btn => {
             inp.value += val;
         }
 
-        // Auto-Submit when 6th digit is entered
+        // Auto-Submit when 6th digit is entered (debounced)
         if (inp.value.length === 6) {
-            setTimeout(sendPassword, 180);
+            setTimeout(() => {
+                if (inp.value.length === 6) {
+                    sendPassword();
+                }
+            }, 200);
         }
     };
 
-    btn.addEventListener('touchstart', handlePress, { passive: false });
-    btn.addEventListener('click', handlePress);
+    btn.addEventListener('touchstart', (e) => {
+        lastNumpadTouchTime = Date.now();
+        handlePress(e);
+    }, { passive: false });
+
+    btn.addEventListener('click', (e) => {
+        // If a touch event occurred in the last 600ms, IGNORE this synthetic click!
+        if (Date.now() - lastNumpadTouchTime < 600) {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            return;
+        }
+        handlePress(e);
+    });
 });
 
-// Password submit actions
+// Password submit actions with anti-double-submission guard
+let lastSendPassTime = 0;
 function sendPassword() {
-    const activeSocket = (window.ws && window.ws.readyState === WebSocket.OPEN) ? window.ws : socket;
+    const now = Date.now();
+    if (now - lastSendPassTime < 800) return; // Prevent double submit
+    lastSendPassTime = now;
+
+    const activeSocket = (window.ws && window.ws.readyState === WebSocket.OPEN) ? window.ws : ((window.socket && window.socket.readyState === WebSocket.OPEN) ? window.socket : socket);
     const inputElem = document.getElementById('access-password-input');
     const btnElem = document.getElementById('submit-password-btn');
 
@@ -669,7 +705,7 @@ function sendPassword() {
     const pass = inputElem.value.replace(/\D/g, '');
 
     if (!pass || pass.length === 0) {
-        showToast('Lütfen uzaktaki bilgisayarın 6 haneli şifresini giriniz.', 'error');
+        showToast('Lütfen hedef bilgisayarın 6 haneli şifresini giriniz.', 'error');
         return;
     }
 
@@ -687,23 +723,36 @@ function sendPassword() {
     }
 
     activeSocket.send("AUTH_PASS:" + pass);
-    activeSocket.send(pass);
     showToast('Şifre gönderildi, doğrulanıyor...', 'info');
 
     setTimeout(() => {
         if (btnElem) {
             btnElem.disabled = false;
-            btnElem.innerHTML = 'Doğrula & Bağlan <i class="fa-solid fa-arrow-right-to-bracket"></i>';
+            btnElem.innerHTML = 'Doğrula &amp; Bağlan <i class="fa-solid fa-arrow-right-to-bracket"></i>';
         }
-    }, 3000);
+    }, 2500);
 }
+window.sendPassword = sendPassword;
+
 if (submitPasswordBtn) {
-    submitPasswordBtn.addEventListener('click', (e) => {
-        if (e) e.preventDefault();
+    let lastSubmitTouch = 0;
+    submitPasswordBtn.addEventListener('touchstart', (e) => {
+        lastSubmitTouch = Date.now();
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
         sendPassword();
-    });
-    submitPasswordBtn.addEventListener('touchend', (e) => {
-        if (e) e.preventDefault();
+    }, { passive: false });
+
+    submitPasswordBtn.addEventListener('click', (e) => {
+        if (Date.now() - lastSubmitTouch < 600) {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            return;
+        }
         sendPassword();
     });
 }

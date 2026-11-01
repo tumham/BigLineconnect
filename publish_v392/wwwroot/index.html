@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
@@ -65,7 +65,7 @@
                     </a>
                 </div>
                 <div style="margin-top: 14px; font-size: 0.88rem; font-weight: 700; color: #a0aec0;" data-i18n="hero.nocard">
-                    <i class="fa-solid fa-circle-check" style="color:#2ecc71"></i> Kredi Kartı Gerekmez �?� İlk 1 Ay �ocretsiz Full Kullanım
+                    <i class="fa-solid fa-circle-check" style="color:#2ecc71"></i> Kredi Kartı Gerekmez �?� İlk 1 Ay �ücretsiz Full Kullanım
                 </div>
                 <div class="hero-stats">
                     <div class="stat-item">
@@ -603,8 +603,8 @@
             <div style="width: 54px; height: 54px; margin: 0 auto 12px; background: rgba(0, 229, 255, 0.12); border: 1px solid var(--accent-color); border-radius: 50%; display: flex; justify-content: center; align-items: center; color: var(--accent-color); font-size: 1.4rem;">
                 <i class="fa-solid fa-lock"></i>
             </div>
-            <h3 style="margin-bottom: 6px; color: #ffffff; font-size: 1.4rem; font-weight: 800;">EriYim Şifresi Gerekli</h3>
-            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 18px;">Lütfen hedef bilgisayarın 6 haneli Yifresini girin:</p>
+            <h3 style="margin-bottom: 6px; color: #ffffff; font-size: 1.4rem; font-weight: 800;">Erişim Şifresi Gerekli</h3>
+            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 18px;">Lütfen hedef bilgisayarın 6 haneli Şifresini girin:</p>
             
             <div class="input-group" style="margin-bottom: 20px; position: relative;">
                 <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="6" id="access-password-input" placeholder="�?� �?� �?� �?� �?� �?�" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="text-align: center; width: 100%; padding: 14px; font-size: 26px; letter-spacing: 12px; font-weight: 900; -webkit-text-security: disc; text-security: disc; background: rgba(15, 23, 42, 0.9); border: 2px solid var(--accent-color); border-radius: 16px; color: #00e5ff; box-shadow: inset 0 2px 8px rgba(0,0,0,0.8), 0 0 15px rgba(0, 229, 255, 0.25);">
@@ -634,14 +634,14 @@
     <div id="session-timer-modal" class="hidden" style="display: none !important; pointer-events: none !important; position: fixed; top: 20px; right: 20px; z-index: 99999; max-width: 380px; width: 90%; background: rgba(15, 23, 42, 0.95); border: 2px solid #00e5ff; border-radius: 16px; padding: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.8); backdrop-filter: blur(15px);">
         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
             <i class="fa-solid fa-clock-rotate-left" style="color: #00e5ff; font-size: 1.4rem;"></i>
-            <h4 style="margin: 0; font-size: 1rem; color: #fff; font-weight: 800;">�ocretsiz Web Süresi Doluyor!</h4>
+            <h4 style="margin: 0; font-size: 1rem; color: #fff; font-weight: 800;">�ücretsiz Web Süresi Doluyor!</h4>
         </div>
         <p style="font-size: 0.85rem; color: #cbd5e1; margin-bottom: 15px; line-height: 1.4;">
-            �ocretsiz web deneme sürenizin bitmesine <strong id="session-timer-seconds" style="color: #00e5ff; font-size: 1.1rem;">60</strong> saniye kaldı.
+            �ücretsiz web deneme sürenizin bitmesine <strong id="session-timer-seconds" style="color: #00e5ff; font-size: 1.1rem;">60</strong> saniye kaldı.
         </p>
         <div style="display: flex; flex-direction: column; gap: 8px;">
             <button type="button" onclick="extendFreeSessionTimer()" style="width: 100%; padding: 10px; background: linear-gradient(135deg, #2ecc71, #00e5ff); border: none; border-radius: 8px; color: #000; font-weight: 800; font-size: 0.9rem; cursor: pointer;">
-                <i class="fa-solid fa-gift"></i> +5 Dakika Ek Süre Uzat (�ocretsiz)
+                <i class="fa-solid fa-gift"></i> +5 Dakika Ek Süre Uzat (�ücretsiz)
             </button>
             <button type="button" onclick="openCheckoutModal()" style="width: 100%; padding: 10px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: #fff; text-align: center; font-weight: 700; font-size: 0.85rem; cursor: pointer;">
                 <i class="fa-solid fa-crown" style="color: #ffd700;"></i> Sınırsız Paket (Ayda Sadece �,�125 TL / $4)
@@ -702,7 +702,7 @@
             });
         }
 
-        // Direct Mobile Action: Auto Jump & Focus to "Tarayıcıdan Anında BaYlanın" Widget
+        // Direct Mobile Action: Auto Jump & Focus to "Tarayıcıdan Anında Bağlanın" Widget
         const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         if (isMobileDevice) {
             window.addEventListener('DOMContentLoaded', () => {

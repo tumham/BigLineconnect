@@ -611,7 +611,15 @@
                 50% { opacity: 0.6; }
                 100% { transform: scale(1.6); opacity: 0; }
             }
-        </style>
+        
+        #access-password-input::placeholder {
+            -webkit-text-security: none !important;
+            text-security: none !important;
+            letter-spacing: 12px;
+            color: rgba(0, 229, 255, 0.4);
+            font-family: monospace, sans-serif;
+        }
+    </style>
 
         <!-- Hidden input to capture keyboard events on mobile -->
         <input type="text" id="hidden-keyboard-input" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" style="position: fixed; top: 0; left: 0; width: 1px; height: 1px; opacity: 0.01; pointer-events: none; border: none; font-size: 16px; background: transparent; z-index: -1;">
@@ -627,7 +635,7 @@
             <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 18px;">Lütfen hedef bilgisayarın 6 haneli şifresini girin:</p>
             
             <div class="input-group" style="margin-bottom: 20px; position: relative;">
-                <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="6" id="access-password-input" placeholder="• • • • • •" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="text-align: center; width: 100%; padding: 14px; font-size: 26px; letter-spacing: 12px; font-weight: 900; -webkit-text-security: disc; text-security: disc; background: rgba(15, 23, 42, 0.9); border: 2px solid var(--accent-color); border-radius: 16px; color: #00e5ff; box-shadow: inset 0 2px 8px rgba(0,0,0,0.8), 0 0 15px rgba(0, 229, 255, 0.25);">
+                <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="6" id="access-password-input" placeholder="· · · · · ·" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="text-align: center; width: 100%; padding: 14px; font-size: 26px; letter-spacing: 12px; font-weight: 900; -webkit-text-security: disc; text-security: disc; background: rgba(15, 23, 42, 0.9); border: 2px solid var(--accent-color); border-radius: 16px; color: #00e5ff; box-shadow: inset 0 2px 8px rgba(0,0,0,0.8), 0 0 15px rgba(0, 229, 255, 0.25);">
             </div>
 
             <!-- Touch Numpad Grid -->
@@ -646,7 +654,7 @@
                 <button type="button" class="numpad-btn action" data-val="backspace"><i class="fa-solid fa-delete-left"></i></button>
             </div>
 
-            <button id="submit-password-btn" type="button" class="primary-btn" onclick="sendPassword()" style="width: 100%; padding: 16px; font-size: 1.1rem; font-weight: 800; border-radius: 18px;">Doğrula & Bağlan <i class="fa-solid fa-arrow-right-to-bracket"></i></button>
+            <button id="submit-password-btn" type="button" class="primary-btn" style="width: 100%; padding: 16px; font-size: 1.1rem; font-weight: 800; border-radius: 18px;">Doğrula & Bağlan <i class="fa-solid fa-arrow-right-to-bracket"></i></button>
             <button type="button" class="btn-cancel" onclick="cancelPasswordModal()" style="margin-top: 10px; width: 100%; padding: 12px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 18px; color: #cbd5e1; font-weight: 700; cursor: pointer; transition: all 0.2s;">Vazgeç</button>
         </div>
     </div>
@@ -2241,7 +2249,7 @@ try {
                     e.stopPropagation();
                     handled = true;
                     try { actionFn(); } catch(err) {}
-                    setTimeout(function() { handled = false; }, 250);
+                    setTimeout(function() { handled = false; }, 500);
                 }, { passive: false });
                 el.addEventListener('click', function(e) {
                     e.stopPropagation();
