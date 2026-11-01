@@ -27,7 +27,6 @@ jobs:
 
       - name: Build iOS Application (.app)
         run: |
-          set +e
           xcodebuild build \
             -project BConnect_iOS/BConnect.xcodeproj \
             -target BConnect \
@@ -38,19 +37,13 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
-            AD_HOC_CODE_SIGNING_ALLOWED=YES > build.log 2>&1
-          BUILD_EXIT=$?
-          echo "=== XCODEBUILD LOG TAIL ==="
-          tail -n 120 build.log
-          if [ $BUILD_EXIT -ne 0 ]; then
-            exit $BUILD_EXIT
-          fi
+            AD_HOC_CODE_SIGNING_ALLOWED=YES
 
       - name: Package Payload into .IPA
         run: |
           mkdir -p build/Payload
           APP_PATH=$(find build/DerivedData -name "BConnect.app" -type d | head -n 1)
-          echo "Found app at: $APP_PATH"
+          echo "Found compiled app at: $APP_PATH"
           cp -R "$APP_PATH" build/Payload/
           cd build
           zip -qr9 B-Connect-iOS.ipa Payload

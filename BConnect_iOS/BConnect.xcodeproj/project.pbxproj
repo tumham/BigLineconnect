@@ -1,4 +1,4 @@
-﻿// !$*UTF8*$!
+// !$*UTF8*$!
 {
 	archiveVersion = 1;
 	classes = {
@@ -11,7 +11,6 @@
 		BC0000032CE0000100000001 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC0000042CE0000100000001 /* SceneDelegate.swift */; };
 		BC0000052CE0000100000001 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC0000062CE0000100000001 /* ViewController.swift */; };
 		BC0000072CE0000100000001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = BC0000082CE0000100000001 /* Assets.xcassets */; };
-		BC0000092CE0000100000001 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = BC00000A2CE0000100000001 /* LaunchScreen.storyboard */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -20,7 +19,6 @@
 		BC0000042CE0000100000001 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
 		BC0000062CE0000100000001 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
 		BC0000082CE0000100000001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		BC00000B2CE0000100000001 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		BC00000C2CE0000100000001 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -50,7 +48,6 @@
 				BC0000042CE0000100000001 /* SceneDelegate.swift */,
 				BC0000062CE0000100000001 /* ViewController.swift */,
 				BC0000082CE0000100000001 /* Assets.xcassets */,
-				BC00000A2CE0000100000001 /* LaunchScreen.storyboard */,
 				BC00000C2CE0000100000001 /* Info.plist */,
 			);
 			path = BConnect;
@@ -122,7 +119,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				BC0000072CE0000100000001 /* Assets.xcassets in Resources */,
-				BC0000092CE0000100000001 /* LaunchScreen.storyboard in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -140,17 +136,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
-
-/* Begin PBXVariantGroup section */
-		BC00000A2CE0000100000001 /* LaunchScreen.storyboard */ = {
-			isa = PBXVariantGroup;
-			children = (
-				BC00000B2CE0000100000001 /* Base */,
-			);
-			name = LaunchScreen.storyboard;
-			sourceTree = "<group>";
-		};
-/* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
 		BC0000412CE0000100000001 /* Debug */ = {
