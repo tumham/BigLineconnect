@@ -3,20 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BigLineconnect - Görsel Anlatımlı Ürün ve Özellik Tanıtım Videosu</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <title>B-Connect | Yeni Nesil Uzaktan Masaüstü Tanıtımı</title>
+    <!-- Google Fonts & FontAwesome -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
     <style>
         :root {
-            --bg-dark: #0a0c10;
-            --panel-bg: rgba(18, 22, 32, 0.85);
-            --border-color: rgba(0, 229, 255, 0.2);
+            --bg-dark: #07090e;
+            --panel-bg: rgba(13, 18, 30, 0.92);
             --accent-cyan: #00e5ff;
             --accent-purple: #d500f9;
             --accent-green: #2ecc71;
-            --accent-orange: #e67e22;
-            --accent-red: #e74c3c;
-            --text-main: #f0f4f8;
-            --text-muted: #8a99ad;
+            --accent-gold: #f39c12;
+            --text-main: #ffffff;
+            --text-sub: #94a3b8;
+            --border-glow: rgba(0, 229, 255, 0.35);
         }
 
         * {
@@ -24,6 +28,7 @@
             margin: 0;
             padding: 0;
             user-select: none;
+            -webkit-font-smoothing: antialiased;
         }
 
         body {
@@ -35,850 +40,755 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 20px;
+            padding: 15px;
             overflow-x: hidden;
             background-image: 
-                radial-gradient(circle at 15% 15%, rgba(0, 229, 255, 0.08) 0%, transparent 45%),
-                radial-gradient(circle at 85% 85%, rgba(213, 0, 249, 0.08) 0%, transparent 45%);
+                radial-gradient(circle at 10% 15%, rgba(0, 229, 255, 0.12) 0%, transparent 40%),
+                radial-gradient(circle at 90% 85%, rgba(213, 0, 249, 0.12) 0%, transparent 40%),
+                linear-gradient(180deg, #07090e 0%, #0b0f19 100%);
         }
 
-        .container {
+        .video-container {
             width: 100%;
-            max-width: 1100px;
+            max-width: 1050px;
+            background: var(--panel-bg);
+            border: 1.5px solid var(--border-glow);
+            border-radius: 24px;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.9), 0 0 35px rgba(0, 229, 255, 0.18);
+            overflow: hidden;
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            backdrop-filter: blur(25px);
+            position: relative;
         }
 
-        header {
+        /* Top Header Bar */
+        .video-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: var(--panel-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-            padding: 16px 24px;
-            backdrop-filter: blur(12px);
+            padding: 16px 28px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(10, 14, 24, 0.8);
         }
 
-        .logo-area {
+        .brand-logo {
             display: flex;
             align-items: center;
-            gap: 14px;
+            gap: 12px;
         }
 
-        .logo-badge {
-            width: 44px;
-            height: 44px;
-            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 800;
-            font-size: 22px;
-            color: #fff;
-            box-shadow: 0 0 20px rgba(0, 229, 255, 0.4);
+        .brand-logo img {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            border: 1px solid var(--accent-cyan);
+            box-shadow: 0 0 12px rgba(0, 229, 255, 0.5);
         }
 
-        .logo-title h1 {
-            font-size: 22px;
-            font-weight: 800;
+        .brand-title {
+            font-size: 1.3rem;
+            font-weight: 900;
             letter-spacing: 0.5px;
-            background: linear-gradient(90deg, #fff, var(--text-muted));
+            background: linear-gradient(135deg, #ffffff 40%, var(--accent-cyan) 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
 
-        .logo-title p {
-            font-size: 12px;
+        .brand-badge {
+            font-size: 0.7rem;
+            font-weight: 800;
+            background: rgba(0, 229, 255, 0.15);
+            border: 1px solid var(--accent-cyan);
             color: var(--accent-cyan);
-            font-weight: 600;
+            padding: 3px 10px;
+            border-radius: 20px;
             letter-spacing: 1px;
+            text-transform: uppercase;
         }
 
         .header-actions {
             display: flex;
-            gap: 10px;
+            align-items: center;
+            gap: 12px;
         }
 
-        .btn-header {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: var(--text-main);
-            padding: 8px 16px;
-            border-radius: 8px;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
+        .btn-live-connect {
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+            color: #000;
+            font-weight: 800;
+            font-size: 0.85rem;
+            padding: 8px 18px;
+            border-radius: 12px;
+            text-decoration: none;
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 15px rgba(0, 229, 255, 0.3);
         }
 
-        .btn-header:hover {
-            background: var(--accent-cyan);
-            color: #000;
-            border-color: var(--accent-cyan);
-            box-shadow: 0 0 15px rgba(0, 229, 255, 0.3);
+        .btn-live-connect:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 229, 255, 0.6);
         }
 
         /* Video Stage Frame */
-        .video-wrapper {
-            background: #000;
-            border: 1px solid var(--border-color);
-            border-radius: 20px;
-            overflow: hidden;
+        .video-stage {
             position: relative;
-            aspect-ratio: 16 / 9;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 30px rgba(0, 229, 255, 0.15);
+            min-height: 520px;
             display: flex;
-            flex-direction: column;
-        }
-
-        /* Screen Canvas & Visual Stage */
-        .stage-screen {
-            flex: 1;
-            position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: radial-gradient(circle at center, #0f1420 0%, #05070a 100%);
-            overflow: hidden;
-        }
-
-        /* Animated Grid Lines */
-        .grid-bg {
-            position: absolute;
-            inset: 0;
-            background-image: 
-                linear-gradient(rgba(0, 229, 255, 0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0, 229, 255, 0.03) 1px, transparent 1px);
-            background-size: 40px 40px;
-            pointer-events: none;
-        }
-
-        /* Scene Slides */
-        .scene {
-            position: absolute;
-            inset: 0;
-            display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
             padding: 40px;
-            opacity: 0;
-            transform: scale(0.96);
-            transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-            pointer-events: none;
+            overflow: hidden;
+        }
+
+        /* Scenes */
+        .scene {
+            display: none;
+            width: 100%;
+            height: 100%;
+            animation: fadeInSlide 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
         }
 
         .scene.active {
-            opacity: 1;
-            transform: scale(1);
-            pointer-events: auto;
+            display: flex;
         }
 
-        /* Scene Content Styling */
-        .scene-badge {
-            background: rgba(0, 229, 255, 0.15);
-            border: 1px solid var(--accent-cyan);
-            color: var(--accent-cyan);
-            font-size: 12px;
-            font-weight: 700;
-            padding: 4px 12px;
-            border-radius: 20px;
-            margin-bottom: 12px;
-            text-transform: uppercase;
+        @keyframes fadeInSlide {
+            from {
+                opacity: 0;
+                transform: scale(0.96) translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .scene-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 16px;
+            border-radius: 30px;
+            font-size: 0.8rem;
+            font-weight: 800;
             letter-spacing: 1.5px;
+            text-transform: uppercase;
+            margin-bottom: 18px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.15);
         }
 
         .scene-title {
-            font-size: 32px;
-            font-weight: 800;
-            text-align: center;
-            margin-bottom: 12px;
-            background: linear-gradient(90deg, #ffffff, #a5b4fc);
+            font-size: 2.6rem;
+            font-weight: 900;
+            line-height: 1.15;
+            margin-bottom: 14px;
+            max-width: 850px;
+        }
+
+        .gradient-text-cyan {
+            background: linear-gradient(135deg, #00e5ff 0%, #d500f9 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .gradient-text-green {
+            background: linear-gradient(135deg, #2ecc71 0%, #00e5ff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .gradient-text-gold {
+            background: linear-gradient(135deg, #f39c12 0%, #e74c3c 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
 
         .scene-desc {
-            font-size: 16px;
-            color: var(--text-muted);
-            text-align: center;
-            max-width: 700px;
+            font-size: 1.15rem;
+            color: var(--text-sub);
+            max-width: 720px;
             line-height: 1.6;
-            margin-bottom: 24px;
+            margin-bottom: 30px;
         }
 
-        /* Visual Diagrams inside Scenes */
-        .diagram-box {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 30px;
-            margin-top: 10px;
-            width: 100%;
-            max-width: 800px;
-        }
-
-        .node-card {
-            background: rgba(18, 24, 38, 0.9);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 14px;
-            padding: 20px;
-            width: 220px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 10px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-            transition: all 0.3s ease;
-        }
-
-        .node-card.active-node {
-            border-color: var(--accent-cyan);
-            box-shadow: 0 0 25px rgba(0, 229, 255, 0.3);
-            transform: translateY(-5px);
-        }
-
-        .node-icon {
-            font-size: 36px;
-        }
-
-        .node-title {
-            font-size: 15px;
-            font-weight: 700;
-            color: #fff;
-        }
-
-        .node-sub {
-            font-size: 12px;
-            color: var(--text-muted);
-            text-align: center;
-        }
-
-        /* Connecting Flow Line */
-        .flow-line {
-            flex: 1;
-            height: 3px;
-            background: rgba(255, 255, 255, 0.1);
-            position: relative;
-            border-radius: 2px;
-            overflow: hidden;
-        }
-
-        .flow-packet {
-            position: absolute;
-            top: 0;
-            bottom: 0;
-            width: 40px;
-            background: linear-gradient(90deg, transparent, var(--accent-cyan), transparent);
-            animation: flowMove 2s infinite linear;
-        }
-
-        @keyframes flowMove {
-            0% { left: -40px; }
-            100% { left: 100%; }
-        }
-
-        /* Demo UI Component Showcase */
-        .mock-window {
-            width: 450px;
-            background: #141722;
-            border: 1px solid rgba(0, 229, 255, 0.3);
-            border-radius: 12px;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.7);
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .mock-header {
-            background: #1e2230;
-            padding: 8px 14px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            font-size: 12px;
-            font-weight: 600;
-            color: #fff;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-        }
-
-        .mock-body {
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
+        /* Feature Showcase Grid */
+        .feature-cards {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
             gap: 16px;
+            width: 100%;
+            max-width: 900px;
+            margin-top: 10px;
         }
 
-        .mock-btn {
-            padding: 14px;
-            border-radius: 10px;
-            font-size: 15px;
-            font-weight: 700;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        .f-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 18px;
+            padding: 22px 18px;
+            text-align: left;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .f-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--accent-cyan);
+            background: rgba(0, 229, 255, 0.06);
+            box-shadow: 0 10px 25px rgba(0, 229, 255, 0.15);
+        }
+
+        .f-card-icon {
+            font-size: 1.8rem;
+            margin-bottom: 12px;
+            display: inline-block;
+        }
+
+        .f-card h4 {
+            font-size: 1.05rem;
+            font-weight: 800;
+            color: #ffffff;
+            margin-bottom: 6px;
+        }
+
+        .f-card p {
+            font-size: 0.85rem;
+            color: var(--text-sub);
+            line-height: 1.45;
+        }
+
+        /* Device Badges row for Scene 3 */
+        .device-pill-row {
+            display: flex;
+            justify-content: center;
+            gap: 14px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .device-pill {
             display: flex;
             align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-
-        .mock-btn.state-idle {
-            background: linear-gradient(135deg, var(--accent-orange), #d36100);
-            color: #fff;
-            box-shadow: 0 6px 20px rgba(230, 126, 34, 0.3);
-        }
-
-        .mock-btn.state-pending {
-            background: linear-gradient(135deg, var(--accent-red), #c0392b);
-            color: #fff;
-            box-shadow: 0 6px 20px rgba(231, 76, 60, 0.3);
-            animation: pulseBg 1.5s infinite alternate;
-        }
-
-        @keyframes pulseBg {
-            0% { transform: scale(1); }
-            100% { transform: scale(1.02); }
-        }
-
-        /* Video Controls Bar */
-        .video-controls {
-            background: rgba(10, 12, 16, 0.95);
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            gap: 10px;
+            background: rgba(15, 23, 42, 0.8);
+            border: 1.5px solid rgba(0, 229, 255, 0.3);
+            border-radius: 14px;
             padding: 12px 20px;
+            font-size: 0.95rem;
+            font-weight: 800;
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+
+        .device-pill i {
+            font-size: 1.3rem;
+            color: var(--accent-cyan);
+        }
+
+        /* Bottom Controls Bar */
+        .video-controls {
+            background: rgba(9, 13, 22, 0.95);
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 16px 24px;
             display: flex;
             flex-direction: column;
-            gap: 10px;
-            backdrop-filter: blur(10px);
+            gap: 14px;
         }
 
-        .timeline-container {
+        /* Timeline Scrubber */
+        .timeline-bar {
             width: 100%;
             height: 6px;
             background: rgba(255, 255, 255, 0.1);
-            border-radius: 3px;
-            cursor: pointer;
-            position: relative;
+            border-radius: 10px;
             overflow: hidden;
+            position: relative;
+            cursor: pointer;
         }
 
         .timeline-progress {
             height: 100%;
             width: 0%;
             background: linear-gradient(90deg, var(--accent-cyan), var(--accent-purple));
-            border-radius: 3px;
+            box-shadow: 0 0 10px var(--accent-cyan);
             transition: width 0.1s linear;
         }
 
-        .controls-row {
+        .controls-inner {
             display: flex;
-            align-items: center;
             justify-content: space-between;
+            align-items: center;
         }
 
-        .left-controls {
+        .nav-buttons {
             display: flex;
             align-items: center;
-            gap: 14px;
+            gap: 10px;
         }
 
-        .btn-ctrl {
-            background: transparent;
-            border: none;
-            color: #fff;
-            font-size: 18px;
-            cursor: pointer;
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
+        .ctrl-btn {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #ffffff;
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
+            cursor: pointer;
             transition: all 0.2s ease;
+            font-size: 1rem;
         }
 
-        .btn-ctrl:hover {
-            background: rgba(255, 255, 255, 0.1);
-            color: var(--accent-cyan);
+        .ctrl-btn:hover {
+            background: var(--accent-cyan);
+            color: #000;
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 15px rgba(0, 229, 255, 0.5);
         }
 
-        .time-display {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 13px;
-            color: var(--text-muted);
+        .ctrl-btn.play-btn {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--accent-cyan), #00b0ff);
+            color: #000;
+            font-size: 1.2rem;
+            border: none;
         }
 
-        .scene-selector {
+        .scene-pills {
             display: flex;
             gap: 8px;
         }
 
         .scene-pill {
-            background: rgba(255, 255, 255, 0.05);
+            padding: 8px 14px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.04);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            color: var(--text-muted);
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: 600;
+            color: var(--text-sub);
+            font-size: 0.82rem;
+            font-weight: 700;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .scene-pill:hover, .scene-pill.active {
+            background: rgba(0, 229, 255, 0.12);
+            border-color: var(--accent-cyan);
+            color: #ffffff;
         }
 
         .scene-pill.active {
-            background: rgba(0, 229, 255, 0.15);
-            border-color: var(--accent-cyan);
+            box-shadow: 0 0 12px rgba(0, 229, 255, 0.3);
+        }
+
+        .timer-display {
+            font-family: monospace;
+            font-size: 0.95rem;
             color: var(--accent-cyan);
+            font-weight: 700;
         }
 
-        /* Subtitles Overlay */
-        .captions-overlay {
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.85);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            padding: 10px 20px;
-            border-radius: 30px;
-            color: #fff;
-            font-size: 14px;
-            font-weight: 600;
-            text-align: center;
-            max-width: 85%;
-            backdrop-filter: blur(8px);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.5);
-            transition: all 0.3s ease;
-        }
-
-        /* Highlight Grid Feature Cards */
-        .features-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 16px;
-        }
-
-        .feature-card {
-            background: var(--panel-bg);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+        /* Voiceover Speaker Subtitle Box */
+        .subtitle-box {
+            background: rgba(15, 23, 42, 0.85);
+            border: 1px solid rgba(0, 229, 255, 0.3);
             border-radius: 14px;
-            padding: 18px;
-            display: flex;
-            align-items: flex-start;
-            gap: 14px;
-            backdrop-filter: blur(10px);
-        }
-
-        .feature-icon {
-            width: 40px;
-            height: 40px;
-            background: rgba(0, 229, 255, 0.1);
-            border-radius: 10px;
+            padding: 10px 18px;
             display: flex;
             align-items: center;
-            justify-content: center;
-            font-size: 20px;
+            gap: 12px;
+            margin-top: 15px;
+            max-width: 800px;
+            width: 100%;
+        }
+
+        .voice-icon {
             color: var(--accent-cyan);
-            flex-shrink: 0;
+            font-size: 1.2rem;
+            animation: pulse 1.5s infinite;
         }
 
-        .feature-info h4 {
-            font-size: 15px;
-            font-weight: 700;
-            color: #fff;
-            margin-bottom: 4px;
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.7; }
+            100% { transform: scale(1); opacity: 1; }
         }
 
-        .feature-info p {
-            font-size: 12px;
-            color: var(--text-muted);
-            line-height: 1.5;
+        .subtitle-text {
+            font-size: 0.92rem;
+            color: #f1f5f9;
+            font-weight: 600;
+            line-height: 1.4;
+            font-style: italic;
+        }
+
+        @media (max-width: 768px) {
+            .scene-title { font-size: 1.8rem; }
+            .feature-cards { grid-template-columns: 1fr; }
+            .scene-pills { display: none; }
+            .video-stage { padding: 20px; min-height: 480px; }
         }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <!-- Header Nav -->
-        <header>
-            <div class="logo-area">
-                <div class="logo-badge">bc</div>
-                <div class="logo-title">
-                    <h1>BigLineconnect</h1>
-                    <p>MİMARİ & GÖRSEL ÜRÜN TANITIM VİDEOSU</p>
+    <div class="video-container" id="videoContainer">
+        <!-- Header -->
+        <div class="video-header">
+            <div class="brand-logo">
+                <img src="logo.png" alt="B-Connect Logo">
+                <div>
+                    <div class="brand-title">B-CONNECT</div>
+                    <div style="font-size: 0.65rem; color: var(--text-sub); font-weight: 700;">YENİ NESİL UZAKTAN ERİŞİM</div>
                 </div>
+                <span class="brand-badge">2026 OFFICIAL SHOWCASE</span>
             </div>
             <div class="header-actions">
-                <button class="btn-header" onclick="toggleAudioNarrator()">
-                    <span id="voiceIcon">🔊</span> Sesli Anlatım (Açık)
-                </button>
-                <button class="btn-header" onclick="restartVideo()">
-                    🔄 Baştan Oynat
-                </button>
-            </div>
-        </header>
-
-        <!-- Main Video Screen -->
-        <div class="video-wrapper">
-            <div class="stage-screen">
-                <div class="grid-bg"></div>
-
-                <!-- Scene 1: Introduction -->
-                <div class="scene active" id="scene1">
-                    <div class="scene-badge">SAHNE 1 / 5 • GENEL TANITIM</div>
-                    <h2 class="scene-title">Hızlı, Güvenli ve Tamamen Yerli Uzaktan Destek</h2>
-                    <p class="scene-desc">BigLineconnect; kurumsal firmalar, teknik destek ekipleri ve müşteriler için geliştirilmiş yüksek performanslı uzaktan masaüstü ve canlı bilet yönetim platformudur.</p>
-                    <div class="diagram-box">
-                        <div class="node-card active-node">
-                            <div class="node-icon">💻</div>
-                            <div class="node-title">Müşteri Bilgisayarı</div>
-                            <div class="node-sub">Tek tıkla bilet açar</div>
-                        </div>
-                        <div class="flow-line">
-                            <div class="flow-packet"></div>
-                        </div>
-                        <div class="node-card active-node">
-                            <div class="node-icon">☁️</div>
-                            <div class="node-title">Relay Bulut Sunucu</div>
-                            <div class="node-sub">Anında Eşleşme & Tünel</div>
-                        </div>
-                        <div class="flow-line">
-                            <div class="flow-packet"></div>
-                        </div>
-                        <div class="node-card active-node">
-                            <div class="node-icon">👨‍💻</div>
-                            <div class="node-title">Destek Uzmanı</div>
-                            <div class="node-sub">Şifresiz Otomatik Giriş</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Scene 2: Zero Port Security -->
-                <div class="scene" id="scene2">
-                    <div class="scene-badge">SAHNE 2 / 5 • SIFIR RİSK MİMARİSİ</div>
-                    <h2 class="scene-title">🛡️ %100 Güvenli Tünelleme (Sıfır Açık Port)</h2>
-                    <p class="scene-desc">Karşı bilgisayarda hiçbir dinleme (INBOUND) portu açılmaz. Uygulama sadece dışarıya doğru (Outbound) güvenli WebSocket tüneli kurar. Modem veya Windows Firewall ayarı gerektirmez.</p>
-                    <div class="diagram-box">
-                        <div class="node-card" style="border-color: var(--accent-green);">
-                            <div class="node-icon">🔒</div>
-                            <div class="node-title">Dinleyen Port: 0</div>
-                            <div class="node-sub">Dış sızmalara imkansız</div>
-                        </div>
-                        <div class="node-card" style="border-color: var(--accent-cyan);">
-                            <div class="node-icon">⚡</div>
-                            <div class="node-title">Outbound WSS</div>
-                            <div class="node-sub">Port 5080 Tünelleme</div>
-                        </div>
-                        <div class="node-card" style="border-color: var(--accent-purple);">
-                            <div class="node-icon">🔑</div>
-                            <div class="node-title">Tek Kullanımlık Bilet</div>
-                            <div class="node-sub">Güvenli Jeton Doğrulama</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Scene 3: Single Click Support Ticket -->
-                <div class="scene" id="scene3">
-                    <div class="scene-badge">SAHNE 3 / 5 • MÜŞTERİ TALEBİ</div>
-                    <h2 class="scene-title">🆘 Tek Tıkla Canlı Destek Bildirimi</h2>
-                    <p class="scene-desc">Müşteri karmaşık ID veya şifre vermeden tek bir butona tıklar. Talebi anında Uzman Paneline düşer ve buton canlı durum moduna geçer.</p>
-                    
-                    <div class="mock-window">
-                        <div class="mock-header">
-                            <span>BigLineconnect - Müşteri Arayüzü</span>
-                            <span>ID: 998 986 157</span>
-                        </div>
-                        <div class="mock-body">
-                            <div class="mock-btn state-pending" id="demoSupportBtn">
-                                ❌ Talebi İptal Et (Beklemede...)
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Scene 4: Instant Reset Technology -->
-                <div class="scene" id="scene4">
-                    <div class="scene-badge">SAHNE 4 / 5 • ANINDA SENKRONİZASYON</div>
-                    <h2 class="scene-title">⚡ Sunucuya Sıfır Yük & Anında Buton Sıfırlama</h2>
-                    <p class="scene-desc">Uzman bağlandığı veya sorunu çözüldü olarak kaydettiği **0.1 saniye içerisinde** karşı bilgisayardaki buton otomatik sıfırlanır. Sunucuyu yoran gereksiz sorgular sıfıra indirgenmiştir.</p>
-                    
-                    <div class="mock-window">
-                        <div class="mock-header">
-                            <span>Müşteri Arayüzü (Otomatik Sıfırlandı!)</span>
-                            <span style="color: var(--accent-green);">● Canlı Senkron</span>
-                        </div>
-                        <div class="mock-body">
-                            <div class="mock-btn state-idle">
-                                🆘 Destek İste / Sorun Bildir
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Scene 5: Advanced Features -->
-                <div class="scene" id="scene5">
-                    <div class="scene-badge">SAHNE 5 / 5 • GELİŞMİŞ ÖZELLİKLER</div>
-                    <h2 class="scene-title">🚀 Kurumsal Zenginlik & Tam Kontrol</h2>
-                    <p class="scene-desc">Bilgisayarı uykuda tutma, oturumları MP4/HTML video olarak kaydetme, ağ sürücülerine (Z:) kesintisiz erişim izinleri ve CRM geçmiş raporlaması ile tam donanımlı destek altyapısı.</p>
-                    <div class="diagram-box">
-                        <div class="node-card">
-                            <div class="node-icon">☕</div>
-                            <div class="node-title">Uyku Modu Önleyici</div>
-                        </div>
-                        <div class="node-card">
-                            <div class="node-icon">🎥</div>
-                            <div class="node-title">Canlı Oturum Kaydı</div>
-                        </div>
-                        <div class="node-card">
-                            <div class="node-icon">📁</div>
-                            <div class="node-title">Ağ Sürücüsü (Z:) İzni</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Captions Overlay -->
-                <div class="captions-overlay" id="captionsText">
-                    BigLineconnect görsel tanıtım videosuna hoş geldiniz.
-                </div>
-            </div>
-
-            <!-- Video Controls Bar -->
-            <div class="video-controls">
-                <div class="timeline-container" onclick="seekVideo(event)">
-                    <div class="timeline-progress" id="timelineProgress"></div>
-                </div>
-                <div class="controls-row">
-                    <div class="left-controls">
-                        <button class="btn-ctrl" onclick="togglePlayPause()" id="playPauseBtn">⏸️</button>
-                        <span class="time-display" id="timeDisplay">00:00 / 00:50</span>
-                    </div>
-                    <div class="scene-selector">
-                        <div class="scene-pill active" onclick="jumpToScene(0)">1. Genel</div>
-                        <div class="scene-pill" onclick="jumpToScene(1)">2. Güvenlik</div>
-                        <div class="scene-pill" onclick="jumpToScene(2)">3. Talep</div>
-                        <div class="scene-pill" onclick="jumpToScene(3)">4. Senkron</div>
-                        <div class="scene-pill" onclick="jumpToScene(4)">5. Özellikler</div>
-                    </div>
-                </div>
+                <button class="ctrl-btn" onclick="toggleFullscreen()" title="Tam Ekran"><i class="fa-solid fa-expand"></i></button>
+                <a href="/#baglan" class="btn-live-connect"><i class="fa-solid fa-bolt"></i> Hemen Bağlan</a>
             </div>
         </div>
 
-        <!-- Highlight Features Grid -->
-        <div class="features-grid">
-            <div class="feature-card">
-                <div class="feature-icon">🛡️</div>
-                <div class="feature-info">
-                    <h4>Sıfır Port Açma</h4>
-                    <p>Karşı tarafta hiç giriş portu açılmaz. Güvenlik açıklarını tamamen kapatır.</p>
-                </div>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon">⚡</div>
-                <div class="feature-info">
-                    <h4>Anında Sıfırlama</h4>
-                    <p>Bağlantı kurulduğu an müşteri butonu otomatik ilk haline döner.</p>
-                </div>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon">📝</div>
-                <div class="feature-info">
-                    <h4>CRM & Bilet Takibi</h4>
-                    <p>Tüm geçmiş çözümler notlarıyla birlikte CRM ekranına otomatik işlenir.</p>
-                </div>
-            </div>
-            <div class="feature-card">
-                <div class="feature-ic    <script>
-        const scenesData = [
-            {
-                id: 'scene1',
-                duration: 10,
-                caption: 'BigLineconnect; kurumsal teknik destek ve uzaktan masaüstü yönetimi için geliştirilmiş yeni nesil platformdur.',
-                speech: 'Big Layn Konekt; kurumsal teknik destek ve uzaktan masaüstü yönetimi için geliştirilmiş yeni nesil platformdur.'
-            },
-            {
-                id: 'scene2',
-                duration: 10,
-                caption: 'Mimarimiz %100 güvenli tünelleme prensibiyle çalışır. Karşı bilgisayarda hiçbir giriş portu açılmaz.',
-                speech: 'Miy marimiz yüzde yüz güvenli tünelleme prensibiyle çalışır. Karşı bilgisayarda hiçbir giriş portu açılmaz. Fayır vol kuralı gerektirmez.'
-            },
-            {
-                id: 'scene3',
-                duration: 10,
-                caption: 'Müşteri tek bir butonla destek talebini iletir. Jetonla doğrulanmış bilet anında uzman ekranına düşer.',
-                speech: 'Müşteri tek bir butonla destek talebini iletir. Jetonla doğrulanmış bilet anında uzman ekranına düşer.'
-            },
-            {
-                id: 'scene4',
-                duration: 10,
-                caption: 'Uzman bağlandığı veya sorunu çözüldü yaptığı an, müşteri butonu 0.1 saniye içerisinde otomatik sıfırlanır.',
-                speech: 'Uzman bağlandığı veya sorunu çözüldü yaptığı an, müşteri butonu anında, yani sıfır nokta bir saniyede otomatik sıfırlanır.'
-            },
-            {
-                id: 'scene5',
-                duration: 10,
-                caption: 'Uykuda tutma, canlı video kaydı, ağ sürücüsü izinleri ve CRM geçmiş takibi ile tam donanımlı altyapı.',
-                speech: 'Uykuda tutma, canlı video kaydı, ağ sürücüsü izinleri ve Cey Re Me geçmiş takibi ile tam donanımlı altyapı.'
-            }
-        ];�rlanır.'
-            },
-            {
-                id: 'scene5',
-                duration: 10,
-                caption: 'Uykuda tutma, canlı video kaydı, ağ sürücüsü izinleri ve CRM geçmiş takibi ile tam donanımlı altyapı.',
-                speech: 'Uykuda tutma, canlı video kaydı, ağ sürücüsü izinleri ve CRM geçmiş takibi ile tam donanımlı altyapı.'
-            }
-        ];
-
-        let currentSceneIndex = 0;
-        let isPlaying = true;
-        let currentTime = 0;
-        const totalDuration = 50;
-        let timerInterval = null;
-        let audioEnabled = true;
-
-        const scenes = document.querySelectorAll('.scene');
-        const scenePills = document.querySelectorAll('.scene-pill');
-        const timelineProgress = document.getElementById('timelineProgress');
-        const timeDisplay = document.getElementById('timeDisplay');
-        const captionsText = document.getElementById('captionsText');
-        const playPauseBtn = document.getElementById('playPauseBtn');
-
-        function initVideo() {
-            startTimer();
-            updateSceneUI();
-        }
-
-        function startTimer() {
-            if (timerInterval) clearInterval(timerInterval);
-            timerInterval = setInterval(() => {
-                if (isPlaying) {
-                    currentTime += 0.5;
-                    if (currentTime >= totalDuration) {
-                        currentTime = 0;
-                    }
-                    updateProgressUI();
-                }
-            }, 500);
-        }
-
-        function updateProgressUI() {
-            const percent = (currentTime / totalDuration) * 100;
-            timelineProgress.style.width = percent + '%';
+        <!-- Video Stage (Scenes) -->
+        <div class="video-stage">
             
-            // Format time
-            const curSec = Math.floor(currentTime);
-            const durSec = totalDuration;
-            timeDisplay.innerText = `${formatTime(curSec)} / ${formatTime(durSec)}`;
+            <!-- SAHNE 1: HIZ VE AKICILIK -->
+            <div class="scene active" id="scene-0">
+                <div class="scene-tag" style="color: var(--accent-cyan); border-color: var(--accent-cyan);">
+                    <i class="fa-solid fa-gauge-high"></i> SAHNE 1 • IŞIK HIZINDA BAĞLANTI
+                </div>
+                <h1 class="scene-title">Sanki Bilgisayarın Başındasınız:<br><span class="gradient-text-cyan">60 FPS Sıfır Gecikme</span></h1>
+                <p class="scene-desc">Donan, takılan ve kalitesi düşen eski uzaktan masaüstü araçlarını unutun. B-Connect ile fare hareketleriniz anında karşı bilgisayarda.</p>
 
-            // Check scene change
-            let newIndex = Math.floor(currentTime / 10);
-            if (newIndex >= scenesData.length) newIndex = scenesData.length - 1;
+                <div class="feature-cards">
+                    <div class="f-card">
+                        <div class="f-card-icon" style="color: var(--accent-cyan);"><i class="fa-solid fa-bolt-lightning"></i></div>
+                        <h4>0.05 ms Tepki Süresi</h4>
+                        <p>Tıkladığınız an karşı ekranda tepki alın. Gecikme hissi olmadan akıcı yönetim.</p>
+                    </div>
+                    <div class="f-card">
+                        <div class="f-card-icon" style="color: var(--accent-purple);"><i class="fa-solid fa-file-excel"></i></div>
+                        <h4>Muhasebe & ERP Tam Uyum</h4>
+                        <p>Zirve, Logo, Mikro, Excel gibi programlarda mikro yazıları kristal netliğinde okuyun.</p>
+                    </div>
+                    <div class="f-card">
+                        <div class="f-card-icon" style="color: var(--accent-green);"><i class="fa-solid fa-display"></i></div>
+                        <h4>Çift Ekran & 4K Desteği</h4>
+                        <p>Müşterinizin birden fazla monitörü varsa tek tıkla monitörler arasında geçiş yapın.</p>
+                    </div>
+                </div>
 
-            if (newIndex !== currentSceneIndex) {
-                currentSceneIndex = newIndex;
-                updateSceneUI();
-            }
-        }
+                <div class="subtitle-box">
+                    <i class="fa-solid fa-volume-high voice-icon"></i>
+                    <div class="subtitle-text" id="sub-0">"B-Connect, 60 FPS akıcı görüntü transferi ile müşterinizin bilgisayarını sanki tam yanındaymışsınız gibi sıfır takılmayla yönetmenizi sağlar."</div>
+                </div>
+            </div>
 
-        function formatTime(sec) {
-            const m = Math.floor(sec / 60);
-            const s = sec % 60;
-            return `${m < 10 ? '0' + m : m}:${s < 10 ? '0' + s : s}`;
-        }
+            <!-- SAHNE 2: KURULUMSUZ & PORT AÇMASIZ ERİŞİM -->
+            <div class="scene" id="scene-1">
+                <div class="scene-tag" style="color: var(--accent-green); border-color: var(--accent-green);">
+                    <i class="fa-solid fa-circle-check"></i> SAHNE 2 • ZAHMETSİZ VE ANINDA
+                </div>
+                <h1 class="scene-title">Kurulum Yok, Modem Ayarı Yok:<br><span class="gradient-text-green">Tek Tıkla Doğrudan Bağlanın</span></h1>
+                <p class="scene-desc">Müşterinize karmaşık programlar kurdurmayın. İndirip çalıştırdığı anda 6 haneli şifreyle saniyeler içinde masaüstündesiniz.</p>
 
-        function updateSceneUI() {
-            scenes.forEach((sc, idx) => {
-                if (idx === currentSceneIndex) {
-                    sc.classList.add('active');
-                } else {
-                    sc.classList.remove('active');
+                <div class="feature-cards">
+                    <div class="f-card">
+                        <div class="f-card-icon" style="color: var(--accent-green);"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                        <h4>Tak-Çalıştır Mimari</h4>
+                        <p>Modemden port açma veya güvenlik duvarı izinleriyle uğraşmaya son.</p>
+                    </div>
+                    <div class="f-card">
+                        <div class="f-card-icon" style="color: var(--accent-cyan);"><i class="fa-solid fa-shield-halved"></i></div>
+                        <h4>6 Haneli Güvenli PIN</h4>
+                        <p>Her oturumda değişen veya sabitlenen yüksek güvenlikli erişim şifresi.</p>
+                    </div>
+                    <div class="f-card">
+                        <div class="f-card-icon" style="color: var(--accent-gold);"><i class="fa-solid fa-gift"></i></div>
+                        <h4>İlk 1 Ay %100 Ücretsiz</h4>
+                        <p>Kredi kartı gerekmez. İndirin, deneyin ve hızın tadını anında çıkarın.</p>
+                    </div>
+                </div>
+
+                <div class="subtitle-box">
+                    <i class="fa-solid fa-volume-high voice-icon"></i>
+                    <div class="subtitle-text" id="sub-1">"Müşteriniz hiçbir kurulum yapmadan sadece dosyayı açar; siz de 6 haneli şifreyi girip tek tıkla bağlanırsınız."</div>
+                </div>
+            </div>
+
+            <!-- SAHNE 3: TAM MOBİL VE WEB ÖZGÜRLÜĞÜ -->
+            <div class="scene" id="scene-2">
+                <div class="scene-tag" style="color: var(--accent-purple); border-color: var(--accent-purple);">
+                    <i class="fa-solid fa-mobile-screen"></i> SAHNE 3 • SINIRSIZ CİHAZ ÖZGÜRLÜĞÜ
+                </div>
+                <h1 class="scene-title">Ofiste, Yolda, Tatilde:<br><span class="gradient-text-cyan">Cebinizdeki Telefondan Yönetin</span></h1>
+                <p class="scene-desc">Sadece bilgisayardan değil; iPhone, iPad, Android veya herhangi bir web tarayıcısından tek tıkla uzak bilgisayara bağlanın.</p>
+
+                <div class="device-pill-row">
+                    <div class="device-pill"><i class="fa-brands fa-apple"></i> iPhone & iPad (iOS Yerel IPA)</div>
+                    <div class="device-pill"><i class="fa-brands fa-android"></i> Android Telefon & Tablet (APK)</div>
+                    <div class="device-pill"><i class="fa-solid fa-globe"></i> Web Tarayıcı (Kurulumsuz Giriş)</div>
+                    <div class="device-pill"><i class="fa-brands fa-windows"></i> Windows 10, 11 & Sunucu</div>
+                </div>
+
+                <div class="feature-cards" style="margin-top: 25px;">
+                    <div class="f-card">
+                        <div class="f-card-icon" style="color: var(--accent-cyan);"><i class="fa-solid fa-keyboard"></i></div>
+                        <h4>Dokunmatik Sanal Numpad</h4>
+                        <p>Telefondan şifre girerken parmak dostu dokunmatik tuş takımı.</p>
+                    </div>
+                    <div class="f-card">
+                        <div class="f-card-icon" style="color: var(--accent-purple);"><i class="fa-solid fa-hand-pointer"></i></div>
+                        <h4>Doğal Çift Tıklama & Sürükleme</h4>
+                        <p>Parmak hareketlerinizle masaüstü pencerelerini kolayca taşıyın ve büyütün.</p>
+                    </div>
+                    <div class="f-card">
+                        <div class="f-card-icon" style="color: var(--accent-green);"><i class="fa-solid fa-magnifying-glass-plus"></i></div>
+                        <h4>%250 HD Akıllı Zoom</h4>
+                        <p>Küçük butonları ve muhasebe satırlarını ekranda büyüterek rahatça yönetin.</p>
+                    </div>
+                </div>
+
+                <div class="subtitle-box">
+                    <i class="fa-solid fa-volume-high voice-icon"></i>
+                    <div class="subtitle-text" id="sub-2">"İster ofis masanızdan, ister tatilde cebinizdeki iPhone veya Android telefonunuzdan acil teknik müdahaleleri saniyeler içinde yapın."</div>
+                </div>
+            </div>
+
+            <!-- SAHNE 4: ARKA PLAN (UNATTENDED) 7/24 ERİŞİM -->
+            <div class="scene" id="scene-3">
+                <div class="scene-tag" style="color: var(--accent-gold); border-color: var(--accent-gold);">
+                    <i class="fa-solid fa-clock-rotate-left"></i> SAHNE 4 • GECE-GÜNDÜZ KESİNTİSİZ DESTEK
+                </div>
+                <h1 class="scene-title">Müşteri Masasında Yokken Bile:<br><span class="gradient-text-gold">7/24 Arka Planda Yönetim</span></h1>
+                <p class="scene-desc">Mesai saatleri dışında güncelleme yapmanız mı gerekiyor? B-Connect Unattended servis moduyla şifreli olarak gece de erişin.</p>
+
+                <div class="feature-cards">
+                    <div class="f-card">
+                        <div class="f-card-icon" style="color: var(--accent-gold);"><i class="fa-solid fa-server"></i></div>
+                        <h4>Windows Servis Modu</h4>
+                        <p>Kullanıcı oturumu kapatsa dahi arka planda sessizce çalışmaya devam eder.</p>
+                    </div>
+                    <div class="f-card">
+                        <div class="f-card-icon" style="color: var(--accent-cyan);"><i class="fa-solid fa-power-off"></i></div>
+                        <h4>Yeniden Başlat & Otomatik Bağlan</h4>
+                        <p>Bilgisayarı yeniden başlattığınızda bağlantı kopmadan şifre ekranından devam eder.</p>
+                    </div>
+                    <div class="f-card">
+                        <div class="f-card-icon" style="color: var(--accent-green);"><i class="fa-solid fa-lock"></i></div>
+                        <h4>Uçtan Uca Şifreleme</h4>
+                        <p>Tüm veri transferi 256-bit bankacılık standardında güvenle şifrelenir.</p>
+                    </div>
+                </div>
+
+                <div class="subtitle-box">
+                    <i class="fa-solid fa-volume-high voice-icon"></i>
+                    <div class="subtitle-text" id="sub-3">"Müşterinizin başında beklemesine gerek yok. 7/24 kesintisiz arka plan erişimi ile gece bakımlarını ve güncellemelerini zahmetsizce tamamlayın."</div>
+                </div>
+            </div>
+
+            <!-- SAHNE 5: DOSYA TRANSFERİ & KURUMSAL GÜÇ -->
+            <div class="scene" id="scene-4">
+                <div class="scene-tag" style="color: var(--accent-cyan); border-color: var(--accent-cyan);">
+                    <i class="fa-solid fa-briefcase"></i> SAHNE 5 • YABANCI YAZILIMLARA SON!
+                </div>
+                <h1 class="scene-title">Fahiş AnyDesk Faturalarına Elveda:<br><span class="gradient-text-cyan">Kendi Bayi & Ekip Yönetiminiz</span></h1>
+                <p class="scene-desc">Süre kısıtlaması, aniden kopan bağlantılar ve dövizle ödenen astronomik lisanslara son. Yerli ve bağımsız altyapıyla tam özgürlük.</p>
+
+                <div class="feature-cards">
+                    <div class="f-card">
+                        <div class="f-card-icon" style="color: var(--accent-cyan);"><i class="fa-solid fa-folder-arrow-up"></i></div>
+                        <h4>Sürükle-Bırak Dosya Transferi</h4>
+                        <p>Kurulum dosyalarını ve yedekleri yüksek hızda karşı tarafa aktarın.</p>
+                    </div>
+                    <div class="f-card">
+                        <div class="f-card-icon" style="color: var(--accent-purple);"><i class="fa-solid fa-users-gear"></i></div>
+                        <h4>Çoklu Operatör & Bayi Portalı</h4>
+                        <p>Teknik destek personelinizi gruplayın, eşzamanlı kanal ve kullanım raporlarını izleyin.</p>
+                    </div>
+                    <div class="f-card">
+                        <div class="f-card-icon" style="color: var(--accent-green);"><i class="fa-solid fa-handshake"></i></div>
+                        <h4>%100 Yerli & Bağımsız Güç</h4>
+                        <p>Verileriniz yurt dışına çıkmaz. Hızlı, kesintisiz ve kurumsal yerel destek.</p>
+                    </div>
+                </div>
+
+                <div class="subtitle-box">
+                    <i class="fa-solid fa-volume-high voice-icon"></i>
+                    <div class="subtitle-text" id="sub-4">"B-Connect ile teknik destek ekibinizi tek merkezden yönetin; fahiş yabancı yazılım faturalarından kurtulup işletmenize tam kontrol kazandırın."</div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Controls Footer -->
+        <div class="video-controls">
+            <!-- Timeline -->
+            <div class="timeline-bar" onclick="seekTimeline(event)">
+                <div class="timeline-progress" id="timelineProgress"></div>
+            </div>
+
+            <div class="controls-inner">
+                <div class="nav-buttons">
+                    <button class="ctrl-btn" onclick="prevScene()" title="Önceki Sahne"><i class="fa-solid fa-backward-step"></i></button>
+                    <button class="ctrl-btn play-btn" id="playPauseBtn" onclick="togglePlayPause()" title="Oynat / Duraklat"><i class="fa-solid fa-pause"></i></button>
+                    <button class="ctrl-btn" onclick="nextScene()" title="Sonraki Sahne"><i class="fa-solid fa-forward-step"></i></button>
+                    <div class="timer-display" id="timeDisplay">00:00 / 00:35</div>
+                </div>
+
+                <div class="scene-pills">
+                    <div class="scene-pill active" onclick="jumpToScene(0)"><i class="fa-solid fa-gauge"></i> 1. Hız & 60 FPS</div>
+                    <div class="scene-pill" onclick="jumpToScene(1)"><i class="fa-solid fa-wand-magic"></i> 2. Kurulumsuz</div>
+                    <div class="scene-pill" onclick="jumpToScene(2)"><i class="fa-solid fa-mobile"></i> 3. Mobil & Web</div>
+                    <div class="scene-pill" onclick="jumpToScene(3)"><i class="fa-solid fa-moon"></i> 4. 7/24 Destek</div>
+                    <div class="scene-pill" onclick="jumpToScene(4)"><i class="fa-solid fa-crown"></i> 5. Bayi & Avantaj</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const totalScenes = 5;
+        const sceneDuration = 7; // Her sahne 7 saniye
+        const totalDuration = totalScenes * sceneDuration; // 35 saniye toplam
+        
+        let currentScene = 0;
+        let isPlaying = true;
+        let elapsedSeconds = 0;
+        let timerInterval = null;
+
+        function updateScene() {
+            // Sahneleri güncelle
+            for (let i = 0; i < totalScenes; i++) {
+                const s = document.getElementById('scene-' + i);
+                if (s) {
+                    if (i === currentScene) {
+                        s.classList.add('active');
+                    } else {
+                        s.classList.remove('active');
+                    }
                 }
-            });
+            }
 
-            scenePills.forEach((pill, idx) => {
-                if (idx === currentSceneIndex) {
+            // Alt hap butonları güncelle
+            const pills = document.querySelectorAll('.scene-pill');
+            pills.forEach((pill, idx) => {
+                if (idx === currentScene) {
                     pill.classList.add('active');
                 } else {
                     pill.classList.remove('active');
                 }
             });
+        }
 
-            const currentData = scenesData[currentSceneIndex];
-            captionsText.innerText = currentData.caption;
+        function formatTime(sec) {
+            const m = Math.floor(sec / 60);
+            const s = Math.floor(sec % 60);
+            return (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+        }
 
-            if (audioEnabled) {
-                speakText(currentData.speech);
+        function updateProgress() {
+            if (!isPlaying) return;
+
+            elapsedSeconds += 0.1;
+            if (elapsedSeconds >= totalDuration) {
+                elapsedSeconds = 0; // Başa sar döngü
+                currentScene = 0;
+                updateScene();
+            } else {
+                const targetScene = Math.floor(elapsedSeconds / sceneDuration);
+                if (targetScene !== currentScene && targetScene < totalScenes) {
+                    currentScene = targetScene;
+                    updateScene();
+                }
             }
+
+            const pct = (elapsedSeconds / totalDuration) * 100;
+            document.getElementById('timelineProgress').style.width = pct + '%';
+            document.getElementById('timeDisplay').innerText = formatTime(elapsedSeconds) + ' / ' + formatTime(totalDuration);
         }
 
         function togglePlayPause() {
             isPlaying = !isPlaying;
-            playPauseBtn.innerText = isPlaying ? '⏸️' : '▶️';
-            if (!isPlaying && window.speechSynthesis) {
-                window.speechSynthesis.cancel();
+            const btn = document.getElementById('playPauseBtn');
+            if (isPlaying) {
+                btn.innerHTML = '<i class="fa-solid fa-pause"></i>';
+            } else {
+                btn.innerHTML = '<i class="fa-solid fa-play"></i>';
             }
+        }
+
+        function nextScene() {
+            currentScene = (currentScene + 1) % totalScenes;
+            elapsedSeconds = currentScene * sceneDuration;
+            updateScene();
+            updateProgress();
+        }
+
+        function prevScene() {
+            currentScene = (currentScene - 1 + totalScenes) % totalScenes;
+            elapsedSeconds = currentScene * sceneDuration;
+            updateScene();
+            updateProgress();
         }
 
         function jumpToScene(idx) {
-            currentSceneIndex = idx;
-            currentTime = idx * 10;
-            updateProgressUI();
-            updateSceneUI();
+            currentScene = idx;
+            elapsedSeconds = idx * sceneDuration;
+            updateScene();
+            updateProgress();
         }
 
-        function seekVideo(e) {
+        function seekTimeline(e) {
             const rect = e.currentTarget.getBoundingClientRect();
             const clickX = e.clientX - rect.left;
-            const width = rect.width;
-            const percent = clickX / width;
-            currentTime = percent * totalDuration;
-            updateProgressUI();
-            
-            let newIndex = Math.floor(currentTime / 10);
-            if (newIndex !== currentSceneIndex) {
-                currentSceneIndex = newIndex;
-                updateSceneUI();
-            }
+            const pct = Math.max(0, Math.min(1, clickX / rect.width));
+            elapsedSeconds = pct * totalDuration;
+            currentScene = Math.min(totalScenes - 1, Math.floor(elapsedSeconds / sceneDuration));
+            updateScene();
+            updateProgress();
         }
 
-        function restartVideo() {
-            currentTime = 0;
-            currentSceneIndex = 0;
-            isPlaying = true;
-            playPauseBtn.innerText = '⏸️';
-            updateProgressUI();
-            updateSceneUI();
-        }
-
-        function toggleAudioNarrator() {
-            audioEnabled = !audioEnabled;
-            const icon = document.getElementById('voiceIcon');
-            if (audioEnabled) {
-                icon.innerText = '🔊';
-                speakText(scenesData[currentSceneIndex].speech);
+        function toggleFullscreen() {
+            const el = document.getElementById('videoContainer');
+            if (!document.fullscreenElement) {
+                if (el.requestFullscreen) el.requestFullscreen();
+                else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
             } else {
-                icon.innerText = '🔇';
-                if (window.speechSynthesis) window.speechSynthesis.cancel();
+                if (document.exitFullscreen) document.exitFullscreen();
             }
         }
 
-        function speakText(text) {
-            if (!('speechSynthesis' in window)) return;
-            window.speechSynthesis.cancel();
-            
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'tr-TR';
-            utterance.rate = 1.0;
-            window.speechSynthesis.speak(utterance);
-        }
+        // Spacebar tuşu ile duraklat/oynat
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                togglePlayPause();
+            } else if (e.code === 'ArrowRight') {
+                nextScene();
+            } else if (e.code === 'ArrowLeft') {
+                prevScene();
+            }
+        });
 
-        window.onload = initVideo;
+        // Başlat
+        timerInterval = setInterval(updateProgress, 100);
+        updateScene();
     </script>
 </body>
 </html>
