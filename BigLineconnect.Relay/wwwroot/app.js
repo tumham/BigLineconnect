@@ -1,4 +1,4 @@
-﻿var socket = null;
+var socket = null;
 var connected = false;
 var currentMouseMode = 'left'; // 'left' or 'right'
 
@@ -622,41 +622,41 @@ if (cadBtn) {
     cadBtn.addEventListener('touchstart', triggerCad);
 }
 
-// On-Screen Touch Numpad Actions with Instant Touch Feedback & Auto-Submit
+// On-Screen Touch Numpad Actions with Instant Touch Feedback & Debounced Auto-Submit
+let lastNumpadTapTime = 0;
 document.querySelectorAll('.numpad-btn').forEach(btn => {
     const handlePress = (e) => {
         if (e) {
             e.preventDefault();
             e.stopPropagation();
         }
+        const now = Date.now();
+        if (now - lastNumpadTapTime < 140) return;
+        lastNumpadTapTime = now;
+
         btn.classList.add('pressed');
-        setTimeout(() => btn.classList.remove('pressed'), 150);
+        setTimeout(() => btn.classList.remove('pressed'), 120);
 
         const val = btn.getAttribute('data-val');
-        if (!accessPasswordInput) return;
+        const inp = document.getElementById('access-password-input');
+        if (!inp) return;
 
         if (val === 'clear') {
-            accessPasswordInput.value = '';
+            inp.value = '';
         } else if (val === 'backspace') {
-            accessPasswordInput.value = accessPasswordInput.value.slice(0, -1);
-        } else {
-            if (accessPasswordInput.value.length < 6) {
-                accessPasswordInput.value += val;
-            }
+            inp.value = inp.value.slice(0, -1);
+        } else if (val && inp.value.length < 6) {
+            inp.value += val;
         }
 
-        // Auto-Submit when 6th digit is pressed
-        if (accessPasswordInput.value.length === 6) {
+        // Auto-Submit when 6th digit is entered
+        if (inp.value.length === 6) {
             setTimeout(sendPassword, 180);
         }
     };
 
     btn.addEventListener('touchstart', handlePress, { passive: false });
-    btn.addEventListener('click', (e) => {
-        if (e.detail !== 0 && !('ontouchstart' in window)) {
-            handlePress(e);
-        }
-    });
+    btn.addEventListener('click', handlePress);
 });
 
 // Password submit actions
@@ -669,12 +669,12 @@ function sendPassword() {
     const pass = inputElem.value.replace(/\D/g, '');
 
     if (!pass || pass.length === 0) {
-        showToast('LÃ¼tfen uzaktaki bilgisayarÄ±n 6 haneli ÅŸifresini giriniz.', 'error');
+        showToast('Lütfen uzaktaki bilgisayarın 6 haneli şifresini giriniz.', 'error');
         return;
     }
 
     if (!activeSocket || activeSocket.readyState !== WebSocket.OPEN) {
-        showToast('Sunucuya yeniden baÄŸlanÄ±lÄ±yor...', 'info');
+        showToast('Sunucuya yeniden bağlanılıyor...', 'info');
         if (typeof window.doConnect === 'function') {
             window.doConnect();
         }
@@ -683,17 +683,17 @@ function sendPassword() {
 
     if (btnElem) {
         btnElem.disabled = true;
-        btnElem.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>DoÄŸrulanÄ±yor...</span>';
+        btnElem.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Doğrulanıyor...</span>';
     }
 
     activeSocket.send("AUTH_PASS:" + pass);
     activeSocket.send(pass);
-    showToast('Åifre gÃ¶nderildi, doÄŸrulanÄ±yor...', 'info');
+    showToast('Şifre gönderildi, doğrulanıyor...', 'info');
 
     setTimeout(() => {
         if (btnElem) {
             btnElem.disabled = false;
-            btnElem.innerHTML = 'DoÄŸrula & BaÄŸlan <i class="fa-solid fa-arrow-right-to-bracket"></i>';
+            btnElem.innerHTML = 'Doğrula & Bağlan <i class="fa-solid fa-arrow-right-to-bracket"></i>';
         }
     }, 3000);
 }
@@ -1158,11 +1158,11 @@ let fileUploadInProgress = false;
 
 function triggerFileTransfer() {
     if (!connected || !socket || socket.readyState !== WebSocket.OPEN) {
-        showToast('LÃ¼tfen Ã¶nce bir cihaza baÄŸlanÄ±n.', 'error');
+        showToast('Lütfen önce bir cihaza bağlanın.', 'error');
         return;
     }
     if (fileUploadInProgress) {
-        showToast('Zaten aktif bir dosya gÃ¶nderimi var.', 'warning');
+        showToast('Zaten aktif bir dosya gönderimi var.', 'warning');
         return;
     }
     let fileInput = document.getElementById('file-transfer-input');
@@ -1191,7 +1191,7 @@ async function handleFileSelected(event) {
         progressContainer.style.setProperty('display', 'flex', 'important');
     }
     if (progressText) {
-        progressText.innerText = 'Dosya GÃ¶nderiliyor: %0';
+        progressText.innerText = 'Dosya Gönderiliyor: %0';
     }
     if (progressBar) {
         progressBar.style.width = '0%';
@@ -1248,7 +1248,7 @@ async function handleFileSelected(event) {
             
             const percent = Math.round((offset / totalSize) * 100);
             if (progressText) {
-                progressText.innerText = 'Dosya GÃ¶nderiliyor: %' + percent;
+                progressText.innerText = 'Dosya Gönderiliyor: %' + percent;
             }
             if (progressBar) {
                 progressBar.style.width = percent + '%';
@@ -1269,11 +1269,11 @@ async function handleFileSelected(event) {
         };
         socket.send(JSON.stringify(batchEnd));
         
-        showToast('"' + fileName + '" baÅŸarÄ±yla gÃ¶nderildi!', 'success');
+        showToast('"' + fileName + '" başarıyla gönderildi!', 'success');
         
     } catch (e) {
         console.error('File upload error:', e);
-        showToast('Dosya gÃ¶nderiminde hata oluÅŸtu!', 'error');
+        showToast('Dosya gönderiminde hata oluştu!', 'error');
         try {
             socket.send(JSON.stringify({ type: "transfer_cancel" }));
         } catch (_) {}
@@ -1328,22 +1328,22 @@ function updateTrialBadgeUI(data) {
         badge.style.borderColor = '#00e5ff';
         badge.style.color = '#00e5ff';
         badge.style.background = 'linear-gradient(135deg, rgba(0,229,255,0.2), rgba(213,0,249,0.2))';
-        textElem.innerHTML = 'ğŸ’ LisanslÄ± SÃ¼rÃ¼m (1 YÄ±l)';
+        textElem.innerHTML = '’ Lisanslı Sürüm (1 Yıl)';
     } else if (data.Status === 'TRIAL_ACTIVE') {
         badge.style.borderColor = '#10b981';
         badge.style.color = '#10b981';
         badge.style.background = 'linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(0, 229, 255, 0.2))';
-        textElem.innerHTML = `ğŸŸ¢ 30 GÃ¼nlÃ¼k Deneme (${data.DaysRemaining} GÃ¼n KaldÄ±)`;
+        textElem.innerHTML = `🟢 30 Günlük Deneme (${data.DaysRemaining} Gün Kaldı)`;
     } else if (data.Status === 'GRACE_PERIOD') {
         badge.style.borderColor = '#f59e0b';
         badge.style.color = '#f59e0b';
         badge.style.background = 'linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(239, 68, 68, 0.15))';
-        textElem.innerHTML = `ğŸŸ¡ Uzatma: ${data.GraceDaysRemaining} GÃ¼n KaldÄ± (BugÃ¼n ${data.TodaySessionsUsed}/3)`;
+        textElem.innerHTML = `🟡 Uzatma: ${data.GraceDaysRemaining} Gün Kaldı (Bugün ${data.TodaySessionsUsed}/3)`;
     } else if (data.Status === 'EXPIRED') {
         badge.style.borderColor = '#ef4444';
         badge.style.color = '#ef4444';
         badge.style.background = 'rgba(239, 68, 68, 0.2)';
-        textElem.innerHTML = 'ğŸ”´ SÃ¼re Doldu (LisanslayÄ±n)';
+        textElem.innerHTML = '🔴 Süre Doldu (Lisanslayın)';
     }
 }
 
@@ -1384,7 +1384,7 @@ async function submitInstantCardOrder(e) {
     const btn = document.getElementById('card-submit-btn');
     if (btn) {
         btn.disabled = true;
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Ã–deme Ä°ÅŸleniyor...</span>';
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Ödeme İşleniyor...</span>';
     }
 
     const name = document.getElementById('card-name').value.trim();
@@ -1414,20 +1414,20 @@ async function submitInstantCardOrder(e) {
             const keyDisplay = document.getElementById('generated-license-key');
             if (keyDisplay) keyDisplay.innerText = data.licenseKey;
 
-            showToast('ğŸ‰ Tebrikler! 1 YÄ±llÄ±k LisansÄ±nÄ±z Aktif Edildi.', 'success');
+            showToast('‰ Tebrikler! 1 Yıllık Lisansınız Aktif Edildi.', 'success');
             await fetchTrialStatus();
         } else {
-            showToast('Hata: ' + (data.message || 'Ã–deme tamamlanamadÄ±.'), 'error');
+            showToast('Hata: ' + (data.message || 'Ödeme tamamlanamadı.'), 'error');
             if (btn) {
                 btn.disabled = false;
-                btn.innerHTML = '<i class="fa-solid fa-lock"></i> <span>â‚º1.490 TL GÃ¼venli Ã–de & LisansÄ± Hemen Al</span>';
+                btn.innerHTML = '<i class="fa-solid fa-lock"></i> <span>₺1.490 TL Güvenli Öde & Lisansı Hemen Al</span>';
             }
         }
     } catch(err) {
-        showToast('BaÄŸlantÄ± hatasÄ±: ' + err.message, 'error');
+        showToast('Bağlantı hatası: ' + err.message, 'error');
         if (btn) {
             btn.disabled = false;
-            btn.innerHTML = '<i class="fa-solid fa-lock"></i> <span>â‚º1.490 TL GÃ¼venli Ã–de & LisansÄ± Hemen Al</span>';
+            btn.innerHTML = '<i class="fa-solid fa-lock"></i> <span>₺1.490 TL Güvenli Öde & Lisansı Hemen Al</span>';
         }
     }
 }
@@ -1463,7 +1463,7 @@ function openTrialOrLicenseModal() {
         return;
     }
     if (currentTrialStatus.Status === 'LICENSED') {
-        showToast('ğŸ’ 1 YÄ±llÄ±k LisanslÄ± Ticari SÃ¼rÃ¼mÃ¼nÃ¼z Aktiftir! (BitiÅŸ: ' + (currentTrialStatus.LicenseExpiresAt || 'SÃ¼resiz') + ')', 'success');
+        showToast('’ 1 Yıllık Lisanslı Ticari Sürümünüz Aktiftir! (Bitiş: ' + (currentTrialStatus.LicenseExpiresAt || 'Süresiz') + ')', 'success');
     } else if (currentTrialStatus.Status === 'EXPIRED') {
         const m = document.getElementById('trial-expired-modal');
         if (m) m.classList.remove('hidden');
@@ -1480,12 +1480,12 @@ async function submitLicenseActivation() {
     const inp = document.getElementById('license-key-input');
     const key = inp ? inp.value.trim() : '';
     if (!key) {
-        showToast('LÃ¼tfen bir lisans anahtarÄ± girin!', 'warning');
+        showToast('Lütfen bir lisans anahtarı girin!', 'warning');
         return;
     }
 
     try {
-        showToast('Lisans anahtarÄ± doÄŸrulanÄ±yor...', 'info');
+        showToast('Lisans anahtarı doğrulanıyor...', 'info');
         const res = await fetch('/api/license/activate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -1497,14 +1497,14 @@ async function submitLicenseActivation() {
 
         const data = await res.json();
         if (data.success) {
-            showToast('âœ… ' + data.message, 'success');
+            showToast('✅ ' + data.message, 'success');
             closeLicenseActivationModal();
             await fetchTrialStatus();
         } else {
-            showToast('âŒ ' + (data.message || 'GeÃ§ersiz lisans anahtarÄ±!'), 'error');
+            showToast('❌ ' + (data.message || 'Geçersiz lisans anahtarı!'), 'error');
         }
     } catch(err) {
-        showToast('BaÄŸlantÄ± hatasÄ±: ' + err.message, 'error');
+        showToast('Bağlantı hatası: ' + err.message, 'error');
     }
 }
 window.submitLicenseActivation = submitLicenseActivation;
