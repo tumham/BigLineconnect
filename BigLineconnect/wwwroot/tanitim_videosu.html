@@ -13,11 +13,12 @@
     <style>
         :root {
             --bg-dark: #07090e;
-            --panel-bg: rgba(13, 18, 30, 0.92);
+            --panel-bg: rgba(13, 18, 30, 0.94);
             --accent-cyan: #00e5ff;
             --accent-purple: #d500f9;
             --accent-green: #2ecc71;
             --accent-gold: #f39c12;
+            --accent-red: #ff3366;
             --text-main: #ffffff;
             --text-sub: #94a3b8;
             --border-glow: rgba(0, 229, 255, 0.35);
@@ -50,7 +51,7 @@
 
         .video-container {
             width: 100%;
-            max-width: 1050px;
+            max-width: 1080px;
             background: var(--panel-bg);
             border: 1.5px solid var(--border-glow);
             border-radius: 24px;
@@ -136,11 +137,11 @@
         /* Video Stage Frame */
         .video-stage {
             position: relative;
-            min-height: 520px;
+            min-height: 530px;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 40px;
+            padding: 35px 40px;
             overflow: hidden;
         }
 
@@ -174,27 +175,33 @@
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            padding: 6px 16px;
+            padding: 6px 18px;
             border-radius: 30px;
-            font-size: 0.8rem;
+            font-size: 0.82rem;
             font-weight: 800;
             letter-spacing: 1.5px;
             text-transform: uppercase;
-            margin-bottom: 18px;
+            margin-bottom: 16px;
             background: rgba(255, 255, 255, 0.06);
             border: 1px solid rgba(255, 255, 255, 0.15);
         }
 
         .scene-title {
-            font-size: 2.6rem;
+            font-size: 2.5rem;
             font-weight: 900;
-            line-height: 1.15;
-            margin-bottom: 14px;
-            max-width: 850px;
+            line-height: 1.18;
+            margin-bottom: 12px;
+            max-width: 880px;
         }
 
         .gradient-text-cyan {
             background: linear-gradient(135deg, #00e5ff 0%, #d500f9 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .gradient-text-red {
+            background: linear-gradient(135deg, #ff3366 0%, #ff9900 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
@@ -212,11 +219,11 @@
         }
 
         .scene-desc {
-            font-size: 1.15rem;
+            font-size: 1.12rem;
             color: var(--text-sub);
-            max-width: 720px;
-            line-height: 1.6;
-            margin-bottom: 30px;
+            max-width: 760px;
+            line-height: 1.55;
+            margin-bottom: 25px;
         }
 
         /* Feature Showcase Grid */
@@ -225,8 +232,8 @@
             grid-template-columns: repeat(3, 1fr);
             gap: 16px;
             width: 100%;
-            max-width: 900px;
-            margin-top: 10px;
+            max-width: 940px;
+            margin-top: 5px;
         }
 
         .f-card {
@@ -266,7 +273,66 @@
             line-height: 1.45;
         }
 
-        /* Device Badges row for Scene 3 */
+        /* Destek Talebi Canlı Canlandırma Kutusu (Sahne 2) */
+        .ticket-simulation-box {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            width: 100%;
+            max-width: 860px;
+            background: rgba(15, 23, 42, 0.8);
+            border: 2px solid var(--accent-red);
+            border-radius: 20px;
+            padding: 16px 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 0 25px rgba(255, 51, 102, 0.25);
+        }
+
+        .ticket-client-btn {
+            background: linear-gradient(135deg, #ff3366, #ff6b8b);
+            color: #fff;
+            padding: 14px 24px;
+            border-radius: 14px;
+            font-weight: 900;
+            font-size: 1.05rem;
+            box-shadow: 0 4px 20px rgba(255, 51, 102, 0.5);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: pulseBtn 1.8s infinite;
+        }
+
+        @keyframes pulseBtn {
+            0% { transform: scale(1); box-shadow: 0 0 10px rgba(255, 51, 102, 0.4); }
+            50% { transform: scale(1.04); box-shadow: 0 0 25px rgba(255, 51, 102, 0.8); }
+            100% { transform: scale(1); box-shadow: 0 0 10px rgba(255, 51, 102, 0.4); }
+        }
+
+        .ticket-arrow {
+            font-size: 1.8rem;
+            color: var(--accent-cyan);
+            animation: slideRight 1.5s infinite;
+        }
+
+        @keyframes slideRight {
+            0% { transform: translateX(-5px); opacity: 0.5; }
+            50% { transform: translateX(5px); opacity: 1; }
+            100% { transform: translateX(-5px); opacity: 0.5; }
+        }
+
+        .ticket-expert-card {
+            background: rgba(0, 229, 255, 0.1);
+            border: 1px solid var(--accent-cyan);
+            border-radius: 14px;
+            padding: 10px 18px;
+            text-align: left;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        /* Device Badges row */
         .device-pill-row {
             display: flex;
             justify-content: center;
@@ -368,16 +434,16 @@
 
         .scene-pills {
             display: flex;
-            gap: 8px;
+            gap: 6px;
         }
 
         .scene-pill {
-            padding: 8px 14px;
+            padding: 8px 12px;
             border-radius: 10px;
             background: rgba(255, 255, 255, 0.04);
             border: 1px solid rgba(255, 255, 255, 0.1);
             color: var(--text-sub);
-            font-size: 0.82rem;
+            font-size: 0.8rem;
             font-weight: 700;
             cursor: pointer;
             transition: all 0.2s ease;
@@ -413,7 +479,7 @@
             align-items: center;
             gap: 12px;
             margin-top: 15px;
-            max-width: 800px;
+            max-width: 840px;
             width: 100%;
         }
 
@@ -442,6 +508,7 @@
             .feature-cards { grid-template-columns: 1fr; }
             .scene-pills { display: none; }
             .video-stage { padding: 20px; min-height: 480px; }
+            .ticket-simulation-box { flex-direction: column; }
         }
     </style>
 </head>
@@ -499,42 +566,89 @@
                 </div>
             </div>
 
-            <!-- SAHNE 2: KURULUMSUZ & PORT AÇMASIZ ERİŞİM -->
+            <!-- SAHNE 2: DESTEK TALEBİ OLUŞTUR (BAŞROL ÖZELLİK) -->
             <div class="scene" id="scene-1">
-                <div class="scene-tag" style="color: var(--accent-green); border-color: var(--accent-green);">
-                    <i class="fa-solid fa-circle-check"></i> SAHNE 2 • ZAHMETSİZ VE ANINDA
+                <div class="scene-tag" style="color: var(--accent-red); border-color: var(--accent-red); background: rgba(255, 51, 102, 0.1);">
+                    <i class="fa-solid fa-bell"></i> SAHNE 2 • İHTİLAL YARATAN ÖZELLİK: TEK TIKLA DESTEK
                 </div>
-                <h1 class="scene-title">Kurulum Yok, Modem Ayarı Yok:<br><span class="gradient-text-green">Tek Tıkla Doğrudan Bağlanın</span></h1>
+                <h1 class="scene-title">ID ve Şifre Hecelemeye Son:<br><span class="gradient-text-red">Tek Tıkla Destek Talebi Oluştur!</span></h1>
+                <p class="scene-desc">Telefonda "ID kaçtı? Şifre sıfır mı o mu?" işkencesine son verin. Müşteriniz tek bir butona basar; talep anında uzmanınızın ekranına düşer.</p>
+
+                <!-- Canlı Simülasyon Görseli -->
+                <div class="ticket-simulation-box">
+                    <div class="ticket-client-btn">
+                        <i class="fa-solid fa-headset"></i> Destek Talebi Oluştur
+                    </div>
+                    <i class="fa-solid fa-arrow-right-long ticket-arrow"></i>
+                    <div class="ticket-expert-card">
+                        <i class="fa-solid fa-desktop" style="font-size: 1.8rem; color: var(--accent-cyan);"></i>
+                        <div>
+                            <div style="font-weight: 800; font-size: 0.95rem; color: #fff;">🔔 Yeni Canlı Talep Geldi!</div>
+                            <div style="font-size: 0.78rem; color: var(--accent-green); font-weight: 700;">Ahmet Bey (Muhasebe) • Tek Tıkla Bağlan ➔</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="feature-cards">
+                    <div class="f-card">
+                        <div class="f-card-icon" style="color: var(--accent-red);"><i class="fa-solid fa-phone-slash"></i></div>
+                        <h4>Sıfır Telefon Trafiği</h4>
+                        <p>Müşteri ID okumakla, siz de şifre girmekle vakit kaybetmezsiniz. Tek tıkla talep iletilir.</p>
+                    </div>
+                    <div class="f-card">
+                        <div class="f-card-icon" style="color: var(--accent-cyan);"><i class="fa-solid fa-laptop-medical"></i></div>
+                        <h4>Uzman Ekranına Canlı Düşer</h4>
+                        <p>Teknik destek ekibinizin paneline firma adı ve makine bilgisiyle anında bildirim gelir.</p>
+                    </div>
+                    <div class="f-card">
+                        <div class="f-card-icon" style="color: var(--accent-green);"><i class="fa-solid fa-rotate"></i></div>
+                        <h4>0.1 Sn Otomatik Senkronizasyon</h4>
+                        <p>Uzman bağlandığı anda talep butonu otomatik sıfırlanır, kuyruk karışıklığı önlenir.</p>
+                    </div>
+                </div>
+
+                <div class="subtitle-box">
+                    <i class="fa-solid fa-volume-high voice-icon"></i>
+                    <div class="subtitle-text" id="sub-1">"Artık telefonda dakikalarca ID ve şifre hecelemeyin. Müşteriniz 'Destek Talebi Oluştur' butonuna tıklar, talep doğrudan uzmanın ekranına canlı olarak düşer!"</div>
+                </div>
+            </div>
+
+            <!-- SAHNE 3: KURULUMSUZ & PORT AÇMASIZ ERİŞİM -->
+            <div class="scene" id="scene-2">
+                <div class="scene-tag" style="color: var(--accent-green); border-color: var(--accent-green);">
+                    <i class="fa-solid fa-circle-check"></i> SAHNE 3 • ZAHMETSİZ VE ANINDA
+                </div>
+                <h1 class="scene-title">Kurulum Yok, Modem Ayarı Yok:<br><span class="gradient-text-green">6 Haneli PIN ile Anında Masaüstü</span></h1>
                 <p class="scene-desc">Müşterinize karmaşık programlar kurdurmayın. İndirip çalıştırdığı anda 6 haneli şifreyle saniyeler içinde masaüstündesiniz.</p>
 
                 <div class="feature-cards">
                     <div class="f-card">
                         <div class="f-card-icon" style="color: var(--accent-green);"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
                         <h4>Tak-Çalıştır Mimari</h4>
-                        <p>Modemden port açma veya güvenlik duvarı izinleriyle uğraşmaya son.</p>
+                        <p>Modemden port açma veya Windows güvenlik duvarı izinleriyle uğraşmaya son.</p>
                     </div>
                     <div class="f-card">
                         <div class="f-card-icon" style="color: var(--accent-cyan);"><i class="fa-solid fa-shield-halved"></i></div>
                         <h4>6 Haneli Güvenli PIN</h4>
-                        <p>Her oturumda değişen veya sabitlenen yüksek güvenlikli erişim şifresi.</p>
+                        <p>Her oturumda değişen veya isteğe göre sabitlenen yüksek güvenlikli erişim şifresi.</p>
                     </div>
                     <div class="f-card">
                         <div class="f-card-icon" style="color: var(--accent-gold);"><i class="fa-solid fa-gift"></i></div>
                         <h4>İlk 1 Ay %100 Ücretsiz</h4>
-                        <p>Kredi kartı gerekmez. İndirin, deneyin ve hızın tadını anında çıkarın.</p>
+                        <p>Kredi kartı gerekmez. İndirin, deneyin ve sınırsız hızın tadını anında çıkarın.</p>
                     </div>
                 </div>
 
                 <div class="subtitle-box">
                     <i class="fa-solid fa-volume-high voice-icon"></i>
-                    <div class="subtitle-text" id="sub-1">"Müşteriniz hiçbir kurulum yapmadan sadece dosyayı açar; siz de 6 haneli şifreyi girip tek tıkla bağlanırsınız."</div>
+                    <div class="subtitle-text" id="sub-2">"Müşteriniz hiçbir kurulum yapmadan sadece dosyayı açar; siz de 6 haneli PIN'i girip doğrudan masaüstüne bağlanırsınız."</div>
                 </div>
             </div>
 
-            <!-- SAHNE 3: TAM MOBİL VE WEB ÖZGÜRLÜĞÜ -->
-            <div class="scene" id="scene-2">
+            <!-- SAHNE 4: TAM MOBİL VE WEB ÖZGÜRLÜĞÜ -->
+            <div class="scene" id="scene-3">
                 <div class="scene-tag" style="color: var(--accent-purple); border-color: var(--accent-purple);">
-                    <i class="fa-solid fa-mobile-screen"></i> SAHNE 3 • SINIRSIZ CİHAZ ÖZGÜRLÜĞÜ
+                    <i class="fa-solid fa-mobile-screen"></i> SAHNE 4 • SINIRSIZ CİHAZ ÖZGÜRLÜĞÜ
                 </div>
                 <h1 class="scene-title">Ofiste, Yolda, Tatilde:<br><span class="gradient-text-cyan">Cebinizdeki Telefondan Yönetin</span></h1>
                 <p class="scene-desc">Sadece bilgisayardan değil; iPhone, iPad, Android veya herhangi bir web tarayıcısından tek tıkla uzak bilgisayara bağlanın.</p>
@@ -550,12 +664,12 @@
                     <div class="f-card">
                         <div class="f-card-icon" style="color: var(--accent-cyan);"><i class="fa-solid fa-keyboard"></i></div>
                         <h4>Dokunmatik Sanal Numpad</h4>
-                        <p>Telefondan şifre girerken parmak dostu dokunmatik tuş takımı.</p>
+                        <p>Telefondan şifre girerken parmak dostu dokunmatik tuş takımı desteği.</p>
                     </div>
                     <div class="f-card">
                         <div class="f-card-icon" style="color: var(--accent-purple);"><i class="fa-solid fa-hand-pointer"></i></div>
                         <h4>Doğal Çift Tıklama & Sürükleme</h4>
-                        <p>Parmak hareketlerinizle masaüstü pencerelerini kolayca taşıyın ve büyütün.</p>
+                        <p>Parmak hareketlerinizle masaüstü pencerelerini kolayca taşıyın ve yönetin.</p>
                     </div>
                     <div class="f-card">
                         <div class="f-card-icon" style="color: var(--accent-green);"><i class="fa-solid fa-magnifying-glass-plus"></i></div>
@@ -566,14 +680,14 @@
 
                 <div class="subtitle-box">
                     <i class="fa-solid fa-volume-high voice-icon"></i>
-                    <div class="subtitle-text" id="sub-2">"İster ofis masanızdan, ister tatilde cebinizdeki iPhone veya Android telefonunuzdan acil teknik müdahaleleri saniyeler içinde yapın."</div>
+                    <div class="subtitle-text" id="sub-3">"İster ofis masanızdan, ister tatilde cebinizdeki iPhone veya Android telefonunuzdan acil teknik müdahaleleri saniyeler içinde yapın."</div>
                 </div>
             </div>
 
-            <!-- SAHNE 4: ARKA PLAN (UNATTENDED) 7/24 ERİŞİM -->
-            <div class="scene" id="scene-3">
+            <!-- SAHNE 5: ARKA PLAN (UNATTENDED) 7/24 ERİŞİM -->
+            <div class="scene" id="scene-4">
                 <div class="scene-tag" style="color: var(--accent-gold); border-color: var(--accent-gold);">
-                    <i class="fa-solid fa-clock-rotate-left"></i> SAHNE 4 • GECE-GÜNDÜZ KESİNTİSİZ DESTEK
+                    <i class="fa-solid fa-clock-rotate-left"></i> SAHNE 5 • GECE-GÜNDÜZ KESİNTİSİZ DESTEK
                 </div>
                 <h1 class="scene-title">Müşteri Masasında Yokken Bile:<br><span class="gradient-text-gold">7/24 Arka Planda Yönetim</span></h1>
                 <p class="scene-desc">Mesai saatleri dışında güncelleme yapmanız mı gerekiyor? B-Connect Unattended servis moduyla şifreli olarak gece de erişin.</p>
@@ -591,21 +705,21 @@
                     </div>
                     <div class="f-card">
                         <div class="f-card-icon" style="color: var(--accent-green);"><i class="fa-solid fa-lock"></i></div>
-                        <h4>Uçtan Uca Şifreleme</h4>
-                        <p>Tüm veri transferi 256-bit bankacılık standardında güvenle şifrelenir.</p>
+                        <h4>Uçtan Uca 256-bit Güvenlik</h4>
+                        <p>Tüm veri transferi bankacılık standardında güvenle şifrelenir.</p>
                     </div>
                 </div>
 
                 <div class="subtitle-box">
                     <i class="fa-solid fa-volume-high voice-icon"></i>
-                    <div class="subtitle-text" id="sub-3">"Müşterinizin başında beklemesine gerek yok. 7/24 kesintisiz arka plan erişimi ile gece bakımlarını ve güncellemelerini zahmetsizce tamamlayın."</div>
+                    <div class="subtitle-text" id="sub-4">"Müşterinizin başında beklemesine gerek yok. 7/24 kesintisiz arka plan erişimi ile gece bakımlarını ve güncellemelerini zahmetsizce tamamlayın."</div>
                 </div>
             </div>
 
-            <!-- SAHNE 5: DOSYA TRANSFERİ & KURUMSAL GÜÇ -->
-            <div class="scene" id="scene-4">
+            <!-- SAHNE 6: KURUMSAL BAYİ PORTALI & YABANCI PROGRAMLARA SON -->
+            <div class="scene" id="scene-5">
                 <div class="scene-tag" style="color: var(--accent-cyan); border-color: var(--accent-cyan);">
-                    <i class="fa-solid fa-briefcase"></i> SAHNE 5 • YABANCI YAZILIMLARA SON!
+                    <i class="fa-solid fa-briefcase"></i> SAHNE 6 • YABANCI YAZILIMLARA SON!
                 </div>
                 <h1 class="scene-title">Fahiş AnyDesk Faturalarına Elveda:<br><span class="gradient-text-cyan">Kendi Bayi & Ekip Yönetiminiz</span></h1>
                 <p class="scene-desc">Süre kısıtlaması, aniden kopan bağlantılar ve dövizle ödenen astronomik lisanslara son. Yerli ve bağımsız altyapıyla tam özgürlük.</p>
@@ -619,7 +733,7 @@
                     <div class="f-card">
                         <div class="f-card-icon" style="color: var(--accent-purple);"><i class="fa-solid fa-users-gear"></i></div>
                         <h4>Çoklu Operatör & Bayi Portalı</h4>
-                        <p>Teknik destek personelinizi gruplayın, eşzamanlı kanal ve kullanım raporlarını izleyin.</p>
+                        <p>Teknik destek personelinizi gruplayın, eşzamanlı kanal ve kota raporlarını izleyin.</p>
                     </div>
                     <div class="f-card">
                         <div class="f-card-icon" style="color: var(--accent-green);"><i class="fa-solid fa-handshake"></i></div>
@@ -630,7 +744,7 @@
 
                 <div class="subtitle-box">
                     <i class="fa-solid fa-volume-high voice-icon"></i>
-                    <div class="subtitle-text" id="sub-4">"B-Connect ile teknik destek ekibinizi tek merkezden yönetin; fahiş yabancı yazılım faturalarından kurtulup işletmenize tam kontrol kazandırın."</div>
+                    <div class="subtitle-text" id="sub-5">"B-Connect ile teknik destek ekibinizi tek merkezden yönetin; fahiş yabancı yazılım faturalarından kurtulup işletmenize tam kontrol kazandırın."</div>
                 </div>
             </div>
 
@@ -648,24 +762,25 @@
                     <button class="ctrl-btn" onclick="prevScene()" title="Önceki Sahne"><i class="fa-solid fa-backward-step"></i></button>
                     <button class="ctrl-btn play-btn" id="playPauseBtn" onclick="togglePlayPause()" title="Oynat / Duraklat"><i class="fa-solid fa-pause"></i></button>
                     <button class="ctrl-btn" onclick="nextScene()" title="Sonraki Sahne"><i class="fa-solid fa-forward-step"></i></button>
-                    <div class="timer-display" id="timeDisplay">00:00 / 00:35</div>
+                    <div class="timer-display" id="timeDisplay">00:00 / 00:42</div>
                 </div>
 
                 <div class="scene-pills">
                     <div class="scene-pill active" onclick="jumpToScene(0)"><i class="fa-solid fa-gauge"></i> 1. Hız & 60 FPS</div>
-                    <div class="scene-pill" onclick="jumpToScene(1)"><i class="fa-solid fa-wand-magic"></i> 2. Kurulumsuz</div>
-                    <div class="scene-pill" onclick="jumpToScene(2)"><i class="fa-solid fa-mobile"></i> 3. Mobil & Web</div>
-                    <div class="scene-pill" onclick="jumpToScene(3)"><i class="fa-solid fa-moon"></i> 4. 7/24 Destek</div>
-                    <div class="scene-pill" onclick="jumpToScene(4)"><i class="fa-solid fa-crown"></i> 5. Bayi & Avantaj</div>
+                    <div class="scene-pill" onclick="jumpToScene(1)" style="border-color: rgba(255,51,102,0.4);"><i class="fa-solid fa-bell" style="color: var(--accent-red);"></i> 2. Canlı Destek Talebi</div>
+                    <div class="scene-pill" onclick="jumpToScene(2)"><i class="fa-solid fa-wand-magic"></i> 3. Kurulumsuz PIN</div>
+                    <div class="scene-pill" onclick="jumpToScene(3)"><i class="fa-solid fa-mobile"></i> 4. Mobil & Web</div>
+                    <div class="scene-pill" onclick="jumpToScene(4)"><i class="fa-solid fa-moon"></i> 5. 7/24 Destek</div>
+                    <div class="scene-pill" onclick="jumpToScene(5)"><i class="fa-solid fa-crown"></i> 6. Bayi & Avantaj</div>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        const totalScenes = 5;
+        const totalScenes = 6;
         const sceneDuration = 7; // Her sahne 7 saniye
-        const totalDuration = totalScenes * sceneDuration; // 35 saniye toplam
+        const totalDuration = totalScenes * sceneDuration; // 42 saniye toplam
         
         let currentScene = 0;
         let isPlaying = true;
