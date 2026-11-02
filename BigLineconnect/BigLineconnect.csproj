@@ -25,6 +25,7 @@
     <Copyright>Copyright (c) 2026 BIGUS BILISIM GELISTIRME VE UYGULAMA SISTEMLERI LIMITED SIRKETI. Tum Haklari Saklidir.</Copyright>
     <Description>BigLineconnect Kurumsal Uzaktan Masaustu Baglantisi ve Destek Yazilimi</Description>
     <ApplicationIcon>icon.ico</ApplicationIcon>
+      <DefaultItemExcludes>$(DefaultItemExcludes);publish_master\**</DefaultItemExcludes>
   </PropertyGroup>
 
   <ItemGroup>

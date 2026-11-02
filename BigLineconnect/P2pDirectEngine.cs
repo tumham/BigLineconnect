@@ -20,6 +20,7 @@ namespace BigLineconnect
         private static CancellationTokenSource? _cts;
 
         public static bool IsP2pConnected => _isP2pConnected;
+        public static bool IsLanDirect { get; set; } = false;
         public static IPEndPoint? RemoteEndpoint => _remoteEndpoint;
 
         public static ushort LocalUdpPort { get; private set; } = 0;

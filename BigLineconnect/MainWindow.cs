@@ -83,6 +83,8 @@ namespace BigLineconnect
         private System.Windows.Forms.Timer? _ticketsTimer;
         private Button? _btnSupport;
         private Button? _btnMyTickets;
+        private Button? _btnGramophone;
+        private static int _selectedMelodyIndex = 1;
         public bool _hasActiveSubmittedTicket = false;
         private bool _hasAutoMinimizedForRemoteSession = false;
         private bool _userManuallyRestored = false;
@@ -330,6 +332,20 @@ namespace BigLineconnect
                 }
             };
             this.Controls.Add(btnInfo);
+
+            LoadMelodySetting();
+            _btnGramophone = new Button
+            {
+                Text = GetMelodyButtonText(),
+                Location = new Point(285, 22),
+                Size = new Size(150, 28),
+                Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
+                Cursor = Cursors.Hand,
+                Anchor = AnchorStyles.Top | AnchorStyles.Right
+            };
+            UpdateGramophoneButtonUI();
+            _btnGramophone.Click += (s, e) => ShowMelodyMenu(_btnGramophone);
+            this.Controls.Add(_btnGramophone);
 
             // 1. Relay Server config group (Positioned inside Bulut Sunucu Ayarları at 20, 108)
             _serverGroup = new Panel
@@ -1928,26 +1944,207 @@ namespace BigLineconnect
         [System.Runtime.InteropServices.DllImport("user32.dll", SetLastError = true)]
         public static extern bool MessageBeep(uint uType);
 
-        private void PlayNewTicketNotificationSound()
+        private static string GetMelodyConfigPath()
         {
+            try
+            {
+                string dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "BigLineconnect");
+                if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
+                return Path.Combine(dir, "melody.cfg");
+            }
+            catch
+            {
+                return "melody.cfg";
+            }
+        }
+
+        private static void LoadMelodySetting()
+        {
+            try
+            {
+                string path = GetMelodyConfigPath();
+                if (File.Exists(path))
+                {
+                    string txt = File.ReadAllText(path).Trim();
+                    if (int.TryParse(txt, out int val) && val >= 0 && val <= 5)
+                    {
+                        _selectedMelodyIndex = val;
+                    }
+                }
+            }
+            catch { }
+        }
+
+        private static void SaveMelodySetting(int index)
+        {
+            try
+            {
+                _selectedMelodyIndex = index;
+                string path = GetMelodyConfigPath();
+                File.WriteAllText(path, index.ToString());
+            }
+            catch { }
+        }
+
+        private string GetMelodyButtonText()
+        {
+            return _selectedMelodyIndex switch
+            {
+                0 => "🔕 Melodi: Pasif",
+                1 => "🎷 Gramofon (Klasik)",
+                2 => "🔔 Kristal Çan",
+                3 => "🎻 Nostaljik Ezgi",
+                4 => "🎺 Trompet Fanfar",
+                5 => "🎹 Tatlı Marimba",
+                _ => "🎷 Melodi"
+            };
+        }
+
+        private void UpdateGramophoneButtonUI()
+        {
+            if (_btnGramophone == null || _btnGramophone.IsDisposed) return;
+            if (this.InvokeRequired)
+            {
+                this.BeginInvoke(new Action(UpdateGramophoneButtonUI));
+                return;
+            }
+
+            _btnGramophone.Text = GetMelodyButtonText();
+            if (_selectedMelodyIndex == 0)
+            {
+                ApplyModernButtonStyle(_btnGramophone, Color.FromArgb(100, 105, 115), Color.FromArgb(80, 85, 95), Color.White);
+            }
+            else
+            {
+                ApplyModernButtonStyle(_btnGramophone, Color.FromArgb(217, 119, 6), Color.FromArgb(180, 83, 9), Color.White);
+            }
+        }
+
+        private void ShowMelodyMenu(Control anchor)
+        {
+            var menu = new ContextMenuStrip
+            {
+                BackColor = Color.FromArgb(24, 28, 36),
+                ForeColor = Color.White,
+                Font = new Font("Segoe UI", 9.5F, FontStyle.Regular),
+                ShowImageMargin = false
+            };
+
+            var titleItem = new ToolStripMenuItem("🎷 GRAMOFON ÇAĞRI MELODİSİ")
+            {
+                Enabled = false,
+                ForeColor = Color.FromArgb(251, 191, 36),
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold)
+            };
+            menu.Items.Add(titleItem);
+            menu.Items.Add(new ToolStripSeparator());
+
+            var options = new (int Idx, string Title)[]
+            {
+                (1, "🎷 1. Gramofon Klasik (Tatlı Arpej)"),
+                (2, "🔔 2. Kristal Çan (Ding-Dong)"),
+                (3, "🎻 3. Nostaljik Fonograf (Müzikal Ezgi)"),
+                (4, "🎺 4. Trompet Fanfar (Canlı Çağrı)"),
+                (5, "🎹 5. Tatlı Marimba (Yumuşak Fısıltı)"),
+                (0, "🔕 0. Melodi Pasif (Sessiz Mod - Ses Kapalı)")
+            };
+
+            foreach (var opt in options)
+            {
+                bool isSelected = (_selectedMelodyIndex == opt.Idx);
+                string check = isSelected ? "✔ " : "   ";
+                var item = new ToolStripMenuItem($"{check}{opt.Title}")
+                {
+                    ForeColor = isSelected ? Color.FromArgb(251, 191, 36) : Color.White,
+                    Font = new Font("Segoe UI", 9.5F, isSelected ? FontStyle.Bold : FontStyle.Regular)
+                };
+
+                int idx = opt.Idx;
+                item.Click += (s, e) =>
+                {
+                    SaveMelodySetting(idx);
+                    UpdateGramophoneButtonUI();
+                    if (idx > 0)
+                    {
+                        PlayMelodyByIndex(idx);
+                    }
+                    AppendLog($"[Gramofon 🎷] Uyarı melodisi güncellendi: {opt.Title}");
+                };
+                menu.Items.Add(item);
+            }
+
+            menu.Show(anchor, new Point(0, anchor.Height + 2));
+        }
+
+        public static void PlayMelodyByIndex(int index)
+        {
+            if (index == 0) return; // 0: Pasif / Sessiz mod
+
             Task.Run(() =>
             {
                 try
                 {
-                    MessageBeep(0x00000030); // MB_ICONEXCLAMATION
+                    switch (index)
+                    {
+                        case 1: // 🎷 Gramofon Klasik (Tatlı Majör Arpej)
+                            MessageBeep(0x00000030);
+                            Beep(1046, 160); // C6
+                            Thread.Sleep(30);
+                            Beep(1318, 180); // E6
+                            Thread.Sleep(30);
+                            Beep(1568, 260); // G6
+                            break;
 
-                    try { System.Media.SystemSounds.Exclamation.Play(); } catch { }
-                    try { System.Media.SystemSounds.Asterisk.Play(); } catch { }
-                    try { System.Media.SystemSounds.Beep.Play(); } catch { }
+                        case 2: // 🔔 Kristal Çan (Ding-Dong)
+                            Beep(1975, 140); // B6
+                            Thread.Sleep(50);
+                            Beep(1318, 380); // E6
+                            break;
 
-                    Beep(1046, 180); // C6 (1046 Hz)
-                    Thread.Sleep(40);
-                    Beep(1318, 200); // E6 (1318 Hz)
-                    Thread.Sleep(40);
-                    Beep(1568, 280); // G6 (1568 Hz)
+                        case 3: // 🎻 Nostaljik Fonograf (5 Notalı Müzikal Ezgi)
+                            Beep(784, 130);  // G5
+                            Thread.Sleep(20);
+                            Beep(988, 130);  // B5
+                            Thread.Sleep(20);
+                            Beep(1175, 150); // D6
+                            Thread.Sleep(20);
+                            Beep(1568, 200); // G6
+                            Thread.Sleep(30);
+                            Beep(1318, 350); // E6
+                            break;
+
+                        case 4: // 🎺 Trompet Fanfar (Canlı Alarm)
+                            Beep(1046, 110); // C6
+                            Thread.Sleep(25);
+                            Beep(784, 110);  // G5
+                            Thread.Sleep(25);
+                            Beep(1046, 120); // C6
+                            Thread.Sleep(30);
+                            Beep(1318, 280); // E6
+                            break;
+
+                        case 5: // 🎹 Tatlı Marimba (Yumuşak Fısıltı)
+                            Beep(698, 130);  // F5
+                            Thread.Sleep(30);
+                            Beep(880, 140);  // A5
+                            Thread.Sleep(30);
+                            Beep(1046, 260); // C6
+                            break;
+
+                        default:
+                            Beep(1046, 160);
+                            Beep(1318, 180);
+                            Beep(1568, 260);
+                            break;
+                    }
                 }
                 catch { }
             });
+        }
+
+        private void PlayNewTicketNotificationSound()
+        {
+            PlayMelodyByIndex(_selectedMelodyIndex);
         }
 
         public void SetClipboardText(string text)
