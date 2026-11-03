@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Net.WebSockets;
@@ -1146,7 +1146,7 @@ using System.IO;
                                 if (msgType == WebSocketMessageType.Binary)
                                 {
                                     // 1. FAST-PATH FILE TRANSFER: Tagged 0x46 ('F') -> Forward directly without pump dropping or delay!
-                                    if (msgBytes.Length > 0 && (msgBytes[0] == 0x46 || msgBytes[0] == 0xBC || msgBytes[0] == 0x53))
+                                    if (msgBytes.Length > 0 && (msgBytes[0] == 0x46 || msgBytes[0] == 0xBC || msgBytes[0] == 0x53 || msgBytes[0] == 0x52))
                                     {
                                         if (session.ClientSocket != null && session.ClientSocket.State == WebSocketState.Open)
                                         {
