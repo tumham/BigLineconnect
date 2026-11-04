@@ -1,4 +1,4 @@
-var socket = null;
+﻿var socket = null;
 var connected = false;
 var currentMouseMode = 'left'; // 'left' or 'right'
 
@@ -537,52 +537,10 @@ function getMousePos(a, b, c) {
 }
 window.getMousePos = getMousePos;
 
-// Global Desktop Physical Keyboard Listeners
-window.addEventListener('keydown', (e) => {
-    if (!connected || !socket) return;
-    if (passwordModal && !passwordModal.classList.contains('hidden')) return;
-    if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
-
-    let keyName = e.key;
-    if (keyName === ' ') keyName = 'space';
-    sendKey(keyName, 'down');
-    e.preventDefault();
-});
-
-window.addEventListener('keyup', (e) => {
-    if (!connected || !socket) return;
-    if (passwordModal && !passwordModal.classList.contains('hidden')) return;
-    if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
-
-    let keyName = e.key;
-    if (keyName === ' ') keyName = 'space';
-    sendKey(keyName, 'up');
-    e.preventDefault();
-});
-
-// Canvas interaction is handled authoritatively by index.html
+// Canvas interaction and keyboard are handled authoritatively by index.html
 function bindCanvasInteraction() {
-    // No-op: index.html handles canvas and mobile touch interaction cleanly
+    // No-op: index.html handles canvas, mouse and keyboard interaction cleanly
 }
-
-// Global Key Listeners
-window.addEventListener('keydown', (e) => {
-    if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable)) return;
-    if (passwordModal && !passwordModal.classList.contains('hidden')) return;
-    if (!connected) return;
-    
-    sendKey(e.key, 'down');
-    e.preventDefault();
-});
-
-window.addEventListener('keyup', (e) => {
-    if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable)) return;
-    if (passwordModal && !passwordModal.classList.contains('hidden')) return;
-    if (!connected) return;
-    
-    sendKey(e.key, 'up');
-    e.preventDefault();
-});
 
 // Floating buttons key injection with iOS Touch Support
 document.querySelectorAll('.special-key').forEach(button => {

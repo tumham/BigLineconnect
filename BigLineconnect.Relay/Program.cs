@@ -3972,8 +3972,18 @@ using System.IO;
                         if (ms.Length > 0)
                         {
                             byte[] msg = ms.ToArray();
-                            // If this is a mouse move (5 bytes, starting with 0x4D 'M') -> Coalesce to 0-latency!
-                            if (result.MessageType == WebSocketMessageType.Binary && msg.Length == 5 && msg[0] == 0x4D)
+                            // If this is a mouse move (5 bytes binary 0x4D 'M' or JSON move) -> Coalesce to 0-latency!
+                            bool isMouseMove = (result.MessageType == WebSocketMessageType.Binary && msg.Length == 5 && msg[0] == 0x4D);
+                            if (!isMouseMove && result.MessageType == WebSocketMessageType.Text && msg.Length < 64)
+                            {
+                                string str = Encoding.UTF8.GetString(msg);
+                                if (str.Contains("\"type\":\"move\""))
+                                {
+                                    isMouseMove = true;
+                                }
+                            }
+
+                            if (isMouseMove)
                             {
                                 Interlocked.Exchange(ref latestMouseMove, msg);
                             }

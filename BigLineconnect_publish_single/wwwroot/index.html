@@ -2291,12 +2291,14 @@ try {
             var lastMove = 0;
             function safeSendMove(x, y) {
                 if (!ws || ws.readyState !== WebSocket.OPEN) return;
-                if (ws.bufferedAmount && ws.bufferedAmount > 32768) return;
                 var now = Date.now();
-                if (now - lastMove < 20) return;
+                if (now - lastMove < 25) return;
                 lastMove = now;
                 try {
-                    ws.send(JSON.stringify({ type: 'move', x: x, y: y }));
+                    var nx = Math.max(0, Math.min(65535, Math.round(x * 65535)));
+                    var ny = Math.max(0, Math.min(65535, Math.round(y * 65535)));
+                    var mBuf = new Uint8Array([0x4D, nx & 0xFF, (nx >> 8) & 0xFF, ny & 0xFF, (ny >> 8) & 0xFF]);
+                    ws.send(mBuf.buffer);
                 } catch(e) {}
             }
 
