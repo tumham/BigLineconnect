@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
@@ -309,21 +310,64 @@ using System.IO;
             catch { }
         }
 
-        public static ResellerAccount? Register(string company, string contact, string email, string phone, string password)
+        private static string NormalizePhone(string phone)
         {
+            string digits = new string((phone ?? "").Where(char.IsDigit).ToArray());
+            if (digits.StartsWith("90") && digits.Length > 10) digits = digits.Substring(2);
+            if (digits.StartsWith("0") && digits.Length > 10) digits = digits.Substring(1);
+            return digits;
+        }
+
+        private static string NormalizeText(string text)
+        {
+            return (text ?? "").Trim().ToUpperInvariant();
+        }
+
+        public static ResellerAccount? Register(string company, string contact, string email, string phone, string password, out string errorMessage)
+        {
+            errorMessage = "";
+            string cleanCompany = (company ?? "").Trim();
+            string cleanContact = (contact ?? "").Trim();
+            string cleanEmail = (email ?? "").Trim();
+            string cleanPhone = NormalizePhone(phone);
+
+            if (string.IsNullOrWhiteSpace(cleanCompany) || string.IsNullOrWhiteSpace(cleanEmail) || string.IsNullOrWhiteSpace(cleanPhone) || string.IsNullOrWhiteSpace(password))
+            {
+                errorMessage = "Lütfen firma adı, e-posta, telefon ve şifre alanlarını eksiksiz doldurun!";
+                return null;
+            }
+
             lock (Lock)
             {
-                if (Resellers.Exists(r => r.Email.Equals(email, StringComparison.OrdinalIgnoreCase)))
+                var existingEmail = Resellers.Find(r => r.Email.Trim().Equals(cleanEmail, StringComparison.OrdinalIgnoreCase));
+                if (existingEmail != null)
+                {
+                    errorMessage = $"Bu e-posta adresi ({cleanEmail}) ile zaten bir bayi kaydı mevcut! (Mevcut Bayi Kodunuz: {existingEmail.TenantId}). Lütfen 'Bayi Girişi' veya 'Şifremi Unuttum' bölümünü kullanın.";
                     return null;
+                }
+
+                var existingPhone = Resellers.Find(r => !string.IsNullOrEmpty(NormalizePhone(r.Phone)) && NormalizePhone(r.Phone) == cleanPhone);
+                if (existingPhone != null)
+                {
+                    errorMessage = $"Bu telefon numarası ({phone}) ile zaten bir bayi kaydı mevcut! (Mevcut Bayi Kodunuz: {existingPhone.TenantId}). Lütfen 'Bayi Girişi' veya 'Şifremi Unuttum' bölümünü kullanın.";
+                    return null;
+                }
+
+                var existingCompany = Resellers.Find(r => NormalizeText(r.CompanyName) == NormalizeText(cleanCompany));
+                if (existingCompany != null)
+                {
+                    errorMessage = $"'{cleanCompany}' firma adıyla zaten bir bayi kaydı mevcut! (Mevcut Bayi Kodunuz: {existingCompany.TenantId}). Aynı firma için ikinci kez kayıt oluşturulamaz.";
+                    return null;
+                }
 
                 string tenantId = "BAYI" + (Resellers.Count + 1).ToString("D3");
                 var account = new ResellerAccount
                 {
                     TenantId = tenantId,
-                    CompanyName = company,
-                    ContactName = contact,
-                    Email = email,
-                    Phone = phone,
+                    CompanyName = cleanCompany,
+                    ContactName = cleanContact,
+                    Email = cleanEmail,
+                    Phone = (phone ?? "").Trim(),
                     Password = password,
                     MaxQuota = 50,
                     CreatedAt = DateTime.Now
@@ -2554,7 +2598,7 @@ using System.IO;
                     string phone = root.TryGetProperty("phone", out var p4) ? p4.GetString() ?? "" : "";
                     string pass = root.TryGetProperty("password", out var p5) ? p5.GetString() ?? "" : "";
 
-                    var account = ResellerManager.Register(company, contact, email, phone, pass);
+                    var account = ResellerManager.Register(company, contact, email, phone, pass, out string regError);
                     if (account != null)
                     {
                         context.Response.ContentType = "application/json; charset=utf-8";
@@ -2563,7 +2607,7 @@ using System.IO;
                     else
                     {
                         context.Response.ContentType = "application/json; charset=utf-8";
-                        await context.Response.WriteAsync("{\"success\":false,\"message\":\"Bu e-posta adresi zaten kayıtlı!\"}");
+                        await context.Response.WriteAsync(System.Text.Json.JsonSerializer.Serialize(new { success = false, message = string.IsNullOrEmpty(regError) ? "Bu bilgilerle zaten bir bayi kaydı mevcut!" : regError }));
                     }
                 }
                 catch (Exception ex)
