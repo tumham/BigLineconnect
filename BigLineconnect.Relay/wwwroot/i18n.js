@@ -11,9 +11,9 @@ const translations = {
         "nav.subtitle": "UZAKTAN ERİŞİM SİSTEMİ",
 
         // Promo & Free Trial
-        "promo.banner": "🎁 30 GÜN ÜCRETSİZ FULL KULLANIM: Kredi kartı gerekmez, hemen indirin ve sınırsız deneyin!",
-        "hero.nocard": "<i class=\"fa-solid fa-circle-check\" style=\"color:#2ecc71\"></i> Kredi Kartı Gerekmez • İlk 1 Ay Ücretsiz Full Kullanım",
-        "pricing.promo": "🔥 TÜM PAKETLERDE İLK 1 AY %100 ÜCRETSİZ FULL KULLANIM HEDİYE!",
+        "promo.banner": "🎁 30 GÜN SINIRSIZ ÜCRETSİZ KULLANIM • Sonrasında Ayda Sadece 125 TL (Yurtdışı: $2.20 USD/Ay)!",
+        "hero.nocard": "<i class=\"fa-solid fa-circle-check\" style=\"color:#2ecc71\"></i> 30 Gün Sınırsız Ücretsiz • Sonrasında Ayda Sadece 125 TL (Global: $2.20 USD)",
+        "pricing.promo": "🔥 30 GÜN SINIRSIZ ÜCRETSİZ KULLANIM + 1 HAFTA TOLERANS • AYDA SADECE 125 TL (GLOBAL: $2.20 USD/AY)!",
 
         // Hero
         "hero.badge": "Güvenli & Yerli Uzaktan Destek Altyapısı",
@@ -50,16 +50,16 @@ const translations = {
 
         // Pricing
         "pricing.title": "Abonelik ve Paketler",
-        "pricing.desc": "İhtiyacınıza en uygun paketi seçin, anında kullanmaya başlayın.",
-        "pkg1.name": "Başlangıç",
-        "pkg1.price": "₺1.490",
-        "pkg1.period": "/ yıl",
-        "pkg1.f1": "<strong>1 Operatör</strong> Lisansı",
+        "pricing.desc": "30 gün sınırsız ücretsiz kullanın; sonrasında ayda sadece 125 TL (Yurtdışı: $2.20 USD/ay) ile kesintisiz devam edin.",
+        "pkg1.name": "Standart Tam Lisans",
+        "pkg1.price": "125 TL",
+        "pkg1.period": "/ ay",
+        "pkg1.f1": "<strong>1 Operatör</strong> Sınırsız Lisans",
         "pkg1.f2": "<strong>5 Eşzamanlı Kanal</strong>",
         "pkg1.f3": "<strong>50 Unattended Cihaz</strong> Kaydı",
-        "pkg1.f4": "Tam Web & Masaüstü Desteği",
+        "pkg1.f4": "Masaüstü + Web + Android Tam Destek",
         "pkg1.f5": "7/24 Kesintisiz Sunucu Erişimi",
-        "pkg1.btn": "Lisans Tanımla",
+        "pkg1.btn": "Lisans Satın Al (125 TL/Ay)",
 
         "pkg2.badge": "En Çok Tercih Edilen",
         "pkg2.name": "Pro",
@@ -135,9 +135,9 @@ const translations = {
         "nav.subtitle": "REMOTE DESKTOP CLIENT",
 
         // Promo & Free Trial
-        "promo.banner": "🎁 30-DAY FREE FULL TRIAL: No credit card required, download & connect instantly!",
-        "hero.nocard": "<i class=\"fa-solid fa-circle-check\" style=\"color:#2ecc71\"></i> No Credit Card Required • First 1 Month Free Full Access",
-        "pricing.promo": "🔥 FIRST 1 MONTH 100% FREE FULL TRIAL INCLUDED ON ALL PLANS!",
+        "promo.banner": "🎁 30-DAY UNLIMITED FREE TRIAL • Then Only $2.20 USD / Month!",
+        "hero.nocard": "<i class=\"fa-solid fa-circle-check\" style=\"color:#2ecc71\"></i> 30 Days Unlimited Free Trial • Then Only $2.20 USD / month",
+        "pricing.promo": "🔥 30 DAYS UNLIMITED FREE + 1 WEEK GRACE PERIOD • ONLY $2.20 USD / MONTH!",
 
         // Hero
         "badge": "Secure & High-Performance Remote Support Infrastructure",
@@ -174,16 +174,16 @@ const translations = {
 
         // Pricing
         "pricing.title": "Subscription & Global Plans",
-        "pricing.desc": "Select the plan that fits your business needs and start connecting instantly.",
-        "pkg1.name": "Starter",
-        "pkg1.price": "$49",
-        "pkg1.period": "/ year",
-        "pkg1.f1": "<strong>1 Operator</strong> License",
+        "pricing.desc": "Enjoy 30 days of unlimited free usage, then continue uninterrupted for only $2.20 USD / month.",
+        "pkg1.name": "Standard Full License",
+        "pkg1.price": "$2.20",
+        "pkg1.period": "/ month",
+        "pkg1.f1": "<strong>1 Operator</strong> Unlimited License",
         "pkg1.f2": "<strong>5 Concurrent Channels</strong>",
         "pkg1.f3": "<strong>50 Unattended Devices</strong>",
-        "pkg1.f4": "Full Web & Desktop Access",
+        "pkg1.f4": "Full Desktop, Web & Android Access",
         "pkg1.f5": "24/7 Cloud Relay Access",
-        "pkg1.btn": "Get License",
+        "pkg1.btn": "Get License ($2.20/mo)",
 
         "pkg2.badge": "Most Popular",
         "pkg2.name": "Pro",

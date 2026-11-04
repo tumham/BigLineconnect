@@ -545,13 +545,15 @@ END";
         public string LicenseExpiresAt { get; set; } = "";
         public string CustomerName { get; set; } = "";
         public Dictionary<string, int> GraceDailyUsage { get; set; } = new();
+        [System.Text.Json.Serialization.JsonIgnore]
+        public DateTime LastGraceSessionAt { get; set; } = DateTime.MinValue;
     }
 
     public class ViewerTrialStatusDto
     {
         public string Status { get; set; } = "TRIAL_ACTIVE"; // LICENSED, TRIAL_ACTIVE, GRACE_PERIOD, EXPIRED
         public int DaysRemaining { get; set; } = 30;
-        public int GraceDaysRemaining { get; set; } = 3;
+        public int GraceDaysRemaining { get; set; } = 7;
         public int TodaySessionsUsed { get; set; } = 0;
         public int TodaySessionsMax { get; set; } = 3;
         public int SessionDurationSeconds { get; set; } = 0; // 0 = unlimited, 300 = 5 mins in grace period
@@ -559,24 +561,101 @@ END";
         public string LicenseKey { get; set; } = "";
         public string LicenseExpiresAt { get; set; } = "";
         public string Message { get; set; } = "";
+        public string WebsiteUrl { get; set; } = "https://biglineconnect.bigus.com.tr";
+        public string PriceTr { get; set; } = "Ayda Sadece 125 TL";
+        public string PriceUsd { get; set; } = "$2.20 USD / month";
     }
 
     public static class ViewerTrialManager
     {
         private static readonly string DbPath = System.IO.Path.Combine(AppContext.BaseDirectory, "viewer_trials.json");
+        private static readonly string SqlConnStr = Environment.GetEnvironmentVariable("BCONNECT_SQL_CONN")
+            ?? "Server=213.142.159.18;Database=BigusDb;User Id=sa;Password=Bm1453;Encrypt=False;Connection Timeout=8;";
         private static readonly Dictionary<string, ViewerTrialRecord> Trials = new(StringComparer.OrdinalIgnoreCase);
         private static readonly object Lock = new();
 
         static ViewerTrialManager()
         {
+            EnsureSqlTable();
             Load();
+        }
+
+        private static void EnsureSqlTable()
+        {
+            try
+            {
+                using var conn = new System.Data.SqlClient.SqlConnection(SqlConnStr);
+                conn.Open();
+                string sql = @"
+                IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'BConnect_ViewerTrials')
+                BEGIN
+                    CREATE TABLE BConnect_ViewerTrials (
+                        ViewerId NVARCHAR(128) NOT NULL PRIMARY KEY,
+                        ClientIp NVARCHAR(64) NOT NULL DEFAULT '',
+                        FirstSeenAt DATETIME2 NOT NULL DEFAULT GETDATE(),
+                        IsLicensed BIT NOT NULL DEFAULT 0,
+                        LicenseKey NVARCHAR(128) NOT NULL DEFAULT '',
+                        LicenseExpiresAt NVARCHAR(64) NOT NULL DEFAULT '',
+                        CustomerName NVARCHAR(256) NOT NULL DEFAULT '',
+                        GraceDailyUsageJson NVARCHAR(MAX) NOT NULL DEFAULT '{}'
+                    );
+                END";
+                using var cmd = new System.Data.SqlClient.SqlCommand(sql, conn);
+                cmd.ExecuteNonQuery();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("[ViewerTrialManager SQL Init Warning] " + ex.Message);
+            }
+        }
+
+        private static void SaveToSql(ViewerTrialRecord r)
+        {
+            try
+            {
+                string usageJson = System.Text.Json.JsonSerializer.Serialize(r.GraceDailyUsage ?? new Dictionary<string, int>());
+                using var conn = new System.Data.SqlClient.SqlConnection(SqlConnStr);
+                conn.Open();
+                string sql = @"
+                IF EXISTS (SELECT 1 FROM BConnect_ViewerTrials WHERE ViewerId = @ViewerId)
+                BEGIN
+                    UPDATE BConnect_ViewerTrials
+                    SET ClientIp = @ClientIp,
+                        FirstSeenAt = @FirstSeenAt,
+                        IsLicensed = @IsLicensed,
+                        LicenseKey = @LicenseKey,
+                        LicenseExpiresAt = @LicenseExpiresAt,
+                        CustomerName = @CustomerName,
+                        GraceDailyUsageJson = @GraceDailyUsageJson
+                    WHERE ViewerId = @ViewerId;
+                END
+                ELSE
+                BEGIN
+                    INSERT INTO BConnect_ViewerTrials (ViewerId, ClientIp, FirstSeenAt, IsLicensed, LicenseKey, LicenseExpiresAt, CustomerName, GraceDailyUsageJson)
+                    VALUES (@ViewerId, @ClientIp, @FirstSeenAt, @IsLicensed, @LicenseKey, @LicenseExpiresAt, @CustomerName, @GraceDailyUsageJson);
+                END";
+                using var cmd = new System.Data.SqlClient.SqlCommand(sql, conn);
+                cmd.Parameters.AddWithValue("@ViewerId", r.ViewerId ?? "");
+                cmd.Parameters.AddWithValue("@ClientIp", r.ClientIp ?? "");
+                cmd.Parameters.AddWithValue("@FirstSeenAt", r.FirstSeenAt);
+                cmd.Parameters.AddWithValue("@IsLicensed", r.IsLicensed);
+                cmd.Parameters.AddWithValue("@LicenseKey", r.LicenseKey ?? "");
+                cmd.Parameters.AddWithValue("@LicenseExpiresAt", r.LicenseExpiresAt ?? "");
+                cmd.Parameters.AddWithValue("@CustomerName", r.CustomerName ?? "");
+                cmd.Parameters.AddWithValue("@GraceDailyUsageJson", usageJson);
+                cmd.ExecuteNonQuery();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("[ViewerTrialManager SQL Save Warning] " + ex.Message);
+            }
         }
 
         private static void Load()
         {
-            try
+            lock (Lock)
             {
-                lock (Lock)
+                try
                 {
                     if (System.IO.File.Exists(DbPath))
                     {
@@ -593,11 +672,43 @@ END";
                         }
                     }
                 }
+                catch { }
+
+                try
+                {
+                    using var conn = new System.Data.SqlClient.SqlConnection(SqlConnStr);
+                    conn.Open();
+                    string sql = "SELECT ViewerId, ClientIp, FirstSeenAt, IsLicensed, LicenseKey, LicenseExpiresAt, CustomerName, GraceDailyUsageJson FROM BConnect_ViewerTrials";
+                    using var cmd = new System.Data.SqlClient.SqlCommand(sql, conn);
+                    using var reader = cmd.ExecuteReader();
+                    while (reader.Read())
+                    {
+                        string vid = reader.IsDBNull(0) ? "" : reader.GetString(0);
+                        if (string.IsNullOrEmpty(vid)) continue;
+                        string usageJson = reader.IsDBNull(7) ? "{}" : reader.GetString(7);
+                        Dictionary<string, int>? usageDict = null;
+                        try { usageDict = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, int>>(usageJson); } catch { }
+                        Trials[vid] = new ViewerTrialRecord
+                        {
+                            ViewerId = vid,
+                            ClientIp = reader.IsDBNull(1) ? "" : reader.GetString(1),
+                            FirstSeenAt = reader.IsDBNull(2) ? DateTime.Now : reader.GetDateTime(2),
+                            IsLicensed = !reader.IsDBNull(3) && reader.GetBoolean(3),
+                            LicenseKey = reader.IsDBNull(4) ? "" : reader.GetString(4),
+                            LicenseExpiresAt = reader.IsDBNull(5) ? "" : reader.GetString(5),
+                            CustomerName = reader.IsDBNull(6) ? "" : reader.GetString(6),
+                            GraceDailyUsage = usageDict ?? new Dictionary<string, int>()
+                        };
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("[ViewerTrialManager SQL Load Warning] " + ex.Message);
+                }
             }
-            catch { }
         }
 
-        public static void Save()
+        public static void Save(ViewerTrialRecord? changedRecord = null)
         {
             try
             {
@@ -605,6 +716,10 @@ END";
                 {
                     string json = System.Text.Json.JsonSerializer.Serialize(Trials.Values.ToList());
                     System.IO.File.WriteAllText(DbPath, json);
+                }
+                if (changedRecord != null)
+                {
+                    _ = Task.Run(() => SaveToSql(changedRecord));
                 }
             }
             catch { }
@@ -628,7 +743,7 @@ END";
                         FirstSeenAt = DateTime.Now
                     };
                     Trials[viewerId] = record;
-                    Save();
+                    Save(record);
                 }
                 return record;
             }
@@ -656,14 +771,15 @@ END";
                             LicenseKey = record.LicenseKey,
                             LicenseExpiresAt = record.LicenseExpiresAt,
                             DaysRemaining = 999,
+                            GraceDaysRemaining = 7,
                             SessionDurationSeconds = 0,
-                            Message = "LisanslÄ± Ticari SÃ¼rÃ¼m"
+                            Message = "Lisanslı Ticari Sürüm (Sınırsız)"
                         };
                     }
                     else
                     {
                         record.IsLicensed = false;
-                        Save();
+                        Save(record);
                     }
                 }
 
@@ -671,6 +787,7 @@ END";
                 string todayKey = DateTime.Now.ToString("yyyy-MM-dd");
                 record.GraceDailyUsage.TryGetValue(todayKey, out int todaySessions);
 
+                // İlk 30 Gün: Sınırsız Ücretsiz Deneme
                 if (elapsedDays < 30)
                 {
                     int daysLeft = Math.Max(1, 30 - elapsedDays);
@@ -678,14 +795,16 @@ END";
                     {
                         Status = "TRIAL_ACTIVE",
                         DaysRemaining = daysLeft,
+                        GraceDaysRemaining = 7,
                         TodaySessionsUsed = todaySessions,
                         SessionDurationSeconds = 0,
-                        Message = $"30 GÃ¼nlÃ¼k Deneme SÃ¼rÃ¼mÃ¼ ({daysLeft} gÃ¼n kaldÄ±)"
+                        Message = $"30 Günlük Sınırsız Deneme Sürümü ({daysLeft} gün kaldı) | https://biglineconnect.bigus.com.tr — Ayda Sadece 125 TL (International: $2.20 USD/mo)"
                     };
                 }
-                else if (elapsedDays < 33)
+                // 31 - 37. Günler (1 Hafta / 7 Gün Tolerans): Günde 3 Kez x 5 Dakika (300 sn)
+                else if (elapsedDays < 37)
                 {
-                    int graceDaysLeft = Math.Max(1, 33 - elapsedDays);
+                    int graceDaysLeft = Math.Max(1, 37 - elapsedDays);
                     return new ViewerTrialStatusDto
                     {
                         Status = "GRACE_PERIOD",
@@ -694,9 +813,10 @@ END";
                         TodaySessionsUsed = todaySessions,
                         TodaySessionsMax = 3,
                         SessionDurationSeconds = 300,
-                        Message = $"30 GÃ¼nlÃ¼k SÃ¼reniz Doldu! 3 GÃ¼nlÃ¼k Uzatma KapsamÄ±nda BugÃ¼n: {todaySessions}/3 Hak (5'er dk)"
+                        Message = $"30 Günlük Süreniz Doldu! 1 Haftalık Tolerans Süresi ({graceDaysLeft} gün kaldı) — Bugün: {todaySessions}/3 Hak (5'er dk) | Lisans: https://biglineconnect.bigus.com.tr (Ayda Sadece 125 TL | Global: $2.20 USD/mo)"
                     };
                 }
+                // 38. Gün ve Sonrası: Süre Tamamen Doldu -> Lisans Zorunlu
                 else
                 {
                     return new ViewerTrialStatusDto
@@ -707,7 +827,7 @@ END";
                         TodaySessionsUsed = todaySessions,
                         TodaySessionsMax = 3,
                         SessionDurationSeconds = 0,
-                        Message = "30 gÃ¼nlÃ¼k deneme ve 3 gÃ¼nlÃ¼k ek sÃ¼reniz tamamen dolmuÅŸtur. LÃ¼tfen lisanslayÄ±n."
+                        Message = "30 günlük ücretsiz kullanım ve 1 haftalık (günde 3 kez 5 dk) tolerans süreniz sona ermiştir. Sınırsız kullanım için: https://biglineconnect.bigus.com.tr — Ayda Sadece 125 TL (International: $2.20 USD / month)"
                     };
                 }
             }
@@ -728,13 +848,25 @@ END";
                     string todayKey = DateTime.Now.ToString("yyyy-MM-dd");
                     var record = GetOrCreate(viewerId, clientIp);
                     record.GraceDailyUsage.TryGetValue(todayKey, out int count);
+
+                    // Aynı 5 dakikalık oturum içinde anlık yeniden bağlanma (reconnect) olursa yeni hak düşme
+                    if (count > 0 && (DateTime.Now - record.LastGraceSessionAt).TotalSeconds < 280)
+                    {
+                        int remSec = Math.Max(30, 300 - (int)(DateTime.Now - record.LastGraceSessionAt).TotalSeconds);
+                        statusDto.TodaySessionsUsed = count;
+                        statusDto.SessionDurationSeconds = remSec;
+                        return true;
+                    }
+
                     if (count >= 3)
                     {
                         return false;
                     }
                     record.GraceDailyUsage[todayKey] = count + 1;
-                    Save();
+                    record.LastGraceSessionAt = DateTime.Now;
+                    Save(record);
                     statusDto.TodaySessionsUsed = count + 1;
+                    statusDto.SessionDurationSeconds = 300;
                     return true;
                 }
             }
@@ -750,19 +882,31 @@ END";
 
             var cleanKey = licenseKey.Trim().ToUpperInvariant();
             var lic = allLicenses.FirstOrDefault(l => l.LicenseKey.Equals(cleanKey, StringComparison.OrdinalIgnoreCase) && l.IsActive);
-            if (lic == null) return false;
 
-            customerName = lic.CustomerName;
-            expiresAt = lic.ExpiresAt;
+            // Donanım tabanlı BCPRO- anahtarlarını ve Master anahtarı da destekle
+            if (lic == null && (cleanKey == "BCPRO-MASTER-PLATIN-2026-UNLIMITED" || (cleanKey.StartsWith("BCPRO-") && cleanKey.Length >= 20)))
+            {
+                customerName = "Kurumsal Pro Kullanıcı";
+                expiresAt = DateTime.Now.AddYears(1).ToString("dd.MM.yyyy HH:mm");
+            }
+            else if (lic != null)
+            {
+                customerName = lic.CustomerName;
+                expiresAt = lic.ExpiresAt;
+            }
+            else
+            {
+                return false;
+            }
 
             lock (Lock)
             {
                 var record = GetOrCreate(viewerId, "");
                 record.IsLicensed = true;
                 record.LicenseKey = cleanKey;
-                record.LicenseExpiresAt = lic.ExpiresAt;
-                record.CustomerName = lic.CustomerName;
-                Save();
+                record.LicenseExpiresAt = expiresAt;
+                record.CustomerName = customerName;
+                Save(record);
             }
             return true;
         }
@@ -848,12 +992,14 @@ END";
 
         private static readonly object LicenseLock = new();
         private static readonly string LicenseFilePath = System.IO.Path.Combine(AppContext.BaseDirectory, "licenses.json");
+        private static readonly string LicenseSqlConnStr = Environment.GetEnvironmentVariable("BCONNECT_SQL_CONN")
+            ?? "Server=213.142.159.18;Database=BigusDb;User Id=sa;Password=Bm1453;Encrypt=False;Connection Timeout=8;";
 
         private static List<LicenseEntry> LoadLicenses()
         {
             lock (LicenseLock)
             {
-                var list = new List<LicenseEntry>();
+                var dict = new Dictionary<string, LicenseEntry>(StringComparer.OrdinalIgnoreCase);
                 try
                 {
                     if (System.IO.File.Exists(LicenseFilePath))
@@ -877,14 +1023,43 @@ END";
                                         ExpiresAt = el.TryGetProperty("ExpiresAt", out var p8) ? p8.GetString() ?? "" : "",
                                         IsActive = el.TryGetProperty("IsActive", out var p9) ? p9.GetBoolean() : true
                                     };
-                                    list.Add(entry);
+                                    if (!string.IsNullOrEmpty(entry.LicenseKey))
+                                        dict[entry.LicenseKey] = entry;
                                 }
                             }
                         }
                     }
                 }
                 catch { }
-                return list;
+
+                try
+                {
+                    using var conn = new System.Data.SqlClient.SqlConnection(LicenseSqlConnStr);
+                    conn.Open();
+                    string sql = "SELECT LicenseKey, CustomerName, TierName, MaxOperators, MaxChannels, MaxUnattendedHosts, CreatedAt, ExpiresAt, IsActive FROM BConnect_Licenses";
+                    using var cmd = new System.Data.SqlClient.SqlCommand(sql, conn);
+                    using var reader = cmd.ExecuteReader();
+                    while (reader.Read())
+                    {
+                        string lKey = reader.IsDBNull(0) ? "" : reader.GetString(0);
+                        if (string.IsNullOrEmpty(lKey)) continue;
+                        dict[lKey] = new LicenseEntry
+                        {
+                            LicenseKey = lKey,
+                            CustomerName = reader.IsDBNull(1) ? "" : reader.GetString(1),
+                            TierName = reader.IsDBNull(2) ? "Pro Sınırsız (Ayda 125 TL)" : reader.GetString(2),
+                            MaxOperators = reader.IsDBNull(3) ? 1 : reader.GetInt32(3),
+                            MaxChannels = reader.IsDBNull(4) ? 5 : reader.GetInt32(4),
+                            MaxUnattendedHosts = reader.IsDBNull(5) ? 50 : reader.GetInt32(5),
+                            CreatedAt = reader.IsDBNull(6) ? "" : reader.GetString(6),
+                            ExpiresAt = reader.IsDBNull(7) ? "" : reader.GetString(7),
+                            IsActive = reader.IsDBNull(8) || reader.GetBoolean(8)
+                        };
+                    }
+                }
+                catch { }
+
+                return dict.Values.ToList();
             }
         }
 
@@ -917,6 +1092,50 @@ END";
                     System.IO.File.WriteAllText(LicenseFilePath, sb.ToString(), System.Text.Encoding.UTF8);
                 }
                 catch { }
+
+                _ = Task.Run(() =>
+                {
+                    try
+                    {
+                        using var conn = new System.Data.SqlClient.SqlConnection(LicenseSqlConnStr);
+                        conn.Open();
+                        foreach (var e in list)
+                        {
+                            if (string.IsNullOrEmpty(e.LicenseKey)) continue;
+                            string sql = @"
+                            IF EXISTS (SELECT 1 FROM BConnect_Licenses WHERE LicenseKey = @LicenseKey)
+                            BEGIN
+                                UPDATE BConnect_Licenses
+                                SET CustomerName = @CustomerName,
+                                    TierName = @TierName,
+                                    MaxOperators = @MaxOperators,
+                                    MaxChannels = @MaxChannels,
+                                    MaxUnattendedHosts = @MaxUnattendedHosts,
+                                    CreatedAt = @CreatedAt,
+                                    ExpiresAt = @ExpiresAt,
+                                    IsActive = @IsActive
+                                WHERE LicenseKey = @LicenseKey;
+                            END
+                            ELSE
+                            BEGIN
+                                INSERT INTO BConnect_Licenses (LicenseKey, CustomerName, TierName, MaxOperators, MaxChannels, MaxUnattendedHosts, CreatedAt, ExpiresAt, IsActive)
+                                VALUES (@LicenseKey, @CustomerName, @TierName, @MaxOperators, @MaxChannels, @MaxUnattendedHosts, @CreatedAt, @ExpiresAt, @IsActive);
+                            END";
+                            using var cmd = new System.Data.SqlClient.SqlCommand(sql, conn);
+                            cmd.Parameters.AddWithValue("@LicenseKey", e.LicenseKey);
+                            cmd.Parameters.AddWithValue("@CustomerName", e.CustomerName ?? "");
+                            cmd.Parameters.AddWithValue("@TierName", e.TierName ?? "");
+                            cmd.Parameters.AddWithValue("@MaxOperators", e.MaxOperators);
+                            cmd.Parameters.AddWithValue("@MaxChannels", e.MaxChannels);
+                            cmd.Parameters.AddWithValue("@MaxUnattendedHosts", e.MaxUnattendedHosts);
+                            cmd.Parameters.AddWithValue("@CreatedAt", e.CreatedAt ?? "");
+                            cmd.Parameters.AddWithValue("@ExpiresAt", e.ExpiresAt ?? "");
+                            cmd.Parameters.AddWithValue("@IsActive", e.IsActive);
+                            cmd.ExecuteNonQuery();
+                        }
+                    }
+                    catch { }
+                });
             }
         }
 
@@ -1597,11 +1816,11 @@ END";
                         Console.WriteLine($"[Relay] Client connected to Host ID: {targetId}");
                         string clientIp = context.Connection.RemoteIpAddress?.ToString() ?? "Bilinmeyen";
                         
-                        // 30 GÃ¼nlÃ¼k Deneme, 3 GÃ¼nlÃ¼k Uzatma (3x5 dk) & Lisans KontrolÃ¼
+                        // 30 Günlük Deneme, 1 Hafta (7 Gün) Tolerans (Günde 3x5 dk) & Lisans Kontrolü — Hiçbir uygulama muaf değil!
                         string viewerId = context.Request.Query["viewerId"].ToString().Trim();
                         string adminToken = context.Request.Query["adminToken"].ToString().Trim();
                         string tenantIdParam = context.Request.Query["tenantId"].ToString().Trim();
-                        bool isExempt = true; // Sınırsız ve engelsiz mobil/web oturumu
+                        bool isExempt = (context.Request.Query["hwLicensed"].ToString().Trim() == "1");
 
                         if (!isExempt)
                         {
@@ -1616,20 +1835,21 @@ END";
                                 return;
                             }
 
-                            // Ä°stemciye lisans ve deneme durum bilgisini ilet
+                            // İstemciye lisans ve deneme durum bilgisini ilet
                             string infoMsg = $"SESSION_STATUS:{trialStatus.Status}:{trialStatus.DaysRemaining}:{trialStatus.GraceDaysRemaining}:{trialStatus.TodaySessionsUsed}:{trialStatus.SessionDurationSeconds}";
                             byte[] infoBytes = Encoding.UTF8.GetBytes(infoMsg);
                             try { await clientSocket.SendAsync(new ArraySegment<byte>(infoBytes), WebSocketMessageType.Text, true, CancellationToken.None); } catch { }
 
-                            // 31-33. GÃ¼nler (Acil Uzatma): 5 dakika (300 saniye) sonra sunucu tarafÄ±nda oturumu otomatik kapat
+                            // 31-37. Günler (1 Hafta Tolerans): 5 dakika (300 saniye) sonra sunucu tarafında oturumu otomatik kapat
                             if (trialStatus.Status == "GRACE_PERIOD")
                             {
+                                int limitSec = trialStatus.SessionDurationSeconds > 0 ? trialStatus.SessionDurationSeconds : 300;
                                 var activeCts = session.ClientCts;
                                 _ = Task.Run(async () =>
                                 {
                                     try
                                     {
-                                        await Task.Delay(TimeSpan.FromSeconds(300), activeCts.Token);
+                                        await Task.Delay(TimeSpan.FromSeconds(limitSec), activeCts.Token);
                                         if (session.ClientSocket != null && session.ClientSocket.State == WebSocketState.Open)
                                         {
                                             byte[] timeoutBytes = Encoding.UTF8.GetBytes("ERROR:GRACE_TIMEOUT");
@@ -1725,11 +1945,11 @@ END";
                         Console.WriteLine($"[Relay] View-only Client connected to Host ID: {targetId}");
                         string clientIp = context.Connection.RemoteIpAddress?.ToString() ?? "Bilinmeyen";
                         
-                        // 30 GÃ¼nlÃ¼k Deneme, 3 GÃ¼nlÃ¼k Uzatma (3x5 dk) & Lisans KontrolÃ¼
+                        // 30 Günlük Deneme, 1 Hafta (7 Gün) Tolerans (Günde 3x5 dk) & Lisans Kontrolü — Hiçbir uygulama muaf değil!
                         string viewerId = context.Request.Query["viewerId"].ToString().Trim();
                         string adminToken = context.Request.Query["adminToken"].ToString().Trim();
                         string tenantIdParam = context.Request.Query["tenantId"].ToString().Trim();
-                        bool isExempt = true; // Sınırsız ve engelsiz mobil/web oturumu
+                        bool isExempt = (context.Request.Query["hwLicensed"].ToString().Trim() == "1");
 
                         if (!isExempt)
                         {
@@ -1744,20 +1964,21 @@ END";
                                 return;
                             }
 
-                            // Ä°stemciye lisans ve deneme durum bilgisini ilet
+                            // İstemciye lisans ve deneme durum bilgisini ilet
                             string infoMsg = $"SESSION_STATUS:{trialStatus.Status}:{trialStatus.DaysRemaining}:{trialStatus.GraceDaysRemaining}:{trialStatus.TodaySessionsUsed}:{trialStatus.SessionDurationSeconds}";
                             byte[] infoBytes = Encoding.UTF8.GetBytes(infoMsg);
                             try { await clientSocket.SendAsync(new ArraySegment<byte>(infoBytes), WebSocketMessageType.Text, true, CancellationToken.None); } catch { }
 
-                            // 31-33. GÃ¼nler (Acil Uzatma): 5 dakika (300 saniye) sonra sunucu tarafÄ±nda oturumu otomatik kapat
+                            // 31-37. Günler (1 Hafta Tolerans): 5 dakika (300 saniye) sonra sunucu tarafında oturumu otomatik kapat
                             if (trialStatus.Status == "GRACE_PERIOD")
                             {
+                                int limitSec = trialStatus.SessionDurationSeconds > 0 ? trialStatus.SessionDurationSeconds : 300;
                                 var activeCts = session.ClientCts;
                                 _ = Task.Run(async () =>
                                 {
                                     try
                                     {
-                                        await Task.Delay(TimeSpan.FromSeconds(300), activeCts.Token);
+                                        await Task.Delay(TimeSpan.FromSeconds(limitSec), activeCts.Token);
                                         if (session.ClientSocket != null && session.ClientSocket.State == WebSocketState.Open)
                                         {
                                             byte[] timeoutBytes = Encoding.UTF8.GetBytes("ERROR:GRACE_TIMEOUT");

@@ -1039,17 +1039,23 @@ function isUserLicensed() {
     return false;
 }
 
-function startFreeSessionTimer() {
+function startFreeSessionTimer(durationSec) {
     if (isUserLicensed()) {
         console.log("[SessionTimer] User is LICENSED. Unlimited 7/24 session enabled.");
         return;
     }
 
-    sessionRemainingSeconds = 300; // 5 minutes
+    // Sadece 1 haftalık tolerans modunda (GRACE_PERIOD, 300 sn) 5 dakikalık sayaç çalıştırılır; 30 günlük deneme süresinde sınırsızdır!
+    const maxSec = (typeof durationSec === 'number' && durationSec > 0) ? durationSec : 0;
+    if (maxSec <= 0) {
+        return;
+    }
+
+    sessionRemainingSeconds = maxSec;
     sessionExtensionUsed = false;
     if (sessionTimerInterval) clearInterval(sessionTimerInterval);
 
-    console.log("[SessionTimer] Free trial timer started (5 minutes).");
+    console.log("[SessionTimer] Grace period tolerance timer started (" + maxSec + "s).");
 
     sessionTimerInterval = setInterval(() => {
         sessionRemainingSeconds--;
@@ -1058,7 +1064,11 @@ function startFreeSessionTimer() {
         if (sessionRemainingSeconds <= 60 && sessionRemainingSeconds > 0) {
             const modal = document.getElementById('session-timer-modal');
             const secDisplay = document.getElementById('session-timer-seconds');
-            if (modal) modal.classList.remove('hidden');
+            if (modal) {
+                modal.classList.remove('hidden');
+                modal.style.setProperty('display', 'block', 'important');
+                modal.style.setProperty('pointer-events', 'auto', 'important');
+            }
             if (secDisplay) secDisplay.innerText = sessionRemainingSeconds;
         }
 
@@ -1066,36 +1076,49 @@ function startFreeSessionTimer() {
         if (sessionRemainingSeconds <= 0) {
             clearInterval(sessionTimerInterval);
             sessionTimerInterval = null;
-            document.getElementById('session-timer-modal')?.classList.add('hidden');
+            const tModal = document.getElementById('session-timer-modal');
+            if (tModal) {
+                tModal.classList.add('hidden');
+                tModal.style.setProperty('display', 'none', 'important');
+            }
             
-            showToast('Ücretsiz web destek süreniz doldu! Masaüstü sürümünü indirin veya lisans satın alın.', 'error');
+            showToast('5 dakikalık tolerans süreniz doldu! Sınırsız kullanım: https://biglineconnect.bigus.com.tr (Ayda 125 TL | $2.20 USD)', 'error');
             
             // Close viewer screen gracefully
             if (connected && disconnectBtn) {
                 disconnectBtn.click();
             }
             stopWebScreenShare();
+            openTrialExpiredModal('5 Dakikalık Tolerans Oturum Süreniz Doldu!', 'Tolerans süreniz kapsamındaki 5 dakikalık oturum tamamlandı. Sınırsız ve kesintisiz bağlantı için hemen lisans alabilirsiniz:');
         }
     }, 1000);
 }
 
 function extendFreeSessionTimer() {
-    sessionRemainingSeconds += 300; // Add +5 Minutes (+300 sec)
-    sessionExtensionUsed = true;
-    document.getElementById('session-timer-modal')?.classList.add('hidden');
-    showToast('🎁 +5 Dakika Ek Ücretsiz Süre Eklendi!', 'success');
+    openCheckoutModal();
 }
 
 // 7. Instant Checkout & Online License Generator
 function openCheckoutModal() {
-    document.getElementById('session-timer-modal')?.classList.add('hidden');
+    const tModal = document.getElementById('session-timer-modal');
+    if (tModal) {
+        tModal.classList.add('hidden');
+        tModal.style.setProperty('display', 'none', 'important');
+    }
     const modal = document.getElementById('checkout-modal');
-    if (modal) modal.classList.remove('hidden');
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.style.setProperty('display', 'flex', 'important');
+        modal.style.setProperty('pointer-events', 'auto', 'important');
+    }
 }
 
 function closeCheckoutModal() {
     const modal = document.getElementById('checkout-modal');
-    if (modal) modal.classList.add('hidden');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.style.setProperty('display', 'none', 'important');
+    }
 }
 
 async function submitOnlineCheckout(e) {
@@ -1339,18 +1362,18 @@ function updateTrialBadgeUI(data) {
     } else if (data.Status === 'TRIAL_ACTIVE') {
         badge.style.borderColor = '#10b981';
         badge.style.color = '#10b981';
-        badge.style.background = 'linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(0, 229, 255, 0.2))';
-        textElem.innerHTML = `🟢 30 Günlük Deneme (${data.DaysRemaining} Gün Kaldı)`;
+        badge.style.background = 'linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(251, 191, 36, 0.15))';
+        textElem.innerHTML = `🟢 30 Günlük Sınırsız Deneme (${data.DaysRemaining} Gün Kaldı)`;
     } else if (data.Status === 'GRACE_PERIOD') {
         badge.style.borderColor = '#f59e0b';
         badge.style.color = '#f59e0b';
         badge.style.background = 'linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(239, 68, 68, 0.15))';
-        textElem.innerHTML = `🟡 Uzatma: ${data.GraceDaysRemaining} Gün Kaldı (Bugün ${data.TodaySessionsUsed}/3)`;
+        textElem.innerHTML = `🟡 1 Hafta Tolerans: ${data.GraceDaysRemaining} Gün Kaldı (Bugün ${data.TodaySessionsUsed}/3 x 5dk)`;
     } else if (data.Status === 'EXPIRED') {
         badge.style.borderColor = '#ef4444';
         badge.style.color = '#ef4444';
         badge.style.background = 'rgba(239, 68, 68, 0.2)';
-        textElem.innerHTML = '🔴 Süre Doldu (Lisanslayın)';
+        textElem.innerHTML = '🔴 Süre Doldu (Ayda 125 TL | $2.20 USD)';
     }
 }
 
@@ -1442,25 +1465,59 @@ window.submitInstantCardOrder = submitInstantCardOrder;
 
 function openLicenseActivationModal() {
     const m = document.getElementById('license-activation-modal');
-    if (m) m.classList.remove('hidden');
+    if (m) {
+        m.classList.remove('hidden');
+        m.style.setProperty('display', 'flex', 'important');
+        m.style.setProperty('pointer-events', 'auto', 'important');
+    }
 }
 window.openLicenseActivationModal = openLicenseActivationModal;
 
 function closeLicenseActivationModal() {
     const m = document.getElementById('license-activation-modal');
-    if (m) m.classList.add('hidden');
+    if (m) {
+        m.classList.add('hidden');
+        m.style.setProperty('display', 'none', 'important');
+    }
 }
 window.closeLicenseActivationModal = closeLicenseActivationModal;
 
 function closeGracePeriodModal() {
     const m = document.getElementById('grace-period-modal');
-    if (m) m.classList.add('hidden');
+    if (m) {
+        m.classList.add('hidden');
+        m.style.setProperty('display', 'none', 'important');
+    }
 }
 window.closeGracePeriodModal = closeGracePeriodModal;
 
+function openTrialExpiredModal(customTitle, customDesc) {
+    const m = document.getElementById('trial-expired-modal');
+    const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en') || (navigator.language && !navigator.language.toLowerCase().startsWith('tr'));
+    const tEl = document.getElementById('expired-modal-title');
+    const dEl = document.getElementById('expired-modal-desc');
+    if (tEl) {
+        tEl.innerText = customTitle || (isEn ? 'Your Free Trial & Grace Period Have Ended' : 'Ücretsiz Kullanım ve Tolerans Süreniz Sona Erdi');
+    }
+    if (dEl) {
+        dEl.innerText = customDesc || (isEn
+            ? 'Your 30-day unlimited free trial and 1-week tolerance period (3x 5 min/day) have ended. Visit https://biglineconnect.bigus.com.tr — Only $2.20 USD / month!'
+            : '30 günlük sınırsız ücretsiz kullanım ve ardından tanımlanan 1 haftalık (günde 3 kez 5 dk) tolerans süreniz tamamlanmıştır. Kesintisiz bağlantı için https://biglineconnect.bigus.com.tr adresinden Ayda Sadece 125 TL (Yurtdışı: $2.20 USD/ay) ile lisansınızı aktif edin:');
+    }
+    if (m) {
+        m.classList.remove('hidden');
+        m.style.setProperty('display', 'flex', 'important');
+        m.style.setProperty('pointer-events', 'auto', 'important');
+    }
+}
+window.openTrialExpiredModal = openTrialExpiredModal;
+
 function closeTrialExpiredModal() {
     const m = document.getElementById('trial-expired-modal');
-    if (m) m.classList.add('hidden');
+    if (m) {
+        m.classList.add('hidden');
+        m.style.setProperty('display', 'none', 'important');
+    }
 }
 window.closeTrialExpiredModal = closeTrialExpiredModal;
 
