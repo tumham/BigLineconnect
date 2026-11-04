@@ -959,31 +959,7 @@ body.theme-white .nav-logo {
     box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
 }
 
-body.theme-white .nav-title span {
-    text-shadow: none !important;
-}
-
-body.theme-white .nav-title > span:first-child {
-    color: #ea580c !important;
-}
-
-body.theme-white .nav-title > span:last-child {
-    color: #0f172a !important;
-}
-
-body.theme-white .nav-title svg circle:first-child,
-body.theme-white .nav-title svg line:nth-child(3),
-body.theme-white .nav-title svg line:nth-child(4) {
-    stroke: #f59e0b !important;
-}
-
-body.theme-white .nav-title svg circle:nth-child(2),
-body.theme-white .nav-title svg line:nth-child(5),
-body.theme-white .nav-title svg line:nth-child(6) {
-    stroke: #0f172a !important;
-}
-
-body.theme-white .nav-title svg + span {
+body.theme-white .nav-title {
     color: #0f172a !important;
     text-shadow: none !important;
 }
@@ -1367,35 +1343,9 @@ body.theme-amber .nav-logo {
     box-shadow: 0 0 18px rgba(245, 158, 11, 0.45) !important;
 }
 
-body.theme-amber .nav-title > span:first-child {
+body.theme-amber .nav-title {
     color: #fbbf24 !important;
-    text-shadow: 0 0 14px rgba(251, 191, 36, 0.85) !important;
-}
-
-body.theme-amber .nav-title > span:nth-child(2) {
-    background: linear-gradient(90deg, #fbbf24, #ea580c) !important;
-    box-shadow: 0 0 10px #f59e0b !important;
-}
-
-body.theme-amber .nav-title svg {
-    filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.9)) !important;
-}
-
-body.theme-amber .nav-title svg circle:first-child,
-body.theme-amber .nav-title svg line:nth-child(3),
-body.theme-amber .nav-title svg line:nth-child(4) {
-    stroke: #fbbf24 !important;
-}
-
-body.theme-amber .nav-title svg circle:nth-child(2),
-body.theme-amber .nav-title svg line:nth-child(5),
-body.theme-amber .nav-title svg line:nth-child(6) {
-    stroke: #ea580c !important;
-}
-
-body.theme-amber .nav-title > span:last-child {
-    color: #fffbeb !important;
-    text-shadow: 0 0 12px rgba(245, 158, 11, 0.6) !important;
+    text-shadow: 0 0 14px rgba(251, 191, 36, 0.35) !important;
 }
 
 body.theme-amber [data-i18n="nav.subtitle"] {

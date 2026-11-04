@@ -1,4 +1,4 @@
-// Internationalization (i18n) engine for BigLineconnect
+// Internationalization (i18n) engine for B-Connect
 const translations = {
     tr: {
         // Navbar
@@ -18,7 +18,7 @@ const translations = {
         // Hero
         "hero.badge": "Güvenli & Yerli Uzaktan Destek Altyapısı",
         "hero.title": "Güçlü, Hızlı ve Kesintisiz <br><span class=\"gradient-text\">Uzaktan Erişim Sistemi</span>",
-        "hero.desc": "BigLineconnect ile müşterilerinize ve uzak cihazlarınıza saniyeler içinde bağlanın. Port açma gerektirmeyen tak-çalıştır mimarisi, 60 FPS akıcı görüntü transferi ve kurumsal kota yönetimi ile kesintisiz teknik destek sağlayın.",
+        "hero.desc": "B-Connect ile müşterilerinize ve uzak cihazlarınıza saniyeler içinde bağlanın. Port açma gerektirmeyen tak-çalıştır mimarisi, 60 FPS akıcı görüntü transferi ve kurumsal kota yönetimi ile kesintisiz teknik destek sağlayın.",
         "hero.btn.download": "Windows İçin İndir (.exe)",
         "hero.btn.browser": "Tarayıcıdan Hızlı Bağlan",
         "hero.stat1": "60 FPS Akıcı Görüntü",
@@ -33,7 +33,7 @@ const translations = {
         "widget.footer": "Güvenli yerel ağ bağlantısı",
 
         // Features
-        "features.title": "Neden BigLineconnect?",
+        "features.title": "Neden B-Connect?",
         "features.desc": "Rakipsiz hız, uçtan uca güvenlik ve esnek lisanslama seçenekleri ile işinizi büyütün.",
         "feat1.title": "60 FPS Akıcı Ekran Transferi",
         "feat1.desc": "Düşük gecikme süreli grafik motoru sayesinde uzak bilgisayarları sanki başındaymış gibi yönetin.",
@@ -142,7 +142,7 @@ const translations = {
         // Hero
         "badge": "Secure & High-Performance Remote Support Infrastructure",
         "hero.title": "Powerful, Fast and Seamless <br><span class=\"gradient-text\">Remote Access System</span>",
-        "hero.desc": "Connect to your clients and remote computers in seconds with BigLineconnect. Enjoy plug-and-play architecture with zero port forwarding, 60 FPS smooth screen sharing, and enterprise quota management.",
+        "hero.desc": "Connect to your clients and remote computers in seconds with B-Connect. Enjoy plug-and-play architecture with zero port forwarding, 60 FPS smooth screen sharing, and enterprise quota management.",
         "hero.btn.download": "Download for Windows (.exe)",
         "hero.btn.browser": "Instant Browser Connect",
         "hero.stat1": "60 FPS Smooth Display",
@@ -157,7 +157,7 @@ const translations = {
         "widget.footer": "Encrypted direct network connection",
 
         // Features
-        "features.title": "Why Choose BigLineconnect?",
+        "features.title": "Why Choose B-Connect?",
         "features.desc": "Empower your technical support team with unmatched speed, end-to-end security, and flexible licensing.",
         "feat1.title": "60 FPS Ultra-Fast Streaming",
         "feat1.desc": "Low-latency graphics engine allows you to control remote desktops as if sitting right in front of them.",
