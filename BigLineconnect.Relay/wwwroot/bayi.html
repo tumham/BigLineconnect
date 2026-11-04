@@ -252,10 +252,48 @@
                 <input type="text" id="login-id" placeholder="Örn: BAYI001 veya bayi@firma.com" required>
             </div>
             <div class="input-group">
-                <label><i class="fa-solid fa-lock"></i> Şifre</label>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                    <label style="margin-bottom:0;"><i class="fa-solid fa-lock"></i> Şifre</label>
+                    <a href="javascript:void(0)" onclick="showTab('forgot')" style="color: var(--accent-cyan); font-size: 0.8rem; font-weight: 700; text-decoration: none;">
+                        <i class="fa-solid fa-key"></i> Şifremi Unuttum?
+                    </a>
+                </div>
                 <input type="password" id="login-pass" placeholder="••••••••" required>
             </div>
             <button type="submit" class="btn-primary"><i class="fa-solid fa-right-to-bracket"></i> Giriş Yap</button>
+            <div style="text-align:center; margin-top: 14px;">
+                <button type="button" onclick="showTab('forgot')" style="background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.35); color: var(--accent-cyan); padding: 10px 16px; border-radius: 8px; font-size: 0.85rem; font-weight: 700; cursor: pointer; width: 100%; transition: all 0.2s;">
+                    <i class="fa-solid fa-unlock-keyhole"></i> Şifremi Unuttum / Şifre Sıfırla
+                </button>
+            </div>
+        </form>
+
+        <!-- Forgot Password Form -->
+        <form id="forgot-form" class="hidden" onsubmit="handleForgotPassword(event)">
+            <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 10px; padding: 12px; margin-bottom: 16px; font-size: 0.85rem; color: #fef3c7; line-height: 1.4;">
+                <i class="fa-solid fa-shield-halved" style="color: var(--accent-cyan);"></i> <strong>Hızlı Şifre Sıfırlama:</strong> Kayıtlı e-posta/bayi kodunuzu ve telefon numaranızı girerek yeni şifrenizi anında belirleyebilirsiniz.
+            </div>
+            <div class="input-group">
+                <label><i class="fa-solid fa-building"></i> Bayi Kodu veya E-Posta</label>
+                <input type="text" id="forgot-id" placeholder="Örn: BAYI001 veya bayi@firma.com" required>
+            </div>
+            <div class="input-group">
+                <label><i class="fa-solid fa-phone"></i> Kayıtlı Telefon Numaranız</label>
+                <input type="text" id="forgot-phone" placeholder="0532 000 00 00" required>
+            </div>
+            <div class="input-group">
+                <label><i class="fa-solid fa-lock"></i> Yeni Şifreniz</label>
+                <input type="password" id="forgot-newpass" placeholder="Yeni şifrenizi girin" required>
+            </div>
+            <button type="submit" class="btn-primary"><i class="fa-solid fa-check-double"></i> Şifremi Yenile</button>
+            <div style="margin-top: 12px; display: flex; flex-direction: column; gap: 8px;">
+                <a href="https://wa.me/905423884052?text=Merhaba,%20B-Connect%20Bayi%20Portal%C4%B1%20%C5%9Fifremi%20unuttum,%20yard%C4%B1mc%C4%B1%20olabilir%20misiniz?" target="_blank" style="display: flex; align-items: center; justify-content: center; gap: 8px; background: rgba(46, 204, 113, 0.15); border: 1px solid #2ecc71; color: #2ecc71; padding: 10px; border-radius: 8px; font-size: 0.85rem; font-weight: 700; text-decoration: none;">
+                    <i class="fa-brands fa-whatsapp" style="font-size: 1.05rem;"></i> WhatsApp Destek ile Şifre Talep Et
+                </a>
+                <button type="button" onclick="showTab('login')" style="background: transparent; border: 1px solid var(--border-color); color: var(--text-muted); padding: 9px; border-radius: 8px; font-size: 0.85rem; font-weight: 600; cursor: pointer;">
+                    <i class="fa-solid fa-arrow-left"></i> Giriş Ekranına Dön
+                </button>
+            </div>
         </form>
 
         <!-- Register Form -->
@@ -356,14 +394,48 @@
     <script>
         function showTab(tab) {
             document.querySelectorAll('.auth-tab').forEach(b => b.classList.remove('active'));
+            document.getElementById('login-form').classList.add('hidden');
+            document.getElementById('register-form').classList.add('hidden');
+            const forgotForm = document.getElementById('forgot-form');
+            if (forgotForm) forgotForm.classList.add('hidden');
+
             if (tab === 'login') {
                 document.querySelectorAll('.auth-tab')[0].classList.add('active');
                 document.getElementById('login-form').classList.remove('hidden');
-                document.getElementById('register-form').classList.add('hidden');
-            } else {
+            } else if (tab === 'register') {
                 document.querySelectorAll('.auth-tab')[1].classList.add('active');
-                document.getElementById('login-form').classList.add('hidden');
                 document.getElementById('register-form').classList.remove('hidden');
+            } else if (tab === 'forgot') {
+                document.querySelectorAll('.auth-tab')[0].classList.add('active');
+                if (forgotForm) forgotForm.classList.remove('hidden');
+                const loginId = document.getElementById('login-id').value;
+                if (loginId) document.getElementById('forgot-id').value = loginId;
+            }
+        }
+
+        async function handleForgotPassword(e) {
+            e.preventDefault();
+            const id = document.getElementById('forgot-id').value.trim();
+            const phone = document.getElementById('forgot-phone').value.trim();
+            const newPass = document.getElementById('forgot-newpass').value;
+
+            try {
+                const res = await fetch('/api/bayi/reset-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ emailOrTenantId: id, phone: phone, newPassword: newPass })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert('✅ ' + (data.message || 'Şifreniz başarıyla güncellendi!'));
+                    showTab('login');
+                    document.getElementById('login-id').value = data.tenantId || id;
+                    document.getElementById('login-pass').value = newPass;
+                } else {
+                    alert('⚠️ Hata: ' + (data.message || 'Bilgiler doğrulanamadı!'));
+                }
+            } catch (err) {
+                alert('Bağlantı hatası!');
             }
         }
 

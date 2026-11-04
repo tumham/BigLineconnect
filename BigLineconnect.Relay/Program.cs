@@ -341,6 +341,34 @@ using System.IO;
                 return Resellers.Find(r => (r.TenantId.Equals(idOrEmail, StringComparison.OrdinalIgnoreCase) || r.Email.Equals(idOrEmail, StringComparison.OrdinalIgnoreCase)) && r.Password == password);
             }
         }
+
+        public static ResellerAccount? ResetPassword(string idOrEmail, string phone, string newPassword)
+        {
+            lock (Lock)
+            {
+                string cleanPhone = new string((phone ?? "").Where(char.IsDigit).ToArray());
+                if (cleanPhone.StartsWith("90") && cleanPhone.Length > 10) cleanPhone = cleanPhone.Substring(2);
+                if (cleanPhone.StartsWith("0") && cleanPhone.Length > 10) cleanPhone = cleanPhone.Substring(1);
+
+                var acc = Resellers.Find(r =>
+                {
+                    bool idMatch = r.TenantId.Equals(idOrEmail.Trim(), StringComparison.OrdinalIgnoreCase) ||
+                                   r.Email.Equals(idOrEmail.Trim(), StringComparison.OrdinalIgnoreCase);
+                    if (!idMatch) return false;
+                    string rPhone = new string((r.Phone ?? "").Where(char.IsDigit).ToArray());
+                    if (rPhone.StartsWith("90") && rPhone.Length > 10) rPhone = rPhone.Substring(2);
+                    if (rPhone.StartsWith("0") && rPhone.Length > 10) rPhone = rPhone.Substring(1);
+                    return !string.IsNullOrEmpty(cleanPhone) && (rPhone == cleanPhone || r.Phone.Trim() == phone.Trim());
+                });
+
+                if (acc != null)
+                {
+                    acc.Password = newPassword;
+                    Save();
+                }
+                return acc;
+            }
+        }
     }
 
     public class ViewerTrialRecord
@@ -2721,6 +2749,50 @@ using System.IO;
                     {
                         context.Response.ContentType = "application/json; charset=utf-8";
                         await context.Response.WriteAsync("{\"success\":false,\"message\":\"Geçersiz Bayi Kodu/E-Posta veya Şifre!\"}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                    await context.Response.WriteAsync(System.Text.Json.JsonSerializer.Serialize(new { success = false, message = ex.Message }));
+                }
+            });
+
+            app.MapPost("/api/bayi/reset-password", async context =>
+            {
+                try
+                {
+                    using var reader = new StreamReader(context.Request.Body);
+                    string body = await reader.ReadToEndAsync();
+                    using var doc = System.Text.Json.JsonDocument.Parse(body);
+                    var root = doc.RootElement;
+
+                    string idOrEmail = root.TryGetProperty("emailOrTenantId", out var p1) ? p1.GetString() ?? "" : "";
+                    string phone = root.TryGetProperty("phone", out var p2) ? p2.GetString() ?? "" : "";
+                    string newPass = root.TryGetProperty("newPassword", out var p3) ? p3.GetString() ?? "" : "";
+
+                    if (string.IsNullOrWhiteSpace(idOrEmail) || string.IsNullOrWhiteSpace(phone) || string.IsNullOrWhiteSpace(newPass))
+                    {
+                        context.Response.ContentType = "application/json; charset=utf-8";
+                        await context.Response.WriteAsync("{\"success\":false,\"message\":\"Lütfen tüm alanları doldurun!\"}");
+                        return;
+                    }
+
+                    var account = ResellerManager.ResetPassword(idOrEmail, phone, newPass);
+                    context.Response.ContentType = "application/json; charset=utf-8";
+                    if (account != null)
+                    {
+                        await context.Response.WriteAsync(System.Text.Json.JsonSerializer.Serialize(new
+                        {
+                            success = true,
+                            tenantId = account.TenantId,
+                            companyName = account.CompanyName,
+                            message = $"Şifreniz başarıyla güncellendi! Bayi Kodunuz: {account.TenantId}"
+                        }));
+                    }
+                    else
+                    {
+                        await context.Response.WriteAsync("{\"success\":false,\"message\":\"Girdiğiniz Bayi Kodu/E-Posta ile kayıtlı telefon numarası eşleşmedi!\"}");
                     }
                 }
                 catch (Exception ex)
