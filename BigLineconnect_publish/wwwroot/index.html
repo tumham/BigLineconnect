@@ -1586,7 +1586,7 @@ try {
                                     var subW = (view && view.byteLength >= 8) ? view.getUint16(4, true) : 0;
                                     var subH = (view && view.byteLength >= 8) ? view.getUint16(6, true) : 0;
 
-                                    var isKeyframe = (subX === 0 && subY === 0 && (subW === 0 || subW >= 640)) || (cv.width === 0 || cv.height === 0);
+                                    var isKeyframe = (cv.width === 0 || cv.height === 0) || (subX === 0 && subY === 0 && (subW >= cv.width || bmp.width >= cv.width || cv.width <= 100));
                                     if (isKeyframe) {
                                         if (cv.width !== bmp.width || cv.height !== bmp.height) {
                                             cv.width = bmp.width;
