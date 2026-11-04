@@ -268,6 +268,8 @@ using System.IO;
     public static class ResellerManager
     {
         private static readonly string DbPath = System.IO.Path.Combine(AppContext.BaseDirectory, "resellers.json");
+        private static readonly string SqlConnStr = Environment.GetEnvironmentVariable("BCONNECT_SQL_CONN")
+            ?? "Server=213.142.159.18;Database=BigusDb;User Id=sa;Password=Bm1453;Encrypt=False;Connection Timeout=8;";
         private static readonly List<ResellerAccount> Resellers = new();
         private static readonly object Lock = new();
 
@@ -276,38 +278,148 @@ using System.IO;
             Load();
         }
 
+        private static void EnsureSqlTable(System.Data.SqlClient.SqlConnection conn)
+        {
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = @"
+IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'BConnect_Resellers')
+BEGIN
+    CREATE TABLE BConnect_Resellers (
+        TenantId NVARCHAR(50) PRIMARY KEY,
+        CompanyName NVARCHAR(200) NOT NULL,
+        ContactName NVARCHAR(200) NOT NULL,
+        Phone NVARCHAR(50) NOT NULL,
+        Email NVARCHAR(200) NOT NULL,
+        Password NVARCHAR(200) NOT NULL,
+        MaxQuota INT NOT NULL DEFAULT 50,
+        CreatedAt DATETIME NOT NULL DEFAULT GETDATE()
+    );
+END";
+            cmd.ExecuteNonQuery();
+        }
+
         private static void Load()
+        {
+            lock (Lock)
+            {
+                bool loadedFromSql = false;
+                try
+                {
+                    using var conn = new System.Data.SqlClient.SqlConnection(SqlConnStr);
+                    conn.Open();
+                    EnsureSqlTable(conn);
+                    using var cmd = conn.CreateCommand();
+                    cmd.CommandText = "SELECT TenantId, CompanyName, ContactName, Phone, Email, Password, MaxQuota, CreatedAt FROM BConnect_Resellers ORDER BY CreatedAt ASC";
+                    using var reader = cmd.ExecuteReader();
+                    var sqlItems = new List<ResellerAccount>();
+                    while (reader.Read())
+                    {
+                        sqlItems.Add(new ResellerAccount
+                        {
+                            TenantId = reader["TenantId"]?.ToString() ?? "",
+                            CompanyName = reader["CompanyName"]?.ToString() ?? "",
+                            ContactName = reader["ContactName"]?.ToString() ?? "",
+                            Phone = reader["Phone"]?.ToString() ?? "",
+                            Email = reader["Email"]?.ToString() ?? "",
+                            Password = reader["Password"]?.ToString() ?? "",
+                            MaxQuota = reader["MaxQuota"] != DBNull.Value ? Convert.ToInt32(reader["MaxQuota"]) : 50,
+                            CreatedAt = reader["CreatedAt"] != DBNull.Value ? Convert.ToDateTime(reader["CreatedAt"]) : DateTime.Now
+                        });
+                    }
+                    Resellers.Clear();
+                    Resellers.AddRange(sqlItems);
+                    loadedFromSql = true;
+                }
+                catch { }
+
+                if (!loadedFromSql)
+                {
+                    try
+                    {
+                        if (System.IO.File.Exists(DbPath))
+                        {
+                            string json = System.IO.File.ReadAllText(DbPath);
+                            var items = System.Text.Json.JsonSerializer.Deserialize<List<ResellerAccount>>(json);
+                            if (items != null)
+                            {
+                                Resellers.Clear();
+                                Resellers.AddRange(items);
+                            }
+                        }
+                    }
+                    catch { }
+                }
+
+                // Ensure default master reseller account exists if empty
+                if (!Resellers.Exists(r => r.Email.Equals("my@bigus.com.tr", StringComparison.OrdinalIgnoreCase)))
+                {
+                    var master = new ResellerAccount
+                    {
+                        TenantId = "BAYI001",
+                        CompanyName = "Bigus Bilişim",
+                        ContactName = "Mahmut Yoldaş",
+                        Email = "my@bigus.com.tr",
+                        Phone = "05322762595",
+                        Password = "123456",
+                        MaxQuota = 50,
+                        CreatedAt = DateTime.Now
+                    };
+                    Resellers.Add(master);
+                    UpsertToSql(master);
+                }
+                SaveJsonLocal();
+            }
+        }
+
+        private static void UpsertToSql(ResellerAccount acc)
         {
             try
             {
-                lock (Lock)
-                {
-                    if (System.IO.File.Exists(DbPath))
-                    {
-                        string json = System.IO.File.ReadAllText(DbPath);
-                        var items = System.Text.Json.JsonSerializer.Deserialize<List<ResellerAccount>>(json);
-                        if (items != null)
-                        {
-                            Resellers.Clear();
-                            Resellers.AddRange(items);
-                        }
-                    }
-                }
+                using var conn = new System.Data.SqlClient.SqlConnection(SqlConnStr);
+                conn.Open();
+                EnsureSqlTable(conn);
+                using var cmd = conn.CreateCommand();
+                cmd.CommandText = @"
+IF EXISTS (SELECT 1 FROM BConnect_Resellers WHERE TenantId = @TenantId OR Email = @Email)
+BEGIN
+    UPDATE BConnect_Resellers
+    SET CompanyName = @CompanyName, ContactName = @ContactName, Phone = @Phone, Email = @Email, Password = @Password, MaxQuota = @MaxQuota
+    WHERE TenantId = @TenantId OR Email = @Email;
+END
+ELSE
+BEGIN
+    INSERT INTO BConnect_Resellers (TenantId, CompanyName, ContactName, Phone, Email, Password, MaxQuota, CreatedAt)
+    VALUES (@TenantId, @CompanyName, @ContactName, @Phone, @Email, @Password, @MaxQuota, @CreatedAt);
+END";
+                cmd.Parameters.AddWithValue("@TenantId", acc.TenantId);
+                cmd.Parameters.AddWithValue("@CompanyName", acc.CompanyName);
+                cmd.Parameters.AddWithValue("@ContactName", acc.ContactName);
+                cmd.Parameters.AddWithValue("@Phone", acc.Phone);
+                cmd.Parameters.AddWithValue("@Email", acc.Email);
+                cmd.Parameters.AddWithValue("@Password", acc.Password);
+                cmd.Parameters.AddWithValue("@MaxQuota", acc.MaxQuota);
+                cmd.Parameters.AddWithValue("@CreatedAt", acc.CreatedAt);
+                cmd.ExecuteNonQuery();
+            }
+            catch { }
+        }
+
+        private static void SaveJsonLocal()
+        {
+            try
+            {
+                string json = System.Text.Json.JsonSerializer.Serialize(Resellers);
+                System.IO.File.WriteAllText(DbPath, json);
             }
             catch { }
         }
 
         public static void Save()
         {
-            try
+            lock (Lock)
             {
-                lock (Lock)
-                {
-                    string json = System.Text.Json.JsonSerializer.Serialize(Resellers);
-                    System.IO.File.WriteAllText(DbPath, json);
-                }
+                SaveJsonLocal();
             }
-            catch { }
         }
 
         private static string NormalizePhone(string phone)
@@ -339,6 +451,7 @@ using System.IO;
 
             lock (Lock)
             {
+                Load();
                 var existingEmail = Resellers.Find(r => r.Email.Trim().Equals(cleanEmail, StringComparison.OrdinalIgnoreCase));
                 if (existingEmail != null)
                 {
@@ -360,7 +473,14 @@ using System.IO;
                     return null;
                 }
 
-                string tenantId = "BAYI" + (Resellers.Count + 1).ToString("D3");
+                int nextNum = Resellers.Count + 1;
+                string tenantId = "BAYI" + nextNum.ToString("D3");
+                while (Resellers.Exists(r => r.TenantId.Equals(tenantId, StringComparison.OrdinalIgnoreCase)))
+                {
+                    nextNum++;
+                    tenantId = "BAYI" + nextNum.ToString("D3");
+                }
+
                 var account = new ResellerAccount
                 {
                     TenantId = tenantId,
@@ -373,7 +493,8 @@ using System.IO;
                     CreatedAt = DateTime.Now
                 };
                 Resellers.Add(account);
-                Save();
+                UpsertToSql(account);
+                SaveJsonLocal();
                 return account;
             }
         }
@@ -382,7 +503,8 @@ using System.IO;
         {
             lock (Lock)
             {
-                return Resellers.Find(r => (r.TenantId.Equals(idOrEmail, StringComparison.OrdinalIgnoreCase) || r.Email.Equals(idOrEmail, StringComparison.OrdinalIgnoreCase)) && r.Password == password);
+                Load();
+                return Resellers.Find(r => (r.TenantId.Equals(idOrEmail.Trim(), StringComparison.OrdinalIgnoreCase) || r.Email.Equals(idOrEmail.Trim(), StringComparison.OrdinalIgnoreCase)) && r.Password == password);
             }
         }
 
@@ -390,25 +512,23 @@ using System.IO;
         {
             lock (Lock)
             {
-                string cleanPhone = new string((phone ?? "").Where(char.IsDigit).ToArray());
-                if (cleanPhone.StartsWith("90") && cleanPhone.Length > 10) cleanPhone = cleanPhone.Substring(2);
-                if (cleanPhone.StartsWith("0") && cleanPhone.Length > 10) cleanPhone = cleanPhone.Substring(1);
+                Load();
+                string cleanPhone = NormalizePhone(phone);
 
                 var acc = Resellers.Find(r =>
                 {
                     bool idMatch = r.TenantId.Equals(idOrEmail.Trim(), StringComparison.OrdinalIgnoreCase) ||
                                    r.Email.Equals(idOrEmail.Trim(), StringComparison.OrdinalIgnoreCase);
                     if (!idMatch) return false;
-                    string rPhone = new string((r.Phone ?? "").Where(char.IsDigit).ToArray());
-                    if (rPhone.StartsWith("90") && rPhone.Length > 10) rPhone = rPhone.Substring(2);
-                    if (rPhone.StartsWith("0") && rPhone.Length > 10) rPhone = rPhone.Substring(1);
+                    string rPhone = NormalizePhone(r.Phone);
                     return !string.IsNullOrEmpty(cleanPhone) && (rPhone == cleanPhone || r.Phone.Trim() == phone.Trim());
                 });
 
                 if (acc != null)
                 {
                     acc.Password = newPassword;
-                    Save();
+                    UpsertToSql(acc);
+                    SaveJsonLocal();
                 }
                 return acc;
             }
