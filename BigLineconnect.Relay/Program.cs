@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Net.WebSockets;
@@ -963,7 +963,7 @@ using System.IO;
                 context.Response.Headers["Pragma"] = "no-cache";
                 context.Response.Headers["Expires"] = "0";
 
-                string setupPath = System.IO.Path.Combine(AppContext.BaseDirectory, "wwwroot", "BigLineconnect_setup_v2.exe");
+                string setupPath = System.IO.Path.Combine(AppContext.BaseDirectory, "wwwroot", "B-Connect.exe");
                 if (!System.IO.File.Exists(setupPath))
                 {
                     setupPath = System.IO.Path.Combine(AppContext.BaseDirectory, "wwwroot", "BigLineconnect.exe");
@@ -979,7 +979,7 @@ using System.IO;
                 if (System.IO.File.Exists(setupPath))
                 {
                     context.Response.ContentType = "application/octet-stream";
-                    context.Response.Headers["Content-Disposition"] = "attachment; filename=\"BigLineconnect_setup.exe\"";
+                    context.Response.Headers["Content-Disposition"] = "attachment; filename=\"B-Connect.exe\"";
                     await context.Response.SendFileAsync(setupPath);
                 }
                 else
