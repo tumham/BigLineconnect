@@ -1953,6 +1953,9 @@
             targetHost.addEventListener('mousedown', function(e) {
                 if (!ws || ws.readyState !== WebSocket.OPEN) return;
                 if (e.pointerType === 'touch') return; // Skip synthetic touch mousedown to avoid duplicate clicks
+                if (document.activeElement && document.activeElement.blur && document.activeElement !== document.body) {
+                    document.activeElement.blur();
+                }
                 var pos = getMousePos(e.clientX, e.clientY);
                 var btn = (clickMode === 2 || e.button === 2) ? 'right' : (e.button === 1 ? 'middle' : 'left');
                 if (clickMode === 1) {
@@ -1976,12 +1979,8 @@
             });
 
             targetHost.addEventListener('dblclick', function(e) {
-                if (!ws || ws.readyState !== WebSocket.OPEN) return;
-                if (e.pointerType === 'touch') return;
-                var pos = getMousePos(e.clientX, e.clientY);
-                ws.send(JSON.stringify({ type: 'move', x: pos.x, y: pos.y }));
-                ws.send(JSON.stringify({ type: 'double_click', button: 'left', x: pos.x, y: pos.y }));
                 e.preventDefault();
+                // Fiziksel cift tiklama mousedown ve mouseup ile iletildiginden ek paket gonderilmez
             });
 
             targetHost.addEventListener('contextmenu', function(e) { e.preventDefault(); });
@@ -2191,16 +2190,28 @@
 
         window.addEventListener('keydown', function(e) {
             if (!ws || ws.readyState !== WebSocket.OPEN) return;
-            if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+            if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) {
+                if (e.target.id === 'hidden-keyboard-input' || e.target.id === 'mobile-live-input') return;
+                return;
+            }
+            if (['Tab', 'Backspace', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].indexOf(e.key) !== -1) {
+                e.preventDefault();
+            }
             var k = e.key === ' ' ? 'space' : e.key;
-            ws.send(JSON.stringify({ type: 'key', key: k, action: 'down' }));
+            ws.send(JSON.stringify({ type: 'key', key: k, keyCode: e.keyCode || e.which, action: 'down' }));
         });
 
         window.addEventListener('keyup', function(e) {
             if (!ws || ws.readyState !== WebSocket.OPEN) return;
-            if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+            if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) {
+                if (e.target.id === 'hidden-keyboard-input' || e.target.id === 'mobile-live-input') return;
+                return;
+            }
+            if (['Tab', 'Backspace', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].indexOf(e.key) !== -1) {
+                e.preventDefault();
+            }
             var k = e.key === ' ' ? 'space' : e.key;
-            ws.send(JSON.stringify({ type: 'key', key: k, action: 'up' }));
+            ws.send(JSON.stringify({ type: 'key', key: k, keyCode: e.keyCode || e.which, action: 'up' }));
         });
     </script>
     <script src="i18n.js?v=3803"></script>

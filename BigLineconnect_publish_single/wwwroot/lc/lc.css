@@ -1,0 +1,206 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+body {
+    background: #0b0c10;
+    color: #fff;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.landing-page {
+    width: 100%;
+    max-width: 440px;
+    padding: 20px;
+}
+
+.glass-card {
+    background: rgba(22, 24, 34, 0.95);
+    border: 1px solid rgba(0, 229, 255, 0.2);
+    border-radius: 24px;
+    padding: 36px 28px;
+    text-align: center;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 30px rgba(0, 229, 255, 0.1);
+}
+
+.brand .logo {
+    font-size: 3rem;
+    margin-bottom: 8px;
+}
+
+.brand h1 {
+    font-size: 2rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, #00e5ff, #3b82f6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.brand p {
+    font-size: 0.85rem;
+    color: #a0aec0;
+    margin-top: 4px;
+    margin-bottom: 28px;
+}
+
+.input-box label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #00e5ff;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+    text-align: left;
+}
+
+.input-box input {
+    width: 100%;
+    padding: 16px;
+    border-radius: 14px;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #fff;
+    font-size: 1.4rem;
+    font-weight: 800;
+    text-align: center;
+    letter-spacing: 3px;
+    outline: none;
+    transition: all 0.3s ease;
+}
+
+.input-box input:focus {
+    border-color: #00e5ff;
+    box-shadow: 0 0 15px rgba(0, 229, 255, 0.3);
+}
+
+.btn-primary {
+    width: 100%;
+    padding: 16px;
+    margin-top: 20px;
+    border-radius: 14px;
+    border: none;
+    background: linear-gradient(135deg, #00e5ff, #00b0ff);
+    color: #000;
+    font-size: 1.1rem;
+    font-weight: 800;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(0, 229, 255, 0.4);
+}
+
+.status-msg {
+    margin-top: 18px;
+    font-size: 0.85rem;
+    color: #a0aec0;
+}
+
+/* Viewport Live Screen */
+.viewport {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: #000;
+    display: flex;
+    flex-direction: column;
+    z-index: 99999;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.v-header {
+    height: 48px;
+    background: rgba(15, 16, 22, 0.95);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+}
+
+.v-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #00e5ff;
+}
+
+.v-badge {
+    background: rgba(46, 204, 113, 0.2);
+    color: #2ecc71;
+    border: 1px solid #2ecc71;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.v-btn-danger {
+    background: rgba(231, 76, 60, 0.2);
+    border: 1px solid #e74c3c;
+    color: #e74c3c;
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.canvas-box {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    position: relative;
+}
+
+#lc-canvas {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    touch-action: none;
+    cursor: crosshair;
+}
+
+.v-toolbar {
+    height: 54px;
+    background: rgba(15, 16, 22, 0.95);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    padding: 0 12px;
+}
+
+.tb-btn {
+    padding: 8px 16px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #fff;
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+
+.tb-btn.danger {
+    background: rgba(231, 76, 60, 0.2);
+    color: #e74c3c;
+    border-color: #e74c3c;
+}

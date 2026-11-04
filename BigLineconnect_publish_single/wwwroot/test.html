@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>BigLineconnect Hızlı Bağlantı Testi</title>
+    <style>
+        body { background: #0b0e14; color: #fff; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; }
+        .card { background: #161b26; border: 2px solid #00e5ff; border-radius: 16px; padding: 30px; max-width: 400px; width: 100%; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
+        input { width: 80%; padding: 14px; font-size: 1.4rem; text-align: center; border-radius: 10px; border: 1px solid #00e5ff; background: #0b0e14; color: #00e5ff; font-weight: bold; margin-bottom: 20px; }
+        button { width: 90%; padding: 16px; font-size: 1.2rem; font-weight: bold; background: #00e5ff; color: #000; border: none; border-radius: 10px; cursor: pointer; }
+        button:hover { background: #00b3cc; }
+        #canvas-box { display: none; width: 100vw; height: 100vh; position: fixed; top: 0; left: 0; background: #000; z-index: 999999; }
+        canvas { width: 100%; height: 100%; object-fit: contain; cursor: default; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>🖥️ BigLine Hızlı Bağlan (Tam Kontrol)</h2>
+        <input type="text" id="tid" value="219675629">
+        <button id="btn" onclick="doConnect()">BAĞLAN</button>
+        <p id="st" style="margin-top:15px; color:#00e5ff; font-weight:bold;"></p>
+    </div>
+
+    <div id="canvas-box">
+        <canvas id="cv"></canvas>
+    </div>
+
+    <script>
+        var ws = null;
+        var cv = document.getElementById('cv');
+
+        function doConnect() {
+            var id = document.getElementById('tid').value.replace(/\D/g, '');
+            var st = document.getElementById('st');
+            st.innerText = 'Bağlantı kuruluyor...';
+            
+            var wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            ws = new WebSocket(wsProtocol + '//' + location.host + '/connect-client?id=' + id);
+            ws.binaryType = 'arraybuffer';
+            
+            ws.onopen = function() {
+                st.innerText = 'Sunucuya bağlandı! Doğrulama bekleniyor...';
+            };
+            
+            ws.onmessage = function(ev) {
+                if (typeof ev.data === 'string') {
+                    if (ev.data === 'AUTH_REQUIRED') {
+                        var pass = prompt('🔒 Lütfen karşı bilgisayarın ekranında yazan 6 haneli erişim şifresini girin:', '');
+                        if (pass) ws.send(pass);
+                    } else if (ev.data === 'AUTH_SUCCESS') {
+                        st.innerText = 'Erişim Onaylandı! Ekran ve Kontrol Açılıyor...';
+                        document.getElementById('canvas-box').style.display = 'block';
+                    } else {
+                        alert(ev.data);
+                    }
+                } else if (ev.data instanceof ArrayBuffer) {
+                    var blob = new Blob([ev.data], {type: 'image/jpeg'});
+                    var url = URL.createObjectURL(blob);
+                    var img = new Image();
+                    var ctx = cv.getContext('2d');
+                    img.onload = function() {
+                        cv.width = img.width;
+                        cv.height = img.height;
+                        ctx.drawImage(img, 0, 0);
+                        URL.revokeObjectURL(url);
+                    };
+                    img.src = url;
+                }
+            };
+            
+            ws.onerror = function() { st.innerText = 'Bağlantı hatası!'; };
+            ws.onclose = function() { st.innerText = 'Bağlantı kapandı.'; };
+        }
+
+        // 100% Pixel-Perfect Mouse Calibration with Aspect Ratio & Letterbox Compensation
+        function getMousePos(cv, clientX, clientY) {
+            var rect = cv.getBoundingClientRect();
+            if (rect.width <= 0 || rect.height <= 0) return { x: 0, y: 0 };
+
+            var naturalWidth = (cv.width && cv.width > 300) ? cv.width : 1920;
+            var naturalHeight = (cv.height && cv.height > 150) ? cv.height : 1080;
+
+            var imageAspect = naturalWidth / naturalHeight;
+            var containerAspect = rect.width / rect.height;
+
+            var renderedWidth, renderedHeight, offsetX, offsetY;
+
+            if (containerAspect > imageAspect) {
+                // Black bars on left & right
+                renderedHeight = rect.height;
+                renderedWidth = rect.height * imageAspect;
+                offsetX = (rect.width - renderedWidth) / 2;
+                offsetY = 0;
+            } else {
+                // Black bars on top & bottom
+                renderedWidth = rect.width;
+                renderedHeight = rect.width / imageAspect;
+                offsetX = 0;
+                offsetY = (rect.height - renderedHeight) / 2;
+            }
+
+            var mouseX = clientX - rect.left - offsetX;
+            var mouseY = clientY - rect.top - offsetY;
+
+            return {
+                x: Math.max(0, Math.min(1, mouseX / renderedWidth)),
+                y: Math.max(0, Math.min(1, mouseY / renderedHeight))
+            };
+        }
+
+        cv.style.touchAction = 'none';
+
+        // Mouse & Keyboard Input Transmission
+        var lastMove = 0;
+        cv.addEventListener('mousemove', function(e) {
+            if (!ws || ws.readyState !== WebSocket.OPEN) return;
+            var now = Date.now();
+            if (now - lastMove < 16) return;
+            lastMove = now;
+
+            var pos = getMousePos(cv, e.clientX, e.clientY);
+            ws.send(JSON.stringify({ type: 'move', x: pos.x, y: pos.y }));
+        });
+
+        cv.addEventListener('mousedown', function(e) {
+            if (!ws || ws.readyState !== WebSocket.OPEN) return;
+            var pos = getMousePos(cv, e.clientX, e.clientY);
+            var btn = e.button === 2 ? 'right' : (e.button === 1 ? 'middle' : 'left');
+            ws.send(JSON.stringify({ type: 'click', button: btn, action: 'down', x: pos.x, y: pos.y }));
+            e.preventDefault();
+        });
+
+        cv.addEventListener('mouseup', function(e) {
+            if (!ws || ws.readyState !== WebSocket.OPEN) return;
+            var pos = getMousePos(cv, e.clientX, e.clientY);
+            var btn = e.button === 2 ? 'right' : (e.button === 1 ? 'middle' : 'left');
+            ws.send(JSON.stringify({ type: 'click', button: btn, action: 'up', x: pos.x, y: pos.y }));
+            e.preventDefault();
+        });
+
+        cv.addEventListener('contextmenu', function(e) { e.preventDefault(); });
+
+        cv.addEventListener('wheel', function(e) {
+            if (!ws || ws.readyState !== WebSocket.OPEN) return;
+            ws.send(JSON.stringify({ type: 'scroll', deltaY: e.deltaY }));
+            e.preventDefault();
+        }, { passive: false });
+
+        // Mobile Touch Engine: Focal Point Pinch Zoom + Pan + Tap & Hold
+        var touchStartX = 0, touchStartY = 0, touchStartTime = 0, isTouchDragging = false;
+        var currentScale = 1.0, panX = 0, panY = 0, originXPercent = 50, originYPercent = 50;
+        var initialPinchDist = 0, initialPinchScale = 1.0, lastTouchMidX = 0, lastTouchMidY = 0, isPinchZooming = false;
+
+        function applyZoomTransform() {
+            cv.style.transformOrigin = originXPercent + '% ' + originYPercent + '%';
+            cv.style.transform = 'translate(' + panX + 'px, ' + panY + 'px) scale(' + currentScale + ')';
+        }
+
+        cv.addEventListener('touchstart', function(e) {
+            if (!ws || ws.readyState !== WebSocket.OPEN) return;
+            if (e.touches.length === 2) {
+                isPinchZooming = true;
+                var t1 = e.touches[0];
+                var t2 = e.touches[1];
+                var midX = (t1.clientX + t2.clientX) / 2;
+                var midY = (t1.clientY + t2.clientY) / 2;
+
+                var rect = cv.getBoundingClientRect();
+                if (rect.width > 0 && rect.height > 0) {
+                    originXPercent = Math.max(0, Math.min(100, ((midX - rect.left) / rect.width) * 100));
+                    originYPercent = Math.max(0, Math.min(100, ((midY - rect.top) / rect.height) * 100));
+                }
+
+                initialPinchDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+                initialPinchScale = currentScale;
+                lastTouchMidX = midX;
+                lastTouchMidY = midY;
+            } else if (e.touches.length === 1) {
+                isPinchZooming = false;
+                var t = e.touches[0];
+                touchStartX = t.clientX;
+                touchStartY = t.clientY;
+                touchStartTime = Date.now();
+                isTouchDragging = false;
+                var pos = getMousePos(cv, t.clientX, t.clientY);
+                ws.send(JSON.stringify({ type: 'move', x: pos.x, y: pos.y }));
+            }
+        }, { passive: false });
+
+        cv.addEventListener('touchmove', function(e) {
+            if (!ws || ws.readyState !== WebSocket.OPEN) return;
+            if (e.touches.length === 2) {
+                var t1 = e.touches[0];
+                var t2 = e.touches[1];
+                var midX = (t1.clientX + t2.clientX) / 2;
+                var midY = (t1.clientY + t2.clientY) / 2;
+                var dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+
+                if (initialPinchDist > 0) {
+                    var factor = dist / initialPinchDist;
+                    currentScale = Math.max(1.0, Math.min(4.0, initialPinchScale * factor));
+
+                    panX += (midX - lastTouchMidX);
+                    panY += (midY - lastTouchMidY);
+                    lastTouchMidX = midX;
+                    lastTouchMidY = midY;
+
+                    applyZoomTransform();
+                }
+                e.preventDefault();
+            } else if (e.touches.length === 1 && !isPinchZooming) {
+                var t = e.touches[0];
+                var dx = Math.abs(t.clientX - touchStartX);
+                var dy = Math.abs(t.clientY - touchStartY);
+                if (dx > 5 || dy > 5) {
+                    isTouchDragging = true;
+                    var now = Date.now();
+                    if (now - lastMove >= 16) {
+                        lastMove = now;
+                        var pos = getMousePos(cv, t.clientX, t.clientY);
+                        ws.send(JSON.stringify({ type: 'move', x: pos.x, y: pos.y }));
+                    }
+                }
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        cv.addEventListener('touchend', function(e) {
+            if (!ws || ws.readyState !== WebSocket.OPEN) return;
+            if (isPinchZooming) {
+                if (e.touches.length === 0) isPinchZooming = false;
+                return;
+            }
+
+            var duration = Date.now() - touchStartTime;
+            if (!isTouchDragging && duration < 600 && e.changedTouches.length > 0) {
+                var t = e.changedTouches[0];
+                var pos = getMousePos(cv, t.clientX, t.clientY);
+                ws.send(JSON.stringify({ type: 'click', button: 'left', action: 'down', x: pos.x, y: pos.y }));
+                setTimeout(function() {
+                    if (ws && ws.readyState === WebSocket.OPEN) {
+                        ws.send(JSON.stringify({ type: 'click', button: 'left', action: 'up', x: pos.x, y: pos.y }));
+                    }
+                }, 50);
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        window.addEventListener('keydown', function(e) {
+            if (!ws || ws.readyState !== WebSocket.OPEN) return;
+            if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+            var k = e.key === ' ' ? 'space' : e.key;
+            ws.send(JSON.stringify({ type: 'key', key: k, action: 'down' }));
+        });
+
+        window.addEventListener('keyup', function(e) {
+            if (!ws || ws.readyState !== WebSocket.OPEN) return;
+            if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+            var k = e.key === ' ' ? 'space' : e.key;
+            ws.send(JSON.stringify({ type: 'key', key: k, action: 'up' }));
+        });
+    </script>
+</body>
+</html>
