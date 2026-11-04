@@ -103,7 +103,7 @@ window.resetConnectButton = resetConnectButton;
 
 // Connect Button Event Handler
 function startConnectionProcess() {
-    console.log('[BigLineconnect] startConnectionProcess triggered');
+    console.log('[B-Connect] startConnectionProcess triggered');
     const inputElem = document.getElementById('target-id');
     const btnElem = document.getElementById('connect-btn');
     
@@ -181,7 +181,7 @@ function connectToHost(id) {
         if (typeof ev.data === 'string') {
             if (ev.data === 'ERROR:ID_NOT_FOUND') {
                 resetConnectButton();
-                alert('⚠️ UYARI: (' + cleanId + ') numaralı Masaüstü ID\'si sunucuda bulunamadı!\n\nLütfen bilgisayarınızdaki BigLineconnect.exe uygulamasının AÇIK olduğundan ve "BU CİHAZIN ID\'Sİ" bölümünde yazan 9 haneli kodu doğru girdiğinizden emin olun.');
+                alert('⚠️ UYARI: (' + cleanId + ') numaralı Masaüstü ID\'si sunucuda bulunamadı!\n\nLütfen bilgisayarınızdaki B-Connect.exe uygulamasının AÇIK olduğundan ve "BU CİHAZIN ID\'Sİ" bölümünde yazan 9 haneli kodu doğru girdiğinizden emin olun.');
                 socket.close();
             } else if (ev.data === 'ERROR:BUSY') {
                 resetConnectButton();
@@ -844,10 +844,10 @@ function shareViaWhatsApp() {
     const idVal = inputElem ? inputElem.value.replace(/\D/g, '') : '';
     let text = '';
     if (!idVal || idVal.length < 5) {
-        text = encodeURIComponent(`Merhaba, BigLineconnect Uzak Masaüstü Bağlantı Sistemi:\nhttps://biglineconnect.bigus.com.tr/`);
+        text = encodeURIComponent(`Merhaba, B-Connect Uzak Masaüstü Bağlantı Sistemi:\nhttps://biglineconnect.bigus.com.tr/`);
     } else {
         const magicUrl = `https://biglineconnect.bigus.com.tr/?id=${idVal}`;
-        text = encodeURIComponent(`Merhaba, BigLineconnect Uzak Masaüstü Bağlantı Bilgilerim:\nID: ${idVal}\nTek tıkla bağlanmak için linke tıklayın:\n${magicUrl}`);
+        text = encodeURIComponent(`Merhaba, B-Connect Uzak Masaüstü Bağlantı Bilgilerim:\nID: ${idVal}\nTek tıkla bağlanmak için linke tıklayın:\n${magicUrl}`);
     }
     const waUrl = `https://api.whatsapp.com/send?text=${text}`;
     try {
@@ -1023,7 +1023,7 @@ function stopWebScreenShare() {
 function shareMyWebIdWhatsApp() {
     if (!myWebHostId) return;
     const magicUrl = `https://biglineconnect.bigus.com.tr/?id=${myWebHostId}`;
-    const text = encodeURIComponent(`Merhaba, BigLineconnect Web Destek ID'm: ${myWebHostId} | Şifre: ${myWebHostPass}\nTek tıkla bağlanın:\n${magicUrl}`);
+    const text = encodeURIComponent(`Merhaba, B-Connect Web Destek ID'm: ${myWebHostId} | Şifre: ${myWebHostPass}\nTek tıkla bağlanın:\n${magicUrl}`);
     window.open(`https://wa.me/?text=${text}`, '_blank');
 }
 
@@ -1132,7 +1132,7 @@ function checkoutViaWhatsApp() {
     const email = document.getElementById('checkout-email') ? document.getElementById('checkout-email').value.trim() : '';
     const phone = document.getElementById('checkout-phone') ? document.getElementById('checkout-phone').value.trim() : '';
 
-    const text = encodeURIComponent(`Merhaba, BigLineconnect Lisans Satın Alma ve Ödeme Bildirimi:\nAd Soyad / Firma: ${name || 'Belirtilmedi'}\nE-Posta: ${email || 'Belirtilmedi'}\nTelefon: ${phone || 'Belirtilmedi'}\nYıllık Pro Lisans Paketinizi (Ayda ₺125 TL) almak istiyorum.`);
+    const text = encodeURIComponent(`Merhaba, B-Connect Lisans Satın Alma ve Ödeme Bildirimi:\nAd Soyad / Firma: ${name || 'Belirtilmedi'}\nE-Posta: ${email || 'Belirtilmedi'}\nTelefon: ${phone || 'Belirtilmedi'}\nYıllık Pro Lisans Paketinizi (Ayda ₺125 TL) almak istiyorum.`);
     window.open(`https://wa.me/?text=${text}`, '_blank');
 }
 

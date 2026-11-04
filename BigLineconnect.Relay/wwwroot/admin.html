@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BigLineconnect - Türkiye Geneli Canlı Yönetim & Analiz Paneli</title>
+    <title>B-Connect - Türkiye Geneli Canlı Yönetim & Analiz Paneli</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -11,11 +11,11 @@
     <script src="i18n.js?v=1001"></script>
     <style>
         :root {
-            --bg-color: #0b0e14;
-            --card-bg: rgba(22, 27, 38, 0.75);
-            --border-color: rgba(255, 255, 255, 0.08);
-            --accent-cyan: #00e5ff;
-            --accent-purple: #d500f9;
+            --bg-color: #000000;
+            --card-bg: #070709;
+            --border-color: rgba(245, 158, 11, 0.35);
+            --accent-cyan: #fbbf24;
+            --accent-purple: #ea580c;
             --accent-gold: #f1c40f;
             --accent-green: #2ecc71;
             --accent-red: #e74c3c;
@@ -33,8 +33,8 @@
         body {
             background-color: var(--bg-color);
             background-image: 
-                radial-gradient(at 0% 0%, rgba(0, 229, 255, 0.08) 0px, transparent 50%),
-                radial-gradient(at 100% 100%, rgba(213, 0, 249, 0.08) 0px, transparent 50%);
+                radial-gradient(at 0% 0%, rgba(245, 158, 11, 0.08) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(234, 88, 12, 0.08) 0px, transparent 50%);
             background-attachment: fixed;
             color: var(--text-main);
             min-height: 100vh;
@@ -88,7 +88,7 @@
         }
 
         .refresh-btn:hover, .export-btn:hover {
-            background: rgba(0, 229, 255, 0.15);
+            background: rgba(245, 158, 11, 0.15);
             border-color: var(--accent-cyan);
             color: var(--accent-cyan);
         }
@@ -243,13 +243,13 @@
             font-weight: 700;
         }
 
-        .badge-cyan { background: rgba(0, 229, 255, 0.15); color: var(--accent-cyan); }
+        .badge-cyan { background: rgba(245, 158, 11, 0.15); color: var(--accent-cyan); }
         .badge-gold { background: rgba(241, 196, 15, 0.15); color: var(--accent-gold); }
         .badge-green { background: rgba(46, 204, 113, 0.15); color: var(--accent-green); }
         .badge-red { background: rgba(231, 76, 60, 0.15); color: var(--accent-red); }
 
         .tenant-pill {
-            background: rgba(213, 0, 249, 0.15);
+            background: rgba(234, 88, 12, 0.15);
             color: #e040fb;
             font-weight: 700;
             padding: 4px 10px;
@@ -262,10 +262,10 @@
     <div class="header">
         <div class="brand-title">
             <img src="logo.png" alt="Bigus Logo" class="brand-logo">
-            <span>BigLineconnect - Türkiye Geneli Analiz Paneli</span>
+            <span>B-Connect - Türkiye Geneli Analiz Paneli</span>
         </div>
         <div class="header-actions">
-            <button type="button" onclick="toggleLanguage()" class="lang-switch-btn" style="background: rgba(0, 229, 255, 0.12); border: 1px solid rgba(0, 229, 255, 0.3); color: #fff; padding: 8px 14px; border-radius: 8px; font-weight: 700; cursor: pointer;"><span class="lang-btn-text">🇹🇷 TR</span></button>
+            <button type="button" onclick="toggleLanguage()" class="lang-switch-btn" style="background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.3); color: #fff; padding: 8px 14px; border-radius: 8px; font-weight: 700; cursor: pointer;"><span class="lang-btn-text">🇹🇷 TR</span></button>
             <button class="export-btn" onclick="exportToCSV()"><i class="fa-solid fa-file-excel"></i> Excel (CSV) İndir</button>
             <button class="refresh-btn" onclick="loadDashboardData()"><i class="fa-solid fa-rotate-right"></i> Yenile</button>
         </div>
@@ -492,7 +492,7 @@
             const link = document.createElement("a");
             const url = URL.createObjectURL(blob);
             link.setAttribute("href", url);
-            link.setAttribute("download", `BigLineconnect_Turkiye_Analiz_Raporu_${new Date().toISOString().slice(0,10)}.csv`);
+            link.setAttribute("download", `B-Connect_Turkiye_Analiz_Raporu_${new Date().toISOString().slice(0,10)}.csv`);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -556,9 +556,9 @@
     </script>
 
     <!-- Admin Auth Modal Overlay -->
-    <div id="admin-login-modal" style="position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(11,14,20,0.95); z-index:99999; display:flex; justify-content:center; align-items:center; backdrop-filter:blur(15px);">
+    <div id="admin-login-modal" style="position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.96); z-index:99999; display:flex; justify-content:center; align-items:center; backdrop-filter:blur(15px);">
         <div style="background:var(--card-bg); border:1px solid var(--border-color); border-radius:20px; padding:40px; max-width:420px; width:90%; text-align:center; box-shadow:0 25px 50px rgba(0,0,0,0.8);">
-            <img src="logo.png" alt="BigLineconnect Logo" style="height:48px; margin-bottom:20px;">
+            <img src="logo.png" alt="B-Connect Logo" style="height:48px; margin-bottom:20px;">
             <h2 style="font-weight:800; font-size:1.6rem; margin-bottom:10px; background:linear-gradient(135deg, var(--accent-cyan), var(--accent-purple)); -webkit-background-clip:text; -webkit-text-fill-color:transparent;">Yönetici Girişi</h2>
             <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:24px;">Yönetim paneline erişmek için ana şifrenizi girin:</p>
             <form onsubmit="submitAdminLogin(event)">

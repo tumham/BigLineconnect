@@ -2771,14 +2771,14 @@ using System.IO;
 <head>
     <meta charset=""UTF-8"">
     <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
-    <title>BigLineconnect | Yönetim Girişi</title>
+    <title>B-Connect | Yönetim Girişi</title>
     <style>
         :root {
-            --bg-color: #0b0c10;
-            --card-bg: rgba(31, 40, 51, 0.6);
+            --bg-color: #000000;
+            --card-bg: #070709;
             --text-color: #c5c6c7;
-            --cyan: #00e5ff;
-            --magenta: #d500f9;
+            --cyan: #fbbf24;
+            --magenta: #ea580c;
             --white: #ffffff;
             --error: #ff1744;
         }
@@ -2834,18 +2834,18 @@ using System.IO;
             background-color: var(--card-bg);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(0, 229, 255, 0.2);
+            border: 1px solid rgba(245, 158, 11, 0.2);
             border-radius: 16px;
             padding: 40px 30px;
-            box-shadow: 0 0 30px rgba(0, 229, 255, 0.1), inset 0 0 20px rgba(255, 255, 255, 0.05);
+            box-shadow: 0 0 30px rgba(245, 158, 11, 0.1), inset 0 0 20px rgba(255, 255, 255, 0.05);
             text-align: center;
             position: relative;
             transform: translateY(0);
             transition: all 0.3s ease;
         }
         .login-card:hover {
-            border-color: rgba(0, 229, 255, 0.4);
-            box-shadow: 0 0 40px rgba(0, 229, 255, 0.2);
+            border-color: rgba(245, 158, 11, 0.4);
+            box-shadow: 0 0 40px rgba(245, 158, 11, 0.2);
         }
         .logo-area {
             margin-bottom: 30px;
@@ -2858,7 +2858,7 @@ using System.IO;
         }
         .logo-area h1 span {
             color: var(--cyan);
-            text-shadow: 0 0 10px rgba(0, 229, 255, 0.5);
+            text-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
         }
         .logo-area .subtitle {
             font-size: 12px;
@@ -2897,7 +2897,7 @@ using System.IO;
         }
         .input-control:focus {
             border-color: var(--cyan);
-            box-shadow: 0 0 8px rgba(0, 229, 255, 0.2);
+            box-shadow: 0 0 8px rgba(245, 158, 11, 0.2);
         }
         .toggle-btn {
             position: absolute;
@@ -2928,13 +2928,13 @@ using System.IO;
             text-transform: uppercase;
             letter-spacing: 1.5px;
             cursor: pointer;
-            box-shadow: 0 0 15px rgba(213, 0, 249, 0.3);
+            box-shadow: 0 0 15px rgba(234, 88, 12, 0.3);
             transition: all 0.3s ease;
             margin-top: 10px;
         }
         .btn-submit:hover {
             transform: translateY(-2px);
-            box-shadow: 0 0 25px rgba(0, 229, 255, 0.5);
+            box-shadow: 0 0 25px rgba(245, 158, 11, 0.5);
         }
         .error-message {
             background-color: rgba(255, 23, 68, 0.15);
@@ -2952,7 +2952,7 @@ using System.IO;
     <div class=""login-container"">
         <div class=""login-card"">
             <div class=""logo-area"">
-                <h1><span>BIGLINE</span>CONNECT</h1>
+                <h1><span>B-</span>CONNECT</h1>
                 <div class=""subtitle"">Yönetim Girişi</div>
             </div>
             
@@ -3011,16 +3011,16 @@ using System.IO;
 <head>
     <meta charset=""UTF-8"">
     <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
-    <title>BigLineconnect | Telemetri & Yönetim Paneli</title>
+    <title>B-Connect | Telemetri & Yönetim Paneli</title>
     <style>
         :root {
-            --bg-color: #0b0c10;
-            --card-bg: #1f2833;
+            --bg-color: #000000;
+            --card-bg: #070709;
             --text-color: #c5c6c7;
-            --cyan: #00e5ff;
-            --magenta: #d500f9;
+            --cyan: #fbbf24;
+            --magenta: #ea580c;
             --white: #ffffff;
-            --border-color: #45a29e;
+            --border-color: #fbbf24;
         }
         * {
             box-sizing: border-box;
@@ -3038,7 +3038,7 @@ using System.IO;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 2px solid rgba(0, 229, 255, 0.3);
+            border-bottom: 2px solid rgba(245, 158, 11, 0.3);
             padding-bottom: 15px;
             margin-bottom: 25px;
         }
@@ -3052,7 +3052,7 @@ using System.IO;
         }
         header h1 span {
             color: var(--cyan);
-            text-shadow: 0 0 10px rgba(0, 229, 255, 0.5);
+            text-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
         }
         .subtitle {
             font-size: 14px;
@@ -3076,8 +3076,8 @@ using System.IO;
         }
         .stat-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 12px 40px rgba(0, 229, 255, 0.15);
-            border-color: rgba(0, 229, 255, 0.3);
+            box-shadow: 0 12px 40px rgba(245, 158, 11, 0.15);
+            border-color: rgba(245, 158, 11, 0.3);
         }
         .stat-card::before {
             content: '';
@@ -3135,7 +3135,7 @@ using System.IO;
             font-size: 14px;
         }
         th {
-            background-color: rgba(0, 229, 255, 0.05);
+            background-color: rgba(245, 158, 11, 0.05);
             color: var(--cyan);
             font-weight: 600;
             text-transform: uppercase;
@@ -3153,16 +3153,16 @@ using System.IO;
             text-transform: uppercase;
         }
         .badge-active {
-            background-color: rgba(0, 229, 255, 0.15);
+            background-color: rgba(245, 158, 11, 0.15);
             color: var(--cyan);
-            border: 1px solid rgba(0, 229, 255, 0.3);
+            border: 1px solid rgba(245, 158, 11, 0.3);
         }
         .badge-busy {
-            background-color: rgba(213, 0, 249, 0.15);
+            background-color: rgba(234, 88, 12, 0.15);
             color: var(--magenta);
-            border: 1px solid rgba(213, 0, 249, 0.3);
+            border: 1px solid rgba(234, 88, 12, 0.3);
         }
-        .badge-startup { color: var(--cyan); border: 1px solid rgba(0, 229, 255, 0.3); background-color: rgba(0, 229, 255, 0.05); }
+        .badge-startup { color: var(--cyan); border: 1px solid rgba(245, 158, 11, 0.3); background-color: rgba(245, 158, 11, 0.05); }
         .badge-connect { color: #4caf50; border: 1px solid #4caf50; background-color: rgba(76, 175, 80, 0.05); }
         .badge-disconnect { color: #f44336; border: 1px solid #f44336; background-color: rgba(244, 67, 54, 0.05); }
         .badge-install { color: #ff9800; border: 1px solid #ff9800; background-color: rgba(255, 152, 0, 0.05); }
@@ -3184,7 +3184,7 @@ using System.IO;
         }
         .search-box:focus, .filter-select:focus {
             border-color: var(--cyan);
-            box-shadow: 0 0 8px rgba(0, 229, 255, 0.2);
+            box-shadow: 0 0 8px rgba(245, 158, 11, 0.2);
         }
         .search-box {
             flex-grow: 1;
@@ -3204,7 +3204,7 @@ using System.IO;
 <body>
     <header>
         <div>
-            <h1><span>BIGLINE</span>CONNECT <span>//</span> PANELI</h1>
+            <h1><span>B-</span>CONNECT <span>//</span> PANELI</h1>
             <div class='subtitle'>Gerçek Zamanlı Cihaz ve Bağlantı İzleme Ekranı</div>
         </div>
         <div style='text-align: right'>

@@ -2,10 +2,10 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="theme-color" content="#00e5ff">
+    <meta name="theme-color" content="#fbbf24">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="BigLine">
+    <meta name="apple-mobile-web-app-title" content="B-Connect">
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/logo.png">
     <link rel="icon" type="image/png" href="/logo.png">
@@ -16,11 +16,11 @@
     <script src="i18n.js?v=1001"></script>
     <style>
         :root {
-            --bg-color: #0b0e14;
-            --card-bg: rgba(22, 27, 38, 0.75);
-            --border-color: rgba(255, 255, 255, 0.08);
-            --accent-cyan: #00e5ff;
-            --accent-purple: #d500f9;
+            --bg-color: #000000;
+            --card-bg: #070709;
+            --border-color: rgba(245, 158, 11, 0.35);
+            --accent-cyan: #fbbf24;
+            --accent-purple: #ea580c;
             --accent-gold: #f1c40f;
             --accent-green: #2ecc71;
             --accent-red: #e74c3c;
@@ -38,8 +38,8 @@
         body {
             background-color: var(--bg-color);
             background-image: 
-                radial-gradient(at 0% 0%, rgba(0, 229, 255, 0.08) 0px, transparent 50%),
-                radial-gradient(at 100% 100%, rgba(213, 0, 249, 0.08) 0px, transparent 50%);
+                radial-gradient(at 0% 0%, rgba(245, 158, 11, 0.08) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(234, 88, 12, 0.08) 0px, transparent 50%);
             background-attachment: fixed;
             color: var(--text-main);
             min-height: 100vh;
@@ -178,7 +178,7 @@
             align-items: center;
             justify-content: center;
             font-size: 1.4rem;
-            background: rgba(0, 229, 255, 0.15);
+            background: rgba(245, 158, 11, 0.15);
             color: var(--accent-cyan);
         }
 
@@ -216,7 +216,7 @@
             font-weight: 700;
         }
 
-        .badge-cyan { background: rgba(0, 229, 255, 0.15); color: var(--accent-cyan); }
+        .badge-cyan { background: rgba(245, 158, 11, 0.15); color: var(--accent-cyan); }
         .badge-green { background: rgba(46, 204, 113, 0.15); color: var(--accent-green); }
 
         .hidden { display: none !important; }
@@ -226,14 +226,14 @@
     <!-- Header -->
     <div class="header">
         <div class="brand-title">
-            <img src="logo.png" alt="BigLineconnect Logo" class="brand-logo">
-            <span>BigLineconnect <span style="font-size: 0.9rem; color: var(--text-muted); font-weight: 500;">| Bayi Portalı</span></span>
+            <img src="logo.png" alt="B-Connect Logo" class="brand-logo">
+            <span>B-Connect <span style="font-size: 0.9rem; color: var(--text-muted); font-weight: 500;">| Bayi Portalı</span></span>
         </div>
         <div>
             <a href="index.html" style="color: var(--accent-cyan); text-decoration: none; font-weight: 600; font-size: 0.9rem;">
                 <i class="fa-solid fa-arrow-left"></i> Ana Sayfaya Dön
             </a>
-            <button type="button" onclick="toggleLanguage()" class="lang-switch-btn" style="margin-left: 15px; background: rgba(0, 229, 255, 0.12); border: 1px solid rgba(0, 229, 255, 0.3); color: #fff; padding: 6px 12px; border-radius: 8px; font-weight: 700; cursor: pointer;"><span class="lang-btn-text">🇹🇷 TR</span></button>
+            <button type="button" onclick="toggleLanguage()" class="lang-switch-btn" style="margin-left: 15px; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.3); color: #fff; padding: 6px 12px; border-radius: 8px; font-weight: 700; cursor: pointer;"><span class="lang-btn-text">🇹🇷 TR</span></button>
             <button id="logout-btn" class="hidden" onclick="logoutBayi()" style="margin-left: 15px; background: transparent; border: 1px solid var(--accent-red); color: var(--accent-red); padding: 6px 14px; border-radius: 8px; cursor: pointer; font-weight: 600;">Çıkış Yap</button>
         </div>
     </div>
@@ -502,20 +502,20 @@
             if (document.getElementById('ios-pwa-banner')) return;
             const banner = document.createElement('div');
             banner.id = 'ios-pwa-banner';
-            banner.style.cssText = 'position:fixed;bottom:16px;left:16px;right:16px;background:linear-gradient(135deg, #161b26, #1f283d);border:1.5px solid #00e5ff;border-radius:14px;padding:16px;box-shadow:0 10px 35px rgba(0,0,0,0.9);z-index:99999;color:#fff;font-family:Outfit,sans-serif;';
+            banner.style.cssText = 'position:fixed;bottom:16px;left:16px;right:16px;background:linear-gradient(135deg, #161b26, #1f283d);border:1.5px solid #fbbf24;border-radius:14px;padding:16px;box-shadow:0 10px 35px rgba(0,0,0,0.9);z-index:99999;color:#fff;font-family:Outfit,sans-serif;';
             banner.innerHTML = `
                 <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
                     <div style="display:flex;align-items:center;gap:12px;">
                         <img src="/logo.png" style="width:40px;height:40px;border-radius:10px;border:1px solid rgba(0,229,255,0.4);">
                         <div>
-                            <div style="font-weight:700;font-size:15px;color:#00e5ff;">📱 iPhone Ana Ekrana Ekle</div>
+                            <div style="font-weight:700;font-size:15px;color:#fbbf24;">📱 iPhone Ana Ekrana Ekle</div>
                             <div style="font-size:12px;color:#cbd5e1;margin-top:2px;">Uygulama olarak çalıştırmak için:</div>
                         </div>
                     </div>
                     <button onclick="document.getElementById('ios-pwa-banner').remove()" style="background:transparent;color:#94a3b8;border:none;font-size:18px;cursor:pointer;padding:4px;">✕</button>
                 </div>
                 <div style="margin-top:12px;padding:10px;background:rgba(0,229,255,0.08);border-radius:8px;font-size:13px;color:#e2e8f0;line-height:1.5;">
-                    1. Safari'nin altındaki <b>Paylaş (<i class="fa-solid fa-arrow-up-from-bracket" style="color:#00e5ff;"></i>)</b> butonuna basın.<br>
+                    1. Safari'nin altındaki <b>Paylaş (<i class="fa-solid fa-arrow-up-from-bracket" style="color:#fbbf24;"></i>)</b> butonuna basın.<br>
                     2. Açılan menüden <b>"Ana Ekrana Ekle" (+))</b> seçeneğini seçin.
                 </div>
             `;
@@ -534,17 +534,17 @@
             if (document.getElementById('pwa-banner')) return;
             const banner = document.createElement('div');
             banner.id = 'pwa-banner';
-            banner.style.cssText = 'position:fixed;bottom:16px;left:16px;right:16px;background:linear-gradient(135deg, #161b26, #1f283d);border:1px solid #00e5ff;border-radius:12px;padding:14px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 10px 30px rgba(0,0,0,0.8);z-index:9999;color:#fff;font-family:Outfit,sans-serif;';
+            banner.style.cssText = 'position:fixed;bottom:16px;left:16px;right:16px;background:linear-gradient(135deg, #161b26, #1f283d);border:1px solid #fbbf24;border-radius:12px;padding:14px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 10px 30px rgba(0,0,0,0.8);z-index:9999;color:#fff;font-family:Outfit,sans-serif;';
             banner.innerHTML = `
                 <div style="display:flex;align-items:center;gap:12px;">
                     <img src="/logo.png" style="width:36px;height:36px;border-radius:8px;">
                     <div>
-                        <div style="font-weight:700;font-size:14px;color:#00e5ff;">📱 Ana Ekrana Uygulama Olarak Ekle</div>
+                        <div style="font-weight:700;font-size:14px;color:#fbbf24;">📱 Ana Ekrana Uygulama Olarak Ekle</div>
                         <div style="font-size:12px;color:#94a3b8;">Tek tıkla araçtan/mobilden anında aç!</div>
                     </div>
                 </div>
                 <div style="display:flex;gap:8px;">
-                    <button id="pwa-install-btn" style="background:#00e5ff;color:#000;border:none;padding:8px 14px;border-radius:8px;font-weight:700;cursor:pointer;">YÜKLE</button>
+                    <button id="pwa-install-btn" style="background:#fbbf24;color:#000;border:none;padding:8px 14px;border-radius:8px;font-weight:700;cursor:pointer;">YÜKLE</button>
                     <button onclick="document.getElementById('pwa-banner').remove()" style="background:transparent;color:#94a3b8;border:none;padding:8px;cursor:pointer;">✕</button>
                 </div>
             `;

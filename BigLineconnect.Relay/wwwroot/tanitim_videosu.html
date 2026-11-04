@@ -12,17 +12,17 @@
 
     <style>
         :root {
-            --bg-dark: #06080e;
-            --panel-bg: rgba(12, 16, 28, 0.96);
+            --bg-dark: #000000;
+            --panel-bg: #070709;
             --panel-inner: rgba(18, 24, 42, 0.9);
-            --accent-cyan: #00e5ff;
-            --accent-purple: #d500f9;
+            --accent-cyan: #fbbf24;
+            --accent-purple: #ea580c;
             --accent-green: #2ecc71;
             --accent-gold: #f39c12;
             --accent-red: #ff3366;
             --text-main: #ffffff;
             --text-sub: #94a3b8;
-            --border-glow: rgba(0, 229, 255, 0.35);
+            --border-glow: rgba(245, 158, 11, 0.35);
         }
 
         * {
@@ -45,8 +45,8 @@
             padding: 20px 15px;
             overflow-x: hidden;
             background-image: 
-                radial-gradient(circle at 10% 15%, rgba(0, 229, 255, 0.14) 0%, transparent 45%),
-                radial-gradient(circle at 90% 85%, rgba(213, 0, 249, 0.14) 0%, transparent 45%),
+                radial-gradient(circle at 10% 15%, rgba(245, 158, 11, 0.14) 0%, transparent 45%),
+                radial-gradient(circle at 90% 85%, rgba(234, 88, 12, 0.14) 0%, transparent 45%),
                 linear-gradient(180deg, #06080e 0%, #0a0e18 100%);
         }
 
@@ -56,7 +56,7 @@
             background: var(--panel-bg);
             border: 1.5px solid var(--border-glow);
             border-radius: 28px;
-            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.95), 0 0 45px rgba(0, 229, 255, 0.2);
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.95), 0 0 45px rgba(245, 158, 11, 0.2);
             overflow: hidden;
             display: flex;
             flex-direction: column;
@@ -85,7 +85,7 @@
             height: 40px;
             border-radius: 10px;
             border: 1.5px solid var(--accent-cyan);
-            box-shadow: 0 0 14px rgba(0, 229, 255, 0.5);
+            box-shadow: 0 0 14px rgba(245, 158, 11, 0.5);
         }
 
         .brand-title {
@@ -100,7 +100,7 @@
         .brand-badge {
             font-size: 0.7rem;
             font-weight: 800;
-            background: rgba(0, 229, 255, 0.15);
+            background: rgba(245, 158, 11, 0.15);
             border: 1px solid var(--accent-cyan);
             color: var(--accent-cyan);
             padding: 3px 12px;
@@ -127,12 +127,12 @@
             align-items: center;
             gap: 8px;
             transition: all 0.2s ease;
-            box-shadow: 0 4px 15px rgba(0, 229, 255, 0.3);
+            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
         }
 
         .btn-live-connect:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0, 229, 255, 0.6);
+            box-shadow: 0 6px 20px rgba(245, 158, 11, 0.6);
         }
 
         /* Video Stage Frame */
@@ -196,7 +196,7 @@
         }
 
         .gradient-text-cyan {
-            background: linear-gradient(135deg, #00e5ff 0%, #d500f9 100%);
+            background: linear-gradient(135deg, #fbbf24 0%, #ea580c 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
@@ -208,7 +208,7 @@
         }
 
         .gradient-text-green {
-            background: linear-gradient(135deg, #2ecc71 0%, #00e5ff 100%);
+            background: linear-gradient(135deg, #2ecc71 0%, #fbbf24 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
@@ -285,7 +285,7 @@
 
         .mockup-window {
             background: var(--panel-inner);
-            border: 1.5px solid rgba(0, 229, 255, 0.25);
+            border: 1.5px solid rgba(245, 158, 11, 0.25);
             border-radius: 18px;
             overflow: hidden;
             box-shadow: 0 15px 40px rgba(0,0,0,0.65);
@@ -451,8 +451,8 @@
 
         /* Specialist Evaluation & Scorecard Side Card */
         .expert-eval-card {
-            background: rgba(0, 229, 255, 0.04);
-            border: 1px solid rgba(0, 229, 255, 0.25);
+            background: rgba(245, 158, 11, 0.04);
+            border: 1px solid rgba(245, 158, 11, 0.25);
             border-radius: 14px;
             padding: 14px;
             display: flex;
@@ -477,7 +477,7 @@
             font-weight: 900;
             color: #000;
             font-size: 1rem;
-            box-shadow: 0 0 12px rgba(0, 229, 255, 0.4);
+            box-shadow: 0 0 12px rgba(245, 158, 11, 0.4);
         }
 
         .eval-stats {
@@ -499,7 +499,7 @@
         /* Interactive Report Modal Mockup */
         .report-preview-box {
             background: rgba(15, 23, 42, 0.85);
-            border: 1px dashed rgba(0, 229, 255, 0.4);
+            border: 1px dashed rgba(245, 158, 11, 0.4);
             border-radius: 12px;
             padding: 10px 14px;
             font-size: 0.75rem;
@@ -531,8 +531,8 @@
         .f-card:hover {
             transform: translateY(-3px);
             border-color: var(--accent-cyan);
-            background: rgba(0, 229, 255, 0.05);
-            box-shadow: 0 8px 20px rgba(0, 229, 255, 0.15);
+            background: rgba(245, 158, 11, 0.05);
+            box-shadow: 0 8px 20px rgba(245, 158, 11, 0.15);
         }
 
         .f-card-icon {
@@ -568,7 +568,7 @@
             align-items: center;
             gap: 8px;
             background: rgba(15, 23, 42, 0.8);
-            border: 1.5px solid rgba(0, 229, 255, 0.3);
+            border: 1.5px solid rgba(245, 158, 11, 0.3);
             border-radius: 12px;
             padding: 10px 18px;
             font-size: 0.9rem;
@@ -642,7 +642,7 @@
             background: var(--accent-cyan);
             color: #000;
             border-color: var(--accent-cyan);
-            box-shadow: 0 0 15px rgba(0, 229, 255, 0.5);
+            box-shadow: 0 0 15px rgba(245, 158, 11, 0.5);
         }
 
         .ctrl-btn.play-btn {
@@ -675,13 +675,13 @@
         }
 
         .scene-pill:hover, .scene-pill.active {
-            background: rgba(0, 229, 255, 0.12);
+            background: rgba(245, 158, 11, 0.12);
             border-color: var(--accent-cyan);
             color: #ffffff;
         }
 
         .scene-pill.active {
-            box-shadow: 0 0 12px rgba(0, 229, 255, 0.3);
+            box-shadow: 0 0 12px rgba(245, 158, 11, 0.3);
         }
 
         .timer-display {
@@ -694,7 +694,7 @@
         /* Voiceover Speaker Subtitle Box */
         .subtitle-box {
             background: rgba(14, 20, 34, 0.92);
-            border: 1px solid rgba(0, 229, 255, 0.3);
+            border: 1px solid rgba(245, 158, 11, 0.3);
             border-radius: 14px;
             padding: 12px 22px;
             display: flex;
@@ -857,7 +857,7 @@
                                     </tr>
                                 </thead>
                                 <tbody id="crmHistoryBody">
-                                    <tr style="background: rgba(0, 229, 255, 0.05);">
+                                    <tr style="background: rgba(245, 158, 11, 0.05);">
                                         <td><strong>Bugün 14:20</strong></td>
                                         <td>Fatura Yazıcı Çıktı Hatası</td>
                                         <td><i class="fa-solid fa-user-check" style="color:var(--accent-cyan);"></i> Ahmet B. (Kıdemli)</td>

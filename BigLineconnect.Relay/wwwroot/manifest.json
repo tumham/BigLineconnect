@@ -1,12 +1,12 @@
 {
-  "name": "BigLineconnect - Mobil Bayi & Destek Portalı",
-  "short_name": "BigLine",
-  "description": "BigLineconnect Mobil Destek ve Uzaktan Kontrol Portalı",
+  "name": "B-Connect - Mobil Bayi & Destek Portalı",
+  "short_name": "B-Connect",
+  "description": "B-Connect Mobil Destek ve Uzaktan Kontrol Portalı",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#0b0e14",
-  "theme_color": "#00e5ff",
+  "background_color": "#000000",
+  "theme_color": "#fbbf24",
   "scope": "/",
   "icons": [
     {
