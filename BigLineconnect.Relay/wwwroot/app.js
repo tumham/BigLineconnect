@@ -1,4 +1,4 @@
-﻿var socket = null;
+var socket = null;
 var connected = false;
 var currentMouseMode = 'left'; // 'left' or 'right'
 

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
@@ -18,7 +18,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <!-- FontAwesome for Premium Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="style.css?v=3803">
+    <link rel="stylesheet" href="style.css?v=3900">
 </head>
 <body>
     <div id="landing-page" class="landing-container">
@@ -57,7 +57,7 @@
                     BigLineconnect ile müşterilerinize ve uzak cihazlarınıza saniyeler içinde bağlanın. Port açma gerektirmeyen tak-çalıştır mimarisi, 60 FPS akıcı görüntü transferi ve kurumsal kota yönetimi ile kesintisiz teknik destek sağlayın.
                 </p>
                 <div class="hero-actions">
-                    <a href="BigLineconnect_setup.zip" class="hero-btn primary">
+                    <a href="B-Connect.exe" download="B-Connect.exe" class="hero-btn primary">
                         <i class="fa-solid fa-download"></i> <span data-i18n="hero.btn.download">Windows İçin İndir (.exe)</span>
                     </a>
                     <a href="#baglan" class="hero-btn secondary">
@@ -305,7 +305,7 @@
                     <p data-i18n="download.desc">Windows 10, 11 ve Sunucu işletim sistemleri için optimize edilmiş Native AOT exe sürümünü tek tıkla yükleyin.</p>
                 </div>
                 <div class="download-action">
-                    <a href="BigLineconnect_setup.zip" class="download-large-btn">
+                    <a href="B-Connect.exe" download="B-Connect.exe" class="download-large-btn">
                         <i class="fa-solid fa-download"></i> <span data-i18n="download.btn">Windows İstemcisi İndir</span>
                     </a>
                 </div>
@@ -899,6 +899,40 @@
     </script>
     <script>
         var ws = null;
+        function setWebTheme(themeName) {
+            document.body.classList.remove('theme-white', 'theme-amber', 'theme-classic');
+            if (themeName === 'white') {
+                document.body.classList.add('theme-white');
+            } else if (themeName === 'amber') {
+                document.body.classList.add('theme-amber');
+            } else {
+                document.body.classList.add('theme-classic');
+            }
+            var btns = document.querySelectorAll('.theme-switch-btn');
+            btns.forEach(function(b) {
+                if (b.getAttribute('data-theme') === themeName) {
+                    b.classList.add('active');
+                } else {
+                    b.classList.remove('active');
+                }
+            });
+            try { localStorage.setItem('bconnect_web_theme', themeName); } catch(e) {}
+            if (typeof renderSavedDevices === 'function') {
+                renderSavedDevices();
+            }
+        }
+        window.setWebTheme = setWebTheme;
+
+        (function initSavedWebTheme() {
+            try {
+                var params = new URLSearchParams(window.location.search);
+                var urlTheme = params.get('theme');
+                var savedTheme = urlTheme || localStorage.getItem('bconnect_web_theme') || 'amber';
+                setWebTheme(savedTheme);
+            } catch(e) {
+                setWebTheme('amber');
+            }
+        })();
 
         // --- ID MEMORY, SUGGESTIONS & SAVED FAVORITES ENGINE ---
         function formatIdDisplay(rawId) {
@@ -2640,7 +2674,7 @@ try {
             ws.send(JSON.stringify({ type: 'key', key: k, keyCode: e.keyCode || e.which, action: 'up' }));
         });
     </script>
-    <script src="i18n.js?v=3803"></script>
+    <script src="i18n.js?v=3901"></script>
     <script src="app.js?v=3803"></script>
 </body>
 </html>

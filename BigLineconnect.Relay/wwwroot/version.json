@@ -1,6 +1,6 @@
 {
-  "version": "1.0.5",
-  "url": "https://biglineconnect.bigus.com.tr/BigLineconnect_setup.exe",
+  "version": "3.61.0",
+  "url": "https://biglineconnect.bigus.com.tr/B-Connect.exe",
   "mandatory": false,
-  "releaseNotes": "AnyDesk seviyesi donanım DXGI hızlandırma ve çift tıklama performans güncellemesi"
+  "releaseNotes": "Native C++20 DXGI 60 FPS Ultra HÄ±zlÄ± Ä°stemci (2.1 MB Kurulumsuz Tek TÄ±k)"
 }

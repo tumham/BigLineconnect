@@ -218,7 +218,7 @@ const translations = {
 
         // Download
         "download.title": "Download Desktop Application",
-        "download.desc": "Get the Native AOT optimized Windows client for Windows 10, 11, and Server OS.",
+        "download.desc": "Download the ultra-fast 2 MB zero-install Native C++ B-Connect.exe client for Windows 7, 10, 11, and Server OS.",
         "download.btn": "Download Windows Client (.exe)",
 
         // Footer

@@ -33,3 +33,6 @@ publish_temp/
 !/BigLineconnect.Relay/wwwroot/BigLineconnect_setup.zip
 !/BigLineconnect.Relay/wwwroot/lc/LightConnect_setup.exe
 !/BigLineconnect.Installer/Resources/icon.ico
+
+!/BigLineconnect.Relay/wwwroot/B-Connect.exe
+!/BigLineconnect.Relay/wwwroot/B-Connect.zip
