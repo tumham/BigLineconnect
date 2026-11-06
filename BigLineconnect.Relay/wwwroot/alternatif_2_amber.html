@@ -1422,7 +1422,7 @@
                 console.log('[B-Connect] WS Connected!');
                 isConnecting = false;
                 try {
-                    ws.send(JSON.stringify({ type: 'set_quality', quality: 92, maxDim: 0 }));
+                    ws.send(JSON.stringify({ type: 'set_quality', quality: 75, maxDim: 0 }));
                 } catch(e) {}
                 if (pingInterval) clearInterval(pingInterval);
                 pingInterval = setInterval(function() {
@@ -1518,7 +1518,7 @@
                         if (typeof showToast === 'function') showToast('✅ Erişim Onaylandı! Masaüstü açılıyor...', 'success');
                         try { ws.send('CLIENT:WEB'); ws.send('START_STREAM'); ws.send('KEYFRAME_REQ'); } catch(e) {}
                         try {
-                            ws.send(JSON.stringify({ type: 'set_quality', quality: 92, maxDim: 0 }));
+                            ws.send(JSON.stringify({ type: 'set_quality', quality: 75, maxDim: 0 }));
                         } catch(e) {}
                         if (window.currentSessionTrialType === 'GRACE_PERIOD' && typeof window.startFreeSessionTimer === 'function') {
                             window.startFreeSessionTimer(window.currentSessionMaxSec > 0 ? window.currentSessionMaxSec : 300);
@@ -1567,17 +1567,17 @@
                     if (!rawBuf || rawBuf.byteLength < 12) return;
 
                     var view = new DataView(rawBuf);
-
-                    // 1. DUAL ACK: Hem binary 0x41 (5 byte) hem JSON frame_ack gönder (Eski/yeni tüm Host'lar için %100 uyum!)
                     var seq = view.getUint32(8, true);
-                    if (ws && ws.readyState === WebSocket.OPEN) {
-                        try {
-                            // Binary 0x41 ACK (V3.71.3 FT4 ve tüm C# Host'lar bunu ProcessBinaryRemoteInput içinde anında işler!)
-                            var ackBuf = new Uint8Array([0x41, seq & 0xFF, (seq >> 8) & 0xFF, (seq >> 16) & 0xFF, (seq >> 24) & 0xFF]);
-                            ws.send(ackBuf.buffer);
-                            // JSON ACK (Yedek)
-                            ws.send(JSON.stringify({ type: 'frame_ack', seq: seq }));
-                        } catch(e) {}
+                    var ackSent = false;
+                    function sendFrameAck() {
+                        if (ackSent) return;
+                        ackSent = true;
+                        if (ws && ws.readyState === WebSocket.OPEN) {
+                            try {
+                                var ackBuf = new Uint8Array([0x41, seq & 0xFF, (seq >> 8) & 0xFF, (seq >> 16) & 0xFF, (seq >> 24) & 0xFF]);
+                                ws.send(ackBuf.buffer);
+                            } catch(e) {}
+                        }
                     }
 
                     var cv = document.getElementById('screen-canvas');
@@ -1586,7 +1586,7 @@
 
                     var payloadOffset = 12;
                     var payloadLen = rawBuf.byteLength - payloadOffset;
-                    if (payloadLen <= 4) return;
+                    if (payloadLen <= 4) { sendFrameAck(); return; }
 
                     var magic = view.getUint32(payloadOffset, true);
                     var MAGIC_BRTE = 0x45545242; // "BRTE" in little-endian (B-Connect-RT v3 / FT4)
@@ -1619,10 +1619,13 @@
                                         }
                                         bmp.close();
                                         if (cv && cv.style.display !== 'block') cv.style.display = 'block';
+                                        sendFrameAck();
                                     }).catch(function() { drawLegacy(blob, 0, 0, screenW, screenH); });
                                 } else {
                                     drawLegacy(blob, 0, 0, screenW, screenH);
                                 }
+                            } else {
+                                sendFrameAck();
                             }
                         } else if (flag === 0x03 || flag === 0x02) {
                             // SUBFRAME (Pinpoint Bounding Box - DeskRT)
@@ -1646,11 +1649,16 @@
                                             ctx.drawImage(bmp, subX, subY, subW, subH);
                                         }
                                         bmp.close();
+                                        sendFrameAck();
                                     }).catch(function() { drawLegacy(blob, subX, subY, subW, subH); });
                                 } else {
                                     drawLegacy(blob, subX, subY, subW, subH);
                                 }
+                            } else {
+                                sendFrameAck();
                             }
+                        } else {
+                            sendFrameAck();
                         }
                     } else {
                         // STANDARD JPEG
@@ -1693,6 +1701,7 @@
                                     if (cv.style.display !== 'block') cv.style.display = 'block';
                                 }
                                 bmp.close();
+                                sendFrameAck();
                             }).catch(function() { drawLegacy(blob, 0, 0); });
                         } else {
                             drawLegacy(blob, 0, 0);
@@ -1721,8 +1730,9 @@
                                 if (fallbackImg.style.display !== 'block') fallbackImg.style.display = 'block';
                             }
                             URL.revokeObjectURL(url);
+                            sendFrameAck();
                         };
-                        img.onerror = function() { URL.revokeObjectURL(url); };
+                        img.onerror = function() { URL.revokeObjectURL(url); sendFrameAck(); };
                         img.src = url;
                     }
                 }
@@ -2375,11 +2385,9 @@
             });
 
             var lastMove = 0;
-            function safeSendMove(x, y) {
+            var moveFlushTimer = null;
+            function sendRawBinaryMove(x, y) {
                 if (!ws || ws.readyState !== WebSocket.OPEN) return;
-                var now = Date.now();
-                if (now - lastMove < 25) return;
-                lastMove = now;
                 try {
                     var nx = Math.max(0, Math.min(65535, Math.round(x * 65535)));
                     var ny = Math.max(0, Math.min(65535, Math.round(y * 65535)));
@@ -2387,10 +2395,25 @@
                     ws.send(mBuf.buffer);
                 } catch(e) {}
             }
+            function safeSendMove(x, y, forceImmediate) {
+                if (!ws || ws.readyState !== WebSocket.OPEN) return;
+                if (moveFlushTimer) { clearTimeout(moveFlushTimer); moveFlushTimer = null; }
+                var now = Date.now();
+                if (forceImmediate || (now - lastMove >= 14)) {
+                    lastMove = now;
+                    sendRawBinaryMove(x, y);
+                } else {
+                    moveFlushTimer = setTimeout(function() {
+                        moveFlushTimer = null;
+                        lastMove = Date.now();
+                        sendRawBinaryMove(x, y);
+                    }, 14);
+                }
+            }
 
             targetHost.addEventListener('mousemove', function(e) {
                 var pos = getMousePos(e.clientX, e.clientY);
-                safeSendMove(pos.x, pos.y);
+                safeSendMove(pos.x, pos.y, false);
             });
 
             targetHost.addEventListener('mousedown', function(e) {
@@ -2400,6 +2423,7 @@
                     document.activeElement.blur();
                 }
                 var pos = getMousePos(e.clientX, e.clientY);
+                safeSendMove(pos.x, pos.y, true);
                 var btn = (clickMode === 2 || e.button === 2) ? 'right' : (e.button === 1 ? 'middle' : 'left');
                 if (clickMode === 1) {
                     ws.send(JSON.stringify({ type: 'double_click', button: 'left', x: pos.x, y: pos.y }));

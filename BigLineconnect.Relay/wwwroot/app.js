@@ -4,8 +4,8 @@ var currentMouseMode = 'left'; // 'left' or 'right'
 
 // Zoom & Pan State
 var scale = 1.0;
-var panX = 0;
-var panY = 0;
+if (typeof window.panX === 'undefined') window.panX = 0;
+if (typeof window.panY === 'undefined') window.panY = 0;
 var startTouchDistance = 0;
 var startScale = 1.0;
 var startMidX = 0;
