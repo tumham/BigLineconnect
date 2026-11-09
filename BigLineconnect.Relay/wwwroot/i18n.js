@@ -94,7 +94,7 @@ const translations = {
 
         // Download
         "download.title": "Masaüstü Uygulamasını İndirin",
-        "download.desc": "Windows 10, 11 ve Sunucu işletim sistemleri için optimize edilmiş Native AOT exe sürümünü tek tıkla yükleyin.",
+        "download.desc": "Windows 10, 11 ve Sunucu işletim sistemleri için yüksek hızlı masaüstü sürümünü tek tıkla yükleyin.",
         "download.btn": "Windows İstemcisi İndir",
 
         // Footer
@@ -218,7 +218,7 @@ const translations = {
 
         // Download
         "download.title": "Download Desktop Application",
-        "download.desc": "Download the ultra-fast 2 MB zero-install Native C++ B-Connect.exe client for Windows 7, 10, 11, and Server OS.",
+        "download.desc": "Download the ultra-fast zero-install B-Connect.exe client for Windows 7, 10, 11, and Server OS.",
         "download.btn": "Download Windows Client (.exe)",
 
         // Footer
