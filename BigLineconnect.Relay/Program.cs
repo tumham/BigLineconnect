@@ -1391,15 +1391,15 @@ END";
                 context.Response.Headers["Pragma"] = "no-cache";
                 context.Response.Headers["Expires"] = "0";
 
-                string setupPath = System.IO.Path.Combine(AppContext.BaseDirectory, "wwwroot", "B-Connect.zip");
+                string setupPath = System.IO.Path.Combine(AppContext.BaseDirectory, "wwwroot", "B-Connect.exe");
                 if (!System.IO.File.Exists(setupPath))
                 {
-                    setupPath = System.IO.Path.Combine(AppContext.BaseDirectory, "wwwroot", "BigLineconnect_setup.zip");
+                    setupPath = System.IO.Path.Combine(AppContext.BaseDirectory, "wwwroot", "BigLineconnect.exe");
                 }
                 if (System.IO.File.Exists(setupPath))
                 {
-                    context.Response.ContentType = "application/zip";
-                    context.Response.Headers["Content-Disposition"] = "attachment; filename=\"B-Connect.zip\"";
+                    context.Response.ContentType = "application/octet-stream";
+                    context.Response.Headers["Content-Disposition"] = "attachment; filename=\"B-Connect.exe\"";
                     await context.Response.SendFileAsync(setupPath);
                 }
                 else
