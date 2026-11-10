@@ -1,0 +1,778 @@
+﻿<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>B-Connect A'dan Z'ye Resmi Kullanım, Müşteri ve Uzman Kılavuzu (v2.1.0)</title>
+    <style>
+        :root {
+            --bg: #0b1120;
+            --surface: #111c33;
+            --surface-card: #162442;
+            --surface-hover: #1d3057;
+            --border: #253d6e;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent-gold: #f59e0b;
+            --accent-blue: #38bdf8;
+            --accent-green: #10b981;
+            --accent-orange: #f97316;
+            --accent-red: #ef4444;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+            line-height: 1.68;
+            padding: 24px;
+            scroll-behavior: smooth;
+        }
+        .layout-wrapper {
+            max-width: 1360px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 28px;
+            align-items: start;
+        }
+        .sidebar {
+            position: sticky;
+            top: 20px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 20px;
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.45);
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+        }
+        .sidebar-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 14px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+        .b-logo {
+            width: 30px; height: 30px;
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: #0f172a;
+            font-weight: 900;
+            font-size: 18px;
+            border-radius: 7px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 3px 10px rgba(245, 158, 11, 0.35);
+        }
+        .sidebar-brand div strong { display: block; font-size: 15px; color: #fff; letter-spacing: 0.4px; }
+        .sidebar-brand div span { font-size: 11.5px; color: var(--accent-gold); font-weight: 600; }
+        .search-box {
+            width: 100%;
+            background: #0b1326;
+            border: 1px solid var(--border);
+            color: #fff;
+            padding: 9px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            margin-bottom: 14px;
+            outline: none;
+        }
+        .search-box:focus { border-color: var(--accent-gold); }
+        .toc-list { list-style: none; }
+        .toc-list li { margin-bottom: 4px; }
+        .toc-list a {
+            display: block;
+            padding: 6px 10px;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 500;
+            border-radius: 6px;
+            transition: all 0.15s ease;
+        }
+        .toc-list a:hover {
+            background: var(--surface-hover);
+            color: #fff;
+            padding-left: 14px;
+        }
+        .toc-sublist {
+            list-style: none;
+            margin-left: 14px;
+            margin-top: 2px;
+            margin-bottom: 6px;
+            border-left: 2px solid var(--border);
+            padding-left: 8px;
+        }
+        .toc-sublist a { font-size: 12px; padding: 3px 6px; }
+
+        .main-content {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 36px 44px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5);
+        }
+        .hero-banner {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 24px;
+            margin-bottom: 32px;
+            border-bottom: 2px solid var(--border);
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+        .hero-title h1 {
+            font-size: 27px;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .hero-title p {
+            color: var(--text-muted);
+            font-size: 14.5px;
+            margin-top: 6px;
+        }
+        .hero-actions { display: flex; gap: 10px; align-items: center; }
+        .version-badge {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: #0f172a;
+            padding: 7px 15px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 800;
+            letter-spacing: 0.4px;
+        }
+        .btn-print {
+            background: #1e3a8a;
+            color: #fff;
+            border: 1px solid #3b82f6;
+            padding: 7px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .btn-print:hover { background: #2563eb; }
+
+        .section-block {
+            margin-bottom: 44px;
+            scroll-margin-top: 24px;
+        }
+        .section-header {
+            font-size: 21px;
+            color: var(--accent-gold);
+            margin-bottom: 16px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .sub-header {
+            font-size: 16.5px;
+            color: var(--accent-blue);
+            margin: 22px 0 10px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        p { margin-bottom: 12px; font-size: 14.5px; color: #cbd5e1; }
+
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(275px, 1fr));
+            gap: 16px;
+            margin: 16px 0;
+        }
+        .info-card {
+            background: var(--surface-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 18px;
+            transition: transform 0.15s ease, border-color 0.15s ease;
+        }
+        .info-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--accent-blue);
+        }
+        .info-card h4 {
+            font-size: 15px;
+            color: #fff;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .info-card p { font-size: 13.5px; color: var(--text-muted); margin-bottom: 0; }
+
+        .alert-box {
+            background: rgba(30, 58, 138, 0.28);
+            border-left: 4px solid var(--accent-blue);
+            border-radius: 0 8px 8px 0;
+            padding: 14px 18px;
+            margin: 16px 0;
+            font-size: 14px;
+            color: #e2e8f0;
+        }
+        .alert-box.success { background: rgba(6, 78, 59, 0.28); border-left-color: var(--accent-green); }
+        .alert-box.warning { background: rgba(120, 53, 15, 0.3); border-left-color: var(--accent-gold); }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 16px 0;
+            font-size: 13.8px;
+            background: var(--surface-card);
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+        th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+        th { background: #0f1b36; color: var(--accent-gold); font-weight: 700; font-size: 13.5px; }
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background: var(--surface-hover); }
+
+        .badge { display: inline-block; padding: 3px 9px; border-radius: 5px; font-size: 12px; font-weight: 700; }
+        .badge-blue { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); }
+        .badge-green { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.35); }
+        .badge-orange { background: rgba(249, 115, 22, 0.15); color: #fb923c; border: 1px solid rgba(249, 115, 22, 0.35); }
+        .badge-red { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.35); }
+        .kbd {
+            background: #0b1326;
+            border: 1px solid #475569;
+            border-bottom-width: 2px;
+            color: #fbbf24;
+            padding: 2px 8px;
+            border-radius: 5px;
+            font-family: Consolas, monospace;
+            font-size: 12.5px;
+            font-weight: 700;
+        }
+
+        .step-list { list-style: none; counter-reset: step-counter; margin: 16px 0; }
+        .step-list li { position: relative; padding-left: 42px; margin-bottom: 14px; font-size: 14.2px; color: #dbeafe; }
+        .step-list li::before {
+            content: counter(step-counter);
+            counter-increment: step-counter;
+            position: absolute;
+            left: 0; top: 1px;
+            width: 27px; height: 27px;
+            background: #2563eb; color: #fff;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 13px;
+        }
+
+        .footer {
+            margin-top: 44px; padding-top: 22px;
+            border-top: 1px solid var(--border);
+            text-align: center; color: var(--text-muted); font-size: 13px;
+        }
+        @media (max-width: 920px) {
+            .layout-wrapper { grid-template-columns: 1fr; }
+            .sidebar { position: static; max-height: none; }
+        }
+        @media print {
+            body { background: #fff; color: #000; padding: 0; }
+            .sidebar, .btn-print { display: none; }
+            .layout-wrapper { grid-template-columns: 1fr; }
+            .main-content { box-shadow: none; border: none; background: #fff; color: #000; }
+            p, td, li { color: #111 !important; }
+            .info-card, table, th { background: #f8fafc !important; color: #000 !important; border-color: #cbd5e1 !important; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="layout-wrapper">
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <span class="b-logo">b</span>
+            <div>
+                <strong>B-CONNECT KILAVUZU</strong>
+                <span>A'dan Z'ye Tam Başvuru Rehberi</span>
+            </div>
+        </div>
+        <input type="text" id="guideSearch" class="search-box" placeholder="🔍 Kılavuz içinde konu ara..." oninput="filterGuide(this.value)">
+        <ul class="toc-list" id="tocList">
+            <li><a href="#bolum-1">1. Giriş ve İlk Çalıştırma</a></li>
+            <li><a href="#bolum-2">2. Üst Araç Çubuğu (Header)</a>
+                <ul class="toc-sublist">
+                    <li><a href="#tasarim-ve-tema">2.1. Tasarımlar, Dil ve Temalar</a></li>
+                    <li><a href="#lisans-ve-melodi">2.2. Lisans, Yenile ve Melodi</a></li>
+                </ul>
+            </li>
+            <li><a href="#bolum-3">3. Sol Panel: Bağlantı ve Güvenlik</a>
+                <ul class="toc-sublist">
+                    <li><a href="#sizin-id">3.1. Sizin ID'niz ve Paylaşım Şalteri</a></li>
+                    <li><a href="#uzak-baglanti">3.2. Uzak Masaüstüne Bağlanma</a></li>
+                    <li><a href="#guvenlik-ayarlari">3.3. Kişisel Şifre, Uyku, Ağ ve KVKK</a></li>
+                </ul>
+            </li>
+            <li><a href="#bolum-4">4. Müşteri Destek Talebi & Takibi</a>
+                <ul class="toc-sublist">
+                    <li><a href="#resimli-talep">4.1. Ekran Resimli Talep Açma</a></li>
+                    <li><a href="#taleplerim-takip">4.2. Canlı Takip ve Buluttan Silme</a></li>
+                </ul>
+            </li>
+            <li><a href="#bolum-5">5. Rehber (3 Seviyeli Cihaz Yönetimi)</a></li>
+            <li><a href="#bolum-6">6. Uzman & Bayi Canlı Çağrı Havuzu</a></li>
+            <li><a href="#bolum-7">7. CRM Geçmişi, WhatsApp & Excel Rapor</a></li>
+            <li><a href="#bolum-8">8. Canlı Bağlantı Üst Kontrol Çubuğu</a></li>
+            <li><a href="#bolum-9">9. Dosya & Klasör Transferi (ZIP/RAR)</a></li>
+            <li><a href="#bolum-10">10. Çift Yönlü Uzaktan Yazdırma</a></li>
+            <li><a href="#bolum-11">11. Pro Video Oynatıcı & 60 FPS Kayıt</a></li>
+            <li><a href="#bolum-12">12. Hızlı Sistem Eylemleri & Engeller</a></li>
+            <li><a href="#bolum-13">13. Kısayol Tuşları (F10/F5) & Pano</a></li>
+            <li><a href="#bolum-14">14. Web Tarayıcı & Mobil Erişim</a></li>
+            <li><a href="#bolum-15">15. Sıkça Sorulan Sorular (SSS)</a></li>
+        </ul>
+    </aside>
+
+    <main class="main-content" id="guideMain">
+        <div class="hero-banner">
+            <div class="hero-title">
+                <h1><span class="b-logo" style="width:36px;height:36px;font-size:22px;">b</span> B-Connect A'dan Z'ye Kullanım Kılavuzu</h1>
+                <p>Müşteriler, İşletmeler ve Teknik Destek Uzmanları İçin Eksiksiz Uygulama Rehberi</p>
+            </div>
+            <div class="hero-actions">
+                <button class="btn-print" onclick="window.print()">🖨️ Kılavuzu Yazdır / PDF Yap</button>
+                <div class="version-badge">Sürüm v2.1.0</div>
+            </div>
+        </div>
+
+        <!-- BÖLÜM 1 -->
+        <section id="bolum-1" class="section-block">
+            <h2 class="section-header">🚀 1. B-Connect'e Giriş ve İlk Çalıştırma</h2>
+            <p><b>B-Connect</b>; bireysel kullanıcıların, işletmelerin ve teknik destek merkezlerinin uzak bilgisayarlara saniyeler içinde erişmesini, dosya ve klasör aktarmasını, uzaktan belge yazdırmasını, destek çağrılarını yönetmesini ve yapılan tüm servisleri CRM altında raporlamasını sağlayan kurumsal bir uzaktan erişim platformudur.</p>
+            <div class="card-grid">
+                <div class="info-card">
+                    <h4>📦 Kurulumsuz (Tak-Çalıştır) Yapı</h4>
+                    <p>B-Connect tek bir <code>B-Connect.exe</code> dosyasından oluşur. Bilgisayarınıza karmaşık kurulumlar yapmaz, indirildiği anda çift tıklanarak doğrudan çalışır.</p>
+                </div>
+                <div class="info-card">
+                    <h4>🔏 Kurumsal Dijital İmzalı Güvenlik</h4>
+                    <p>Uygulama uluslararası geçerliliğe sahip kurumsal dijital sertifika ile imzalanmıştır. İzin vermediğiniz veya şifrenizi paylaşmadığınız sürece kimse cihazınıza bağlanamaz.</p>
+                </div>
+                <div class="info-card">
+                    <h4>📶 Hareketsizken 0 KB/s Kota Koruması</h4>
+                    <p>Bağlantı açıkken karşı ekranda bir hareket olmadığında internet tüketimi otomatik olarak <b>0.0 KB/s</b> seviyesine iner; mobil internet ve kotalı hatları korur.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- BÖLÜM 2 -->
+        <section id="bolum-2" class="section-block">
+            <h2 class="section-header">🎛️ 2. Ana Pencere Üst Araç Çubuğu (Header Bar)</h2>
+            <p>Uygulamanın en üst şeridinde yer alan kontrol butonları, çalışma şeklinizi ve görünümü kişiselleştirmenizi sağlar:</p>
+            <table id="tasarim-ve-tema">
+                <tr><th style="width:190px;">Üst Bar Butonu</th><th>Detaylı Görevi ve Kullanımı</th></tr>
+                <tr>
+                    <td><b>🎨 Tasarımlar ▾</b></td>
+                    <td>Uygulama yerleşimini çalışma alışkanlığınıza göre <b>4 farklı mod</b> arasında değiştirir:<br>
+                    • <b>1. Standart Kurumsal (Çift Sütun):</b> Sol tarafta bağlantı ve güvenlik kartları, sağ tarafta Rehber/Talepler/CRM ve destek butonları yer alır.<br>
+                    • <b>2. Kompakt Akordiyon Modu:</b> Tüm bölümleri açılır-kapanır akordiyon başlıkları altında tek sütunda toplar.<br>
+                    • <b>3. Müşteri / Uzman Sekmeli Mod:</b> Tek tıkla sadeleştirilmiş <i>"👤 Müşteri Modu"</i> ile tam donanımlı <i>"🛠️ Uzman Modu"</i> arasında geçiş yapar.<br>
+                    • <b>4. Modern Cam (Glass) Modu:</b> Bağlan, Rehber, Ayarlar ve Destek bölümlerini üst sekmelerde kompakt olarak sunar.</td>
+                </tr>
+                <tr>
+                    <td><b>🌐 Türkçe / English ▾</b></td>
+                    <td>Uygulamanın tüm menülerini, butonlarını ve uyarılarını anında <b>Türkçe</b> veya <b>İngilizce</b> diline çevirir.</td>
+                </tr>
+                <tr>
+                    <td><b>🌙 Tema Seçici ▾</b></td>
+                    <td>Göz konforunuza göre <b>Koyu (Dark)</b>, <b>Açık (Light)</b>, <b>Gece (Midnight)</b>, <b>Okyanus</b>, <b>Orman</b> ve <b>Mor</b> renk temaları arasında geçiş yapar. Seçiminiz bir sonraki açılış için otomatik hatırlanır.</td>
+                </tr>
+                <tr id="lisans-ve-melodi">
+                    <td><b>ℹ️ Bilgi</b></td>
+                    <td>Uygulamanın sürüm numarasını, üretici firma bilgilerini ve resmi web adresi bağlantılarını görüntüler.</td>
+                </tr>
+                <tr>
+                    <td><b>❓ Yardım</b></td>
+                    <td>Şu an okuduğunuz A'dan Z'ye kapsamlı kullanım kılavuzunu internet tarayıcınızda açar.</td>
+                </tr>
+                <tr>
+                    <td><b>🔑 Lisans</b></td>
+                    <td>Kurumsal Lisans ve Bayi Yönetimi penceresini açar. Buradan:<br>
+                    • Size özel <b>Donanım Kimliğinizi (HWID)</b> tek tıkla kopyalayabilirsiniz.<br>
+                    • Satın aldığınız <b>Lisans Anahtarını</b> girip doğrulayabilir, kalan kullanım gününüzü ve paket özelliklerinizi görebilirsiniz.<br>
+                    • Teknik destek veren bir bayi/uzman iseniz <b>Bayi Kodunuzu (Firma Kodu)</b> ve <b>Uzman Adınızı</b> tanımlayarak çağrı havuzunuzu aktif edebilirsiniz.</td>
+                </tr>
+                <tr>
+                    <td><b>🔄 Yenile</b></td>
+                    <td>İnternet bağlantınız değiştiğinde veya modem sıfırlandığında bulut sunucusuyla olan bağlantıyı anında tazeler.</td>
+                </tr>
+                <tr>
+                    <td><b>🎵 Melodi ▾</b></td>
+                    <td>Yeni bir müşteri destek talebi düştüğünde veya uzmanınız çağrınızı sıraya aldığında çalacak bildirim sesini (<i>Klasik Zil, Kurumsal Akor, Kristal Çan, Dijital Uyarı</i> veya <i>Sessiz Mod</i>) seçmenizi ve dinlemenizi sağlar.</td>
+                </tr>
+            </table>
+        </section>
+
+        <!-- BÖLÜM 3 -->
+        <section id="bolum-3" class="section-block">
+            <h2 class="section-header">🖥️ 3. Sol Panel: Bağlantı, Erişim ve Güvenlik Kartları</h2>
+            <p>Standart görünümde sol sütun yukarıdan aşağıya doğru 5 ana kontrol kartından oluşur:</p>
+
+            <h3 id="sizin-id" class="sub-header">🆔 3.1. Bu Masaüstü (Sizin ID & IP Adresiniz) Kartı</h3>
+            <p>Bilgisayarınıza uzaktan destek verilmesini istediğinizde kullanacağınız karttır:</p>
+            <ul class="step-list">
+                <li><b>9 Haneli Masaüstü ID'niz:</b> Mavi büyük rakamlarla yazan numara (Örn: <code>800 824 956</code>) bilgisayarınızın benzersiz kimliğidir.</li>
+                <li><b>[ 📋 Kopyala ] Butonu:</b> ID numaranızı tek tıkla panoya kopyalar; WhatsApp, e-posta veya SMS ile uzmana kolayca yapıştırıp gönderebilirsiniz.</li>
+                <li><b>Dış IP ve Yerel IP Satırı:</b> Bilgisayarınızın internete çıktığı genel IP adresini ve yerel ağ adresini gösterir.</li>
+                <li><b>[ Ekran Paylaşımını Durdur (Host) ] Kırmızı/Yeşil Şalter Butonu:</b> Varsayılan olarak ekran paylaşımı hazırdır. Eğer bilgisayarınıza o an hiçbir şekilde bağlanılmasını istemiyorsanız bu butona basarak dış erişimi tamamen kapatabilir, istediğinizde tekrar açabilirsiniz.</li>
+            </ul>
+
+            <h3 id="uzak-baglanti" class="sub-header">⚡ 3.2. Bağlanılacak Uzak Masaüstü (ID veya IP Girin) Kartı</h3>
+            <p>Başka bir bilgisayara bağlanmak istediğinizde kullanacağınız alandır:</p>
+            <ul class="step-list">
+                <li><b>ID veya IP Kutusu:</b> Karşı bilgisayarın 9 haneli B-Connect ID'sini (boşluklu veya boşluksuz) ya da aynı yerel ağdaysanız IP adresini yazıp klavyeden <span class="kbd">Enter</span> tuşuna veya <b>[ ⚡ Bağlan ]</b> butonuna basın.</li>
+                <li><b>[ 📋 Panodan ID Yapıştır ]:</b> Müşterinin WhatsApp'tan gönderdiği ID'yi kopyaladıysanız, hiç klavyeye dokunmadan bu butona basarak numarayı kutuya otomatik aktarabilirsiniz.</li>
+                <li><b>[ 🕘 Son Bağlantıyı Getir ]:</b> En son bağlandığınız bilgisayarın ID numarasını tek tıkla kutuya geri getirir.</li>
+            </ul>
+
+            <h3 id="guvenlik-ayarlari" class="sub-header">🔐 3.3. Kişisel Erişim & Güvenlik Ayarları Kartı</h3>
+            <p>Bilgisayarınızın güvenlik, başlangıç ve oturum tercihlerini yöneten 6 onay kutusu ve 3 özel kontrol butonu:</p>
+            <table>
+                <tr><th style="width:240px;">Ayar / Buton</th><th>Ne İşe Yarar?</th></tr>
+                <tr>
+                    <td><b>☑️ Kişisel Erişim Şifresi Kullan</b><br><i>+ Şifre Kutusu + [Göster/Gizle]</i></td>
+                    <td>Bilgisayarınıza (örneğin ofisteki ana sunucuya veya kendi bilgisayarınıza) başında kimse yokken bağlanmak istiyorsanız kutucuğu işaretleyip sabit bir şifre belirleyin. Bağlanan kişi bu şifreyi girdiğinde onay penceresi beklemeden doğrudan bağlanabilir.</td>
+                </tr>
+                <tr>
+                    <td><b>☑️ Windows başlangıcında otomatik çalıştır</b></td>
+                    <td>İşaretlendiğinde bilgisayarınız her açıldığında B-Connect otomatik olarak başlar ve bağlantıya hazır bekler.</td>
+                </tr>
+                <tr>
+                    <td><b>☑️ Bilgisayarı açık tut (Uyku modunu engelle)</b></td>
+                    <td>Mesai sonrasında uzaktan bağlanacağınız bilgisayarın kendi kendine uyku moduna (Sleep) geçip bağlantıyı koparmasını engeller.</td>
+                </tr>
+                <tr>
+                    <td><b>☑️ Oturumları video olarak kaydet (play.html)</b></td>
+                    <td>Gelişmiş <b>B-Connect Pro Video Oynatıcı & 60 FPS Oturum Kayıt Stüdyosunu</b> açar. Yaptığınız teknik müdahaleleri kanıt olarak kaydetmenizi ve izlemenizi sağlar.</td>
+                </tr>
+                <tr>
+                    <td><b>☑️ Ağ sürücülerine (Z:) erişime izin ver</b></td>
+                    <td>Kurumsal uygulamaların, ofis sistemlerinin ve şirket içi yazılımların kullandığı ortak ağ klasörlerinin ve haritalanmış sürücülerin (<code>Z:</code>, <code>M:</code> vb.) uzak bağlantı sırasında sorunsuz çalışmasını sağlar.</td>
+                </tr>
+                <tr>
+                    <td><b>☑️ KVKK Onayı Verildi (İzin Ver)</b><br><i>+ [ KVKK Ayarları ]</i></td>
+                    <td><b>İşaretli olduğunda:</b> Güvenilir uzmanınız bağlanırken 30 saniyelik onay penceresi sormadan hızlı erişime izin verir.<br>
+                    <b>İşaret kaldırıldığında:</b> Bilgisayarınıza her bağlantı geldiğinde ekranda sesli ve 30 saniye geri sayımlı <b>"Bağlantı Onayı: Kabul Et / Reddet"</b> penceresi çıkar.<br>
+                    <b>[ KVKK Ayarları ]</b> butonundan kurumsal KVKK aydınlatma ve gizlilik metnini inceleyebilirsiniz.</td>
+                </tr>
+                <tr>
+                    <td><b>[ ◐ Siyah Arkaplan ]</b></td>
+                    <td>Masaüstü arkaplan resmini geçici olarak düz siyah renge çevirerek hem görsel sadelik hem de düşük hızlı internet hatlarında ekstra hız sağlar.</td>
+                </tr>
+            </table>
+
+            <h3 class="sub-header">📜 3.4. Canlı Sistem Günlüğü (Log Konsolu)</h3>
+            <p>Sol panelin en altında yer alan günlük kutusu; sunucu bağlantısını, gelen/giden dosya transferlerini, KVKK onaylarını ve CRM işlemlerini saat damgasıyla (Örn: <code>[13:45:10]</code>) canlı olarak yazar. <b>[ Temizle ]</b> ile ekranı sıfırlayabilir, <b>[ Kaydet ]</b> ile günlükleri metin dosyası olarak bilgisayarınıza kaydedebilirsiniz.</p>
+        </section>
+
+        <!-- BÖLÜM 4 -->
+        <section id="bolum-4" class="section-block">
+            <h2 class="section-header">🆘 4. Müşteri Tarafı: Destek Talebi Açma & Canlı Talep Takibi</h2>
+            <p>Sağ alt bölümde her zaman sabit olarak duran iki büyük buton, müşterilerin telefon trafiğine girmeden saniyeler içinde uzman desteği almasını sağlar:</p>
+
+            <h3 id="resimli-talep" class="sub-header">📋 4.1. [ Destek Talebi Aç ] — Ekran Resimli Arıza Bildirimi</h3>
+            <ul class="step-list">
+                <li>Sağ alttaki <b>[ 📋 Destek Talebi Aç ]</b> butonuna tıklayın.</li>
+                <li><b>Firma / Cari Adı</b> ve <b>İlgili Kişi Adı</b> alanlarını doldurun (ilk kullanımdan sonra sistem bilgilerinizi otomatik hatırlar).</li>
+                <li><b>Aciliyet Seviyesi:</b> <i>Normal</i>, <i>Yüksek</i> veya iş durduran durumlarda <i>Acil (Kritik)</i> seçin.</li>
+                <li><b>Tercih Edilen Uzman:</b> Dilerseniz listeden doğrudan kendi müşteri temsilcinizi/uzmanınızı seçebilirsiniz.</li>
+                <li><b>Sorun / Talep Açıklaması:</b> Yaşadığınız durumu kısaca yazın (Örn: <i>"e-İrsaliye gönderirken bağlantı hatası alıyorum"</i>).</li>
+                <li><b>☑️ Ekran Görüntüsü Ekle:</b> İşaretli bırakıldığında, o an ekranınızdaki hata mesajının fotoğrafını otomatik çeker ve talebinize ekler.</li>
+                <li><b>[ Talebi Gönder ]</b> butonuna bastığınız anda çağrınız doğrudan bayinizin ekranına düşer ve sesli uyarı verir.</li>
+            </ul>
+
+            <h3 id="taleplerim-takip" class="sub-header">🗂️ 4.2. [ Taleplerim ] — Canlı Durum Takibi ve Buluttan Silme</h3>
+            <div class="alert-box success">
+                <b>🔔 Canlı Sıraya Alındı Bildirimi:</b> Destek uzmanınız talebinizi görüp <b>"Sıraya Al"</b> butonuna bastığı anda sizin bilgisayarınızda bilgi zili çalar ve ekranınıza <i>"Talebiniz ilgili uzmana ulaşmış olup incelemeye alınmıştır, en kısa sürede bağlantı sağlanacaktır"</i> mesajı gelir.
+            </div>
+            <p><b>[ 🗂️ Taleplerim ]</b> butonuna tıklayarak geçmişte ve bugün açtığınız tüm taleplerin güncel durumunu (<i>⏳ Sırada Bekliyor</i>, <i>👁️ Talebiniz Sırada / İnceleniyor</i>, <i>✅ Çözüldü</i>) ve uzmanınızın yazdığı çözüm notlarını görebilirsiniz. İşiniz bittiğinde <b>[ 🗑️ Tüm Geçmişi Buluttan Sil ]</b> butonuyla tüm kayıtlarınızı hem kendi bilgisayarınızdan hem de bulut sunucusundan kalıcı olarak temizleyebilirsiniz.</p>
+        </section>
+
+        <!-- BÖLÜM 5 -->
+        <section id="bolum-5" class="section-block">
+            <h2 class="section-header">👥 5. Sağ Panel 1. Sekme: Rehber (3 Seviyeli Müşteri & Cihaz Yönetimi)</h2>
+            <p>Sık bağlandığınız müşteri bilgisayarlarını, şubelerinizi veya sunucularınızı her seferinde ID sormadan yönetebilmeniz için <b>3 seviyeli akordiyon (gramafon)</b> mimarisiyle tasarlanmıştır:</p>
+            <ul class="step-list">
+                <li><b>1. Seviye — Ana Kategori Başlığı (Mavi Kuşak):</b> Örneğin <code>▼ 📁 Müşteriler & Cariler [12 Cihaz]</code> veya <code>▼ 📁 Sunucular</code>. Üzerine tıklayarak tüm kategoriyi açıp kapatabilirsiniz.</li>
+                <li><b>2. Seviye — Firma / Cari Klasörü (Altın/Koyu Kuşak):</b> Örneğin <code>▼ 🏢 BEŞEL (2 Cihaz)</code>. Her müşterinizin kendi klasörü vardır; tıkladığınızda sadece o firmaya ait bilgisayarlar aşağı doğru açılır.</li>
+                <li><b>3. Seviye — Bilgisayar / Cihaz Satırı:</b> Örneğin <code>└ 🖥️ SERVER [539 779 997]</code> veya <code>└ 🖥️ MUHASEBE-PC [883 678 314]</code>. Üzerine <b>çift tıkladığınızda</b> anında bağlantıyı başlatır!</li>
+            </ul>
+
+            <h3 class="sub-header">🔍 Anlık Arama ve Rehber İşlem Butonları</h3>
+            <div class="card-grid">
+                <div class="info-card">
+                    <h4>🔍 Anında Filtreleme Kutusu</h4>
+                    <p>Rehberin hemen üstündeki arama kutusuna firma adını (Örn: <code>BEŞEL</code>), bilgisayar adını veya ID'nin birkaç rakamını yazdığınız anda eşleşen kayıtlar otomatik açılır.</p>
+                </div>
+                <div class="info-card">
+                    <h4>➕ Ekle & ✏️ Düzenle</h4>
+                    <p>Yeni müşteri/cihaz eklerken <b>Grup</b>, <b>Firma/Cari Adı</b>, <b>Bilgisayar Adı</b>, <b>9 Haneli ID</b> ve varsa <b>Sabit Erişim Şifresini</b> kaydedebilirsiniz. Şifresi kayıtlı cihazlara tek tıkla şifresiz bağlanılır.</p>
+                </div>
+                <div class="info-card">
+                    <h4>🖱️ Sağ Tık Hızlı Menüsü</h4>
+                    <p>Rehberdeki bir cihazın üzerine sağ tıklayarak <b>⚡ Hemen Bağlan</b>, <b>📋 ID Kopyala</b>, <b>✏️ Kaydı Düzenle</b> veya <b>🗑️ Rehberden Sil</b> işlemlerini anında yapabilirsiniz.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- BÖLÜM 6 -->
+        <section id="bolum-6" class="section-block">
+            <h2 class="section-header">📋 6. Sağ Panel 2. Sekme: Talepler (Uzman & Bayi Canlı Çağrı Havuzu)</h2>
+            <p>Bayi/Uzman modunda çalışan ekipler için müşterilerden gelen tüm destek taleplerinin canlı olarak düştüğü komuta merkezidir:</p>
+            <table>
+                <tr><th style="width:190px;">Buton / Sağ Tık İşlemi</th><th>Kullanım Amacı ve Etkisi</th></tr>
+                <tr>
+                    <td><b>▶️ Bağlan (Bu Talebe Bağlan)</b></td>
+                    <td>Seçili talebi açan müşterinin 9 haneli ID'sini otomatik alır ve tek tıkla uzak masaüstü bağlantısını başlatır.</td>
+                </tr>
+                <tr>
+                    <td><b>🖼️ Resmi Gör</b></td>
+                    <td>Müşterinin talep açarken gönderdiği hata ekran görüntüsünü tam boyutta açar. Bağlanmadan önce hatayı teşhis etmenizi sağlar.</td>
+                </tr>
+                <tr>
+                    <td><b>👁️ Sıraya Al (Müşteriye Bildir)</b></td>
+                    <td>O an başka bir müşteriye bağlıysanız, yeni gelen çağrıya tıklayıp <b>Sıraya Al</b> diyebilirsiniz. Müşterinin ekranına anında <i>"Talebiniz uzmanımız tarafından görüldü ve sıraya alındı"</i> bildirimi gider; müşteri beklediğini bilerek rahatlar.</td>
+                </tr>
+                <tr>
+                    <td><b>✅ Çözüldü (Talebi Kapat)</b></td>
+                    <td>Destek tamamlandığında yapılan işlemi (servis notunu) ve süreyi kaydederek talebi havuzdan düşürür, otomatik olarak <b>CRM Geçmişine</b> işler ve müşterinin ekranında durumu <i>"✅ Çözüldü"</i> yapar.</td>
+                </tr>
+                <tr>
+                    <td><b>❌ İptal</b></td>
+                    <td>Test amaçlı veya mükerrer açılmış talepleri çağrı havuzundan temizler.</td>
+                </tr>
+            </table>
+        </section>
+
+        <!-- BÖLÜM 7 -->
+        <section id="bolum-7" class="section-block">
+            <h2 class="section-header">🕒 7. Sağ Panel 3. Sekme: CRM Geçmişi, WhatsApp Fişi & Excel Raporlama</h2>
+            <p>Verdiğiniz tüm uzak masaüstü desteklerinin tarih, saat, bağlantı süresi (dakika/saniye), müşteri adı, ilgili uzman ve yapılan işlem notuyla tutulduğu kurumsal hafızadır:</p>
+            <ul class="step-list">
+                <li><b>[ ⚡ Tekrar Bağlan ]:</b> Geçmişte destek verdiğiniz bir müşterinin kaydını seçip tek tıkla aynı bilgisayara yeniden bağlanabilirsiniz.</li>
+                <li><b>[ 🔍 Detay / Düzenle ] & 💬 WhatsApp Servis Fişi:</b> Kaydın detay penceresini açarak servis notunu düzenleyebilir, <b>[ 💬 WhatsApp ile Gönder ]</b> butonuna basarak müşterinize veya yöneticinize <i>(Tarih, Firma, Süre, Uzman, Yapılan İşlem)</i> formatında resmi servis bilgi fişini tek tıkla gönderebilirsiniz.</li>
+                <li><b>[ ➕ Kayıt Ekle ]:</b> Uzak bağlantı dışında telefonla veya yerinde verdiğiniz servisleri de manuel olarak CRM geçmişine ekleyebilirsiniz.</li>
+                <li><b>[ 📊 Dışa Aktar (Excel & HTML Rapor) ]:</b> Tüm servis geçmişinizi veya seçtiğiniz dönemi tek tıkla <b>Microsoft Excel (`.xls`)</b> tablosu ya da kurumsal <b>HTML Servis Raporu</b> olarak dışa aktarabilirsiniz.</li>
+            </ul>
+        </section>
+
+        <!-- BÖLÜM 8 -->
+        <section id="bolum-8" class="section-block">
+            <h2 class="section-header">🎛️ 8. Canlı Uzak Masaüstü Penceresi ve Üst Kontrol Çubuğu (Top Bar)</h2>
+            <p>Karşı bilgisayara bağlandığınızda pencerenin en üstünde yalnızca 28 piksel yüksekliğinde, ekranı kaplamayan akıllı bir kontrol çubuğu yer alır. Soldan sağa tüm kontroller:</p>
+            <table>
+                <tr><th style="width:210px;">Üst Bar Öğesi</th><th>Açıklaması ve İşlevi</th></tr>
+                <tr>
+                    <td><b>☰ Menü ▾</b></td>
+                    <td>Tüm gelişmiş araçları (<i>Aktif Bağlantılar, Pano, Hızlı Eylemler, Ekran & Görüntü, Dosya Transferi & Yazdırma, Hızlı Araçlar, CRM & Oturum Yönetimi</i>) tek bir açılır menüde sunar.</td>
+                </tr>
+                <tr>
+                    <td><b>🌐 Aktif Bağlantılar ▾</b></td>
+                    <td>Aynı anda 2, 3 veya daha fazla müşteriye bağlıysanız (Örn: <code>🌐 3 Aktif [SERVER] ▾</code>), açık olan tüm uzak bilgisayarlar arasında tek tıkla geçiş yapmanızı ve yeni bağlantı başlatmanızı sağlar.</td>
+                </tr>
+                <tr>
+                    <td><b>⤢ Tam Ekran (F11)</b></td>
+                    <td>Uzak masaüstü penceresini tam ekran moduna alır veya pencereli moda döndürür.</td>
+                </tr>
+                <tr>
+                    <td><b>🖥 Ekran Seçimi ▾</b></td>
+                    <td>Karşı bilgisayara bağlı <b>birden fazla monitör (Ekran 1, Ekran 2, Ekran 3)</b> varsa monitörler arasında geçiş yapar. Ayrıca <b>🔍 Keskin Net Mod (Cam Gibi Yazılar)</b>, <b>✨ Yumuşak Mod</b> ve <b>🔲 1:1 Orijinal Boyut</b> seçeneklerini barındırır.</td>
+                </tr>
+                <tr>
+                    <td><b>📁 Dosya & Yazdırma ▾</b></td>
+                    <td>Dosya gönderme, klasör gönderme (ZIP/WinRAR), karşıdan dosya indirme, <b>🖨️ Uzaktan Yazdırma</b> ve <b>🎬 Video Oynatıcı</b> menüsünü açar.</td>
+                </tr>
+                <tr>
+                    <td><b>⚡ Hızlı Eylemler ▾</b></td>
+                    <td><code>Ctrl+Alt+Del</code>, Normal/Güvenli Modda Yeniden Başlatma, Bilgisayarı Kapatma, Oturumu Kilitleme, Görev Yöneticisi ve <b>🛡 Engelleri Kaldır</b> menüsünü açar.</td>
+                </tr>
+                <tr>
+                    <td><b>Orta Cihaz Başlığı</b></td>
+                    <td>Bağlı olduğunuz cihazın rehberdeki adını, firmasını ve ID numarasını (Örn: <code>( SERVER - 539 779 997 )</code>) gösterir.</td>
+                </tr>
+                <tr>
+                    <td><b>Sağ Canlı Gösterge (HUD)</b></td>
+                    <td>Sağ üst köşede canlı olarak: <b>Geçen Süre</b> (<code>00:12:45</code>), <b>Anlık Veri Hızı</b> (<code>KB/s</code>), <b>Toplam Harcanan Veri</b> (<code>MB</code>) ve <b>Görüntü Akıcılığı</b> (<code>FPS</code>) değerlerini gösterir.</td>
+                </tr>
+            </table>
+        </section>
+
+        <!-- BÖLÜM 9 -->
+        <section id="bolum-9" class="section-block">
+            <h2 class="section-header">📁 9. Dosya ve Klasör Transferi (Hızlı ZIP / WinRAR & Dosya Alma)</h2>
+            <p>Uzak masaüstü üst barındaki <b>📁 Dosya</b> ikonuna (veya <b>☰ Menü ➔ 📁 Dosya Transferi & Yazdırma</b>) tıkladığınızda 4 farklı transfer seçeneği sunulur:</p>
+            <ul class="step-list">
+                <li><b>📤 Karşı Bilgisayara Dosya Gönder (Yükle):</b> Bilgisayarınızdan seçtiğiniz herhangi bir dosyayı doğrudan karşı bilgisayarın <b>Masaüstüne</b> aktarır ve karşıda klasör içinde seçili olarak gösterir.</li>
+                <li><b>📁 Karşı Bilgisayara Klasör Gönder (Hızlı ZIP - Evrensel):</b> İçinde yüzlerce dosya olan bir klasörü seçmeniz yeterlidir. B-Connect klasörü 3 aşamada otomatik yönetir:<br>
+                <code>[1/3] Klasör Paketleniyor</code> ➔ <code>[2/3] Karşıya Aktarılıyor</code> ➔ <code>[3/3] Karşı Masaüstüne Klasör Olarak Çıkartılıyor!</code></li>
+                <li><b>🗜️ Karşı Bilgisayara Klasör Gönder (WinRAR / RAR Paketi):</b> Bilgisayarınızda WinRAR yüklüyse klasörü yüksek sıkıştırmalı <code>.rar</code> paketi olarak sıkıştırıp karşı masaüstüne otomatik çıkartır (WinRAR yoksa otomatik olarak standart ZIP motoruna geçer).</li>
+                <li><b>📥 Karşı Bilgisayardan Dosya İste / Al (İndir):</b> Tıkladığınızda uzak bilgisayarda dosya seçim penceresi açılır; oradan seçtiğiniz dosya saniyeler içinde <b>kendi Masaüstünüze</b> indirilir.</li>
+            </ul>
+        </section>
+
+        <!-- BÖLÜM 10 -->
+        <section id="bolum-10" class="section-block">
+            <h2 class="section-header">🖨️ 10. Çift Yönlü Uzaktan Yazdırma (Remote Print)</h2>
+            <p>Müşterinin bilgisayarındaki bir belgeyi kendi ofisinizdeki yazıcıdan çıkartmak veya kendi bilgisayarınızdaki bir evrakı müşterinin yazıcısından çıkartmak için üst bardaki <b>📁 Dosya</b> menüsünde iki özel komut yer alır:</p>
+            <div class="card-grid">
+                <div class="info-card">
+                    <h4>🖨️ Karşıdaki Belgeyi Kendi Yazıcımda Yazdır</h4>
+                    <p>Tıkladığınızda karşı bilgisayarda yazdırılacak belge seçimi açılır (PDF, Word, Excel, Fatura, e-Fatura, Metin, Resim) ve ayrıca karşı sistemde sürücüsüz <b>"B-Connect Uzaktan Yazıcı"</b> portu hazırlanır. Seçilen belge şifreli kanaldan sizin bilgisayarınıza çekilir ve doğrudan <b>kendi yazıcınıza</b> gönderilir.</p>
+                </div>
+                <div class="info-card">
+                    <h4>🖨️ Kendi Bilgisayarımdaki Belgeyi Karşı Yazıcıda Yazdır</h4>
+                    <p>Kendi bilgisayarınızdan seçtiğiniz belgeyi saniyeler içinde karşı bilgisayara aktarır ve müşterinin varsayılan yazıcısında otomatik olarak yazdırma işlemini başlatır.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- BÖLÜM 11 -->
+        <section id="bolum-11" class="section-block">
+            <h2 class="section-header">🎬 11. B-Connect Pro Video Oynatıcı & 60 FPS Kayıt Stüdyosu (play.html)</h2>
+            <p>Ana ekrandaki <b>"☑️ Oturumları video olarak kaydet (play.html)"</b> kutucuğuna tıkladığınızda veya canlı bağlantı üst barından <b>"🎬 Oturum Video Oynatıcısını Aç (play.html)"</b> seçeneğine bastığınızda modern kayıt ve inceleme stüdyosu açılır:</p>
+            <ul class="step-list">
+                <li><b>🔴 Canlı Oturum Kaydını Başlat (60 FPS):</b> Aktif uzak masaüstü penceresini 60 FPS akıcılığında kaydeder; kaydı durdurduğunuz anda <code>B-Connect_Oturum_Tarih.webm</code> olarak bilgisayarınıza indirir ve oynatıcıda hazırlar.</li>
+                <li><b>📂 Kayıt Dosyası Aç & Sürükle-Bırak:</b> Kaydedilmiş herhangi bir oturum videosunu sürükleyip bırakarak hiçbir ek codec veya medya oynatıcı kurmadan doğrudan izleyebilirsiniz.</li>
+                <li><b>0.5x / 1x / 1.5x / 2x / 4x Hız Kontrolü & Kare Adımlama:</b> Uzun oturumları <b>4x</b> hızla tarayabilir, kritik bir işlem anını <b>⏪ -1 Kare / ⏩ +1 Kare</b> butonlarıyla salise salise inceleyebilirsiniz.</li>
+                <li><b>📸 Kareyi PNG Olarak İndir:</b> Videodaki herhangi bir anı tek tıkla yüksek çözünürlüklü <code>.png</code> kanıt fotoğrafı olarak bilgisayarınıza kaydedebilirsiniz.</li>
+            </ul>
+        </section>
+
+        <!-- BÖLÜM 12 -->
+        <section id="bolum-12" class="section-block">
+            <h2 class="section-header">⚡ 12. Hızlı Sistem Eylemleri, Güvenli Yeniden Başlatma & Engelleri Kaldırma</h2>
+            <p>Canlı bağlantı sırasında üst bardaki <b>⚡ Hızlı Eylemler</b> butonundan (veya <b>☰ Menü</b> içinden) ulaşabileceğiniz ileri düzey yönetim araçları:</p>
+            <table>
+                <tr><th style="width:240px;">Sistem Eylemi</th><th>Detaylı İşlevi</th></tr>
+                <tr>
+                    <td><b>⚡ Ctrl + Alt + Del Gönder</b></td>
+                    <td>Uzak bilgisayarda Windows güvenlik ve kilit ekranı kombinasyonunu tetikler.</td>
+                </tr>
+                <tr>
+                    <td><b>🔄 Bilgisayarı Yeniden Başlat (Normal)</b></td>
+                    <td>Uzak bilgisayarı yeniden başlatır. Açılan pencerede karşı bilgisayarın Windows oturum şifresini girerseniz, bilgisayar açıldığında Windows şifresini otomatik girer ve masaüstünü açıp B-Connect'i tekrar bağlanmaya hazır hale getirir!</td>
+                </tr>
+                <tr>
+                    <td><b>🛡 Güvenli Modda Yeniden Başlat (Ağ Destekli)</b></td>
+                    <td>Sorun giderme veya virüs/sürücü temizliği için uzak bilgisayarı <b>Ağ Destekli Güvenli Modda (Safe Mode with Networking)</b> yeniden başlatır ve tekrar bağlanabilmenizi sağlar.</td>
+                </tr>
+                <tr>
+                    <td><b>🛑 Bilgisayarı Kapat (Shutdown)</b></td>
+                    <td>Onayınızı aldıktan sonra uzak bilgisayarı tamamen kapatır.</td>
+                </tr>
+                <tr>
+                    <td><b>🔒 Oturumu Kilitle (Win + L)</b></td>
+                    <td>İşleminiz bittiğinde uzak bilgisayarın ekranını güvenlik için kilit ekranına alır.</td>
+                </tr>
+                <tr>
+                    <td><b>📈 Görev Yöneticisini Aç</b></td>
+                    <td>Uzak bilgisayarda Windows Görev Yöneticisini (Task Manager) doğrudan başlatır.</td>
+                </tr>
+                <tr>
+                    <td><b>🛡 Engelleri Kaldır</b></td>
+                    <td>Karşı bilgisayarda fare tıklamalarını, pencere sürüklemeyi veya klavye girişini engelleyen dış kancaları (input hooks) tek tıkla temizler ve tüm pencereler üzerinde tam hakimiyet sağlar.</td>
+                </tr>
+                <tr>
+                    <td><b>⏸️ Oturumu Askıya Al (Park Et)</b></td>
+                    <td>Uzun süren bir kurulum veya yedekleme sırasında oturumu geçici olarak park eder, geçen süreyi korur ve dilediğiniz an kaldığınız yerden devam etmenizi sağlar.</td>
+                </tr>
+            </table>
+        </section>
+
+        <!-- BÖLÜM 13 -->
+        <section id="bolum-13" class="section-block">
+            <h2 class="section-header">⌨️ 13. Klavye Kısayolları, Fonksiyon Tuşları & Çift Yönlü Pano</h2>
+            <table>
+                <tr><th style="width:160px;">Tuş / Özellik</th><th>Açıklama</th></tr>
+                <tr>
+                    <td><span class="kbd">F10</span></td>
+                    <td><b>Doğrudan Fonksiyon Tuşu İletimi (F1 - F12):</b> Uzak masaüstü penceresi aktifken <span class="kbd">F10</span> ve diğer fonksiyon tuşlarına bastığınızda yerel pencere menüsü araya girmez; tuş doğrudan karşı bilgisayardaki aktif programa iletilir.</td>
+                </tr>
+                <tr>
+                    <td><span class="kbd">F5</span></td>
+                    <td><b>Anında Tam Ekran Tazeleme:</b> Görüntüyü tek tuşla sıfırdan tazeler ve netleştirir.</td>
+                </tr>
+                <tr>
+                    <td><span class="kbd">F11</span></td>
+                    <td><b>Tam Ekran Modu:</b> Tam ekran ve pencereli görünüm arasında anında geçiş yapar.</td>
+                </tr>
+                <tr>
+                    <td><b>📋 Çift Yönlü Akıllı Pano</b></td>
+                    <td>Varsayılan olarak <b>✔ Otomatik Canlı Pano Eşitleme</b> açıktır. Kendi bilgisayarınızda <span class="kbd">Ctrl + C</span> ile kopyaladığınız her metin, SQL sorgusu, fatura numarası veya şifre karşıda <span class="kbd">Ctrl + V</span> ile anında yapıştırılır (veya tam tersi). Ayrıca <b>☰ Menü ➔ 📋 Pano</b> altından manuel gönder/iste yapabilirsiniz.</td>
+                </tr>
+            </table>
+        </section>
+
+        <!-- BÖLÜM 14 -->
+        <section id="bolum-14" class="section-block">
+            <h2 class="section-header">🌐 14. Kurulumsuz Web Tarayıcı Erişimi, Mobil (iOS / Android) & Bayi Portalı</h2>
+            <div class="card-grid">
+                <div class="info-card">
+                    <h4>🌐 Tarayıcıdan Hızlı Bağlan</h4>
+                    <p>Yanınızda kendi bilgisayarınız yokken herhangi bir bilgisayardan veya tabletten <b>biglineconnect.bigus.com.tr</b> adresine girip <b>"Tarayıcıdan Hızlı Bağlan"</b> kutusuna 9 haneli ID'yi yazarak program bile indirmeden doğrudan web tarayıcısı üzerinden bağlanabilirsiniz.</p>
+                </div>
+                <div class="info-card">
+                    <h4>📱 iOS & Android Mobil Erişim</h4>
+                    <p>Sahadayken cep telefonunuzdan veya tabletinizden müşteri bilgisayarlarına bağlanabilir, dokunmatik fare/klavye kontrolleriyle acil müdahaleleri gerçekleştirebilirsiniz.</p>
+                </div>
+                <div class="info-card">
+                    <h4>🏢 Kurumsal Bayi Portalı</h4>
+                    <p>Web sitemizdeki <b>Bayi Portalı</b> üzerinden kurumsal abonelik paketlerinizi, operatör sayılarınızı ve lisans anahtarlarınızı 7/24 yönetebilirsiniz.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- BÖLÜM 15 -->
+        <section id="bolum-15" class="section-block">
+            <h2 class="section-header">❓ 15. Sıkça Sorulan Sorular (SSS) ve Pratik Çözümler</h2>
+            <div class="info-card" style="margin-bottom: 12px;">
+                <h4>Soru 1: Karşı bilgisayarda bazı pencerelere tıklayamıyorum veya başka bir uzak erişim programı ekranı kilitliyor, ne yapmalıyım?</h4>
+                <p><b>Cevap:</b> Üst kontrol çubuğundaki <b>⚡ Hızlı Eylemler</b> ikonuna tıklayıp <b>"🛡 Engelleri Kaldır"</b> seçeneğine basın. B-Connect karşıdaki engelleyici kancaları saniyesinde temizler ve tam kontrolü size verir.</p>
+            </div>
+            <div class="info-card" style="margin-bottom: 12px;">
+                <h4>Soru 2: Müşterinin bilgisayarında 2 monitör var, diğer ekrandaki programı nasıl görürüm?</h4>
+                <p><b>Cevap:</b> Üst kontrol çubuğundaki <b>🖥 Ekran Seçimi</b> ikonuna tıklayıp <b>"🖥 Ekran 2"</b> seçeneğine basmanız yeterlidir. Görüntü ve fare kontrolü anında 2. monitöre geçer.</p>
+            </div>
+            <div class="info-card" style="margin-bottom: 12px;">
+                <h4>Soru 3: Müşteriye her bağlandığımda 30 saniyelik onay penceresi çıkmasını nasıl engellerim?</h4>
+                <p><b>Cevap:</b> Müşterinin ana ekranındaki <b>"☑️ KVKK Onayı Verildi (İzin Ver)"</b> kutucuğu işaretli olduğunda veya müşteri bilgisayarına sabit bir <b>"Kişisel Erişim Şifresi"</b> tanımlayıp o şifreyi rehberinize kaydettiğinizde onay beklemeden doğrudan bağlanabilirsiniz.</p>
+            </div>
+            <div class="info-card" style="margin-bottom: 12px;">
+                <h4>Soru 4: Karşı bilgisayardaki bir faturayı kendi yazıcımdan nasıl çıkartırım?</h4>
+                <p><b>Cevap:</b> Üst bardaki <b>📁 Dosya</b> menüsünden <b>"🖨️ Karşıdaki Belgeyi Kendi Yazıcımda Yazdır (Uzaktan Yazdır)"</b> seçeneğine tıklayın ve karşıdaki belgeyi seçin; belge otomatik olarak bilgisayarınıza aktarılıp doğrudan yazıcınıza gönderilir.</p>
+            </div>
+        </section>
+
+        <div class="footer">
+            <p>© 2026 <b>Bigus Bilişim Geliştirme ve Uygulama Sist.Ltd.Şti.</b> — Tüm Hakları Saklıdır.</p>
+            <p>B-Connect Kurumsal Uzaktan Erişim, Destek ve CRM Platformu • Sürüm v2.1.0 • <a href="https://biglineconnect.bigus.com.tr" style="color:#38bdf8;text-decoration:none;">biglineconnect.bigus.com.tr</a></p>
+        </div>
+    </main>
+</div>
+
+<script>
+function filterGuide(q) {
+    const query = q.trim().toLowerCase();
+    const sections = document.querySelectorAll('.section-block');
+    sections.forEach(sec => {
+        if (!query || sec.innerText.toLowerCase().includes(query)) {
+            sec.style.display = '';
+        } else {
+            sec.style.display = 'none';
+        }
+    });
+}
+</script>
+</body>
+</html>
