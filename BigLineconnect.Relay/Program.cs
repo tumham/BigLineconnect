@@ -1385,6 +1385,18 @@ END";
                 KeepAliveInterval = TimeSpan.FromSeconds(30)
             });
 
+            app.MapGet("/api/system-announcement", () =>
+            {
+                return Results.Json(new
+                {
+                    id = "BCONNECT_V210_20261110",
+                    title = "SYSTEM-B-Connect",
+                    date = "10\\11\\2026",
+                    message = "Windows v2.1.0 sürümü ile çift yönlü Uzaktan Yazdırma (Remote Print) özelliği eklendi. 60 FPS görüntü motoru ve akıllı kota kalkanı güçlendirildi. Gelişmiş Oturum Video Oynatıcı (play.html - 0.5x/1x/2x/4x hız ve kanıt kare yakalama) devreye alındı. Web, iOS ve Android erişim modülleri güncellenmiştir.",
+                    active = true
+                });
+            });
+
             app.MapGet("/download", async context =>
             {
                 context.Response.Headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0";
