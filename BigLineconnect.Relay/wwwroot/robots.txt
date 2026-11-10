@@ -1,0 +1,44 @@
+User-agent: *
+Allow: /
+Disallow: /admin.html
+Disallow: /crm_history.json
+Disallow: /service_log.txt
+
+# Search Engine Crawlers
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: Yandex
+Allow: /
+
+# AI & LLM Search Crawlers (ChatGPT, Gemini, Perplexity, Claude, Copilot, Apple Intelligence)
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: GPTBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+Sitemap: https://biglineconnect.bigus.com.tr/sitemap.xml
+# AI Knowledge Base: https://biglineconnect.bigus.com.tr/llms.txt
+# Full AI Documentation: https://biglineconnect.bigus.com.tr/llms-full.txt
