@@ -1393,7 +1393,7 @@ END";
                     title = "SYSTEM-B-Connect",
                     date = "10\\11\\2026",
                     message = "Windows v2.1.0 sürümü ile çift yönlü Uzaktan Yazdırma (Remote Print) özelliği eklendi. 60 FPS görüntü motoru ve akıllı kota kalkanı güçlendirildi. Gelişmiş Oturum Video Oynatıcı (play.html - 0.5x/1x/2x/4x hız ve kanıt kare yakalama) devreye alındı. Web, iOS ve Android erişim modülleri güncellenmiştir.",
-                    active = true
+                    active = false
                 });
             });
 
