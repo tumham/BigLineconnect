@@ -1397,29 +1397,32 @@ END";
                 });
             });
 
-            app.MapGet("/download", async context =>
+            foreach (var dlRoute in new[] { "/download", "/indir", "/b-connect.exe", "/bconnect.exe", "/BConnect.exe" })
             {
-                context.Response.Headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0";
-                context.Response.Headers["Pragma"] = "no-cache";
-                context.Response.Headers["Expires"] = "0";
+                app.MapGet(dlRoute, async context =>
+                {
+                    context.Response.Headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0";
+                    context.Response.Headers["Pragma"] = "no-cache";
+                    context.Response.Headers["Expires"] = "0";
 
-                string setupPath = System.IO.Path.Combine(AppContext.BaseDirectory, "wwwroot", "B-Connect.exe");
-                if (!System.IO.File.Exists(setupPath))
-                {
-                    setupPath = System.IO.Path.Combine(AppContext.BaseDirectory, "wwwroot", "BigLineconnect.exe");
-                }
-                if (System.IO.File.Exists(setupPath))
-                {
-                    context.Response.ContentType = "application/octet-stream";
-                    context.Response.Headers["Content-Disposition"] = "attachment; filename=\"B-Connect.exe\"";
-                    await context.Response.SendFileAsync(setupPath);
-                }
-                else
-                {
-                    context.Response.StatusCode = 404;
-                    await context.Response.WriteAsync("Kurulum dosyası bulunamadı.");
-                }
-            });
+                    string setupPath = System.IO.Path.Combine(AppContext.BaseDirectory, "wwwroot", "B-Connect.exe");
+                    if (!System.IO.File.Exists(setupPath))
+                    {
+                        setupPath = System.IO.Path.Combine(AppContext.BaseDirectory, "wwwroot", "BigLineconnect.exe");
+                    }
+                    if (System.IO.File.Exists(setupPath))
+                    {
+                        context.Response.ContentType = "application/octet-stream";
+                        context.Response.Headers["Content-Disposition"] = "attachment; filename=\"B-Connect.exe\"";
+                        await context.Response.SendFileAsync(setupPath);
+                    }
+                    else
+                    {
+                        context.Response.StatusCode = 404;
+                        await context.Response.WriteAsync("Kurulum dosyası bulunamadı.");
+                    }
+                });
+            }
 
             app.MapGet("/BigLineconnect_setup.zip", async context =>
             {
