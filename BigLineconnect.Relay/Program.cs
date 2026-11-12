@@ -229,7 +229,7 @@ using System.IO;
                 AppVersion = ver,
                 SessionType = type,
                 Details = details,
-                Timestamp = DateTime.Now
+                Timestamp = DateTime.UtcNow.AddHours(3)
             };
 
             lock (LogLock)
@@ -264,6 +264,371 @@ using System.IO;
                     }
                 }
                 return uniqueHwids.Count;
+            }
+        }
+    }
+
+    public class DownloadLogEntry
+    {
+        public int Id { get; set; }
+        public string TimestampTr { get; set; } = "";
+        public string EventType { get; set; } = ""; // DOWNLOAD_EXE, DOWNLOAD_ZIP, PAGE_VISIT
+        public string FileName { get; set; } = "";
+        public string ClientIp { get; set; } = "";
+        public string LocationIsp { get; set; } = "Çözümleniyor...";
+        public string DeviceInfo { get; set; } = "";
+        public string SourceInfo { get; set; } = "";
+    }
+
+    public static class DownloadTrackerManager
+    {
+        private static readonly string SqlConnStr = Environment.GetEnvironmentVariable("BCONNECT_SQL_CONN")
+            ?? "Server=213.142.159.18;Database=BigusDb;User Id=sa;Password=Bm1453;Encrypt=False;Connection Timeout=5;";
+        private static readonly List<DownloadLogEntry> Entries = new();
+        private static readonly object EntriesLock = new();
+        private static readonly ConcurrentDictionary<string, string> GeoCache = new(StringComparer.OrdinalIgnoreCase);
+        private static readonly ConcurrentDictionary<string, DateTime> RecentDedup = new(StringComparer.OrdinalIgnoreCase);
+        private static readonly System.Net.Http.HttpClient GeoHttp = new() { Timeout = TimeSpan.FromSeconds(2.5) };
+        private static int _totalDownloads;
+        private static int _totalVisits;
+        private static readonly HashSet<string> UniqueDownloadIps = new(StringComparer.OrdinalIgnoreCase);
+
+        static DownloadTrackerManager()
+        {
+            InitializeFromSql();
+        }
+
+        private static void InitializeFromSql()
+        {
+            try
+            {
+                using var conn = new System.Data.SqlClient.SqlConnection(SqlConnStr);
+                conn.Open();
+                using (var initCmd = conn.CreateCommand())
+                {
+                    initCmd.CommandText = @"
+IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'BConnect_DownloadLogs')
+BEGIN
+    CREATE TABLE BConnect_DownloadLogs (
+        Id INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+        TimestampTr NVARCHAR(32) NOT NULL,
+        EventType NVARCHAR(32) NOT NULL,
+        FileName NVARCHAR(128) NOT NULL,
+        ClientIp NVARCHAR(64) NOT NULL,
+        LocationIsp NVARCHAR(160) NOT NULL,
+        DeviceInfo NVARCHAR(128) NOT NULL,
+        SourceInfo NVARCHAR(128) NOT NULL
+    );
+END";
+                    initCmd.ExecuteNonQuery();
+                }
+
+                using (var statsCmd = conn.CreateCommand())
+                {
+                    statsCmd.CommandText = @"
+SELECT 
+    SUM(CASE WHEN EventType IN ('DOWNLOAD_EXE', 'DOWNLOAD_ZIP') THEN 1 ELSE 0 END) AS DlCount,
+    SUM(CASE WHEN EventType = 'PAGE_VISIT' THEN 1 ELSE 0 END) AS VisitCount
+FROM BConnect_DownloadLogs";
+                    using var sr = statsCmd.ExecuteReader();
+                    if (sr.Read())
+                    {
+                        _totalDownloads = sr.IsDBNull(0) ? 0 : sr.GetInt32(0);
+                        _totalVisits = sr.IsDBNull(1) ? 0 : sr.GetInt32(1);
+                    }
+                }
+
+                using (var ipCmd = conn.CreateCommand())
+                {
+                    ipCmd.CommandText = "SELECT DISTINCT ClientIp FROM BConnect_DownloadLogs WHERE EventType IN ('DOWNLOAD_EXE', 'DOWNLOAD_ZIP')";
+                    using var ir = ipCmd.ExecuteReader();
+                    lock (EntriesLock)
+                    {
+                        while (ir.Read())
+                        {
+                            if (!ir.IsDBNull(0)) UniqueDownloadIps.Add(ir.GetString(0));
+                        }
+                    }
+                }
+
+                using (var loadCmd = conn.CreateCommand())
+                {
+                    loadCmd.CommandText = "SELECT TOP 500 Id, TimestampTr, EventType, FileName, ClientIp, LocationIsp, DeviceInfo, SourceInfo FROM BConnect_DownloadLogs ORDER BY Id DESC";
+                    using var r = loadCmd.ExecuteReader();
+                    var temp = new List<DownloadLogEntry>();
+                    while (r.Read())
+                    {
+                        var item = new DownloadLogEntry
+                        {
+                            Id = r.GetInt32(0),
+                            TimestampTr = r.IsDBNull(1) ? "" : r.GetString(1),
+                            EventType = r.IsDBNull(2) ? "" : r.GetString(2),
+                            FileName = r.IsDBNull(3) ? "" : r.GetString(3),
+                            ClientIp = r.IsDBNull(4) ? "" : r.GetString(4),
+                            LocationIsp = r.IsDBNull(5) ? "" : r.GetString(5),
+                            DeviceInfo = r.IsDBNull(6) ? "" : r.GetString(6),
+                            SourceInfo = r.IsDBNull(7) ? "" : r.GetString(7)
+                        };
+                        temp.Add(item);
+                        if (!string.IsNullOrEmpty(item.ClientIp) && !string.IsNullOrEmpty(item.LocationIsp) && item.LocationIsp != "Çözümleniyor..." && item.LocationIsp != "Bilinmiyor")
+                        {
+                            GeoCache[item.ClientIp] = item.LocationIsp;
+                        }
+                    }
+                    temp.Reverse();
+                    lock (EntriesLock)
+                    {
+                        Entries.Clear();
+                        Entries.AddRange(temp);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("[DownloadTracker SQL Init Warning] " + ex.Message);
+            }
+        }
+
+        public static string GetRealClientIp(HttpContext context)
+        {
+            string[] headers = { "CF-Connecting-IP", "True-Client-IP", "X-Real-IP", "X-Forwarded-For" };
+            foreach (var h in headers)
+            {
+                if (context.Request.Headers.TryGetValue(h, out var val) && !string.IsNullOrWhiteSpace(val))
+                {
+                    string first = val.ToString().Split(',')[0].Trim();
+                    if (!string.IsNullOrEmpty(first)) return first;
+                }
+            }
+            return context.Connection.RemoteIpAddress?.ToString() ?? "Bilinmeyen";
+        }
+
+        public static bool IsAutomatedBot(string ua)
+        {
+            if (string.IsNullOrWhiteSpace(ua)) return true;
+            if (ua.StartsWith("WhatsApp/", StringComparison.OrdinalIgnoreCase) ||
+                ua.StartsWith("curl/", StringComparison.OrdinalIgnoreCase) ||
+                ua.StartsWith("python-", StringComparison.OrdinalIgnoreCase) ||
+                ua.Contains("Googlebot", StringComparison.OrdinalIgnoreCase) ||
+                ua.Contains("bingbot", StringComparison.OrdinalIgnoreCase) ||
+                ua.Contains("YandexBot", StringComparison.OrdinalIgnoreCase) ||
+                ua.Contains("facebookexternalhit", StringComparison.OrdinalIgnoreCase) ||
+                ua.Contains("TelegramBot", StringComparison.OrdinalIgnoreCase) ||
+                ua.Contains("Twitterbot", StringComparison.OrdinalIgnoreCase) ||
+                ua.Contains("AhrefsBot", StringComparison.OrdinalIgnoreCase) ||
+                ua.Contains("SemrushBot", StringComparison.OrdinalIgnoreCase) ||
+                ua.Contains("PetalBot", StringComparison.OrdinalIgnoreCase) ||
+                ua.Contains("UptimeRobot", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+            return false;
+        }
+
+        public static string ParseDevice(string ua)
+        {
+            if (string.IsNullOrWhiteSpace(ua)) return "Bilinmeyen Cihaz";
+            bool inWhatsApp = ua.Contains("WhatsApp", StringComparison.OrdinalIgnoreCase);
+            string os = "Diğer Cihaz";
+            if (ua.Contains("iPhone", StringComparison.OrdinalIgnoreCase)) os = "📱 iPhone";
+            else if (ua.Contains("iPad", StringComparison.OrdinalIgnoreCase)) os = "📱 iPad";
+            else if (ua.Contains("Android", StringComparison.OrdinalIgnoreCase)) os = "📱 Android Telefon";
+            else if (ua.Contains("Windows NT", StringComparison.OrdinalIgnoreCase)) os = "💻 Windows PC";
+            else if (ua.Contains("Macintosh", StringComparison.OrdinalIgnoreCase) || ua.Contains("Mac OS X", StringComparison.OrdinalIgnoreCase)) os = "🍎 Mac";
+            else if (ua.Contains("Linux", StringComparison.OrdinalIgnoreCase)) os = "🐧 Linux PC";
+
+            string browser = "";
+            if (inWhatsApp) browser = "WhatsApp İçi";
+            else if (ua.Contains("Edg/", StringComparison.OrdinalIgnoreCase)) browser = "Edge";
+            else if (ua.Contains("OPR/", StringComparison.OrdinalIgnoreCase) || ua.Contains("Opera", StringComparison.OrdinalIgnoreCase)) browser = "Opera";
+            else if (ua.Contains("Chrome/", StringComparison.OrdinalIgnoreCase)) browser = "Chrome";
+            else if (ua.Contains("Firefox/", StringComparison.OrdinalIgnoreCase)) browser = "Firefox";
+            else if (ua.Contains("Safari/", StringComparison.OrdinalIgnoreCase)) browser = "Safari";
+
+            return string.IsNullOrEmpty(browser) ? os : $"{os} ({browser})";
+        }
+
+        public static string ParseSource(HttpContext ctx)
+        {
+            string ua = ctx.Request.Headers["User-Agent"].ToString();
+            string referer = ctx.Request.Headers["Referer"].ToString();
+            if (ua.Contains("WhatsApp", StringComparison.OrdinalIgnoreCase) || referer.Contains("whatsapp", StringComparison.OrdinalIgnoreCase))
+                return "💬 WhatsApp Linki";
+            if (string.IsNullOrWhiteSpace(referer))
+                return "🔗 Doğrudan / WhatsApp";
+            if (referer.Contains("biglineconnect.bigus.com.tr", StringComparison.OrdinalIgnoreCase))
+                return "🌐 Site İçi Buton";
+            if (referer.Contains("bigus.com.tr", StringComparison.OrdinalIgnoreCase))
+                return "🏢 bigus.com.tr";
+            if (referer.Contains("google.", StringComparison.OrdinalIgnoreCase))
+                return "🔍 Google Arama";
+            if (referer.Contains("bing.", StringComparison.OrdinalIgnoreCase))
+                return "🔍 Bing Arama";
+            try
+            {
+                var uri = new Uri(referer);
+                return "🔗 " + uri.Host;
+            }
+            catch
+            {
+                return "🔗 Harici Link";
+            }
+        }
+
+        public static void TrackHttpEvent(HttpContext ctx, string eventType, string fileName)
+        {
+            try
+            {
+                if (!HttpMethods.IsGet(ctx.Request.Method)) return;
+
+                // If Range request, only count initial byte range (bytes=0-...)
+                string rangeHdr = ctx.Request.Headers["Range"].ToString();
+                if (!string.IsNullOrEmpty(rangeHdr) && !rangeHdr.StartsWith("bytes=0-", StringComparison.OrdinalIgnoreCase))
+                    return;
+
+                string ua = ctx.Request.Headers["User-Agent"].ToString();
+                if (IsAutomatedBot(ua)) return;
+
+                string ip = GetRealClientIp(ctx);
+                string dedupKey = $"{ip}|{eventType}|{fileName}";
+                var nowUtc = DateTime.UtcNow;
+                if (RecentDedup.TryGetValue(dedupKey, out var prevTime) && (nowUtc - prevTime).TotalSeconds < 12)
+                    return;
+                RecentDedup[dedupKey] = nowUtc;
+
+                string trNow = nowUtc.AddHours(3).ToString("yyyy-MM-dd HH:mm:ss");
+                string device = ParseDevice(ua);
+                string source = ParseSource(ctx);
+                GeoCache.TryGetValue(ip, out string? cachedLoc);
+
+                var entry = new DownloadLogEntry
+                {
+                    TimestampTr = trNow,
+                    EventType = eventType,
+                    FileName = fileName,
+                    ClientIp = ip,
+                    LocationIsp = string.IsNullOrEmpty(cachedLoc) ? "Çözümleniyor..." : cachedLoc,
+                    DeviceInfo = device,
+                    SourceInfo = source
+                };
+
+                bool isDownload = (eventType == "DOWNLOAD_EXE" || eventType == "DOWNLOAD_ZIP");
+                lock (EntriesLock)
+                {
+                    Entries.Add(entry);
+                    if (Entries.Count > 500) Entries.RemoveAt(0);
+                    if (isDownload)
+                    {
+                        _totalDownloads++;
+                        if (!string.IsNullOrEmpty(ip)) UniqueDownloadIps.Add(ip);
+                    }
+                    else
+                    {
+                        _totalVisits++;
+                    }
+                }
+
+                _ = Task.Run(async () =>
+                {
+                    int insertedId = 0;
+                    try
+                    {
+                        using var conn = new System.Data.SqlClient.SqlConnection(SqlConnStr);
+                        conn.Open();
+                        using var cmd = conn.CreateCommand();
+                        cmd.CommandText = @"
+INSERT INTO BConnect_DownloadLogs (TimestampTr, EventType, FileName, ClientIp, LocationIsp, DeviceInfo, SourceInfo)
+OUTPUT INSERTED.Id
+VALUES (@TimestampTr, @EventType, @FileName, @ClientIp, @LocationIsp, @DeviceInfo, @SourceInfo);";
+                        cmd.Parameters.AddWithValue("@TimestampTr", entry.TimestampTr);
+                        cmd.Parameters.AddWithValue("@EventType", entry.EventType);
+                        cmd.Parameters.AddWithValue("@FileName", entry.FileName);
+                        cmd.Parameters.AddWithValue("@ClientIp", entry.ClientIp);
+                        cmd.Parameters.AddWithValue("@LocationIsp", entry.LocationIsp);
+                        cmd.Parameters.AddWithValue("@DeviceInfo", entry.DeviceInfo);
+                        cmd.Parameters.AddWithValue("@SourceInfo", entry.SourceInfo);
+                        var scalar = cmd.ExecuteScalar();
+                        if (scalar != null && int.TryParse(scalar.ToString(), out int idVal))
+                        {
+                            insertedId = idVal;
+                            entry.Id = idVal;
+                        }
+                    }
+                    catch { }
+
+                    if (string.IsNullOrEmpty(cachedLoc) && !string.IsNullOrEmpty(ip) && ip != "Bilinmeyen" && !ip.StartsWith("127.") && !ip.StartsWith("::1"))
+                    {
+                        try
+                        {
+                            string geoJson = await GeoHttp.GetStringAsync($"http://ip-api.com/json/{Uri.EscapeDataString(ip)}?fields=status,country,city,isp&lang=tr");
+                            using var doc = System.Text.Json.JsonDocument.Parse(geoJson);
+                            var root = doc.RootElement;
+                            if (root.TryGetProperty("status", out var st) && st.GetString() == "success")
+                            {
+                                string city = root.TryGetProperty("city", out var cEl) ? (cEl.GetString() ?? "") : "";
+                                string country = root.TryGetProperty("country", out var coEl) ? (coEl.GetString() ?? "") : "";
+                                string isp = root.TryGetProperty("isp", out var iEl) ? (iEl.GetString() ?? "") : "";
+                                string loc = !string.IsNullOrEmpty(city) ? city : country;
+                                if (!string.IsNullOrEmpty(isp)) loc = string.IsNullOrEmpty(loc) ? isp : $"{loc} • {isp}";
+                                if (string.IsNullOrEmpty(loc)) loc = "Bilinmiyor";
+
+                                GeoCache[ip] = loc;
+                                entry.LocationIsp = loc;
+
+                                if (insertedId > 0)
+                                {
+                                    using var conn2 = new System.Data.SqlClient.SqlConnection(SqlConnStr);
+                                    conn2.Open();
+                                    using var upd = conn2.CreateCommand();
+                                    upd.CommandText = "UPDATE BConnect_DownloadLogs SET LocationIsp = @Loc WHERE Id = @Id";
+                                    upd.Parameters.AddWithValue("@Loc", loc);
+                                    upd.Parameters.AddWithValue("@Id", insertedId);
+                                    upd.ExecuteNonQuery();
+                                }
+                            }
+                            else
+                            {
+                                entry.LocationIsp = "Bilinmiyor";
+                            }
+                        }
+                        catch
+                        {
+                            entry.LocationIsp = "Bilinmiyor";
+                        }
+                    }
+                });
+            }
+            catch { }
+        }
+
+        public static object GetDashboardStats()
+        {
+            string todayPrefix = DateTime.UtcNow.AddHours(3).ToString("yyyy-MM-dd");
+            lock (EntriesLock)
+            {
+                int todayDl = 0;
+                int todayVis = 0;
+                for (int i = 0; i < Entries.Count; i++)
+                {
+                    var e = Entries[i];
+                    if (e.TimestampTr.StartsWith(todayPrefix, StringComparison.Ordinal))
+                    {
+                        if (e.EventType == "DOWNLOAD_EXE" || e.EventType == "DOWNLOAD_ZIP") todayDl++;
+                        else if (e.EventType == "PAGE_VISIT") todayVis++;
+                    }
+                }
+                var reversed = new List<DownloadLogEntry>(Entries.Count);
+                for (int i = Entries.Count - 1; i >= 0; i--) reversed.Add(Entries[i]);
+
+                return new
+                {
+                    totalDownloads = _totalDownloads,
+                    todayDownloads = todayDl,
+                    uniqueDownloadIps = UniqueDownloadIps.Count,
+                    totalVisits = _totalVisits,
+                    todayVisits = todayVis,
+                    items = reversed
+                };
             }
         }
     }
@@ -1517,6 +1882,41 @@ END";
             app.UseForwardedHeaders(forwardedOptions);
 
             app.UseCors();
+
+            // İndirme (.EXE / .ZIP) ve Web Sayfası Ziyaret Takibi (SQL Kalıcı + Şehir/Operatör/Cihaz Analizi)
+            app.Use(async (ctx, next) =>
+            {
+                string reqPath = (ctx.Request.Path.Value ?? "").Trim();
+                if (reqPath.Equals("/B-Connect.exe", StringComparison.OrdinalIgnoreCase) ||
+                    reqPath.Equals("/BigLineconnect.exe", StringComparison.OrdinalIgnoreCase) ||
+                    reqPath.Equals("/BigLineconnect_setup.exe", StringComparison.OrdinalIgnoreCase) ||
+                    reqPath.Equals("/download", StringComparison.OrdinalIgnoreCase) ||
+                    reqPath.Equals("/indir", StringComparison.OrdinalIgnoreCase))
+                {
+                    DownloadTrackerManager.TrackHttpEvent(ctx, "DOWNLOAD_EXE", "B-Connect.exe");
+                }
+                else if (reqPath.Equals("/B-Connect.zip", StringComparison.OrdinalIgnoreCase) ||
+                         reqPath.Equals("/BigLineconnect_setup.zip", StringComparison.OrdinalIgnoreCase))
+                {
+                    DownloadTrackerManager.TrackHttpEvent(ctx, "DOWNLOAD_ZIP", "B-Connect.zip");
+                }
+                else if (reqPath.Equals("/", StringComparison.Ordinal) ||
+                         reqPath.Equals("/index.html", StringComparison.OrdinalIgnoreCase) ||
+                         reqPath.Equals("/yardim.html", StringComparison.OrdinalIgnoreCase) ||
+                         reqPath.Equals("/alpemix-alternatifi.html", StringComparison.OrdinalIgnoreCase) ||
+                         reqPath.Equals("/anydesk-alternatifi.html", StringComparison.OrdinalIgnoreCase) ||
+                         reqPath.Equals("/teamviewer-alternatifi.html", StringComparison.OrdinalIgnoreCase) ||
+                         reqPath.Equals("/uzaktan-baglanti-programi.html", StringComparison.OrdinalIgnoreCase))
+                {
+                    string pageLabel = reqPath == "/" || reqPath.Equals("/index.html", StringComparison.OrdinalIgnoreCase)
+                        ? "Ana Sayfa"
+                        : reqPath.TrimStart('/');
+                    DownloadTrackerManager.TrackHttpEvent(ctx, "PAGE_VISIT", pageLabel);
+                }
+
+                await next();
+            });
+
             app.UseStaticFiles(new StaticFileOptions
             {
                 OnPrepareResponse = ctx =>
@@ -1632,7 +2032,7 @@ END";
                     string ver = context.Request.Query["version"].ToString().Trim();
                     string lic = context.Request.Query["license_status"].ToString().Trim();
                     string lanIp = context.Request.Query["lan_ip"].ToString().Trim();
-                    string ip = context.Connection.RemoteIpAddress?.ToString() ?? "Bilinmeyen";
+                    string ip = DownloadTrackerManager.GetRealClientIp(context);
 
                     if (string.IsNullOrEmpty(hwid)) hwid = "Bilinmeyen";
                     if (string.IsNullOrEmpty(computer)) computer = "Bilinmeyen";
@@ -1675,7 +2075,7 @@ END";
                         LicenseStatus = lic,
                         IpAddress = ip,
                         LanIp = lanIp,
-                        ConnectedAt = DateTime.Now
+                        ConnectedAt = DateTime.UtcNow.AddHours(3)
                     };
 
                     ActiveHosts[rawId] = session;
@@ -1861,7 +2261,7 @@ END";
                         {
                             ActiveHosts.TryRemove(rawId, out _);
                             Console.WriteLine($"[Relay] Host disconnected. ID: {formattedId}");
-                            TelemetryManager.LogEvent(session.Hwid, session.IpAddress, session.ComputerName, session.Username, session.OsVersion, session.AppVersion, "disconnect", $"Host baÄŸlantÄ±sÄ± kesildi. ID: {formattedId}, SÃ¼re: {(DateTime.Now - session.ConnectedAt).TotalMinutes:F1} dk");
+                            TelemetryManager.LogEvent(session.Hwid, session.IpAddress, session.ComputerName, session.Username, session.OsVersion, session.AppVersion, "disconnect", $"Host bağlantısı kesildi. ID: {formattedId}, Süre: {(DateTime.UtcNow.AddHours(3) - session.ConnectedAt).TotalMinutes:F1} dk");
                         }
                         else
                         {
@@ -2028,7 +2428,7 @@ END";
                     
                     if (!isViewOnly)
                     {
-                        string clientIp = context.Connection.RemoteIpAddress?.ToString() ?? "Bilinmeyen";
+                        string clientIp = DownloadTrackerManager.GetRealClientIp(context);
                         
                         // 30 Günlük Deneme, 1 Hafta (7 Gün) Tolerans (Günde 3x5 dk) & Lisans Kontrolü — Hiçbir uygulama muaf değil!
                         string viewerId = context.Request.Query["viewerId"].ToString().Trim();
@@ -3173,7 +3573,8 @@ END";
                     totalInstalls = TelemetryManager.GetUniqueInstallCount(),
                     activeCount = ActiveHosts.Count,
                     activeHosts = activeHostsList,
-                    logs = TelemetryManager.GetLogs()
+                    logs = TelemetryManager.GetLogs(),
+                    downloads = DownloadTrackerManager.GetDashboardStats()
                 };
 
                 context.Response.ContentType = "application/json; charset=utf-8";
@@ -3990,6 +4391,16 @@ END";
 
     <div class='stats-grid'>
         <div class='stat-card'>
+            <h3>📥 Link İndirmeleri (.EXE / .ZIP)</h3>
+            <div class='value' id='stat-downloads'>0</div>
+            <div class='desc' id='stat-downloads-sub'>Bugün: 0 • Benzersiz IP: 0</div>
+        </div>
+        <div class='stat-card'>
+            <h3>👀 Sayfa Ziyaretçileri (Web / WhatsApp)</h3>
+            <div class='value' id='stat-visits'>0</div>
+            <div class='desc' id='stat-visits-sub'>Bugün: 0 gerçek ziyaretçi</div>
+        </div>
+        <div class='stat-card'>
             <h3>Toplam Kurulum (HWID)</h3>
             <div class='value' id='stat-installs'>0</div>
             <div class='desc'>Uygulamanın kurulduğu benzersiz cihazlar</div>
@@ -4003,6 +4414,40 @@ END";
             <h3>Aktif Bağlantılar (Tünel)</h3>
             <div class='value' id='stat-sessions'>0</div>
             <div class='desc'>Şu an aktif uzak masaüstü oturumları</div>
+        </div>
+    </div>
+
+    <div class='card'>
+        <div class='section-title'>📥 Link İndirmeleri & Ziyaretçi Takibi (Canlı Şehir / Cihaz / Operatör — SQL Kalıcı)</div>
+        <div class='controls'>
+            <input type='text' id='dl-search-input' class='search-box' placeholder='Şehir, operatör, cihaz (iPhone/Windows), dosya veya IP ara...'>
+            <select id='dl-filter-type' class='filter-select'>
+                <option value='all'>Tüm Hareketler (İndirme + Ziyaret)</option>
+                <option value='downloads'>Sadece İndirmeler (.EXE & .ZIP)</option>
+                <option value='DOWNLOAD_EXE'>Sadece B-Connect.exe İndirenler</option>
+                <option value='DOWNLOAD_ZIP'>Sadece B-Connect.zip İndirenler</option>
+                <option value='PAGE_VISIT'>Sadece Web / WhatsApp Ziyaretleri</option>
+            </select>
+        </div>
+        <div style='overflow-x: auto; max-height: 360px; overflow-y: auto;'>
+            <table id='downloads-table'>
+                <thead>
+                    <tr>
+                        <th>Tarih / Saat (TR)</th>
+                        <th>İşlem</th>
+                        <th>Dosya / Sayfa</th>
+                        <th>Cihaz & Tarayıcı</th>
+                        <th>Şehir & Operatör</th>
+                        <th>Gerçek IP</th>
+                        <th>Kaynak</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan='7' class='empty-state'>Henüz yeni indirme kaydı bekleniyor...</td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
     </div>
 
@@ -4140,6 +4585,7 @@ END";
 
     <script>
         let logsData = [];
+        let downloadsData = [];
 
         async function fetchStats() {
             try {
@@ -4155,6 +4601,15 @@ END";
                 
                 let activeTunnels = data.activeHosts.filter(h => h.isBusy).length;
                 document.getElementById('stat-sessions').innerText = activeTunnels;
+
+                if (data.downloads) {
+                    document.getElementById('stat-downloads').innerText = data.downloads.totalDownloads || 0;
+                    document.getElementById('stat-downloads-sub').innerText = 'Bugün: ' + (data.downloads.todayDownloads || 0) + ' indirme • Benzersiz IP: ' + (data.downloads.uniqueDownloadIps || 0);
+                    document.getElementById('stat-visits').innerText = data.downloads.totalVisits || 0;
+                    document.getElementById('stat-visits-sub').innerText = 'Bugün: ' + (data.downloads.todayVisits || 0) + ' gerçek ziyaretçi';
+                    downloadsData = data.downloads.items || [];
+                    renderDownloads();
+                }
 
                 const activeBody = document.querySelector('#active-hosts-table tbody');
                 if (data.activeHosts.length === 0) {
@@ -4340,6 +4795,53 @@ END";
             }
         }
 
+        function renderDownloads() {
+            const filterType = document.getElementById('dl-filter-type').value;
+            const searchText = document.getElementById('dl-search-input').value.toLowerCase();
+            const tbody = document.querySelector('#downloads-table tbody');
+
+            let filtered = downloadsData;
+            if (filterType === 'downloads') {
+                filtered = filtered.filter(d => d.EventType === 'DOWNLOAD_EXE' || d.EventType === 'DOWNLOAD_ZIP');
+            } else if (filterType !== 'all') {
+                filtered = filtered.filter(d => d.EventType === filterType);
+            }
+
+            if (searchText) {
+                filtered = filtered.filter(d =>
+                    (d.LocationIsp || '').toLowerCase().includes(searchText) ||
+                    (d.DeviceInfo || '').toLowerCase().includes(searchText) ||
+                    (d.ClientIp || '').toLowerCase().includes(searchText) ||
+                    (d.FileName || '').toLowerCase().includes(searchText) ||
+                    (d.SourceInfo || '').toLowerCase().includes(searchText)
+                );
+            }
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan=\'7\' class=\'empty-state\'>Henüz eşleşen indirme/ziyaret kaydı yok...</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(d => {
+                let badgeClass = 'badge-startup';
+                let label = '👀 SAYFA AÇILDI';
+                if (d.EventType === 'DOWNLOAD_EXE') { badgeClass = 'badge-connect'; label = '📥 .EXE İNDİRDİ'; }
+                else if (d.EventType === 'DOWNLOAD_ZIP') { badgeClass = 'badge-install'; label = '📦 .ZIP İNDİRDİ'; }
+
+                return '<tr>' +
+                    '<td style=\'white-space: nowrap;\'>' + (d.TimestampTr || '') + '</td>' +
+                    '<td><span class=\'badge ' + badgeClass + '\'>' + label + '</span></td>' +
+                    '<td style=\'font-weight: 600; color: var(--white);\'>' + (d.FileName || '') + '</td>' +
+                    '<td>' + (d.DeviceInfo || '') + '</td>' +
+                    '<td style=\'color: var(--cyan); font-weight: 500;\'>📍 ' + (d.LocationIsp || '') + '</td>' +
+                    '<td style=\'font-size: 13px; color: #aaa; font-family: monospace;\'>' + (d.ClientIp || '') + '</td>' +
+                    '<td>' + (d.SourceInfo || '') + '</td>' +
+                '</tr>';
+            }).join('');
+        }
+
+        document.getElementById('dl-search-input').addEventListener('input', renderDownloads);
+        document.getElementById('dl-filter-type').addEventListener('change', renderDownloads);
         document.getElementById('search-input').addEventListener('input', renderLogs);
         document.getElementById('filter-type').addEventListener('change', renderLogs);
 
