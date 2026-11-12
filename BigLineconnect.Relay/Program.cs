@@ -1300,17 +1300,165 @@ END";
             });
         }
 
+        public sealed class ClientPeer
+        {
+            private const long MaxOrderedQueueBytes = 16 * 1024 * 1024;
+            public WebSocket Socket { get; }
+            public SemaphoreSlim SendLock { get; } = new(1, 1);
+            public FrameRelayPump FramePump { get; }
+            public CancellationTokenSource Cts { get; } = new();
+            public string ViewerId { get; }
+            public volatile bool IsRegistered = true;
+            public volatile bool IsWebClient = false;
+
+            private readonly Channel<(byte[] Data, WebSocketMessageType Type)> _orderedChannel;
+            private readonly CancellationTokenSource _pumpCts;
+            private readonly Task _orderedPumpTask;
+            private long _queuedBytes;
+
+            public ClientPeer(WebSocket socket, CancellationToken hostToken, string viewerId)
+            {
+                Socket = socket;
+                ViewerId = viewerId ?? "";
+                _pumpCts = CancellationTokenSource.CreateLinkedTokenSource(hostToken, Cts.Token);
+                FramePump = new FrameRelayPump(socket, SendLock, _pumpCts.Token);
+                _orderedChannel = Channel.CreateUnbounded<(byte[], WebSocketMessageType)>(
+                    new UnboundedChannelOptions { SingleReader = true, SingleWriter = false });
+                _orderedPumpTask = Task.Run(PumpOrderedOutboxAsync);
+            }
+
+            public void EnqueueOrdered(byte[] data, WebSocketMessageType type)
+            {
+                if (!IsRegistered || Socket.State != WebSocketState.Open || _pumpCts.IsCancellationRequested)
+                    return;
+
+                // Protect memory if one co-specialist's network stalls badly (never drop remote file download chunks 0x46+0x52 or text control messages)
+                bool isFileDownloadChunk = (type == WebSocketMessageType.Binary && data.Length >= 2 && data[0] == 0x46 && data[1] == 0x52);
+                if (type == WebSocketMessageType.Binary && !isFileDownloadChunk && Interlocked.Read(ref _queuedBytes) > MaxOrderedQueueBytes)
+                    return;
+
+                Interlocked.Add(ref _queuedBytes, data.Length);
+                if (!_orderedChannel.Writer.TryWrite((data, type)))
+                {
+                    Interlocked.Add(ref _queuedBytes, -data.Length);
+                }
+            }
+
+            private async Task PumpOrderedOutboxAsync()
+            {
+                try
+                {
+                    await foreach (var item in _orderedChannel.Reader.ReadAllAsync(_pumpCts.Token).ConfigureAwait(false))
+                    {
+                        Interlocked.Add(ref _queuedBytes, -item.Data.Length);
+                        if (!IsRegistered || Socket.State != WebSocketState.Open || _pumpCts.IsCancellationRequested)
+                            continue;
+
+                        bool locked = false;
+                        try
+                        {
+                            await SendLock.WaitAsync(_pumpCts.Token).ConfigureAwait(false);
+                            locked = true;
+                            if (Socket.State == WebSocketState.Open)
+                            {
+                                await Socket.SendAsync(
+                                    new ArraySegment<byte>(item.Data),
+                                    item.Type,
+                                    true,
+                                    _pumpCts.Token
+                                ).ConfigureAwait(false);
+                            }
+                        }
+                        catch { }
+                        finally
+                        {
+                            if (locked)
+                            {
+                                try { SendLock.Release(); } catch { }
+                            }
+                        }
+                    }
+                }
+                catch { }
+            }
+
+            public void DisposePeer()
+            {
+                IsRegistered = false;
+                try { FramePump.Stop(); } catch { }
+                try { Cts.Cancel(); } catch { }
+                try { _pumpCts.Cancel(); } catch { }
+                try { _orderedChannel.Writer.TryComplete(); } catch { }
+            }
+        }
+
         public class HostSession
         {
             public string Id { get; set; } = "";
             public WebSocket HostSocket { get; set; } = null!;
-            public WebSocket? ClientSocket { get; set; }
-            public FrameRelayPump? FramePump { get; set; }
-            public SemaphoreSlim ClientSendLock { get; } = new(1, 1);
+            private readonly object _peersLock = new();
+            private ClientPeer[] _activePeers = Array.Empty<ClientPeer>();
+            public ClientPeer[] ActivePeers => _activePeers;
+            public bool HasActiveClient => _activePeers.Length > 0;
+            public uint LastForwardedAckSeq;
             public SemaphoreSlim HostSendLock { get; } = new(1, 1);
             public List<WebSocket> ViewOnlyClients { get; set; } = new();
             public CancellationTokenSource Cts { get; set; } = new();
-            public CancellationTokenSource? ClientCts { get; set; }
+
+            public int AddPeer(ClientPeer peer)
+            {
+                lock (_peersLock)
+                {
+                    var next = new List<ClientPeer>(_activePeers.Length + 1);
+                    foreach (var existing in _activePeers)
+                    {
+                        if (existing.IsRegistered && existing.Socket.State == WebSocketState.Open)
+                        {
+                            next.Add(existing);
+                        }
+                        else
+                        {
+                            existing.DisposePeer();
+                        }
+                    }
+                    next.Add(peer);
+                    _activePeers = next.ToArray();
+                    if (_activePeers.Length <= 1)
+                    {
+                        LastForwardedAckSeq = 0;
+                    }
+                    return _activePeers.Length;
+                }
+            }
+
+            public int RemovePeer(ClientPeer peer, out bool anyWebRemaining, out bool anyNativeRemaining)
+            {
+                lock (_peersLock)
+                {
+                    var next = new List<ClientPeer>(_activePeers.Length);
+                    anyWebRemaining = false;
+                    anyNativeRemaining = false;
+                    foreach (var existing in _activePeers)
+                    {
+                        if (!ReferenceEquals(existing, peer) && existing.IsRegistered && existing.Socket.State == WebSocketState.Open)
+                        {
+                            next.Add(existing);
+                            if (existing.IsWebClient) anyWebRemaining = true;
+                            else anyNativeRemaining = true;
+                        }
+                        else if (!ReferenceEquals(existing, peer))
+                        {
+                            existing.DisposePeer();
+                        }
+                    }
+                    _activePeers = next.ToArray();
+                    if (_activePeers.Length <= 1)
+                    {
+                        LastForwardedAckSeq = 0;
+                    }
+                    return _activePeers.Length;
+                }
+            }
             
             public string Hwid { get; set; } = "Bilinmeyen";
             public string ComputerName { get; set; } = "Bilinmeyen";
@@ -1578,27 +1726,71 @@ END";
 
                             if (msgBytes.Length > 0)
                             {
-                                var clientSock = session.ClientSocket;
-                                if (msgType == WebSocketMessageType.Binary)
+                                var peers = session.ActivePeers;
+                                if (peers.Length == 1)
                                 {
-                                    // 1. FAST-PATH FILE TRANSFER: Tagged 0x46 ('F') -> Forward directly without pump dropping or delay!
-                                    if (msgBytes.Length > 0 && (msgBytes[0] == 0x46 || msgBytes[0] == 0xBC || msgBytes[0] == 0x53 || msgBytes[0] == 0x52))
+                                    // SINGLE-SPECIALIST ULTRA-FAST PATH (100% Untouched Zero-Overhead Pipeline)
+                                    var singlePeer = peers[0];
+                                    var clientSock = singlePeer.Socket;
+                                    if (msgType == WebSocketMessageType.Binary)
                                     {
-                                        if (clientSock != null && clientSock.State == WebSocketState.Open)
+                                        // 1. FAST-PATH FILE TRANSFER & NATIVE BUNDLES: Tagged 0x46 ('F') -> Forward directly without pump dropping or delay!
+                                        if (msgBytes.Length > 0 && (msgBytes[0] == 0x46 || msgBytes[0] == 0xBC || msgBytes[0] == 0x53 || msgBytes[0] == 0x52))
+                                        {
+                                            if (clientSock.State == WebSocketState.Open)
+                                            {
+                                                bool locked = false;
+                                                try
+                                                {
+                                                    await singlePeer.SendLock.WaitAsync(session.Cts.Token).ConfigureAwait(false);
+                                                    locked = true;
+                                                    if (clientSock.State == WebSocketState.Open)
+                                                    {
+                                                        await clientSock.SendAsync(
+                                                            new ArraySegment<byte>(msgBytes),
+                                                            WebSocketMessageType.Binary,
+                                                            true,
+                                                            session.Cts.Token
+                                                        ).ConfigureAwait(false);
+                                                    }
+                                                }
+                                                catch { }
+                                                finally
+                                                {
+                                                    if (locked)
+                                                    {
+                                                        try { singlePeer.SendLock.Release(); } catch { }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        else
+                                        {
+                                            // Newest Frame Wins via FrameRelayPump (Zero server-side delay):
+                                            if (clientSock.State == WebSocketState.Open)
+                                            {
+                                                singlePeer.FramePump.EnqueueFrame(msgBytes);
+                                            }
+                                        }
+                                    }
+                                    else
+                                    {
+                                        // Text/Control messages MUST remain sequential and reliable
+                                        if (clientSock.State == WebSocketState.Open)
                                         {
                                             bool locked = false;
                                             try
                                             {
-                                                await session.ClientSendLock.WaitAsync(session.Cts.Token).ConfigureAwait(false);
+                                                await singlePeer.SendLock.WaitAsync(session.Cts.Token).ConfigureAwait(false);
                                                 locked = true;
                                                 if (clientSock.State == WebSocketState.Open)
                                                 {
                                                     await clientSock.SendAsync(
                                                         new ArraySegment<byte>(msgBytes),
-                                                        WebSocketMessageType.Binary,
+                                                        msgType,
                                                         true,
-                                                        session.Cts.Token
-                                                    ).ConfigureAwait(false);
+                                                        CancellationToken.None
+                                                    );
                                                 }
                                             }
                                             catch { }
@@ -1606,50 +1798,29 @@ END";
                                             {
                                                 if (locked)
                                                 {
-                                                    try { session.ClientSendLock.Release(); } catch { }
+                                                    try { singlePeer.SendLock.Release(); } catch { }
                                                 }
                                             }
                                         }
                                     }
-                                    else
-                                    {
-                                        // Newest Frame Wins via FrameRelayPump (Zero server-side delay):
-                                        if (clientSock != null && clientSock.State == WebSocketState.Open)
-                                        {
-                                            if (session.FramePump == null)
-                                            {
-                                                session.FramePump = new FrameRelayPump(clientSock, session.ClientSendLock, session.Cts.Token);
-                                            }
-                                            session.FramePump.EnqueueFrame(msgBytes);
-                                        }
-                                    }
                                 }
-                                else
+                                else if (peers.Length > 1)
                                 {
-                                    // Text/Control messages MUST remain sequential and reliable
-                                    if (clientSock != null && clientSock.State == WebSocketState.Open)
+                                    // MULTI-SPECIALIST CO-SESSION PATH: Fan out to all connected specialists without Head-of-Line blocking!
+                                    bool isOrderedPacket = (msgType != WebSocketMessageType.Binary) ||
+                                                           (msgBytes.Length > 0 && (msgBytes[0] == 0x46 || msgBytes[0] == 0xBC || msgBytes[0] == 0x53 || msgBytes[0] == 0x52));
+                                    for (int pIdx = 0; pIdx < peers.Length; pIdx++)
                                     {
-                                        bool locked = false;
-                                        try
+                                        var peer = peers[pIdx];
+                                        if (peer.IsRegistered && peer.Socket.State == WebSocketState.Open)
                                         {
-                                            await session.ClientSendLock.WaitAsync(session.Cts.Token).ConfigureAwait(false);
-                                            locked = true;
-                                            if (clientSock.State == WebSocketState.Open)
+                                            if (isOrderedPacket)
                                             {
-                                                await clientSock.SendAsync(
-                                                    new ArraySegment<byte>(msgBytes),
-                                                    msgType,
-                                                    true,
-                                                    CancellationToken.None
-                                                );
+                                                peer.EnqueueOrdered(msgBytes, msgType);
                                             }
-                                        }
-                                        catch { }
-                                        finally
-                                        {
-                                            if (locked)
+                                            else
                                             {
-                                                try { session.ClientSendLock.Release(); } catch { }
+                                                peer.FramePump.EnqueueFrame(msgBytes);
                                             }
                                         }
                                     }
@@ -1696,13 +1867,17 @@ END";
                         {
                             Console.WriteLine($"[Relay] Old host session cleaned up for ID: {formattedId}, but newer session is active. ActiveHosts preserved.");
                         }
-                        if (session.ClientSocket != null && session.ClientSocket.State == WebSocketState.Open)
+                        foreach (var peer in session.ActivePeers)
                         {
-                            try
+                            peer.DisposePeer();
+                            if (peer.Socket.State == WebSocketState.Open)
                             {
-                                await session.ClientSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Host disconnected", CancellationToken.None);
+                                try
+                                {
+                                    await peer.Socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Host disconnected", CancellationToken.None);
+                                }
+                                catch { }
                             }
-                            catch { }
                         }
 
                         lock (session.ViewOnlyClients)
@@ -1861,13 +2036,15 @@ END";
                         string tenantIdParam = context.Request.Query["tenantId"].ToString().Trim();
                         bool isExempt = (context.Request.Query["hwLicensed"].ToString().Trim() == "1");
 
-                        var myClientCts = new CancellationTokenSource();
+                        var myPeer = new ClientPeer(clientSocket, session.Cts.Token, viewerId);
+                        var myClientCts = myPeer.Cts;
 
                         if (!isExempt)
                         {
                             bool allowed = ViewerTrialManager.TryStartSession(viewerId, clientIp, out var trialStatus);
                             if (!allowed)
                             {
+                                myPeer.DisposePeer();
                                 string errCode = (trialStatus.Status == "GRACE_PERIOD") ? "ERROR:GRACE_LIMIT_REACHED" : "ERROR:TRIAL_EXPIRED";
                                 byte[] errBytes = Encoding.UTF8.GetBytes(errCode);
                                 await clientSocket.SendAsync(new ArraySegment<byte>(errBytes), WebSocketMessageType.Text, true, CancellationToken.None);
@@ -1885,29 +2062,29 @@ END";
                             if (trialStatus.Status == "GRACE_PERIOD")
                             {
                                 int limitSec = trialStatus.SessionDurationSeconds > 0 ? trialStatus.SessionDurationSeconds : 300;
-                                var activeCts = myClientCts;
+                                var targetPeer = myPeer;
                                 _ = Task.Run(async () =>
                                 {
                                     try
                                     {
-                                        await Task.Delay(TimeSpan.FromSeconds(limitSec), activeCts.Token);
-                                        if (ReferenceEquals(session.ClientSocket, clientSocket) && clientSocket.State == WebSocketState.Open)
+                                        await Task.Delay(TimeSpan.FromSeconds(limitSec), targetPeer.Cts.Token);
+                                        if (targetPeer.IsRegistered && targetPeer.Socket.State == WebSocketState.Open)
                                         {
                                             byte[] timeoutBytes = Encoding.UTF8.GetBytes("ERROR:GRACE_TIMEOUT");
                                             bool locked = false;
                                             try
                                             {
-                                                await session.ClientSendLock.WaitAsync(CancellationToken.None);
+                                                await targetPeer.SendLock.WaitAsync(CancellationToken.None);
                                                 locked = true;
-                                                await clientSocket.SendAsync(new ArraySegment<byte>(timeoutBytes), WebSocketMessageType.Text, true, CancellationToken.None);
+                                                await targetPeer.Socket.SendAsync(new ArraySegment<byte>(timeoutBytes), WebSocketMessageType.Text, true, CancellationToken.None);
                                             }
                                             catch { }
                                             finally
                                             {
-                                                if (locked) { try { session.ClientSendLock.Release(); } catch { } }
+                                                if (locked) { try { targetPeer.SendLock.Release(); } catch { } }
                                             }
                                             await Task.Delay(300);
-                                            activeCts.Cancel();
+                                            targetPeer.Cts.Cancel();
                                         }
                                     }
                                     catch { }
@@ -1915,7 +2092,7 @@ END";
                             }
                         }
 
-                        // Send host_info JSON packet to viewer BEFORE exposing session.ClientSocket to Host stream loop (prevents concurrent SendAsync crash!)
+                        // Send host_info JSON packet to viewer BEFORE exposing myPeer to Host stream loop (prevents concurrent SendAsync crash!)
                         if (!string.IsNullOrEmpty(session.LanIp))
                         {
                             string hostInfoJson = $"{{\"type\":\"host_info\",\"id\":\"{targetId}\",\"lan_ip\":\"{session.LanIp}\",\"public_ip\":\"{session.IpAddress}\",\"public_port\":18888,\"computer\":\"{session.ComputerName}\"}}";
@@ -1923,24 +2100,11 @@ END";
                             try { await clientSocket.SendAsync(new ArraySegment<byte>(hostInfoBytes), WebSocketMessageType.Text, true, CancellationToken.None); } catch { }
                         }
 
-                        if (session.ClientSocket != null && !ReferenceEquals(session.ClientSocket, clientSocket))
-                        {
-                            var oldSocket = session.ClientSocket;
-                            var oldPump = session.FramePump;
-                            var oldCts = session.ClientCts;
-                            session.FramePump = null;
-                            session.ClientSocket = null;
-                            session.ClientCts = null;
-                            try { oldPump?.Stop(); } catch { }
-                            try { oldCts?.Cancel(); } catch { }
-                            try { _ = oldSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Replaced by new client", CancellationToken.None); } catch { }
-                        }
-
-                        session.ClientCts = myClientCts;
-                        session.FramePump = new FrameRelayPump(clientSocket, session.ClientSendLock, session.Cts.Token);
-                        session.ClientSocket = clientSocket;
-                        Console.WriteLine($"[Relay] Client connected to Host ID: {targetId}");
-                        TelemetryManager.LogEvent(session.Hwid, session.IpAddress, session.ComputerName, session.Username, session.OsVersion, session.AppVersion, "connect", $"İstemci bağlandı. İstemci IP: {clientIp}, Hedef ID: {targetId}");
+                        // ÇOKLU UZMAN EŞZAMANLI BAĞLANTI (Multi-Specialist Co-Session):
+                        // Mevcut bağlı uzmanı ASLA düşürmeden yeni uzmanı oturuma paralel ekle!
+                        int activePeerCount = session.AddPeer(myPeer);
+                        Console.WriteLine($"[Relay] Client connected to Host ID: {targetId} (Active specialists: {activePeerCount})");
+                        TelemetryManager.LogEvent(session.Hwid, session.IpAddress, session.ComputerName, session.Username, session.OsVersion, session.AppVersion, "connect", $"İstemci bağlandı (Aktif uzman: {activePeerCount}). İstemci IP: {clientIp}, Hedef ID: {targetId}");
 
                         string ticketToken = context.Request.Query["ticketToken"].ToString().Trim();
                         
@@ -1973,6 +2137,11 @@ END";
                                 await session.HostSendLock.WaitAsync(CancellationToken.None);
                                 hLocked = true;
                                 await session.HostSocket.SendAsync(new ArraySegment<byte>(startCmd), WebSocketMessageType.Text, true, CancellationToken.None);
+                                if (activePeerCount > 1)
+                                {
+                                    byte[] kfCmd = Encoding.UTF8.GetBytes("KEYFRAME_REQ");
+                                    await session.HostSocket.SendAsync(new ArraySegment<byte>(kfCmd), WebSocketMessageType.Text, true, CancellationToken.None);
+                                }
                             }
                             catch { }
                             finally
@@ -1981,8 +2150,40 @@ END";
                             }
                         }
 
+                        // İkinci uzman bağlandığında Host'un 1000ms keyframe debounce korumasını aşmak için 1150ms sonra senkronize KEYFRAME_REQ garantisi:
+                        if (activePeerCount > 1)
+                        {
+                            var coPeer = myPeer;
+                            _ = Task.Run(async () =>
+                            {
+                                try
+                                {
+                                    await Task.Delay(1150, coPeer.Cts.Token);
+                                    if (coPeer.IsRegistered && session.HostSocket.State == WebSocketState.Open && session.ActivePeers.Length > 1)
+                                    {
+                                        byte[] kfCmd = Encoding.UTF8.GetBytes("KEYFRAME_REQ");
+                                        bool hLocked = false;
+                                        try
+                                        {
+                                            await session.HostSendLock.WaitAsync(CancellationToken.None);
+                                            hLocked = true;
+                                            if (session.HostSocket.State == WebSocketState.Open)
+                                            {
+                                                await session.HostSocket.SendAsync(new ArraySegment<byte>(kfCmd), WebSocketMessageType.Text, true, CancellationToken.None);
+                                            }
+                                        }
+                                        finally
+                                        {
+                                            if (hLocked) { try { session.HostSendLock.Release(); } catch { } }
+                                        }
+                                    }
+                                }
+                                catch { }
+                            });
+                        }
+
                         // 📱 Telegram: Destek uzmanı bağlandı bildirimi
-                        if (ticket != null)
+                        if (ticket != null && activePeerCount == 1)
                         {
                             _ = Task.Run(async () =>
                             {
@@ -1997,7 +2198,7 @@ END";
                             });
                         }
 
-                        var clientToHostTask = TunnelClientToHost(session, clientSocket, myClientCts.Token);
+                        var clientToHostTask = TunnelClientToHost(session, myPeer, myClientCts.Token);
 
                         try
                         {
@@ -2005,18 +2206,15 @@ END";
                         }
                         catch { }
 
-                        try { myClientCts.Cancel(); } catch { }
+                        myPeer.DisposePeer();
+                        int remainingPeers = session.RemovePeer(myPeer, out bool anyWebRem, out bool anyNativeRem);
 
-                        // SADECE aktif istemci hala bu soket ise oturumu ve yayini durdur!
-                        // Yeni bir istemci baglanip yerimizi aldiysa ASLA onun ClientSocket'ini sifirlama ve STOP_STREAM gonderme!
-                        if (ReferenceEquals(session.ClientSocket, clientSocket))
+                        // SADECE bağlı hiçbir uzman kalmadıysa (remainingPeers == 0) yayını durdur!
+                        // Diğer uzman hala müşteride çalışıyorsa onun yayınını ASLA kesme!
+                        if (remainingPeers == 0)
                         {
-                            try { session.FramePump?.Stop(); } catch { }
-                            session.FramePump = null;
-                            session.ClientSocket = null;
-                            session.ClientCts = null;
-                            Console.WriteLine($"[Relay] Client disconnected from Host ID: {targetId}");
-                            TelemetryManager.LogEvent(session.Hwid, session.IpAddress, session.ComputerName, session.Username, session.OsVersion, session.AppVersion, "disconnect", $"İstemci bağlantısı kesildi. Hedef ID: {targetId}");
+                            Console.WriteLine($"[Relay] Last client disconnected from Host ID: {targetId}. Stopping stream.");
+                            TelemetryManager.LogEvent(session.Hwid, session.IpAddress, session.ComputerName, session.Username, session.OsVersion, session.AppVersion, "disconnect", $"Son istemci bağlantısı kesildi. Hedef ID: {targetId}");
 
                             if (session.HostSocket.State == WebSocketState.Open)
                             {
@@ -2035,11 +2233,34 @@ END";
                                 }
                             }
                         }
+                        else
+                        {
+                            Console.WriteLine($"[Relay] Co-specialist left Host ID: {targetId} ({remainingPeers} specialist(s) still active — stream preserved).");
+                            if (myPeer.IsWebClient && !anyWebRem && anyNativeRem && session.HostSocket.State == WebSocketState.Open)
+                            {
+                                bool hLocked = false;
+                                try
+                                {
+                                    await session.HostSendLock.WaitAsync(CancellationToken.None);
+                                    hLocked = true;
+                                    byte[] nativeCmd = Encoding.UTF8.GetBytes("CLIENT:NATIVE_CPP");
+                                    byte[] kfCmd = Encoding.UTF8.GetBytes("KEYFRAME_REQ");
+                                    await session.HostSocket.SendAsync(new ArraySegment<byte>(nativeCmd), WebSocketMessageType.Text, true, CancellationToken.None);
+                                    await session.HostSocket.SendAsync(new ArraySegment<byte>(kfCmd), WebSocketMessageType.Text, true, CancellationToken.None);
+                                }
+                                catch { }
+                                finally
+                                {
+                                    if (hLocked) { try { session.HostSendLock.Release(); } catch { } }
+                                }
+                            }
+                        }
                     }
                     else
                     {
                         Console.WriteLine($"[Relay] View-only Client connected to Host ID: {targetId}");
                         string clientIp = context.Connection.RemoteIpAddress?.ToString() ?? "Bilinmeyen";
+                        using var viewOnlyCts = CancellationTokenSource.CreateLinkedTokenSource(session.Cts.Token);
                         
                         // 30 Günlük Deneme, 1 Hafta (7 Gün) Tolerans (Günde 3x5 dk) & Lisans Kontrolü — Hiçbir uygulama muaf değil!
                         string viewerId = context.Request.Query["viewerId"].ToString().Trim();
@@ -2069,18 +2290,19 @@ END";
                             if (trialStatus.Status == "GRACE_PERIOD")
                             {
                                 int limitSec = trialStatus.SessionDurationSeconds > 0 ? trialStatus.SessionDurationSeconds : 300;
-                                var activeCts = session.ClientCts;
+                                var voCts = viewOnlyCts;
                                 _ = Task.Run(async () =>
                                 {
                                     try
                                     {
-                                        await Task.Delay(TimeSpan.FromSeconds(limitSec), activeCts.Token);
-                                        if (session.ClientSocket != null && session.ClientSocket.State == WebSocketState.Open)
+                                        await Task.Delay(TimeSpan.FromSeconds(limitSec), voCts.Token);
+                                        if (clientSocket.State == WebSocketState.Open)
                                         {
                                             byte[] timeoutBytes = Encoding.UTF8.GetBytes("ERROR:GRACE_TIMEOUT");
-                                            try { await session.ClientSocket.SendAsync(new ArraySegment<byte>(timeoutBytes), WebSocketMessageType.Text, true, CancellationToken.None); } catch { }
+                                            try { await clientSocket.SendAsync(new ArraySegment<byte>(timeoutBytes), WebSocketMessageType.Text, true, CancellationToken.None); } catch { }
                                             await Task.Delay(300);
-                                            activeCts.Cancel();
+                                            try { await clientSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "GRACE_TIMEOUT", CancellationToken.None); } catch { }
+                                            voCts.Cancel();
                                         }
                                     }
                                     catch { }
@@ -2942,7 +3164,7 @@ END";
                         version = h.AppVersion,
                         license = h.LicenseStatus,
                         connectedAt = h.ConnectedAt.ToString("yyyy-MM-dd HH:mm:ss"),
-                        isBusy = h.ClientSocket != null
+                        isBusy = h.HasActiveClient
                     });
                 }
 
@@ -4450,8 +4672,9 @@ END";
     }
 
 
-        private static async Task TunnelClientToHost(HostSession session, WebSocket clientSocket, CancellationToken clientToken)
+        private static async Task TunnelClientToHost(HostSession session, ClientPeer peer, CancellationToken clientToken)
         {
+            var clientSocket = peer.Socket;
             var buffer = new byte[1024 * 8]; // 8KB read buffer for inputs
             var token = clientToken;
             var highPriorityQueue = new ConcurrentQueue<(byte[] Data, WebSocketMessageType Type)>();
@@ -4532,7 +4755,7 @@ END";
             {
                 while (!token.IsCancellationRequested &&
                        session.HostSocket.State == WebSocketState.Open &&
-                       ReferenceEquals(session.ClientSocket, clientSocket) &&
+                       peer.IsRegistered &&
                        clientSocket.State == WebSocketState.Open)
                 {
                     using (var ms = new MemoryStream())
@@ -4551,6 +4774,39 @@ END";
                         if (ms.Length > 0)
                         {
                             byte[] msg = ms.ToArray();
+
+                            // Çoklu uzman modunda (ActivePeers.Length > 1):
+                            // 1) Uzmanlardan biri ayrıldığında ("DISCONNECT"/"STOP"/"CLOSE"/"LEAVE") diğer uzmanın yayınını kesmemek için sinyali yut ve sadece bu uzmanı kapat!
+                            // 2) İki uzmandan yavaş olanın gecikmeli eski ACK'sının Host lastAckedSeq sayacını geriye çekmesini engelle!
+                            if (result.MessageType == WebSocketMessageType.Text && msg.Length < 128)
+                            {
+                                string txt = Encoding.UTF8.GetString(msg);
+                                if (txt.StartsWith("CLIENT:WEB", StringComparison.Ordinal) || txt.Contains("\"set_quality\"", StringComparison.Ordinal) || txt.StartsWith("{", StringComparison.Ordinal))
+                                {
+                                    peer.IsWebClient = true;
+                                }
+                                else if (txt.StartsWith("CLIENT:NATIVE_CPP", StringComparison.Ordinal))
+                                {
+                                    peer.IsWebClient = false;
+                                }
+
+                                if (session.ActivePeers.Length > 1 &&
+                                    (txt == "DISCONNECT" || txt == "STOP" || txt == "CLOSE" || txt == "LEAVE" || txt.StartsWith("LEAVE:", StringComparison.Ordinal)))
+                                {
+                                    break;
+                                }
+                            }
+                            else if (result.MessageType == WebSocketMessageType.Binary && msg.Length >= 5 && msg[0] == 0x41 && session.ActivePeers.Length > 1)
+                            {
+                                uint ackSeq = BitConverter.ToUInt32(msg, 1);
+                                uint prevAck = session.LastForwardedAckSeq;
+                                if (prevAck != 0 && (int)(ackSeq - prevAck) <= 0)
+                                {
+                                    continue;
+                                }
+                                session.LastForwardedAckSeq = ackSeq;
+                            }
+
                             // If this is a mouse move (5 bytes binary 0x4D 'M' or JSON move) -> Coalesce to 0-latency!
                             bool isMouseMove = (result.MessageType == WebSocketMessageType.Binary && msg.Length == 5 && msg[0] == 0x4D);
                             if (!isMouseMove && result.MessageType == WebSocketMessageType.Text && msg.Length < 64)
