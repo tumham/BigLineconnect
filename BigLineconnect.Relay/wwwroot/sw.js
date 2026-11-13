@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bigline-pwa-v3610';
+const CACHE_NAME = 'bigline-pwa-v3701';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
@@ -16,7 +16,7 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   const url = event.request.url;
-  if (url.includes('app.js') || url.includes('index.html') || url.includes('sw.js')) {
+  if (url.includes('app.js') || url.includes('index.html') || url.includes('mobil') || url.includes('sw.js')) {
     event.respondWith(fetch(event.request, { cache: 'no-store' }));
     return;
   }

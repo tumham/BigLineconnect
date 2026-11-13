@@ -1,0 +1,7 @@
+*
+!Dockerfile
+!BigLineconnect.Relay/
+!BigLineconnect.Relay/**
+BigLineconnect.Relay/bin/
+BigLineconnect.Relay/obj/
+BigLineconnect.Relay/publish*/

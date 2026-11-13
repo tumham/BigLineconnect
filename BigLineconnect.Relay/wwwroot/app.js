@@ -483,35 +483,60 @@ if (hiddenKeyboardInput) {
     });
 }
 
-// Helper functions to send inputs via WS
+// Helper functions to send inputs via WS (0ms Native Binary Fast-Path: 'M'=0x4D, 'C'=0x43)
+let _lastAppNormX = 0.5, _lastAppNormY = 0.5;
 function sendMove(x, y) {
     const s = (socket && socket.readyState === WebSocket.OPEN) ? socket : (window.ws && window.ws.readyState === WebSocket.OPEN ? window.ws : null);
+    _lastAppNormX = Math.max(0, Math.min(1, x));
+    _lastAppNormY = Math.max(0, Math.min(1, y));
     if (s) {
-        s.send(JSON.stringify({ type: 'move', x, y }));
+        const nx = Math.round(_lastAppNormX * 65535);
+        const ny = Math.round(_lastAppNormY * 65535);
+        const pkt = new Uint8Array(5);
+        const dv = new DataView(pkt.buffer);
+        pkt[0] = 0x4D;
+        dv.setUint16(1, nx, true);
+        dv.setUint16(3, ny, true);
+        s.send(pkt.buffer);
     }
 }
 
 function sendClick(button, action, x = null, y = null) {
     const s = (socket && socket.readyState === WebSocket.OPEN) ? socket : (window.ws && window.ws.readyState === WebSocket.OPEN ? window.ws : null);
     if (s) {
-        const payload = { type: 'click', button, action };
-        if (x !== null && y !== null) {
-            payload.x = x;
-            payload.y = y;
-        }
-        s.send(JSON.stringify(payload));
+        const bVal = button === 'right' ? 2 : (button === 'middle' ? 3 : 1);
+        const aVal = action === 'up' ? 2 : 1;
+        const ux = x !== null ? Math.max(0, Math.min(1, x)) : _lastAppNormX;
+        const uy = y !== null ? Math.max(0, Math.min(1, y)) : _lastAppNormY;
+        const nx = Math.round(ux * 65535);
+        const ny = Math.round(uy * 65535);
+        const pkt = new Uint8Array(7);
+        const dv = new DataView(pkt.buffer);
+        pkt[0] = 0x43; pkt[1] = bVal; pkt[2] = aVal;
+        dv.setUint16(3, nx, true);
+        dv.setUint16(5, ny, true);
+        s.send(pkt.buffer);
     }
 }
 
 function sendDoubleClick(button = 'left', x = null, y = null) {
     const s = (socket && socket.readyState === WebSocket.OPEN) ? socket : (window.ws && window.ws.readyState === WebSocket.OPEN ? window.ws : null);
     if (s) {
-        const payload = { type: 'double_click', button };
-        if (x !== null && y !== null) {
-            payload.x = x;
-            payload.y = y;
-        }
-        s.send(JSON.stringify(payload));
+        const bVal = button === 'right' ? 2 : (button === 'middle' ? 3 : 1);
+        const nx = Math.round(Math.max(0, Math.min(1, x !== null ? x : 0.5)) * 65535);
+        const ny = Math.round(Math.max(0, Math.min(1, y !== null ? y : 0.5)) * 65535);
+        const sendBinBtn = (act) => {
+            const pkt = new Uint8Array(7);
+            const dv = new DataView(pkt.buffer);
+            pkt[0] = 0x43; pkt[1] = bVal; pkt[2] = act;
+            dv.setUint16(3, nx, true);
+            dv.setUint16(5, ny, true);
+            if (s.readyState === WebSocket.OPEN) s.send(pkt.buffer);
+        };
+        sendBinBtn(1);
+        setTimeout(() => sendBinBtn(2), 22);
+        setTimeout(() => sendBinBtn(1), 85);
+        setTimeout(() => sendBinBtn(2), 110);
     }
 }
 

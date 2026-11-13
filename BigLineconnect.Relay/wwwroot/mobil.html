@@ -153,9 +153,23 @@
             position: relative; transform-origin: center center; will-change: transform;
         }
         #remote-canvas {
-            display: block; max-width: 100vw; max-height: calc(100dvh - 46px);
+            display: block; max-width: 100vw; max-height: calc(100dvh - 96px);
             width: auto; height: auto; background: #050507;
         }
+        /* Alt Laptop Touchpad Fiziksel Tıklama Çubuğu */
+        #touchpad-btns {
+            height: 48px; padding: 6px max(10px, env(safe-area-inset-left)) max(6px, env(safe-area-inset-bottom));
+            background: rgba(10, 12, 18, 0.96); border-top: 1px solid rgba(251, 191, 36, 0.22);
+            display: grid; grid-template-columns: 1fr 1.25fr 1fr; gap: 8px; z-index: 22;
+        }
+        .tp-btn {
+            background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.16);
+            color: #fff; border-radius: 10px; font-size: 0.8rem; font-weight: 800;
+            display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer;
+            touch-action: manipulation;
+        }
+        .tp-btn:active { transform: scale(0.96); background: rgba(251, 191, 36, 0.28); border-color: var(--amber); }
+        .tp-btn.dbl { background: rgba(251, 191, 36, 0.16); border-color: rgba(251, 191, 36, 0.45); color: var(--amber); }
         /* Sanal Fare İmleci (Touchpad Modu) */
         #virtual-cursor {
             position: absolute; width: 22px; height: 22px; pointer-events: none; z-index: 15;
@@ -303,6 +317,18 @@
                     <path d="M3 2L10.5 21L13.5 13.5L21 10.5L3 2Z" fill="#fbbf24" stroke="#000" stroke-width="2" stroke-linejoin="round"/>
                 </svg>
             </div>
+        </div>
+
+        <div id="touchpad-btns">
+            <button type="button" class="tp-btn" onpointerdown="event.preventDefault(); fireSingleClick(1, cursorNormX, cursorNormY);">
+                <i class="fa-solid fa-computer-mouse"></i> Sol Tık
+            </button>
+            <button type="button" class="tp-btn dbl" onpointerdown="event.preventDefault(); fireDoubleClick(cursorNormX, cursorNormY);">
+                <i class="fa-solid fa-bolt"></i> Çift Tık (Aç)
+            </button>
+            <button type="button" class="tp-btn" onpointerdown="event.preventDefault(); fireSingleClick(2, cursorNormX, cursorNormY);">
+                <i class="fa-solid fa-bars"></i> Sağ Tık
+            </button>
         </div>
 
         <div id="kbd-bar">
@@ -599,12 +625,63 @@
             img.src = url;
         }
 
-        // DOKUNMATİK MOTORU: Laptop Touchpad + Doğrudan Dokunma + İki Parmak Pinch-Zoom
+        // DOKUNMATİK & NATIVE BINARY FARE MOTORU (0ms Gecikme + %100 Çift Tık Garantisi)
         const stage = document.getElementById('stage');
         let lastTouchX = 0, lastTouchY = 0;
         let touchStartTime = 0, totalMoveDist = 0;
         let pinchStartDist = 0, pinchStartScale = 1, pinchMidX = 0, pinchMidY = 0, pinchStartPanX = 0, pinchStartPanY = 0;
-        let lastTapTime = 0;
+        let lastTapTime = 0, lastTapNormX = 0.5, lastTapNormY = 0.5;
+
+        // 5-bayt Native C++ 'M' (0x4D) paketi -> Karşı PC faresini 0ms'de gerçek zamanlı taşır!
+        function sendBinaryMove(nx, ny) {
+            if (!ws || ws.readyState !== WebSocket.OPEN) return;
+            const ux = Math.round(Math.max(0, Math.min(1, nx)) * 65535);
+            const uy = Math.round(Math.max(0, Math.min(1, ny)) * 65535);
+            const pkt = new Uint8Array(5);
+            const dv = new DataView(pkt.buffer);
+            pkt[0] = 0x4D; // 'M'
+            dv.setUint16(1, ux, true);
+            dv.setUint16(3, uy, true);
+            ws.send(pkt.buffer);
+        }
+
+        // 7-bayt Native C++ 'C' (0x43) paketi -> btn: 1=sol, 2=sağ | act: 1=down, 2=up
+        function sendBinaryButton(btnCode, actCode, nx, ny) {
+            if (!ws || ws.readyState !== WebSocket.OPEN) return;
+            const ux = Math.round(Math.max(0, Math.min(1, nx)) * 65535);
+            const uy = Math.round(Math.max(0, Math.min(1, ny)) * 65535);
+            const pkt = new Uint8Array(7);
+            const dv = new DataView(pkt.buffer);
+            pkt[0] = 0x43; // 'C'
+            pkt[1] = btnCode;
+            pkt[2] = actCode;
+            dv.setUint16(3, ux, true);
+            dv.setUint16(5, uy, true);
+            ws.send(pkt.buffer);
+        }
+
+        function fireSingleClick(btnCode, nx, ny) {
+            sendBinaryMove(nx, ny);
+            sendBinaryButton(btnCode, 1, nx, ny);
+            setTimeout(() => sendBinaryButton(btnCode, 2, nx, ny), 28);
+        }
+
+        function fireDoubleClick(nx, ny) {
+            sendBinaryMove(nx, ny);
+            sendBinaryButton(1, 1, nx, ny);
+            setTimeout(() => sendBinaryButton(1, 2, nx, ny), 24);
+            setTimeout(() => sendBinaryButton(1, 1, nx, ny), 88);
+            setTimeout(() => sendBinaryButton(1, 2, nx, ny), 114);
+        }
+
+        function mapDirectTouchToNorm(clientX, clientY) {
+            const rect = canvas.getBoundingClientRect();
+            if (rect.width <= 0 || rect.height <= 0) return { x: cursorNormX, y: cursorNormY };
+            return {
+                x: Math.max(0, Math.min(1, (clientX - rect.left) / rect.width)),
+                y: Math.max(0, Math.min(1, (clientY - rect.top) / rect.height))
+            };
+        }
 
         stage.addEventListener('touchstart', (e) => {
             if (!isConnected) return;
@@ -627,12 +704,10 @@
                 totalMoveDist = 0;
 
                 if (!touchpadMode) {
-                    const rect = canvas.getBoundingClientRect();
-                    if (rect.width > 0 && rect.height > 0) {
-                        cursorNormX = Math.max(0, Math.min(1, (lastTouchX - rect.left) / rect.width));
-                        cursorNormY = Math.max(0, Math.min(1, (lastTouchY - rect.top) / rect.height));
-                        wsSend({ type: 'move', x: cursorNormX, y: cursorNormY });
-                    }
+                    const p = mapDirectTouchToNorm(lastTouchX, lastTouchY);
+                    cursorNormX = p.x;
+                    cursorNormY = p.y;
+                    sendBinaryMove(cursorNormX, cursorNormY);
                 }
             }
         }, { passive: false });
@@ -668,14 +743,12 @@
                     cursorNormX = Math.max(0, Math.min(1, cursorNormX + (dx / Math.max(220, rect.width)) * sens));
                     cursorNormY = Math.max(0, Math.min(1, cursorNormY + (dy / Math.max(180, rect.height)) * sens));
                     updateCursorDom();
-                    wsSend({ type: 'move', x: cursorNormX, y: cursorNormY });
+                    sendBinaryMove(cursorNormX, cursorNormY);
                 } else {
-                    const rect = canvas.getBoundingClientRect();
-                    if (rect.width > 0 && rect.height > 0) {
-                        cursorNormX = Math.max(0, Math.min(1, (cx - rect.left) / rect.width));
-                        cursorNormY = Math.max(0, Math.min(1, (cy - rect.top) / rect.height));
-                        wsSend({ type: 'move', x: cursorNormX, y: cursorNormY });
-                    }
+                    const p = mapDirectTouchToNorm(cx, cy);
+                    cursorNormX = p.x;
+                    cursorNormY = p.y;
+                    sendBinaryMove(cursorNormX, cursorNormY);
                 }
             }
         }, { passive: false });
@@ -683,17 +756,27 @@
         stage.addEventListener('touchend', (e) => {
             if (!isConnected) return;
             const elapsed = performance.now() - touchStartTime;
-            if (elapsed < 280 && totalMoveDist < 12 && e.touches.length === 0) {
+            if (elapsed < 320 && totalMoveDist < 14 && e.touches.length === 0) {
                 const now = performance.now();
-                if (clickMode === 'double' || (now - lastTapTime < 300 && clickMode === 'left')) {
-                    wsSend({ type: 'double_click', button: 'left', x: cursorNormX, y: cursorNormY });
+                if (clickMode === 'double') {
+                    fireDoubleClick(cursorNormX, cursorNormY);
                     lastTapTime = 0;
                 } else if (clickMode === 'right') {
-                    wsSend({ type: 'click', button: 'right', action: 'click', x: cursorNormX, y: cursorNormY });
+                    fireSingleClick(2, cursorNormX, cursorNormY);
                     lastTapTime = now;
                 } else {
-                    wsSend({ type: 'click', button: 'left', action: 'click', x: cursorNormX, y: cursorNormY });
-                    lastTapTime = now;
+                    // Sol tık modunda peş peşe iki dokunuş -> İlk dokunuşun tam pikseline kilitlenerek 2. gerçek tıklamayı vur!
+                    const isSecondTap = (now - lastTapTime < 420) &&
+                        (Math.hypot(cursorNormX - lastTapNormX, cursorNormY - lastTapNormY) < 0.045);
+                    if (isSecondTap) {
+                        fireSingleClick(1, lastTapNormX, lastTapNormY);
+                        lastTapTime = 0;
+                    } else {
+                        lastTapNormX = cursorNormX;
+                        lastTapNormY = cursorNormY;
+                        lastTapTime = now;
+                        fireSingleClick(1, cursorNormX, cursorNormY);
+                    }
                 }
             }
         });
@@ -787,3 +870,4 @@
     </script>
 </body>
 </html>
+

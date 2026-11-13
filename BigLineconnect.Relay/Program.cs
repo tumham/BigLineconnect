@@ -5724,7 +5724,7 @@ td{{padding:10px 12px;border-bottom:1px solid #e2e8f0;vertical-align:top;}}
             var buffer = new byte[1024 * 8]; // 8KB read buffer for inputs
             var token = clientToken;
             var highPriorityQueue = new ConcurrentQueue<(byte[] Data, WebSocketMessageType Type)>();
-            byte[]? latestMouseMove = null;
+            object? latestMouseMoveBox = null; // Boxed (byte[] Data, WebSocketMessageType Type)
             var wakeSender = new AutoResetEvent(false);
 
             // Dedicated zero-latency sender loop: transmits inputs to Host without Head-of-Line blocking
@@ -5763,8 +5763,8 @@ td{{padding:10px 12px;border-bottom:1px solid #e2e8f0;vertical-align:top;}}
                         }
 
                         // 2. Send ONLY the single newest mouse move (never a 50-packet backlog!)
-                        byte[]? mouseToSend = Interlocked.Exchange(ref latestMouseMove, null);
-                        if (mouseToSend != null && session.HostSocket.State == WebSocketState.Open)
+                        var mouseBox = Interlocked.Exchange(ref latestMouseMoveBox, null);
+                        if (mouseBox is ValueTuple<byte[], WebSocketMessageType> mouseItem && session.HostSocket.State == WebSocketState.Open)
                         {
                             bool hLocked = false;
                             try
@@ -5774,8 +5774,8 @@ td{{padding:10px 12px;border-bottom:1px solid #e2e8f0;vertical-align:top;}}
                                 if (session.HostSocket.State == WebSocketState.Open)
                                 {
                                     await session.HostSocket.SendAsync(
-                                        new ArraySegment<byte>(mouseToSend),
-                                        WebSocketMessageType.Binary,
+                                        new ArraySegment<byte>(mouseItem.Item1),
+                                        mouseItem.Item2,
                                         true,
                                         token
                                     ).ConfigureAwait(false);
@@ -5866,7 +5866,7 @@ td{{padding:10px 12px;border-bottom:1px solid #e2e8f0;vertical-align:top;}}
 
                             if (isMouseMove)
                             {
-                                Interlocked.Exchange(ref latestMouseMove, msg);
+                                Interlocked.Exchange(ref latestMouseMoveBox, ValueTuple.Create(msg, result.MessageType));
                             }
                             else
                             {
