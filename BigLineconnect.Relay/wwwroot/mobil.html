@@ -146,14 +146,14 @@
         .v-btn.danger { background: rgba(239, 68, 68, 0.2); border-color: rgba(239, 68, 68, 0.5); color: #fca5a5; }
 
         #stage {
-            flex: 1; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center;
+            flex: 1; min-height: 0; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center;
             background: #000; touch-action: none;
         }
         #canvas-wrap {
-            position: relative; transform-origin: center center; will-change: transform;
+            position: relative; transform-origin: center center; will-change: transform; line-height: 0;
         }
         #remote-canvas {
-            display: block; max-width: 100vw; max-height: calc(100dvh - 96px);
+            display: block; max-width: 100%; max-height: 100%;
             width: auto; height: auto; background: #050507;
         }
         /* Zoom Yapıldığında Ortada Beliren Tek Dokunuşla İlk Haline Dön Hapı */
@@ -164,34 +164,59 @@
             z-index: 24; box-shadow: 0 6px 20px rgba(0,0,0,0.75); cursor: pointer;
             align-items: center; gap: 6px; touch-action: manipulation; white-space: nowrap;
         }
+        /* Hızlı Kutu & Satır Geçiş Donanım Tuş Şeridi (Evrak Seri -> Evrak Sıra / Tab / Enter / Yön Okları) */
+        #nav-keys-bar {
+            height: 38px; padding: 4px max(6px, env(safe-area-inset-left));
+            background: rgba(13, 17, 26, 0.98); border-top: 1px solid rgba(251, 191, 36, 0.28);
+            display: flex; align-items: center; gap: 4px; z-index: 23;
+        }
+        .nk-btn {
+            flex: 1; min-width: 0; height: 100%; padding: 0 2px;
+            background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.16);
+            color: #f8fafc; border-radius: 8px; font-size: 0.72rem; font-weight: 800;
+            display: flex; align-items: center; justify-content: center; gap: 2px;
+            cursor: pointer; touch-action: manipulation; white-space: nowrap;
+        }
+        .nk-btn:active { transform: scale(0.94); background: rgba(251, 191, 36, 0.32); border-color: var(--amber); }
+        .nk-btn.primary {
+            flex: 1.45; background: linear-gradient(135deg, rgba(251, 191, 36, 0.28), rgba(245, 158, 11, 0.22));
+            border-color: var(--amber); color: var(--amber); font-size: 0.75rem;
+        }
+        .nk-btn.tab {
+            flex: 1.3; background: rgba(59, 130, 246, 0.18);
+            border-color: rgba(96, 165, 250, 0.5); color: #93c5fd;
+        }
         /* Alt Laptop Touchpad Fiziksel Tıklama Çubuğu */
         #touchpad-btns {
-            height: 48px; padding: 6px max(10px, env(safe-area-inset-left)) max(6px, env(safe-area-inset-bottom));
-            background: rgba(10, 12, 18, 0.96); border-top: 1px solid rgba(251, 191, 36, 0.22);
-            display: grid; grid-template-columns: 1fr 1.25fr 1fr; gap: 8px; z-index: 22;
+            height: 44px; padding: 5px max(8px, env(safe-area-inset-left)) max(5px, env(safe-area-inset-bottom));
+            background: rgba(10, 12, 18, 0.96); border-top: 1px solid rgba(255, 255, 255, 0.09);
+            display: grid; grid-template-columns: 1fr 1.25fr 1fr; gap: 7px; z-index: 22;
+        }
+        body.kbd-open #touchpad-btns {
+            height: 36px; padding-top: 3px; padding-bottom: 3px;
         }
         .tp-btn {
             background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.16);
-            color: #fff; border-radius: 10px; font-size: 0.8rem; font-weight: 800;
+            color: #fff; border-radius: 10px; font-size: 0.78rem; font-weight: 800;
             display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer;
             touch-action: manipulation;
         }
         .tp-btn:active { transform: scale(0.96); background: rgba(251, 191, 36, 0.28); border-color: var(--amber); }
         .tp-btn.dbl { background: rgba(251, 191, 36, 0.16); border-color: rgba(251, 191, 36, 0.45); color: var(--amber); }
-        /* Sanal Fare İmleci (Touchpad Modu) */
+        /* Sanal Fare İmleci (Tam (0,0) İğne Ucu Kalibrasyonlu + Zoom Sabit Boyutlu) */
         #virtual-cursor {
-            position: absolute; width: 22px; height: 22px; pointer-events: none; z-index: 15;
-            left: 50%; top: 50%; transform: translate(-2px, -2px);
-            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.9));
+            position: absolute; width: 20px; height: 20px; pointer-events: none; z-index: 15;
+            left: 50%; top: 50%; transform-origin: 0 0; transform: scale(1);
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.92));
         }
 
         /* Mobil Klavye Çubuğu */
         #kbd-bar {
             display: none; background: #11141d; border-top: 1px solid var(--border);
-            padding: 8px 10px max(8px, env(safe-area-inset-bottom)); gap: 6px; align-items: center; z-index: 25;
+            padding: 6px 8px max(6px, env(safe-area-inset-bottom)); gap: 5px; align-items: center; z-index: 25;
         }
         #kbd-input {
-            flex: 1; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border);
+            flex: 1; min-width: 0; padding: 9px 10px; border-radius: 9px; border: 1px solid var(--border);
             background: #050608; color: #fff; font-size: 16px; outline: none;
         }
 
@@ -287,35 +312,35 @@
     <!-- CANLI UZAK MASAÜSTÜ EKRANI -->
     <div id="viewer-screen">
         <div class="viewer-bar">
-            <button id="btn-input-mode" class="v-btn active" onclick="toggleTouchpadMode()">
+            <button id="btn-input-mode" class="v-btn active" onpointerdown="event.preventDefault(); toggleTouchpadMode();">
                 <i class="fa-solid fa-arrow-pointer"></i> <span id="input-mode-lbl">Touchpad</span>
             </button>
-            <button id="btn-click-mode" class="v-btn" onclick="cycleClickMode()">
+            <button id="btn-click-mode" class="v-btn" onpointerdown="event.preventDefault(); cycleClickMode();">
                 <span id="click-mode-lbl">Sol Tık</span>
             </button>
-            <button class="v-btn" onclick="toggleKeyboardBar()">
+            <button class="v-btn" onpointerdown="event.preventDefault(); toggleKeyboardBar();">
                 <i class="fa-solid fa-keyboard"></i> <span>Klavye</span>
             </button>
-            <button class="v-btn" onclick="resetZoom()">
+            <button class="v-btn" onpointerdown="event.preventDefault(); resetZoom();">
                 <i class="fa-solid fa-magnifying-glass-minus"></i> <span id="zoom-lbl">100%</span>
             </button>
-            <button class="v-btn" onclick="toggleToolsDrawer()">
+            <button class="v-btn" onpointerdown="event.preventDefault(); toggleToolsDrawer();">
                 <i class="fa-solid fa-sliders"></i> <span>Tuşlar</span>
             </button>
-            <button class="v-btn danger" onclick="disconnectMobile()">
+            <button class="v-btn danger" onpointerdown="event.preventDefault(); disconnectMobile();">
                 <i class="fa-solid fa-xmark"></i> <span>Kapat</span>
             </button>
         </div>
 
         <div id="tools-drawer">
-            <button class="drawer-btn" onclick="sendSpecialKey('Escape')">ESC</button>
-            <button class="drawer-btn" onclick="sendSpecialKey('Tab')">TAB</button>
-            <button class="drawer-btn" onclick="sendSpecialKey('Enter')">ENTER</button>
-            <button class="drawer-btn" onclick="sendSpecialKey('Backspace')">⌫ SİL</button>
-            <button class="drawer-btn" onclick="sendHostCmd('CAD')">CTRL+ALT+DEL</button>
-            <button class="drawer-btn" onclick="sendHostCmd('TASKMGR')">Görev Yön.</button>
-            <button class="drawer-btn" onclick="switchMonitor()">🖥️ Ekran Değiş</button>
-            <button class="drawer-btn" onclick="requestFreshKeyframe()">🔄 Yenile</button>
+            <button class="drawer-btn" onpointerdown="event.preventDefault(); sendSpecialKey('Escape');">ESC (Çık)</button>
+            <button class="drawer-btn" onpointerdown="event.preventDefault(); sendSpecialKey('Delete');">DEL (Sil)</button>
+            <button class="drawer-btn" onpointerdown="event.preventDefault(); sendSpecialKey('F5');">F5 (Yenile)</button>
+            <button class="drawer-btn" onpointerdown="event.preventDefault(); sendSpecialKey('F10');">F10 (Kaydet)</button>
+            <button class="drawer-btn" onpointerdown="event.preventDefault(); sendHostCmd('CAD');">CTRL+ALT+DEL</button>
+            <button class="drawer-btn" onpointerdown="event.preventDefault(); sendHostCmd('TASKMGR');">Görev Yön.</button>
+            <button class="drawer-btn" onpointerdown="event.preventDefault(); switchMonitor();">🖥️ Ekran Değiş</button>
+            <button class="drawer-btn" onpointerdown="event.preventDefault(); requestFreshKeyframe();">🔄 Tazele</button>
         </div>
 
         <div id="stage">
@@ -325,9 +350,22 @@
             <div id="canvas-wrap">
                 <canvas id="remote-canvas" width="1280" height="720"></canvas>
                 <svg id="virtual-cursor" viewBox="0 0 24 24">
-                    <path d="M3 2L10.5 21L13.5 13.5L21 10.5L3 2Z" fill="#fbbf24" stroke="#000" stroke-width="2" stroke-linejoin="round"/>
+                    <path d="M0 0L8.5 20L11.8 12.2L20 9L0 0Z" fill="#fbbf24" stroke="#000" stroke-width="1.8" stroke-linejoin="round"/>
                 </svg>
             </div>
+        </div>
+
+        <!-- EVRAK SERİ -> EVRAK SIRA & SATIR GEÇİŞ DONANIM TUŞ ŞERİDİ -->
+        <div id="nav-keys-bar">
+            <button type="button" class="nk-btn" data-nav="shifttab" title="Önceki Kutu (Shift+Tab)">⇤</button>
+            <button type="button" class="nk-btn tab" data-nav="tab" title="Sonraki Kutu (Tab)">TAB ⇥</button>
+            <button type="button" class="nk-btn primary" data-nav="enter" title="Onayla & Sonraki Kutuya Geç (Enter)">⏎ GEÇ</button>
+            <button type="button" class="nk-btn" data-nav="left" title="Sol Ok">◀</button>
+            <button type="button" class="nk-btn" data-nav="down" title="Aşağı Ok">▼</button>
+            <button type="button" class="nk-btn" data-nav="up" title="Yukarı Ok">▲</button>
+            <button type="button" class="nk-btn" data-nav="right" title="Sağ Ok">▶</button>
+            <button type="button" class="nk-btn" data-nav="f2" title="Liste / Rehber Aç (F2)">F2</button>
+            <button type="button" class="nk-btn" data-nav="bs" title="Geri Sil (Backspace)">⌫</button>
         </div>
 
         <div id="touchpad-btns">
@@ -343,11 +381,11 @@
         </div>
 
         <div id="kbd-bar">
-            <input id="kbd-input" type="text" placeholder="Buraya yazın (Türkçe karakter tam uyumlu)..." autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
-            <button class="v-btn active" onclick="sendTextBuffer()">Gönder</button>
-            <button class="v-btn" onclick="sendSpecialKey('Enter')">⏎</button>
-            <button class="v-btn" onclick="sendSpecialKey('Backspace')">⌫</button>
-            <button class="v-btn" onclick="toggleKeyboardBar()">✕</button>
+            <input id="kbd-input" type="text" enterkeyhint="next" placeholder="Metin veya rakam yazın..." autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+            <button type="button" class="v-btn active" onpointerdown="event.preventDefault(); sendTextBuffer(0x0D);">⏎ Geç</button>
+            <button type="button" class="v-btn" onpointerdown="event.preventDefault(); sendTextBuffer(0x09);">⇥ Tab</button>
+            <button type="button" class="v-btn" onpointerdown="event.preventDefault(); sendTextBuffer(0);">Yaz</button>
+            <button type="button" class="v-btn" onpointerdown="event.preventDefault(); toggleKeyboardBar();">✕</button>
         </div>
     </div>
 
@@ -463,10 +501,41 @@
             return vid;
         }
 
+        function fitCanvasToStage() {
+            const st = document.getElementById('stage');
+            if (!st) return;
+            const stW = st.clientWidth, stH = st.clientHeight;
+            const cw = canvas.width || 1280, ch = canvas.height || 720;
+            if (stW <= 10 || stH <= 10 || cw <= 0 || ch <= 0) return;
+            const scale = Math.min(stW / cw, stH / ch);
+            canvas.style.width = Math.max(1, Math.floor(cw * scale)) + 'px';
+            canvas.style.height = Math.max(1, Math.floor(ch * scale)) + 'px';
+        }
+
+        function syncMobileViewport() {
+            const v = document.getElementById('viewer-screen');
+            if (!v || v.style.display !== 'flex') return;
+            if (window.visualViewport) {
+                const vv = window.visualViewport;
+                v.style.top = Math.max(0, vv.offsetTop) + 'px';
+                v.style.height = vv.height + 'px';
+            }
+            fitCanvasToStage();
+        }
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', syncMobileViewport);
+            window.visualViewport.addEventListener('scroll', syncMobileViewport);
+        }
+        window.addEventListener('resize', syncMobileViewport);
+        if (typeof ResizeObserver !== 'undefined') {
+            new ResizeObserver(() => fitCanvasToStage()).observe(document.getElementById('stage'));
+        }
+
         function updateCursorDom() {
             cursorEl.style.display = touchpadMode ? 'block' : 'none';
             cursorEl.style.left = (cursorNormX * 100) + '%';
             cursorEl.style.top = (cursorNormY * 100) + '%';
+            cursorEl.style.transform = `scale(${1 / Math.max(1, zoomScale)})`;
         }
         function clampPan() {
             if (zoomScale <= 1.02) {
@@ -484,6 +553,7 @@
         function applyTransform() {
             clampPan();
             canvasWrap.style.transform = `translate(${panX}px, ${panY}px) scale(${zoomScale})`;
+            cursorEl.style.transform = `scale(${1 / Math.max(1, zoomScale)})`;
             document.getElementById('zoom-lbl').textContent = Math.round(zoomScale * 100) + '%';
             const pill = document.getElementById('zoom-reset-pill');
             if (pill) pill.style.display = zoomScale > 1.02 ? 'inline-flex' : 'none';
@@ -579,6 +649,7 @@
             if (v.style.display !== 'flex') {
                 document.getElementById('mobile-lobby').style.display = 'none';
                 v.style.display = 'flex';
+                syncMobileViewport();
                 updateCursorDom();
             }
         }
@@ -615,11 +686,11 @@
             pendingAckSeq = seq;
             const now = performance.now();
             const elapsed = now - lastAckSentAt;
-            // Telefon işlemcisini yormamak için saniyede ~26 kare (38ms) akıcı ritimle ACK gönder
-            if (elapsed >= 38) {
+            // Çizim tamamlanır tamamlanmaz 16ms (60 FPS tavan, sıfır yığılma) akıcı ritimle ACK gönder
+            if (elapsed >= 16) {
                 flushPendingAck();
             } else if (!ackFlushTimer) {
-                ackFlushTimer = setTimeout(flushPendingAck, 38 - elapsed);
+                ackFlushTimer = setTimeout(flushPendingAck, 16 - elapsed);
             }
         }
 
@@ -658,6 +729,7 @@
                         if (canvas.width !== img.width || canvas.height !== img.height) {
                             canvas.width = img.width;
                             canvas.height = img.height;
+                            fitCanvasToStage();
                         }
                     }
                 }
@@ -717,6 +789,7 @@
                         if (canvas.width !== subW || canvas.height !== subH) {
                             canvas.width = subW;
                             canvas.height = subH;
+                            fitCanvasToStage();
                         }
                     }
                 }
@@ -928,35 +1001,161 @@
             else { clickMode = 'left'; lbl.textContent = 'Sol Tık'; showToast('Sol Tıklama Modu'); }
         }
 
-        // TÜRKÇE & SAFARI TAM UYUMLU KLAVYE ÇUBUĞU
+        // DONANIMSAL 4-BAYT NATIVE 'K' (0x4B) TUŞ MOTORU (Evrak Seri -> Evrak Sıra / Tab / Enter / Yön Okları %100 Uyumlu)
+        function sendHwKey(vk, isDown) {
+            if (!ws || ws.readyState !== WebSocket.OPEN) return;
+            const pkt = new Uint8Array(4);
+            pkt[0] = 0x4B; // 'K'
+            pkt[1] = vk & 0xFF;
+            pkt[2] = (vk >> 8) & 0xFF;
+            pkt[3] = isDown ? 1 : 0;
+            ws.send(pkt.buffer);
+        }
+
+        function tapHwKey(vk, holdMs = 34) {
+            sendHwKey(vk, true);
+            setTimeout(() => sendHwKey(vk, false), holdMs);
+        }
+
+        function tapShiftTab() {
+            sendHwKey(0x10, true); // VK_SHIFT down
+            setTimeout(() => sendHwKey(0x09, true), 12); // VK_TAB down
+            setTimeout(() => sendHwKey(0x09, false), 44); // VK_TAB up
+            setTimeout(() => sendHwKey(0x10, false), 58); // VK_SHIFT up
+        }
+
+        const SPECIAL_VK_MAP = {
+            'Backspace': 0x08, 'Tab': 0x09, 'Enter': 0x0D, 'Escape': 0x1B,
+            'Space': 0x20, 'PageUp': 0x21, 'PageDown': 0x22, 'End': 0x23, 'Home': 0x24,
+            'ArrowLeft': 0x25, 'ArrowUp': 0x26, 'ArrowRight': 0x27, 'ArrowDown': 0x28,
+            'Delete': 0x2E, 'F2': 0x71, 'F5': 0x74, 'F10': 0x79
+        };
+
+        // Basılı Tutunca Seri İlerleyen Hızlı Kutu/Satır Tuş Şeridi
+        (function bindNavRepeatButtons() {
+            const navMap = {
+                shifttab: () => tapShiftTab(),
+                tab:      () => tapHwKey(0x09),
+                enter:    () => tapHwKey(0x0D),
+                left:     () => tapHwKey(0x25),
+                down:     () => tapHwKey(0x28),
+                up:       () => tapHwKey(0x26),
+                right:    () => tapHwKey(0x27),
+                f2:       () => tapHwKey(0x71),
+                bs:       () => tapHwKey(0x08)
+            };
+            document.querySelectorAll('#nav-keys-bar .nk-btn').forEach((btn) => {
+                const act = navMap[btn.dataset.nav];
+                if (!act) return;
+                let holdTimer = null, repTimer = null;
+                const stopRep = () => {
+                    if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
+                    if (repTimer) { clearInterval(repTimer); repTimer = null; }
+                };
+                btn.addEventListener('pointerdown', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    stopRep();
+                    act();
+                    if (btn.dataset.nav !== 'f2') {
+                        holdTimer = setTimeout(() => {
+                            repTimer = setInterval(act, 95);
+                        }, 360);
+                    }
+                });
+                ['pointerup', 'pointercancel', 'pointerleave', 'lostpointercapture'].forEach(ev => {
+                    btn.addEventListener(ev, stopRep);
+                });
+            });
+        })();
+
+        // TÜRKÇE & SAFARI TAM UYUMLU AKILLI KLAVYE ÇUBUĞU (Maskeli Kutu Rakam + Enter/Tab Geçiş Desteği)
         function toggleKeyboardBar() {
             const bar = document.getElementById('kbd-bar');
             const open = bar.style.display !== 'flex';
             bar.style.display = open ? 'flex' : 'none';
-            if (open) document.getElementById('kbd-input').focus();
-        }
-        function sendTextBuffer() {
-            const inp = document.getElementById('kbd-input');
-            if (inp.value) {
-                wsSend({ type: 'text', text: inp.value });
-                inp.value = '';
-                inp.focus();
+            document.body.classList.toggle('kbd-open', open);
+            syncMobileViewport();
+            if (open) {
+                document.getElementById('kbd-input').focus();
+            } else {
+                document.getElementById('kbd-input').blur();
             }
         }
-        document.getElementById('kbd-input').addEventListener('keydown', (e) => {
+
+        function sendSmartText(str, afterVk) {
+            if (!str) {
+                if (afterVk) tapHwKey(afterVk);
+                return;
+            }
+            // Saf rakamlardan oluşuyorsa (Evrak Sıra / Miktar gibi maskeli sayı kutuları için) gerçek donanım VK_0..VK_9 bas!
+            if (/^[0-9]+$/.test(str)) {
+                let delay = 0;
+                for (let i = 0; i < str.length; i++) {
+                    const vkDigit = 0x30 + (str.charCodeAt(i) - 48);
+                    setTimeout(() => tapHwKey(vkDigit, 22), delay);
+                    delay += 36;
+                }
+                if (afterVk) {
+                    setTimeout(() => tapHwKey(afterVk, 34), delay + 20);
+                }
+            } else {
+                wsSend({ type: 'text', text: str });
+                if (afterVk) {
+                    setTimeout(() => tapHwKey(afterVk, 34), 45);
+                }
+            }
+        }
+
+        function sendTextBuffer(afterVk = 0) {
+            const inp = document.getElementById('kbd-input');
+            const val = inp.value;
+            inp.value = '';
+            sendSmartText(val, afterVk);
+        }
+
+        let lastKbdSpecialTs = 0;
+        const kbdInputEl = document.getElementById('kbd-input');
+        kbdInputEl.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 e.preventDefault();
-                if (e.target.value) sendTextBuffer();
-                else sendSpecialKey('Enter');
+                lastKbdSpecialTs = performance.now();
+                sendTextBuffer(0x0D);
+            } else if (e.key === 'Tab') {
+                e.preventDefault();
+                lastKbdSpecialTs = performance.now();
+                sendTextBuffer(0x09);
             } else if (e.key === 'Backspace' && !e.target.value) {
                 e.preventDefault();
-                sendSpecialKey('Backspace');
+                lastKbdSpecialTs = performance.now();
+                tapHwKey(0x08);
+            }
+        });
+        kbdInputEl.addEventListener('beforeinput', (e) => {
+            const now = performance.now();
+            if (e.inputType === 'insertLineBreak' || e.inputType === 'insertParagraph') {
+                e.preventDefault();
+                if (now - lastKbdSpecialTs > 30) {
+                    lastKbdSpecialTs = now;
+                    sendTextBuffer(0x0D);
+                }
+            } else if (e.inputType === 'deleteContentBackward' && !kbdInputEl.value) {
+                e.preventDefault();
+                if (now - lastKbdSpecialTs > 30) {
+                    lastKbdSpecialTs = now;
+                    tapHwKey(0x08);
+                }
             }
         });
 
         function sendSpecialKey(key) {
-            wsSend({ type: 'key', key: key, action: 'down' });
-            setTimeout(() => wsSend({ type: 'key', key: key, action: 'up' }), 35);
+            const vk = SPECIAL_VK_MAP[key];
+            if (vk) {
+                tapHwKey(vk, 34);
+            } else {
+                wsSend({ type: 'key', key: key, action: 'down' });
+                setTimeout(() => wsSend({ type: 'key', key: key, action: 'up' }), 35);
+            }
             document.getElementById('tools-drawer').style.display = 'none';
         }
         function sendHostCmd(cmd) {

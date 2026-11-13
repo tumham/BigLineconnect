@@ -2633,7 +2633,7 @@ td{{padding:10px 12px;border-bottom:1px solid #e2e8f0;vertical-align:top;}}
                                                 isFullJpegKeyframe = true;
                                             }
                                         }
-                                        if (!isFullJpegKeyframe && subX == 0 && subY == 0)
+                                        if (!isFullJpegKeyframe && subX == 0 && subY == 0 && subW >= 640 && subH >= 480)
                                         {
                                             isTopLeftPartialTrap = true;
                                         }
@@ -5834,9 +5834,17 @@ td{{padding:10px 12px;border-bottom:1px solid #e2e8f0;vertical-align:top;}}
             var token = clientToken;
             var highPriorityQueue = new ConcurrentQueue<(byte[] Data, WebSocketMessageType Type)>();
             object? latestMouseMoveBox = null; // Boxed (byte[] Data, WebSocketMessageType Type)
-            var wakeSender = new AutoResetEvent(false);
+            using var wakeSender = new SemaphoreSlim(0, 1);
 
-            // Dedicated zero-latency sender loop: transmits inputs to Host without Head-of-Line blocking
+            void SignalSender()
+            {
+                if (wakeSender.CurrentCount == 0)
+                {
+                    try { wakeSender.Release(); } catch { }
+                }
+            }
+
+            // Dedicated zero-latency async sender loop: transmits inputs & ACKs to Host in <0.1ms without ThreadPool blocking
             var senderTask = Task.Run(async () =>
             {
                 try
@@ -5899,7 +5907,7 @@ td{{padding:10px 12px;border-bottom:1px solid #e2e8f0;vertical-align:top;}}
 
                         if (!sentAnything)
                         {
-                            wakeSender.WaitOne(10);
+                            await wakeSender.WaitAsync(15, token).ConfigureAwait(false);
                         }
                     }
                 }
@@ -5913,27 +5921,41 @@ td{{padding:10px 12px;border-bottom:1px solid #e2e8f0;vertical-align:top;}}
                        peer.IsRegistered &&
                        clientSocket.State == WebSocketState.Open)
                 {
-                    using (var ms = new MemoryStream())
+                    var firstRes = await clientSocket.ReceiveAsync(new ArraySegment<byte>(buffer), token).ConfigureAwait(false);
+                    if (firstRes.MessageType == WebSocketMessageType.Close) break;
+
+                    byte[] msg;
+                    WebSocketMessageType msgType = firstRes.MessageType;
+                    if (firstRes.EndOfMessage)
                     {
-                        WebSocketReceiveResult result;
+                        if (firstRes.Count <= 0) continue;
+                        msg = new byte[firstRes.Count];
+                        Buffer.BlockCopy(buffer, 0, msg, 0, firstRes.Count);
+                    }
+                    else
+                    {
+                        using var ms = new MemoryStream(firstRes.Count * 2);
+                        ms.Write(buffer, 0, firstRes.Count);
+                        WebSocketReceiveResult moreRes;
                         do
                         {
-                            result = await clientSocket.ReceiveAsync(new ArraySegment<byte>(buffer), token);
-                            if (result.MessageType == WebSocketMessageType.Close) break;
-                            ms.Write(buffer, 0, result.Count);
+                            moreRes = await clientSocket.ReceiveAsync(new ArraySegment<byte>(buffer), token).ConfigureAwait(false);
+                            if (moreRes.MessageType == WebSocketMessageType.Close) break;
+                            ms.Write(buffer, 0, moreRes.Count);
                         }
-                        while (!result.EndOfMessage);
+                        while (!moreRes.EndOfMessage);
+                        if (moreRes.MessageType == WebSocketMessageType.Close) break;
+                        msg = ms.ToArray();
+                        if (msg.Length == 0) continue;
+                    }
 
-                        if (result.MessageType == WebSocketMessageType.Close) break;
-
-                        if (ms.Length > 0)
+                    {
                         {
-                            byte[] msg = ms.ToArray();
 
                             // Çoklu uzman modunda (ActivePeers.Length > 1):
                             // 1) Uzmanlardan biri ayrıldığında ("DISCONNECT"/"STOP"/"CLOSE"/"LEAVE") diğer uzmanın yayınını kesmemek için sinyali yut ve sadece bu uzmanı kapat!
                             // 2) İki uzmandan yavaş olanın gecikmeli eski ACK'sının Host lastAckedSeq sayacını geriye çekmesini engelle!
-                            if (result.MessageType == WebSocketMessageType.Text && msg.Length < 128)
+                            if (msgType == WebSocketMessageType.Text && msg.Length < 128)
                             {
                                 string txt = Encoding.UTF8.GetString(msg);
                                 if (txt.Contains("MONITOR", StringComparison.OrdinalIgnoreCase) ||
@@ -5966,7 +5988,7 @@ td{{padding:10px 12px;border-bottom:1px solid #e2e8f0;vertical-align:top;}}
                                     break;
                                 }
                             }
-                            else if (result.MessageType == WebSocketMessageType.Binary && msg.Length >= 5 && msg[0] == 0x41)
+                            else if (msgType == WebSocketMessageType.Binary && msg.Length >= 5 && msg[0] == 0x41)
                             {
                                 long nowAckTicks = DateTime.UtcNow.Ticks;
                                 if (peer.IsWebClient)
@@ -5975,10 +5997,9 @@ td{{padding:10px 12px;border-bottom:1px solid #e2e8f0;vertical-align:top;}}
                                 }
                                 else if (session.ActivePeers.Length > 1 && session.HasAnyWebPeer())
                                 {
-                                    // Masaüstü + Mobil eşzamanlı bağlıyken fiber Masaüstü ACK'larının telefonu 60 FPS ile yormasını önle:
-                                    // Mobil istemci son 220ms içinde canlı ACK gönderiyorsa akış ritmini Mobil belirlesin.
+                                    // Masaüstü uygulamasını yavaşlatmadan sadece üst üste aynı 32ms içindeki mükerrer ACK'ları süz:
                                     long lastWebAck = Interlocked.Read(ref session.LastWebAckTicks);
-                                    if (lastWebAck > 0 && (nowAckTicks - lastWebAck) < TimeSpan.FromMilliseconds(220).Ticks)
+                                    if (lastWebAck > 0 && (nowAckTicks - lastWebAck) < TimeSpan.FromMilliseconds(32).Ticks)
                                     {
                                         continue;
                                     }
@@ -5997,8 +6018,8 @@ td{{padding:10px 12px;border-bottom:1px solid #e2e8f0;vertical-align:top;}}
                             }
 
                             // If this is a mouse move (5 bytes binary 0x4D 'M' or JSON move) -> Coalesce to 0-latency!
-                            bool isMouseMove = (result.MessageType == WebSocketMessageType.Binary && msg.Length == 5 && msg[0] == 0x4D);
-                            if (!isMouseMove && result.MessageType == WebSocketMessageType.Text && msg.Length < 64)
+                            bool isMouseMove = (msgType == WebSocketMessageType.Binary && msg.Length == 5 && msg[0] == 0x4D);
+                            if (!isMouseMove && msgType == WebSocketMessageType.Text && msg.Length < 64)
                             {
                                 string str = Encoding.UTF8.GetString(msg);
                                 if (str.Contains("\"type\":\"move\""))
@@ -6009,13 +6030,13 @@ td{{padding:10px 12px;border-bottom:1px solid #e2e8f0;vertical-align:top;}}
 
                             if (isMouseMove)
                             {
-                                Interlocked.Exchange(ref latestMouseMoveBox, ValueTuple.Create(msg, result.MessageType));
+                                Interlocked.Exchange(ref latestMouseMoveBox, ValueTuple.Create(msg, msgType));
                             }
                             else
                             {
-                                highPriorityQueue.Enqueue((msg, result.MessageType));
+                                highPriorityQueue.Enqueue((msg, msgType));
                             }
-                            wakeSender.Set();
+                            SignalSender();
                         }
                     }
                 }
@@ -6023,7 +6044,7 @@ td{{padding:10px 12px;border-bottom:1px solid #e2e8f0;vertical-align:top;}}
             catch (Exception) { }
             finally
             {
-                wakeSender.Set();
+                SignalSender();
                 try { await senderTask; } catch { }
             }
         }
