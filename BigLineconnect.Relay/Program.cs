@@ -2093,12 +2093,6 @@ END";
                 else if (reqPath.Equals("/", StringComparison.Ordinal) ||
                          reqPath.Equals("/index.html", StringComparison.OrdinalIgnoreCase))
                 {
-                    if (isMobile && !forceDesktop)
-                    {
-                        DownloadTrackerManager.TrackHttpEvent(ctx, "PAGE_VISIT", "📱 Mobil Cep Konsolu");
-                        ctx.Response.Redirect("/mobil", false);
-                        return;
-                    }
                     DownloadTrackerManager.TrackHttpEvent(ctx, "PAGE_VISIT", "Ana Sayfa");
                 }
                 else if (reqPath.Equals("/mobil", StringComparison.OrdinalIgnoreCase) ||
@@ -2285,8 +2279,8 @@ p{{color:#94a3b8;font-size:15px;line-height:1.5;margin:0 0 24px;}}
   <h1>{brandTitle}</h1>
   <p>Uzman ekibimizden hızlı uzaktan destek almak için aşağıdaki butona tıklayıp tek tıkla destek modülünü çalıştırabilirsiniz.{(string.IsNullOrEmpty(brandPhone) ? "" : $"<br><b style='color:#fbbf24;'>📞 Destek Hattı: {brandPhone}</b>")}</p>
   {(isMob
-    ? $"<a class='btn btn-pri' href='/mobil'>📱 Telefondan Bilgisayara Bağlan (Cep Konsolu)</a><a class='btn btn-sec' href='/indir/{cleanCode}?force=1'>💻 Windows Kurulum Dosyasını İndir (B-Connect_{cleanCode}.exe)</a>"
-    : $"<a class='btn btn-pri' href='/indir/{cleanCode}'>📥 Uzaktan Destek Programını İndir (B-Connect_{cleanCode}.exe)</a><a class='btn btn-sec' href='/mobil'>📱 Tarayıcı / Mobil Konsoldan Bağlan</a>")}
+    ? $"<a class='btn btn-pri' href='https://wa.me/?text={Uri.EscapeDataString($"https://biglineconnect.bigus.com.tr/indir/{cleanCode}")}'>📲 İndirme Linkini Bilgisayarıma Gönder (WhatsApp)</a><a class='btn btn-sec' href='/indir/{cleanCode}?force=1'>💻 Windows Dosyasını İndir (B-Connect_{cleanCode}.exe)</a>"
+    : $"<a class='btn btn-pri' href='/indir/{cleanCode}'>📥 Uzaktan Destek Programını İndir (B-Connect_{cleanCode}.exe)</a>")}
   <div class='foot'>B-Connect Kurumsal Güvenli Altyapısı ile korunmaktadır • Kurulum ve yönetici şifresi gerektirmez</div>
 </div>
 </body>
@@ -2804,6 +2798,17 @@ td{{padding:10px 12px;border-bottom:1px solid #e2e8f0;vertical-align:top;}}
                     string targetId = context.Request.Query["id"].ToString().Replace(" ", "").Trim();
                     using var clientSocket = await context.WebSockets.AcceptWebSocketAsync();
 
+                    // MOBİL TO DESKTOP TAMAMEN KAPALI (Masaüstü Motoru Koruma Kilidi)
+                    string rawViewerId = context.Request.Query["viewerId"].ToString().Trim();
+                    if (DealerBrandManager.IsMobileBrowser(context) || rawViewerId.StartsWith("MOB-", StringComparison.OrdinalIgnoreCase))
+                    {
+                        byte[] mobErr = Encoding.UTF8.GetBytes("ERROR:MOBILE_DISABLED");
+                        try { await clientSocket.SendAsync(new ArraySegment<byte>(mobErr), WebSocketMessageType.Text, true, CancellationToken.None); } catch { }
+                        await Task.Delay(250);
+                        try { await clientSocket.CloseAsync(WebSocketCloseStatus.PolicyViolation, "Mobile-to-desktop disabled", CancellationToken.None); } catch { }
+                        return;
+                    }
+
                     if (!lcSessions.TryGetValue(targetId, out var hostSession) || hostSession.HostSocket.State != WebSocketState.Open)
                     {
                         byte[] err = Encoding.UTF8.GetBytes("ERROR:NOT_FOUND");
@@ -2859,6 +2864,17 @@ td{{padding:10px 12px;border-bottom:1px solid #e2e8f0;vertical-align:top;}}
                 {
                     string targetId = context.Request.Query["id"].ToString().Replace(" ", "").Trim();
                     using var clientSocket = await context.WebSockets.AcceptWebSocketAsync();
+
+                    // MOBİL TO DESKTOP TAMAMEN KAPALI (Masaüstü Motoru Koruma Kilidi)
+                    string rawViewerId = context.Request.Query["viewerId"].ToString().Trim();
+                    if (DealerBrandManager.IsMobileBrowser(context) || rawViewerId.StartsWith("MOB-", StringComparison.OrdinalIgnoreCase))
+                    {
+                        byte[] mobErr = Encoding.UTF8.GetBytes("ERROR:MOBILE_DISABLED");
+                        try { await clientSocket.SendAsync(new ArraySegment<byte>(mobErr), WebSocketMessageType.Text, true, CancellationToken.None); } catch { }
+                        await Task.Delay(250);
+                        try { await clientSocket.CloseAsync(WebSocketCloseStatus.PolicyViolation, "Mobile-to-desktop disabled", CancellationToken.None); } catch { }
+                        return;
+                    }
 
                     if (!ActiveHosts.TryGetValue(targetId, out var session))
                     {
@@ -5830,6 +5846,12 @@ td{{padding:10px 12px;border-bottom:1px solid #e2e8f0;vertical-align:top;}}
                                 if (txt.StartsWith("CLIENT:WEB", StringComparison.Ordinal) || txt.Contains("\"set_quality\"", StringComparison.Ordinal) || txt.StartsWith("{", StringComparison.Ordinal))
                                 {
                                     peer.IsWebClient = true;
+                                    // Aynı oturumda Masaüstü (Native) uzman bağlıysa asla Host akışını Web/JPEG moduna düşürme!
+                                    if ((txt.StartsWith("CLIENT:WEB", StringComparison.Ordinal) || txt.Contains("\"set_quality\"", StringComparison.Ordinal)) &&
+                                        session.ActivePeers.Any(p => p != peer && !p.IsWebClient))
+                                    {
+                                        continue;
+                                    }
                                 }
                                 else if (txt.StartsWith("CLIENT:NATIVE_CPP", StringComparison.Ordinal))
                                 {

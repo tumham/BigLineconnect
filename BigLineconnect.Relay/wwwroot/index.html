@@ -1419,6 +1419,10 @@
 
         function doConnect() {
             console.log('[B-Connect] doConnect triggered');
+            if (/iPhone|iPad|iPod|Android|webOS|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(navigator.userAgent || '')) {
+                showToast('Mobil cihazdan masaüstü bağlantısı kapalıdır. Lütfen bilgisayarınızdaki B-Connect uygulamasını kullanın.', 'error');
+                return;
+            }
 
             // 1. Öneri kutusunu hemen kapat ve sanal klavyeyi indir
             var suggestBox = document.getElementById('id-suggestions-box');
