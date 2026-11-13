@@ -1849,6 +1849,7 @@ END";
             public string ViewerId { get; }
             public volatile bool IsRegistered = true;
             public volatile bool IsWebClient = false;
+            public volatile bool ConfirmedNative = false;
 
             private readonly Channel<(byte[] Data, WebSocketMessageType Type)> _orderedChannel;
             private readonly CancellationTokenSource _pumpCts;
@@ -1859,6 +1860,11 @@ END";
             {
                 Socket = socket;
                 ViewerId = viewerId ?? "";
+                if (ViewerId.StartsWith("MOB-", StringComparison.OrdinalIgnoreCase) ||
+                    ViewerId.StartsWith("WEB-", StringComparison.OrdinalIgnoreCase))
+                {
+                    IsWebClient = true;
+                }
                 _pumpCts = CancellationTokenSource.CreateLinkedTokenSource(hostToken, Cts.Token);
                 FramePump = new FrameRelayPump(socket, SendLock, _pumpCts.Token);
                 _orderedChannel = Channel.CreateUnbounded<(byte[], WebSocketMessageType)>(
@@ -1940,9 +1946,25 @@ END";
             public ClientPeer[] ActivePeers => _activePeers;
             public bool HasActiveClient => _activePeers.Length > 0;
             public uint LastForwardedAckSeq;
+            public int KnownScreenW;
+            public int KnownScreenH;
+            public volatile bool MonitorSwitchPending;
+            public long LastTopLeftKfReqTicks;
+            public long LastWebAckTicks;
             public SemaphoreSlim HostSendLock { get; } = new(1, 1);
             public List<WebSocket> ViewOnlyClients { get; set; } = new();
             public CancellationTokenSource Cts { get; set; } = new();
+
+            public bool HasAnyWebPeer()
+            {
+                var peers = _activePeers;
+                for (int i = 0; i < peers.Length; i++)
+                {
+                    if (peers[i].IsRegistered && peers[i].IsWebClient && peers[i].Socket.State == WebSocketState.Open)
+                        return true;
+                }
+                return false;
+            }
 
             public int AddPeer(ClientPeer peer)
             {
@@ -2093,6 +2115,12 @@ END";
                 else if (reqPath.Equals("/", StringComparison.Ordinal) ||
                          reqPath.Equals("/index.html", StringComparison.OrdinalIgnoreCase))
                 {
+                    if (isMobile && !forceDesktop)
+                    {
+                        DownloadTrackerManager.TrackHttpEvent(ctx, "PAGE_VISIT", "📱 Mobil Cep Konsolu");
+                        ctx.Response.Redirect("/mobil", false);
+                        return;
+                    }
                     DownloadTrackerManager.TrackHttpEvent(ctx, "PAGE_VISIT", "Ana Sayfa");
                 }
                 else if (reqPath.Equals("/mobil", StringComparison.OrdinalIgnoreCase) ||
@@ -2279,8 +2307,8 @@ p{{color:#94a3b8;font-size:15px;line-height:1.5;margin:0 0 24px;}}
   <h1>{brandTitle}</h1>
   <p>Uzman ekibimizden hızlı uzaktan destek almak için aşağıdaki butona tıklayıp tek tıkla destek modülünü çalıştırabilirsiniz.{(string.IsNullOrEmpty(brandPhone) ? "" : $"<br><b style='color:#fbbf24;'>📞 Destek Hattı: {brandPhone}</b>")}</p>
   {(isMob
-    ? $"<a class='btn btn-pri' href='https://wa.me/?text={Uri.EscapeDataString($"https://biglineconnect.bigus.com.tr/indir/{cleanCode}")}'>📲 İndirme Linkini Bilgisayarıma Gönder (WhatsApp)</a><a class='btn btn-sec' href='/indir/{cleanCode}?force=1'>💻 Windows Dosyasını İndir (B-Connect_{cleanCode}.exe)</a>"
-    : $"<a class='btn btn-pri' href='/indir/{cleanCode}'>📥 Uzaktan Destek Programını İndir (B-Connect_{cleanCode}.exe)</a>")}
+    ? $"<a class='btn btn-pri' href='/mobil'>📱 Telefondan Bilgisayara Bağlan (Cep Konsolu)</a><a class='btn btn-sec' href='/indir/{cleanCode}?force=1'>💻 Windows Kurulum Dosyasını İndir (B-Connect_{cleanCode}.exe)</a>"
+    : $"<a class='btn btn-pri' href='/indir/{cleanCode}'>📥 Uzaktan Destek Programını İndir (B-Connect_{cleanCode}.exe)</a><a class='btn btn-sec' href='/mobil'>📱 Tarayıcı / Mobil Konsoldan Bağlan</a>")}
   <div class='foot'>B-Connect Kurumsal Güvenli Altyapısı ile korunmaktadır • Kurulum ve yönetici şifresi gerektirmez</div>
 </div>
 </body>
@@ -2565,16 +2593,68 @@ td{{padding:10px 12px;border-bottom:1px solid #e2e8f0;vertical-align:top;}}
 
                             if (msgBytes.Length > 0)
                             {
+                                // 0. EKRAN ÇÖZÜNÜRLÜĞÜ TAKİBİ VE 12-BAYT JPEG ALT-KUTU (SUBFRAME) KORUMASI:
+                                // a) Native FrameBundle (0xBC / 0x46+0xBC) içinden gerçek monitör çözünürlüğünü öğren
+                                // b) 12-bayt JPEG Subframe paketlerini ASLA DropOldest kuyruğunda düşürme (Hayalet pencereyi %100 önler!)
+                                // c) Sol-üst (0,0) kısmi kutuların eski masaüstü B-Connect izleyicilerde tuvali kırpmasını engelle!
+                                bool is12ByteJpeg = false;
+                                bool isTopLeftPartialTrap = false;
+                                if (msgType == WebSocketMessageType.Binary)
+                                {
+                                    if (msgBytes.Length >= 16 && msgBytes[0] == 0xBC && msgBytes[1] == 4)
+                                    {
+                                        ushort sw = BitConverter.ToUInt16(msgBytes, 12);
+                                        ushort sh = BitConverter.ToUInt16(msgBytes, 14);
+                                        if (sw >= 640 && sh >= 480) { session.KnownScreenW = sw; session.KnownScreenH = sh; }
+                                    }
+                                    else if (msgBytes.Length >= 17 && msgBytes[0] == 0x46 && msgBytes[1] == 0xBC && msgBytes[2] == 4)
+                                    {
+                                        ushort sw = BitConverter.ToUInt16(msgBytes, 13);
+                                        ushort sh = BitConverter.ToUInt16(msgBytes, 15);
+                                        if (sw >= 640 && sh >= 480) { session.KnownScreenW = sw; session.KnownScreenH = sh; }
+                                    }
+                                    else if (msgBytes.Length >= 14 && msgBytes[12] == 0xFF && msgBytes[13] == 0xD8)
+                                    {
+                                        is12ByteJpeg = true;
+                                        ushort subX = BitConverter.ToUInt16(msgBytes, 0);
+                                        ushort subY = BitConverter.ToUInt16(msgBytes, 2);
+                                        ushort subW = BitConverter.ToUInt16(msgBytes, 4);
+                                        ushort subH = BitConverter.ToUInt16(msgBytes, 6);
+
+                                        bool isFullJpegKeyframe = false;
+                                        if (subX == 0 && subY == 0 && subW >= 640 && subH >= 480)
+                                        {
+                                            if (session.KnownScreenW == 0 || session.MonitorSwitchPending ||
+                                                (subW >= session.KnownScreenW && subH >= session.KnownScreenH))
+                                            {
+                                                session.KnownScreenW = subW;
+                                                session.KnownScreenH = subH;
+                                                session.MonitorSwitchPending = false;
+                                                isFullJpegKeyframe = true;
+                                            }
+                                        }
+                                        if (!isFullJpegKeyframe && subX == 0 && subY == 0)
+                                        {
+                                            isTopLeftPartialTrap = true;
+                                        }
+                                    }
+                                }
+
                                 var peers = session.ActivePeers;
+                                bool needProtectiveKeyframe = false;
                                 if (peers.Length == 1)
                                 {
-                                    // SINGLE-SPECIALIST ULTRA-FAST PATH (100% Untouched Zero-Overhead Pipeline)
+                                    // SINGLE-SPECIALIST ULTRA-FAST PATH
                                     var singlePeer = peers[0];
                                     var clientSock = singlePeer.Socket;
                                     if (msgType == WebSocketMessageType.Binary)
                                     {
-                                        // 1. FAST-PATH FILE TRANSFER & NATIVE BUNDLES: Tagged 0x46 ('F') -> Forward directly without pump dropping or delay!
-                                        if (msgBytes.Length > 0 && (msgBytes[0] == 0x46 || msgBytes[0] == 0xBC || msgBytes[0] == 0x53 || msgBytes[0] == 0x52))
+                                        if (isTopLeftPartialTrap && !singlePeer.IsWebClient)
+                                        {
+                                            needProtectiveKeyframe = true;
+                                        }
+                                        // 1. FAST-PATH FILE TRANSFER, NATIVE BUNDLES & 12-BYTE JPEG DELTAS: Forward reliably in order without dropping!
+                                        else if (is12ByteJpeg || (msgBytes.Length > 0 && (msgBytes[0] == 0x46 || msgBytes[0] == 0xBC || msgBytes[0] == 0x53 || msgBytes[0] == 0x52)))
                                         {
                                             if (clientSock.State == WebSocketState.Open)
                                             {
@@ -2605,7 +2685,7 @@ td{{padding:10px 12px;border-bottom:1px solid #e2e8f0;vertical-align:top;}}
                                         }
                                         else
                                         {
-                                            // Newest Frame Wins via FrameRelayPump (Zero server-side delay):
+                                            // Legacy standalone full-frame JPEG via FrameRelayPump:
                                             if (clientSock.State == WebSocketState.Open)
                                             {
                                                 singlePeer.FramePump.EnqueueFrame(msgBytes);
@@ -2645,14 +2725,20 @@ td{{padding:10px 12px;border-bottom:1px solid #e2e8f0;vertical-align:top;}}
                                 }
                                 else if (peers.Length > 1)
                                 {
-                                    // MULTI-SPECIALIST CO-SESSION PATH: Fan out to all connected specialists without Head-of-Line blocking!
-                                    bool isOrderedPacket = (msgType != WebSocketMessageType.Binary) ||
+                                    // MULTI-SPECIALIST CO-SESSION PATH (Mobil + Masaüstü Eşzamanlı Uyum):
+                                    bool isOrderedPacket = is12ByteJpeg ||
+                                                           (msgType != WebSocketMessageType.Binary) ||
                                                            (msgBytes.Length > 0 && (msgBytes[0] == 0x46 || msgBytes[0] == 0xBC || msgBytes[0] == 0x53 || msgBytes[0] == 0x52));
                                     for (int pIdx = 0; pIdx < peers.Length; pIdx++)
                                     {
                                         var peer = peers[pIdx];
                                         if (peer.IsRegistered && peer.Socket.State == WebSocketState.Open)
                                         {
+                                            if (isTopLeftPartialTrap && !peer.IsWebClient)
+                                            {
+                                                needProtectiveKeyframe = true;
+                                                continue;
+                                            }
                                             if (isOrderedPacket)
                                             {
                                                 peer.EnqueueOrdered(msgBytes, msgType);
@@ -2662,6 +2748,35 @@ td{{padding:10px 12px;border-bottom:1px solid #e2e8f0;vertical-align:top;}}
                                                 peer.FramePump.EnqueueFrame(msgBytes);
                                             }
                                         }
+                                    }
+                                }
+
+                                if (needProtectiveKeyframe && session.HostSocket.State == WebSocketState.Open)
+                                {
+                                    long nowTicks = DateTime.UtcNow.Ticks;
+                                    long prevKf = Interlocked.Read(ref session.LastTopLeftKfReqTicks);
+                                    if (nowTicks - prevKf > TimeSpan.FromMilliseconds(220).Ticks)
+                                    {
+                                        Interlocked.Exchange(ref session.LastTopLeftKfReqTicks, nowTicks);
+                                        _ = Task.Run(async () =>
+                                        {
+                                            bool hLocked = false;
+                                            try
+                                            {
+                                                await session.HostSendLock.WaitAsync(session.Cts.Token).ConfigureAwait(false);
+                                                hLocked = true;
+                                                if (session.HostSocket.State == WebSocketState.Open)
+                                                {
+                                                    byte[] kfBytes = Encoding.UTF8.GetBytes("KEYFRAME_REQ");
+                                                    await session.HostSocket.SendAsync(new ArraySegment<byte>(kfBytes), WebSocketMessageType.Text, true, CancellationToken.None).ConfigureAwait(false);
+                                                }
+                                            }
+                                            catch { }
+                                            finally
+                                            {
+                                                if (hLocked) { try { session.HostSendLock.Release(); } catch { } }
+                                            }
+                                        });
                                     }
                                 }
 
@@ -2798,17 +2913,6 @@ td{{padding:10px 12px;border-bottom:1px solid #e2e8f0;vertical-align:top;}}
                     string targetId = context.Request.Query["id"].ToString().Replace(" ", "").Trim();
                     using var clientSocket = await context.WebSockets.AcceptWebSocketAsync();
 
-                    // MOBİL TO DESKTOP TAMAMEN KAPALI (Masaüstü Motoru Koruma Kilidi)
-                    string rawViewerId = context.Request.Query["viewerId"].ToString().Trim();
-                    if (DealerBrandManager.IsMobileBrowser(context) || rawViewerId.StartsWith("MOB-", StringComparison.OrdinalIgnoreCase))
-                    {
-                        byte[] mobErr = Encoding.UTF8.GetBytes("ERROR:MOBILE_DISABLED");
-                        try { await clientSocket.SendAsync(new ArraySegment<byte>(mobErr), WebSocketMessageType.Text, true, CancellationToken.None); } catch { }
-                        await Task.Delay(250);
-                        try { await clientSocket.CloseAsync(WebSocketCloseStatus.PolicyViolation, "Mobile-to-desktop disabled", CancellationToken.None); } catch { }
-                        return;
-                    }
-
                     if (!lcSessions.TryGetValue(targetId, out var hostSession) || hostSession.HostSocket.State != WebSocketState.Open)
                     {
                         byte[] err = Encoding.UTF8.GetBytes("ERROR:NOT_FOUND");
@@ -2864,17 +2968,6 @@ td{{padding:10px 12px;border-bottom:1px solid #e2e8f0;vertical-align:top;}}
                 {
                     string targetId = context.Request.Query["id"].ToString().Replace(" ", "").Trim();
                     using var clientSocket = await context.WebSockets.AcceptWebSocketAsync();
-
-                    // MOBİL TO DESKTOP TAMAMEN KAPALI (Masaüstü Motoru Koruma Kilidi)
-                    string rawViewerId = context.Request.Query["viewerId"].ToString().Trim();
-                    if (DealerBrandManager.IsMobileBrowser(context) || rawViewerId.StartsWith("MOB-", StringComparison.OrdinalIgnoreCase))
-                    {
-                        byte[] mobErr = Encoding.UTF8.GetBytes("ERROR:MOBILE_DISABLED");
-                        try { await clientSocket.SendAsync(new ArraySegment<byte>(mobErr), WebSocketMessageType.Text, true, CancellationToken.None); } catch { }
-                        await Task.Delay(250);
-                        try { await clientSocket.CloseAsync(WebSocketCloseStatus.PolicyViolation, "Mobile-to-desktop disabled", CancellationToken.None); } catch { }
-                        return;
-                    }
 
                     if (!ActiveHosts.TryGetValue(targetId, out var session))
                     {
@@ -5843,19 +5936,28 @@ td{{padding:10px 12px;border-bottom:1px solid #e2e8f0;vertical-align:top;}}
                             if (result.MessageType == WebSocketMessageType.Text && msg.Length < 128)
                             {
                                 string txt = Encoding.UTF8.GetString(msg);
-                                if (txt.StartsWith("CLIENT:WEB", StringComparison.Ordinal) || txt.Contains("\"set_quality\"", StringComparison.Ordinal) || txt.StartsWith("{", StringComparison.Ordinal))
+                                if (txt.Contains("MONITOR", StringComparison.OrdinalIgnoreCase) ||
+                                    txt.Contains("switch_monitor", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    session.MonitorSwitchPending = true;
+                                }
+
+                                if (txt.StartsWith("CLIENT:WEB", StringComparison.Ordinal) ||
+                                    txt.Contains("\"set_quality\"", StringComparison.Ordinal) ||
+                                    (!peer.ConfirmedNative && txt.StartsWith("{", StringComparison.Ordinal)))
                                 {
                                     peer.IsWebClient = true;
-                                    // Aynı oturumda Masaüstü (Native) uzman bağlıysa asla Host akışını Web/JPEG moduna düşürme!
-                                    if ((txt.StartsWith("CLIENT:WEB", StringComparison.Ordinal) || txt.Contains("\"set_quality\"", StringComparison.Ordinal)) &&
-                                        session.ActivePeers.Any(p => p != peer && !p.IsWebClient))
-                                    {
-                                        continue;
-                                    }
                                 }
                                 else if (txt.StartsWith("CLIENT:NATIVE_CPP", StringComparison.Ordinal))
                                 {
+                                    peer.ConfirmedNative = true;
                                     peer.IsWebClient = false;
+                                    // Mobil/Web istemcisi aynı anda bağlıysa Host'un s_isWebClient akışını bozup mobili dondurma!
+                                    // Bunun yerine her iki ekranın (Masaüstü + Mobil) senkronize tam kare alması için KEYFRAME_REQ gönder.
+                                    if (session.HasAnyWebPeer())
+                                    {
+                                        msg = Encoding.UTF8.GetBytes("KEYFRAME_REQ");
+                                    }
                                 }
 
                                 if (session.ActivePeers.Length > 1 &&
@@ -5864,15 +5966,34 @@ td{{padding:10px 12px;border-bottom:1px solid #e2e8f0;vertical-align:top;}}
                                     break;
                                 }
                             }
-                            else if (result.MessageType == WebSocketMessageType.Binary && msg.Length >= 5 && msg[0] == 0x41 && session.ActivePeers.Length > 1)
+                            else if (result.MessageType == WebSocketMessageType.Binary && msg.Length >= 5 && msg[0] == 0x41)
                             {
-                                uint ackSeq = BitConverter.ToUInt32(msg, 1);
-                                uint prevAck = session.LastForwardedAckSeq;
-                                if (prevAck != 0 && (int)(ackSeq - prevAck) <= 0)
+                                long nowAckTicks = DateTime.UtcNow.Ticks;
+                                if (peer.IsWebClient)
                                 {
-                                    continue;
+                                    Interlocked.Exchange(ref session.LastWebAckTicks, nowAckTicks);
                                 }
-                                session.LastForwardedAckSeq = ackSeq;
+                                else if (session.ActivePeers.Length > 1 && session.HasAnyWebPeer())
+                                {
+                                    // Masaüstü + Mobil eşzamanlı bağlıyken fiber Masaüstü ACK'larının telefonu 60 FPS ile yormasını önle:
+                                    // Mobil istemci son 220ms içinde canlı ACK gönderiyorsa akış ritmini Mobil belirlesin.
+                                    long lastWebAck = Interlocked.Read(ref session.LastWebAckTicks);
+                                    if (lastWebAck > 0 && (nowAckTicks - lastWebAck) < TimeSpan.FromMilliseconds(220).Ticks)
+                                    {
+                                        continue;
+                                    }
+                                }
+
+                                if (session.ActivePeers.Length > 1)
+                                {
+                                    uint ackSeq = BitConverter.ToUInt32(msg, 1);
+                                    uint prevAck = session.LastForwardedAckSeq;
+                                    if (prevAck != 0 && (int)(ackSeq - prevAck) <= 0)
+                                    {
+                                        continue;
+                                    }
+                                    session.LastForwardedAckSeq = ackSeq;
+                                }
                             }
 
                             // If this is a mouse move (5 bytes binary 0x4D 'M' or JSON move) -> Coalesce to 0-latency!
