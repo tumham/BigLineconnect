@@ -633,6 +633,180 @@ VALUES (@TimestampTr, @EventType, @FileName, @ClientIp, @LocationIsp, @DeviceInf
         }
     }
 
+    public class DealerBrandEntry
+    {
+        public string DealerCode { get; set; } = "";
+        public string BrandName { get; set; } = "";
+        public string Phone { get; set; } = "";
+        public string CreatedAt { get; set; } = "";
+    }
+
+    public static class DealerBrandManager
+    {
+        private static readonly ConcurrentDictionary<string, DealerBrandEntry> Brands = new(StringComparer.OrdinalIgnoreCase);
+        private static bool _initialized = false;
+        private static readonly object InitLock = new();
+
+        private const string SqlConnStr =
+            "Server=213.142.159.18;Database=BigusDb;User Id=sa;Password=My7400660!;Encrypt=False;TrustServerCertificate=True;Connection Timeout=6;";
+
+        public static string NormalizeCode(string? raw)
+        {
+            if (string.IsNullOrWhiteSpace(raw)) return "";
+            var sb = new StringBuilder(raw.Length);
+            foreach (char ch in raw.Trim().ToUpperInvariant())
+            {
+                if ((ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9'))
+                    sb.Append(ch);
+            }
+            string s = sb.ToString();
+            return s.Length > 24 ? s[..24] : s;
+        }
+
+        public static bool IsMobileBrowser(HttpContext ctx)
+        {
+            string ua = ctx.Request.Headers["User-Agent"].ToString();
+            if (string.IsNullOrWhiteSpace(ua)) return false;
+            if (ua.Contains("bot", StringComparison.OrdinalIgnoreCase) ||
+                ua.Contains("crawler", StringComparison.OrdinalIgnoreCase) ||
+                ua.Contains("spider", StringComparison.OrdinalIgnoreCase) ||
+                ua.Contains("WhatsApp", StringComparison.OrdinalIgnoreCase) ||
+                ua.Contains("TelegramBot", StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+            return ua.Contains("iPhone", StringComparison.OrdinalIgnoreCase) ||
+                   ua.Contains("iPad", StringComparison.OrdinalIgnoreCase) ||
+                   ua.Contains("iPod", StringComparison.OrdinalIgnoreCase) ||
+                   ua.Contains("Android", StringComparison.OrdinalIgnoreCase);
+        }
+
+        public static void EnsureInitialized()
+        {
+            if (_initialized) return;
+            lock (InitLock)
+            {
+                if (_initialized) return;
+                _initialized = true;
+                try
+                {
+                    using var conn = new System.Data.SqlClient.SqlConnection(SqlConnStr);
+                    conn.Open();
+                    using (var cmd = conn.CreateCommand())
+                    {
+                        cmd.CommandText = @"
+                            IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='BConnect_DealerBrands' AND xtype='U')
+                            BEGIN
+                                CREATE TABLE BConnect_DealerBrands (
+                                    DealerCode NVARCHAR(32) NOT NULL PRIMARY KEY,
+                                    BrandName NVARCHAR(160) NOT NULL,
+                                    Phone NVARCHAR(64) NOT NULL DEFAULT '',
+                                    CreatedAt NVARCHAR(32) NOT NULL DEFAULT ''
+                                );
+                            END";
+                        cmd.ExecuteNonQuery();
+                    }
+                    using (var loadCmd = conn.CreateCommand())
+                    {
+                        loadCmd.CommandText = "SELECT DealerCode, BrandName, Phone, CreatedAt FROM BConnect_DealerBrands";
+                        using var r = loadCmd.ExecuteReader();
+                        while (r.Read())
+                        {
+                            var entry = new DealerBrandEntry
+                            {
+                                DealerCode = r.IsDBNull(0) ? "" : r.GetString(0),
+                                BrandName = r.IsDBNull(1) ? "" : r.GetString(1),
+                                Phone = r.IsDBNull(2) ? "" : r.GetString(2),
+                                CreatedAt = r.IsDBNull(3) ? "" : r.GetString(3)
+                            };
+                            if (!string.IsNullOrEmpty(entry.DealerCode))
+                                Brands[entry.DealerCode] = entry;
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("[DealerBrand] SQL Init Warning: " + ex.Message);
+                }
+            }
+        }
+
+        public static DealerBrandEntry? GetBrand(string? code)
+        {
+            EnsureInitialized();
+            string clean = NormalizeCode(code);
+            if (string.IsNullOrEmpty(clean)) return null;
+            return Brands.TryGetValue(clean, out var b) ? b : null;
+        }
+
+        public static List<DealerBrandEntry> ListAll()
+        {
+            EnsureInitialized();
+            return Brands.Values.OrderBy(x => x.DealerCode).ToList();
+        }
+
+        public static DealerBrandEntry SaveBrand(string code, string brandName, string phone)
+        {
+            EnsureInitialized();
+            string cleanCode = NormalizeCode(code);
+            string cleanName = (brandName ?? "").Trim();
+            string cleanPhone = (phone ?? "").Trim();
+            string nowTr = DateTime.UtcNow.AddHours(3).ToString("yyyy-MM-dd HH:mm");
+
+            var entry = new DealerBrandEntry
+            {
+                DealerCode = cleanCode,
+                BrandName = cleanName,
+                Phone = cleanPhone,
+                CreatedAt = nowTr
+            };
+            Brands[cleanCode] = entry;
+
+            _ = Task.Run(() =>
+            {
+                try
+                {
+                    using var conn = new System.Data.SqlClient.SqlConnection(SqlConnStr);
+                    conn.Open();
+                    using var cmd = conn.CreateCommand();
+                    cmd.CommandText = @"
+                        IF EXISTS (SELECT 1 FROM BConnect_DealerBrands WHERE DealerCode = @Code)
+                            UPDATE BConnect_DealerBrands SET BrandName = @Name, Phone = @Phone WHERE DealerCode = @Code
+                        ELSE
+                            INSERT INTO BConnect_DealerBrands (DealerCode, BrandName, Phone, CreatedAt) VALUES (@Code, @Name, @Phone, @Created)";
+                    cmd.Parameters.AddWithValue("@Code", cleanCode);
+                    cmd.Parameters.AddWithValue("@Name", cleanName);
+                    cmd.Parameters.AddWithValue("@Phone", cleanPhone);
+                    cmd.Parameters.AddWithValue("@Created", nowTr);
+                    cmd.ExecuteNonQuery();
+                }
+                catch { }
+            });
+            return entry;
+        }
+
+        public static void DeleteBrand(string code)
+        {
+            EnsureInitialized();
+            string cleanCode = NormalizeCode(code);
+            if (string.IsNullOrEmpty(cleanCode)) return;
+            Brands.TryRemove(cleanCode, out _);
+            _ = Task.Run(() =>
+            {
+                try
+                {
+                    using var conn = new System.Data.SqlClient.SqlConnection(SqlConnStr);
+                    conn.Open();
+                    using var cmd = conn.CreateCommand();
+                    cmd.CommandText = "DELETE FROM BConnect_DealerBrands WHERE DealerCode = @Code";
+                    cmd.Parameters.AddWithValue("@Code", cleanCode);
+                    cmd.ExecuteNonQuery();
+                }
+                catch { }
+            });
+        }
+    }
+
     public class ResellerAccount
     {
         public string TenantId { get; set; } = "";
@@ -1883,35 +2057,62 @@ END";
 
             app.UseCors();
 
-            // İndirme (.EXE / .ZIP) ve Web Sayfası Ziyaret Takibi (SQL Kalıcı + Şehir/Operatör/Cihaz Analizi)
+            // İndirme (.EXE / .ZIP) ve Web Sayfası Ziyaret Takibi + Akıllı Mobil Web-to-Desktop Yönlendirme
             app.Use(async (ctx, next) =>
             {
                 string reqPath = (ctx.Request.Path.Value ?? "").Trim();
+                bool isMobile = DealerBrandManager.IsMobileBrowser(ctx);
+                bool forceDownload = ctx.Request.Query["force"] == "1";
+                bool forceDesktop = ctx.Request.Query["desktop"] == "1" || ctx.Request.Query.ContainsKey("token") || ctx.Request.Query.ContainsKey("ticketToken");
+
                 if (reqPath.Equals("/B-Connect.exe", StringComparison.OrdinalIgnoreCase) ||
                     reqPath.Equals("/BigLineconnect.exe", StringComparison.OrdinalIgnoreCase) ||
                     reqPath.Equals("/BigLineconnect_setup.exe", StringComparison.OrdinalIgnoreCase) ||
                     reqPath.Equals("/download", StringComparison.OrdinalIgnoreCase) ||
                     reqPath.Equals("/indir", StringComparison.OrdinalIgnoreCase))
                 {
+                    if (isMobile && !forceDownload)
+                    {
+                        DownloadTrackerManager.TrackHttpEvent(ctx, "PAGE_VISIT", "📱 Mobil Cep Konsolu (.EXE Yönlendirme)");
+                        ctx.Response.Redirect("/mobil?from=exe", false);
+                        return;
+                    }
                     DownloadTrackerManager.TrackHttpEvent(ctx, "DOWNLOAD_EXE", "B-Connect.exe");
                 }
                 else if (reqPath.Equals("/B-Connect.zip", StringComparison.OrdinalIgnoreCase) ||
                          reqPath.Equals("/BigLineconnect_setup.zip", StringComparison.OrdinalIgnoreCase))
                 {
+                    if (isMobile && !forceDownload)
+                    {
+                        DownloadTrackerManager.TrackHttpEvent(ctx, "PAGE_VISIT", "📱 Mobil Cep Konsolu (.ZIP Yönlendirme)");
+                        ctx.Response.Redirect("/mobil?from=exe", false);
+                        return;
+                    }
                     DownloadTrackerManager.TrackHttpEvent(ctx, "DOWNLOAD_ZIP", "B-Connect.zip");
                 }
                 else if (reqPath.Equals("/", StringComparison.Ordinal) ||
-                         reqPath.Equals("/index.html", StringComparison.OrdinalIgnoreCase) ||
-                         reqPath.Equals("/yardim.html", StringComparison.OrdinalIgnoreCase) ||
+                         reqPath.Equals("/index.html", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (isMobile && !forceDesktop)
+                    {
+                        DownloadTrackerManager.TrackHttpEvent(ctx, "PAGE_VISIT", "📱 Mobil Cep Konsolu");
+                        ctx.Response.Redirect("/mobil", false);
+                        return;
+                    }
+                    DownloadTrackerManager.TrackHttpEvent(ctx, "PAGE_VISIT", "Ana Sayfa");
+                }
+                else if (reqPath.Equals("/mobil", StringComparison.OrdinalIgnoreCase) ||
+                         reqPath.Equals("/mobil.html", StringComparison.OrdinalIgnoreCase))
+                {
+                    DownloadTrackerManager.TrackHttpEvent(ctx, "PAGE_VISIT", "📱 Mobil Cep Konsolu");
+                }
+                else if (reqPath.Equals("/yardim.html", StringComparison.OrdinalIgnoreCase) ||
                          reqPath.Equals("/alpemix-alternatifi.html", StringComparison.OrdinalIgnoreCase) ||
                          reqPath.Equals("/anydesk-alternatifi.html", StringComparison.OrdinalIgnoreCase) ||
                          reqPath.Equals("/teamviewer-alternatifi.html", StringComparison.OrdinalIgnoreCase) ||
                          reqPath.Equals("/uzaktan-baglanti-programi.html", StringComparison.OrdinalIgnoreCase))
                 {
-                    string pageLabel = reqPath == "/" || reqPath.Equals("/index.html", StringComparison.OrdinalIgnoreCase)
-                        ? "Ana Sayfa"
-                        : reqPath.TrimStart('/');
-                    DownloadTrackerManager.TrackHttpEvent(ctx, "PAGE_VISIT", pageLabel);
+                    DownloadTrackerManager.TrackHttpEvent(ctx, "PAGE_VISIT", reqPath.TrimStart('/'));
                 }
 
                 await next();
@@ -1986,6 +2187,250 @@ END";
                     context.Response.StatusCode = 404;
                     await context.Response.WriteAsync("BigLineconnect_setup.zip bulunamadı.");
                 }
+            });
+
+            // -------------------------------------------------------------
+            // SAFARI (iOS) & ANDROID MOBİL CEP KONSOLU (/mobil)
+            // -------------------------------------------------------------
+            foreach (var mobRoute in new[] { "/mobil", "/mobil.html" })
+            {
+                app.MapGet(mobRoute, async context =>
+                {
+                    string mobPath = System.IO.Path.Combine(AppContext.BaseDirectory, "wwwroot", "mobil.html");
+                    if (System.IO.File.Exists(mobPath))
+                    {
+                        context.Response.ContentType = "text/html; charset=utf-8";
+                        await context.Response.WriteAsync(await System.IO.File.ReadAllTextAsync(mobPath));
+                    }
+                    else
+                    {
+                        context.Response.Redirect("/#baglan");
+                    }
+                });
+            }
+
+            // -------------------------------------------------------------
+            // MADDE 1: WHITE-LABEL BAYİ KALESİ (/indir/{kod} & /bayi/{kod})
+            // -------------------------------------------------------------
+            app.MapGet("/indir/{dealerCode}", async (HttpContext context, string dealerCode) =>
+            {
+                string cleanCode = DealerBrandManager.NormalizeCode(dealerCode);
+                if (string.IsNullOrEmpty(cleanCode))
+                {
+                    context.Response.Redirect("/B-Connect.exe");
+                    return;
+                }
+
+                if (DealerBrandManager.IsMobileBrowser(context) && context.Request.Query["force"] != "1")
+                {
+                    DownloadTrackerManager.TrackHttpEvent(context, "PAGE_VISIT", $"📱 Mobil Cep Konsolu (Bayi: {cleanCode})");
+                    context.Response.Redirect("/mobil?from=exe", false);
+                    return;
+                }
+
+                string fileName = $"B-Connect_{cleanCode}.exe";
+                DownloadTrackerManager.TrackHttpEvent(context, "DOWNLOAD_EXE", fileName);
+
+                context.Response.Headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0";
+                string setupPath = System.IO.Path.Combine(AppContext.BaseDirectory, "wwwroot", "B-Connect.exe");
+                if (System.IO.File.Exists(setupPath))
+                {
+                    context.Response.ContentType = "application/octet-stream";
+                    context.Response.Headers["Content-Disposition"] = $"attachment; filename=\"{fileName}\"";
+                    await context.Response.SendFileAsync(setupPath);
+                }
+                else
+                {
+                    context.Response.StatusCode = 404;
+                    await context.Response.WriteAsync("Kurulum dosyası bulunamadı.");
+                }
+            });
+
+            app.MapGet("/bayi/{dealerCode}", async (HttpContext context, string dealerCode) =>
+            {
+                string cleanCode = DealerBrandManager.NormalizeCode(dealerCode);
+                var brand = DealerBrandManager.GetBrand(cleanCode);
+                string brandTitle = brand != null && !string.IsNullOrWhiteSpace(brand.BrandName)
+                    ? System.Net.WebUtility.HtmlEncode(brand.BrandName)
+                    : System.Net.WebUtility.HtmlEncode(cleanCode + " Kurumsal Destek");
+                string brandPhone = brand != null && !string.IsNullOrWhiteSpace(brand.Phone)
+                    ? System.Net.WebUtility.HtmlEncode(brand.Phone)
+                    : "";
+
+                DownloadTrackerManager.TrackHttpEvent(context, "PAGE_VISIT", $"Bayi Sayfası ({cleanCode})");
+
+                bool isMob = DealerBrandManager.IsMobileBrowser(context);
+                string html = $@"<!DOCTYPE html>
+<html lang='tr'>
+<head>
+<meta charset='UTF-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0'>
+<title>{brandTitle} | Uzaktan Destek Merkezi</title>
+<style>
+body{{margin:0;min-height:100vh;background:#050507;color:#f8fafc;font-family:'Segoe UI',system-ui,sans-serif;display:flex;align-items:center;justify-content:center;padding:20px;}}
+.box{{max-width:520px;width:100%;background:#0e1016;border:1px solid rgba(251,191,36,0.35);border-radius:22px;padding:34px 28px;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,0.75);}}
+.badge{{display:inline-block;background:rgba(251,191,36,0.14);border:1px solid rgba(251,191,36,0.4);color:#fbbf24;padding:5px 14px;border-radius:999px;font-size:12px;font-weight:700;margin-bottom:14px;}}
+h1{{margin:0 0 10px;font-size:26px;color:#fff;}}
+p{{color:#94a3b8;font-size:15px;line-height:1.5;margin:0 0 24px;}}
+.btn{{display:block;text-decoration:none;padding:16px 20px;border-radius:14px;font-weight:800;font-size:16px;margin-bottom:12px;}}
+.btn-pri{{background:linear-gradient(135deg,#fbbf24,#ea580c);color:#000;}}
+.btn-sec{{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);color:#fff;}}
+.foot{{margin-top:18px;font-size:12px;color:#64748b;}}
+</style>
+</head>
+<body>
+<div class='box'>
+  <img src='/logo.png' alt='Logo' style='width:58px;height:58px;border-radius:14px;margin-bottom:12px;'>
+  <div class='badge'>🛡️ Yetkili Uzaktan Destek Kanalı • Kod: {cleanCode}</div>
+  <h1>{brandTitle}</h1>
+  <p>Uzman ekibimizden hızlı uzaktan destek almak için aşağıdaki butona tıklayıp tek tıkla destek modülünü çalıştırabilirsiniz.{(string.IsNullOrEmpty(brandPhone) ? "" : $"<br><b style='color:#fbbf24;'>📞 Destek Hattı: {brandPhone}</b>")}</p>
+  {(isMob
+    ? $"<a class='btn btn-pri' href='/mobil'>📱 Telefondan Bilgisayara Bağlan (Cep Konsolu)</a><a class='btn btn-sec' href='/indir/{cleanCode}?force=1'>💻 Windows Kurulum Dosyasını İndir (B-Connect_{cleanCode}.exe)</a>"
+    : $"<a class='btn btn-pri' href='/indir/{cleanCode}'>📥 Uzaktan Destek Programını İndir (B-Connect_{cleanCode}.exe)</a><a class='btn btn-sec' href='/mobil'>📱 Tarayıcı / Mobil Konsoldan Bağlan</a>")}
+  <div class='foot'>B-Connect Kurumsal Güvenli Altyapısı ile korunmaktadır • Kurulum ve yönetici şifresi gerektirmez</div>
+</div>
+</body>
+</html>";
+                context.Response.ContentType = "text/html; charset=utf-8";
+                await context.Response.WriteAsync(html);
+            });
+
+            app.MapGet("/api/dealer/brand", (HttpContext context) =>
+            {
+                string code = DealerBrandManager.NormalizeCode(context.Request.Query["code"].ToString());
+                var b = DealerBrandManager.GetBrand(code);
+                if (b == null)
+                    return Results.Json(new { found = false, dealerCode = code, brandName = "", phone = "" });
+                return Results.Json(new { found = true, dealerCode = b.DealerCode, brandName = b.BrandName, phone = b.Phone });
+            });
+
+            app.MapGet("/api/dealer/brands/list", (HttpContext context) =>
+            {
+                if (!IsAdminAuthenticated(context)) return Results.Unauthorized();
+                return Results.Json(DealerBrandManager.ListAll());
+            });
+
+            app.MapPost("/api/dealer/brands/save", async (HttpContext context) =>
+            {
+                if (!IsAdminAuthenticated(context)) return Results.Unauthorized();
+                using var doc = await System.Text.Json.JsonDocument.ParseAsync(context.Request.Body);
+                string code = doc.RootElement.TryGetProperty("dealerCode", out var p1) ? (p1.GetString() ?? "") : "";
+                string name = doc.RootElement.TryGetProperty("brandName", out var p2) ? (p2.GetString() ?? "") : "";
+                string phone = doc.RootElement.TryGetProperty("phone", out var p3) ? (p3.GetString() ?? "") : "";
+                string clean = DealerBrandManager.NormalizeCode(code);
+                if (string.IsNullOrEmpty(clean) || string.IsNullOrWhiteSpace(name))
+                    return Results.BadRequest(new { error = "Bayi kodu ve marka adı zorunludur." });
+                var saved = DealerBrandManager.SaveBrand(clean, name, phone);
+                return Results.Json(saved);
+            });
+
+            app.MapPost("/api/dealer/brands/delete", async (HttpContext context) =>
+            {
+                if (!IsAdminAuthenticated(context)) return Results.Unauthorized();
+                using var doc = await System.Text.Json.JsonDocument.ParseAsync(context.Request.Body);
+                string code = doc.RootElement.TryGetProperty("dealerCode", out var p1) ? (p1.GetString() ?? "") : "";
+                DealerBrandManager.DeleteBrand(code);
+                return Results.Ok(new { ok = true });
+            });
+
+            // -------------------------------------------------------------
+            // MADDE 2: AYLIK / YILLIK MÜŞTERİ HİZMET & BAKIM KARNESİ (/hizmet-karnesi)
+            // -------------------------------------------------------------
+            app.MapGet("/hizmet-karnesi", async (HttpContext context) =>
+            {
+                string tenant = (context.Request.Query["tenantId"].ToString() ?? "").Trim();
+                string customer = (context.Request.Query["customer"].ToString() ?? "").Trim();
+                var all = LoadSupportHistory().AsEnumerable();
+                if (!string.IsNullOrEmpty(tenant) && !tenant.Equals("ALL", StringComparison.OrdinalIgnoreCase) && !tenant.Equals("SUPERADMIN", StringComparison.OrdinalIgnoreCase))
+                    all = all.Where(x => (x.TenantId ?? "").Equals(tenant, StringComparison.OrdinalIgnoreCase));
+                if (!string.IsNullOrEmpty(customer))
+                    all = all.Where(x => (x.Name ?? "").Contains(customer, StringComparison.OrdinalIgnoreCase));
+
+                var items = all.OrderByDescending(x => x.ResolvedAt).ToList();
+                int resolvedCount = items.Count(x => (x.Status ?? "").Contains("Çözüldü", StringComparison.OrdinalIgnoreCase) || (x.Status ?? "").Equals("RESOLVED", StringComparison.OrdinalIgnoreCase));
+                var brand = DealerBrandManager.GetBrand(tenant);
+                string providerTitle = brand != null && !string.IsNullOrWhiteSpace(brand.BrandName) ? brand.BrandName : (string.IsNullOrEmpty(tenant) ? "B-Connect Kurumsal Destek Merkezi" : tenant + " Teknik Destek Hizmetleri");
+                string custTitle = string.IsNullOrEmpty(customer) ? "Tüm Kayıtlı Müşteriler" : customer;
+                string reportDate = DateTime.UtcNow.AddHours(3).ToString("dd.MM.yyyy HH:mm");
+
+                var rowsSb = new StringBuilder();
+                if (items.Count == 0)
+                {
+                    rowsSb.Append("<tr><td colspan='5' style='text-align:center;padding:24px;color:#64748b;'>Seçilen kriterde destek kaydı bulunmuyor.</td></tr>");
+                }
+                else
+                {
+                    foreach (var it in items)
+                    {
+                        rowsSb.Append("<tr>")
+                              .Append($"<td>{System.Net.WebUtility.HtmlEncode(it.ResolvedAt ?? it.CreatedAt ?? "-")}</td>")
+                              .Append($"<td><b>{System.Net.WebUtility.HtmlEncode(it.Name ?? "-")}</b><br><small style='color:#64748b;'>ID: {System.Net.WebUtility.HtmlEncode(it.HostId ?? "-")}</small></td>")
+                              .Append($"<td>{System.Net.WebUtility.HtmlEncode(it.Issue ?? "-")}</td>")
+                              .Append($"<td>{System.Net.WebUtility.HtmlEncode(it.Status ?? "Çözüldü")}</td>")
+                              .Append($"<td>{System.Net.WebUtility.HtmlEncode(it.Notes ?? "-")}</td>")
+                              .Append("</tr>");
+                    }
+                }
+
+                string waSummary = $"📊 *{providerTitle} — Hizmet & Bakım Özeti*\n🏢 Firma: {custTitle}\n📅 Rapor Tarihi: {reportDate}\n✅ Toplam Uzaktan Müdahale: {items.Count} oturum ({resolvedCount} çözülen talep)\n🛡️ Tüm bağlantılar kurumsal güvenlik denetim kaydı altındadır.";
+
+                string page = $@"<!DOCTYPE html>
+<html lang='tr'>
+<head>
+<meta charset='UTF-8'>
+<title>Müşteri Hizmet & Bakım Karnesi - {System.Net.WebUtility.HtmlEncode(custTitle)}</title>
+<style>
+body{{font-family:'Segoe UI',Arial,sans-serif;background:#f1f5f9;color:#0f172a;margin:0;padding:28px;}}
+.sheet{{max-width:960px;margin:0 auto;background:#fff;border-radius:16px;padding:36px;box-shadow:0 12px 36px rgba(15,23,42,0.08);border-top:6px solid #f59e0b;}}
+.top{{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #e2e8f0;padding-bottom:20px;margin-bottom:22px;}}
+.kpis{{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px;}}
+.kpi{{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:16px;}}
+.kpi .v{{font-size:28px;font-weight:800;color:#0f172a;}}
+.kpi .l{{font-size:12px;color:#64748b;text-transform:uppercase;font-weight:700;}}
+table{{width:100%;border-collapse:collapse;font-size:13.5px;}}
+th{{background:#0f172a;color:#fbbf24;text-align:left;padding:11px 12px;font-size:12px;text-transform:uppercase;}}
+td{{padding:10px 12px;border-bottom:1px solid #e2e8f0;vertical-align:top;}}
+.actions{{display:flex;gap:10px;margin-bottom:18px;}}
+.btn{{border:none;border-radius:8px;padding:10px 16px;font-weight:700;cursor:pointer;font-size:13px;}}
+@media print{{body{{background:#fff;padding:0;}}.sheet{{box-shadow:none;padding:12px;}}.actions{{display:none;}}}}
+</style>
+</head>
+<body>
+<div class='sheet'>
+  <div class='actions'>
+    <button class='btn' style='background:#0f172a;color:#fbbf24;' onclick='window.print()'>🖨️ PDF Olarak Kaydet / Yazdır</button>
+    <button class='btn' style='background:#16a34a;color:#fff;' onclick='navigator.clipboard.writeText(document.getElementById(""wa-txt"").value);alert(""WhatsApp özeti panoya kopyalandı!"")'>💬 WhatsApp Özetini Kopyala</button>
+  </div>
+  <textarea id='wa-txt' style='display:none;'>{System.Net.WebUtility.HtmlEncode(waSummary)}</textarea>
+  <div class='top'>
+    <div>
+      <div style='font-size:12px;font-weight:800;color:#d97706;text-transform:uppercase;letter-spacing:1px;'>KURUMSAL BAKIM & UZAKTAN DESTEK HİZMET KARNESİ</div>
+      <h1 style='margin:6px 0 4px;font-size:24px;'>{System.Net.WebUtility.HtmlEncode(providerTitle)}</h1>
+      <div style='color:#475569;font-size:14px;'>Müşteri / Cari: <b>{System.Net.WebUtility.HtmlEncode(custTitle)}</b></div>
+    </div>
+    <div style='text-align:right;font-size:13px;color:#475569;'>
+      <b>Rapor Tarihi:</b> {reportDate}<br>
+      <b>Belge Türü:</b> Resmi Hizmet Dökümü
+    </div>
+  </div>
+  <div class='kpis'>
+    <div class='kpi'><div class='l'>Toplam Uzaktan Müdahale</div><div class='v'>{items.Count} Oturum</div></div>
+    <div class='kpi'><div class='l'>Başarıyla Çözülen Talep</div><div class='v' style='color:#16a34a;'>{resolvedCount} Kayıt</div></div>
+    <div class='kpi'><div class='l'>Hizmet Güvencesi</div><div class='v' style='font-size:18px;padding-top:6px;color:#d97706;'>✓ Kayıtlı & Denetimli</div></div>
+  </div>
+  <table>
+    <thead><tr><th>Tarih / Saat</th><th>Müşteri & Cihaz</th><th>Bildirilen Konu</th><th>Durum</th><th>Uzman Çözüm Notu</th></tr></thead>
+    <tbody>{rowsSb}</tbody>
+  </table>
+  <div style='margin-top:26px;padding-top:14px;border-top:1px dashed #cbd5e1;display:flex;justify-content:space-between;font-size:12px;color:#64748b;'>
+    <span>Bu belge B-Connect Kurumsal Hizmet Kayıt Sistemi tarafından otomatik üretilmiştir.</span>
+    <span>Yetkili Onay / Kaşe</span>
+  </div>
+</div>
+</body>
+</html>";
+                context.Response.ContentType = "text/html; charset=utf-8";
+                await context.Response.WriteAsync(page);
             });
 
             app.MapGet("/temizle", async context =>
@@ -2495,7 +2940,7 @@ END";
                         // Send host_info JSON packet to viewer BEFORE exposing myPeer to Host stream loop (prevents concurrent SendAsync crash!)
                         if (!string.IsNullOrEmpty(session.LanIp))
                         {
-                            string hostInfoJson = $"{{\"type\":\"host_info\",\"id\":\"{targetId}\",\"lan_ip\":\"{session.LanIp}\",\"public_ip\":\"{session.IpAddress}\",\"public_port\":18888,\"computer\":\"{session.ComputerName}\"}}";
+                            string hostInfoJson = $"{{\"type\":\"host_info\",\"id\":\"{targetId}\",\"lan_ip\":\"{session.LanIp}\",\"public_ip\":\"{session.IpAddress}\",\"client_ip\":\"{clientIp}\",\"public_port\":18888,\"computer\":\"{session.ComputerName}\"}}";
                             byte[] hostInfoBytes = Encoding.UTF8.GetBytes(hostInfoJson);
                             try { await clientSocket.SendAsync(new ArraySegment<byte>(hostInfoBytes), WebSocketMessageType.Text, true, CancellationToken.None); } catch { }
                         }
@@ -4478,7 +4923,10 @@ END";
     </div>
 
     <div class='card'>
-        <div class='section-title'>Destek Talepleri Geçmişi (CRM)</div>
+        <div style='display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px; flex-wrap:wrap; gap:10px;'>
+            <div class='section-title' style='margin-bottom:0;'>Destek Talepleri Geçmişi (CRM) & Müşteri Hizmet Karnesi</div>
+            <button onclick='openServiceReportCard()' style='background: linear-gradient(135deg, #10b981, #059669); color: #fff; font-weight: bold; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;'>📊 Müşteri Hizmet Karnesi Üret (PDF / Yazdır)</button>
+        </div>
         <div style='overflow-x: auto; max-height: 400px; overflow-y: auto;'>
             <table id='support-history-table'>
                 <thead>
@@ -4497,6 +4945,36 @@ END";
                     <tr>
                         <td colspan='8' class='empty-state'>Destek geçmişi yükleniyor...</td>
                     </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class='card'>
+        <div style='display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px; flex-wrap:wrap; gap:10px;'>
+            <div class='section-title' style='margin-bottom:0;'>🏷️ Bayiye Özel Markalı Link & White-Label Yönetimi</div>
+            <div style='font-size:12px; color:#888;'>Bayi müşterisine kendi linkini atar → İnen B-Connect_KOD.exe otomatik o bayiye bağlanır!</div>
+        </div>
+        <div style='display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px;'>
+            <input type='text' id='brand-code' placeholder='Bayi Kodu (Örn: AKDENIZ)' style='width: 190px; padding: 8px 10px; border-radius: 6px; border: 1px solid #444; background:#111; color:#fff; text-transform:uppercase;'>
+            <input type='text' id='brand-name' placeholder='Bayi Marka / Firma Adı (Örn: Akdeniz Bilişim Destek)' style='flex:1; min-width: 220px; padding: 8px 10px; border-radius: 6px; border: 1px solid #444; background:#111; color:#fff;'>
+            <input type='text' id='brand-phone' placeholder='Destek Telefonu (Opsiyonel)' style='width: 190px; padding: 8px 10px; border-radius: 6px; border: 1px solid #444; background:#111; color:#fff;'>
+            <button onclick='saveDealerBrand()' style='background: linear-gradient(135deg, var(--cyan), var(--magenta)); color: #000; font-weight: bold; border: none; padding: 8px 18px; border-radius: 6px; cursor: pointer;'>+ Markalı Link Oluştur</button>
+        </div>
+        <div style='overflow-x: auto; max-height: 280px; overflow-y: auto;'>
+            <table id='dealer-brands-table'>
+                <thead>
+                    <tr>
+                        <th>Bayi Kodu</th>
+                        <th>Görünen Marka Başlığı</th>
+                        <th>Destek Telefonu</th>
+                        <th>Markalı Destek Sayfası</th>
+                        <th>Doğrudan Markalı .EXE Linki</th>
+                        <th>İşlem</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td colspan='6' class='empty-state'>Kayıtlı bayi markası yükleniyor...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -4840,6 +5318,71 @@ END";
             }).join('');
         }
 
+        function openServiceReportCard() {
+            const cust = prompt('Hizmet karnesi üretilecek Müşteri / Firma adını yazın (Tüm kayıtlar için boş bırakabilirsiniz):', '');
+            if (cust === null) return;
+            window.open('/hizmet-karnesi?customer=' + encodeURIComponent(cust.trim()), '_blank');
+        }
+
+        async function fetchDealerBrands() {
+            try {
+                const res = await fetch('/api/dealer/brands/list');
+                if (!res.ok) return;
+                const list = await res.json();
+                const tbody = document.querySelector('#dealer-brands-table tbody');
+                if (!list || list.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan=\'6\' class=\'empty-state\'>Henüz tanımlı özel bayi markası yok. Yukarıdan saniyeler içinde oluşturabilirsiniz.</td></tr>';
+                    return;
+                }
+                const origin = window.location.origin;
+                tbody.innerHTML = list.map(b => {
+                    const pageUrl = origin + '/bayi/' + b.DealerCode;
+                    const exeUrl = origin + '/indir/' + b.DealerCode;
+                    return '<tr>' +
+                        '<td style=\'color: var(--cyan); font-weight: bold;\'>' + b.DealerCode + '</td>' +
+                        '<td>' + b.BrandName + '</td>' +
+                        '<td>' + (b.Phone || '-') + '</td>' +
+                        '<td><a href=\'' + pageUrl + '\' target=\'_blank\' style=\'color:#38bdf8;\'>' + pageUrl + '</a></td>' +
+                        '<td><a href=\'' + exeUrl + '\' target=\'_blank\' style=\'color:#4caf50;\'>' + exeUrl + '</a></td>' +
+                        '<td><button onclick=\'deleteDealerBrand(\\\'' + b.DealerCode + '\\\')\' style=\'background:#f44336; color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;\'>Sil</button></td>' +
+                        '</tr>';
+                }).join('');
+            } catch (e) {}
+        }
+
+        async function saveDealerBrand() {
+            const dealerCode = document.getElementById('brand-code').value.trim();
+            const brandName = document.getElementById('brand-name').value.trim();
+            const phone = document.getElementById('brand-phone').value.trim();
+            if (!dealerCode || !brandName) {
+                alert('Lütfen Bayi Kodu ve Marka Adı girin.');
+                return;
+            }
+            const res = await fetch('/api/dealer/brands/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ dealerCode, brandName, phone })
+            });
+            if (res.ok) {
+                document.getElementById('brand-code').value = '';
+                document.getElementById('brand-name').value = '';
+                document.getElementById('brand-phone').value = '';
+                fetchDealerBrands();
+            } else {
+                alert('Kaydedilemedi.');
+            }
+        }
+
+        async function deleteDealerBrand(dealerCode) {
+            if (!confirm(dealerCode + ' bayi markasını silmek istiyor musunuz?')) return;
+            await fetch('/api/dealer/brands/delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ dealerCode })
+            });
+            fetchDealerBrands();
+        }
+
         document.getElementById('dl-search-input').addEventListener('input', renderDownloads);
         document.getElementById('dl-filter-type').addEventListener('change', renderDownloads);
         document.getElementById('search-input').addEventListener('input', renderLogs);
@@ -4848,6 +5391,7 @@ END";
         fetchStats();
         fetchSupportHistory();
         fetchLicenses();
+        fetchDealerBrands();
         setInterval(() => {
             fetchStats();
             fetchSupportHistory();

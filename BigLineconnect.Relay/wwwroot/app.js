@@ -307,18 +307,29 @@ function connectToHost(id) {
             }
 
             let receivedSeq = 0;
+            let subX = 0, subY = 0, subW = 0, subH = 0, hasSubHeader = false;
             if (frameBytes && frameBytes.byteLength >= 12) {
                 const u8 = new Uint8Array(frameBytes);
                 if (u8[12] === 0xFF && u8[13] === 0xD8) {
                     const dv = new DataView(frameBytes);
+                    subX = dv.getUint16(0, true);
+                    subY = dv.getUint16(2, true);
+                    subW = dv.getUint16(4, true);
+                    subH = dv.getUint16(6, true);
                     receivedSeq = dv.getUint32(8, true);
+                    hasSubHeader = true;
                     frameBytes = frameBytes.slice(12);
                 } else {
                     for (let i = 0; i < Math.min(16, u8.length - 1); i++) {
                         if (u8[i] === 0xFF && u8[i + 1] === 0xD8) {
                             if (i === 12) {
                                 const dv = new DataView(frameBytes);
+                                subX = dv.getUint16(0, true);
+                                subY = dv.getUint16(2, true);
+                                subW = dv.getUint16(4, true);
+                                subH = dv.getUint16(6, true);
                                 receivedSeq = dv.getUint32(8, true);
+                                hasSubHeader = true;
                             }
                             if (i > 0) frameBytes = frameBytes.slice(i);
                             break;
@@ -333,7 +344,8 @@ function connectToHost(id) {
             const tempImg = new Image();
             tempImg.onload = () => {
                 if (screenCanvas && ctx) {
-                    if (screenCanvas.width !== tempImg.width || screenCanvas.height !== tempImg.height) {
+                    const isFullKeyframe = !hasSubHeader || (subX === 0 && subY === 0 && (subW >= screenCanvas.width || (subW >= 800 && Math.abs(subW - screenCanvas.width) > 64)));
+                    if (isFullKeyframe && (screenCanvas.width !== tempImg.width || screenCanvas.height !== tempImg.height)) {
                         screenCanvas.width = tempImg.width;
                         screenCanvas.height = tempImg.height;
                         if (typeof window.updateCanvasCssLayout === 'function') {
@@ -342,7 +354,7 @@ function connectToHost(id) {
                     }
                     ctx.imageSmoothingEnabled = true;
                     ctx.imageSmoothingQuality = 'high';
-                    ctx.drawImage(tempImg, 0, 0);
+                    ctx.drawImage(tempImg, hasSubHeader ? subX : 0, hasSubHeader ? subY : 0);
                     if (fallbackImg && fallbackImg.style.display !== 'none') {
                         fallbackImg.style.display = 'none';
                     }
