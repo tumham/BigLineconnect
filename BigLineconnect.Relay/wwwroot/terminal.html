@@ -140,6 +140,28 @@
         #xterm-box {
             flex: 1; min-height: 0; width: 100%; padding: 4px 6px; background: #050608; overflow: hidden;
         }
+        #xterm-box .xterm-viewport {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(148, 163, 184, 0.28) #050608;
+        }
+        #xterm-box .xterm-viewport::-webkit-scrollbar {
+            width: 8px;
+        }
+        #xterm-box .xterm-viewport::-webkit-scrollbar-track {
+            background: #050608;
+        }
+        #xterm-box .xterm-viewport::-webkit-scrollbar-thumb {
+            background: rgba(148, 163, 184, 0.25);
+            border-radius: 999px;
+            border: 2px solid #050608;
+        }
+        #xterm-box .xterm-viewport::-webkit-scrollbar-thumb:hover {
+            background: rgba(251, 191, 36, 0.55);
+        }
+        .health-bar::-webkit-scrollbar,
+        .quick-cmd-bar::-webkit-scrollbar {
+            display: none;
+        }
 
         /* TEK DOKUNUŞ KOMUT & KURTARMA ŞERİDİ */
         .quick-cmd-bar {
@@ -586,3 +608,4 @@
     </script>
 </body>
 </html>
+

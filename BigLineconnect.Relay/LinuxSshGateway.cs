@@ -416,10 +416,13 @@ namespace BigLineconnect.Relay
 
             string prompt = "\u001b[1;32mroot@ubuntu-prod-01\u001b[0m:\u001b[1;34m~\u001b[0m# ";
 
+            const string innerPlain = "  >> B-CONNECT CANLI LINUX TERMINAL TEST SUNUCUSU (UBUNTU 24.04)  ";
+            string bar = new string('═', innerPlain.Length);
+
             await WriteTermAsync(
-                "\u001b[1;33m╔════════════════════════════════════════════════════════════════╗\u001b[0m\r\n" +
-                "\u001b[1;33m║\u001b[0m  🐧 \u001b[1;37mB-CONNECT CANLI LINUX TERMINAL TEST SUNUCUSU (UBUNTU 24.04)\u001b[0m \u001b[1;33m║\u001b[0m\r\n" +
-                "\u001b[1;33m╚════════════════════════════════════════════════════════════════╝\u001b[0m\r\n" +
+                $"\u001b[1;33m╔{bar}╗\u001b[0m\r\n" +
+                "\u001b[1;33m║\u001b[0m  \u001b[1;32m>>\u001b[0m \u001b[1;37mB-CONNECT CANLI LINUX TERMINAL TEST SUNUCUSU (UBUNTU 24.04)\u001b[0m  \u001b[1;33m║\u001b[0m\r\n" +
+                $"\u001b[1;33m╚{bar}╝\u001b[0m\r\n" +
                 "Sistem Hazır! Alttaki hazır butonlara dokunabilir veya komut yazabilirsiniz.\r\n" +
                 "Örnek komutlar: \u001b[36mhelp\u001b[0m, \u001b[36muname -a\u001b[0m, \u001b[36mdf -h\u001b[0m, \u001b[36mfree -m\u001b[0m, \u001b[36msystemctl status\u001b[0m, \u001b[36mdocker ps\u001b[0m, \u001b[36mtop\u001b[0m\r\n\r\n" +
                 prompt);
