@@ -295,16 +295,17 @@
                     <i class="fa-solid fa-mobile-screen-button"></i>
                     <span>Ana Ekrana Uygulama Ekle</span>
                 </button>
-                <button type="button" class="quick-btn" onclick="sharePcLinkWhatsApp()">
-                    <i class="fa-brands fa-whatsapp" style="color:#25D366;"></i>
-                    <span>PC Kurulum Linkini Kendime At</span>
+                <button type="button" class="quick-btn" onclick="window.location.href='/terminal'">
+                    <i class="fa-brands fa-linux" style="color:#10b981;"></i>
+                    <span>Linux Sunucu Terminali (SSH)</span>
                 </button>
             </div>
         </div>
 
         <div class="footer-links">
-            <a href="/?desktop=1"><i class="fa-solid fa-laptop"></i> Masaüstü Web Sitesi</a>
-            <a href="/B-Connect.exe?force=1"><i class="fa-solid fa-download"></i> Yine de .EXE İndir</a>
+            <a href="/terminal"><i class="fa-solid fa-terminal"></i> Linux Terminal</a>
+            <a href="#" onclick="sharePcLinkWhatsApp(); return false;"><i class="fa-brands fa-whatsapp" style="color:#25D366;"></i> PC Linki Gönder</a>
+            <a href="/?desktop=1"><i class="fa-solid fa-laptop"></i> Masaüstü Site</a>
             <a href="/yardim.html"><i class="fa-solid fa-circle-question"></i> Yardım</a>
         </div>
     </div>

@@ -2236,6 +2236,36 @@ END";
             }
 
             // -------------------------------------------------------------
+            // KURULUMSUZ WEB & MOBİL LINUX SSH TERMINAL KONSOLU (/terminal & /ws/ssh-terminal)
+            // -------------------------------------------------------------
+            foreach (var termRoute in new[] { "/terminal", "/terminal.html" })
+            {
+                app.MapGet(termRoute, async context =>
+                {
+                    context.Response.Headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0";
+                    context.Response.Headers["Pragma"] = "no-cache";
+                    context.Response.Headers["Expires"] = "0";
+                    context.Response.Headers["CDN-Cache-Control"] = "no-store";
+                    DownloadTrackerManager.TrackHttpEvent(context, "PAGE_VISIT", "🐧 Linux SSH Terminal Konsolu");
+                    string termPath = System.IO.Path.Combine(AppContext.BaseDirectory, "wwwroot", "terminal.html");
+                    if (System.IO.File.Exists(termPath))
+                    {
+                        context.Response.ContentType = "text/html; charset=utf-8";
+                        await context.Response.WriteAsync(await System.IO.File.ReadAllTextAsync(termPath));
+                    }
+                    else
+                    {
+                        context.Response.StatusCode = 404;
+                    }
+                });
+            }
+
+            app.Map("/ws/ssh-terminal", async context =>
+            {
+                await BigLineconnect.Relay.LinuxSshGateway.HandleWebSocketAsync(context);
+            });
+
+            // -------------------------------------------------------------
             // MADDE 1: WHITE-LABEL BAYİ KALESİ (/indir/{kod} & /bayi/{kod})
             // -------------------------------------------------------------
             app.MapGet("/indir/{dealerCode}", async (HttpContext context, string dealerCode) =>

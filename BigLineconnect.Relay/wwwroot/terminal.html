@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#050507">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>B-Connect Linux Terminal | Web & Mobil SSH Sunucu Konsolu</title>
+    <link rel="icon" type="image/png" href="/logo.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/css/xterm.min.css">
+    <style>
+        :root {
+            --bg: #050507;
+            --card: #0e1117;
+            --amber: #fbbf24;
+            --orange: #ea580c;
+            --green: #10b981;
+            --red: #ef4444;
+            --blue: #38bdf8;
+            --text: #f8fafc;
+            --muted: #94a3b8;
+            --border: rgba(251, 191, 36, 0.26);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        html, body {
+            width: 100%; height: 100%; background: var(--bg); color: var(--text);
+            font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif; overflow-x: hidden;
+        }
+
+        /* LOBBY */
+        #ssh-lobby {
+            min-height: 100dvh; max-width: 540px; margin: 0 auto;
+            padding: max(16px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom));
+            display: flex; flex-direction: column; justify-content: space-between; gap: 16px;
+        }
+        .top-bar { display: flex; align-items: center; justify-content: space-between; }
+        .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: #fff; }
+        .brand img { width: 38px; height: 38px; border-radius: 10px; }
+        .brand-t { font-weight: 900; font-size: 1.2rem; letter-spacing: 0.4px; }
+        .brand-s { font-size: 0.68rem; color: var(--green); font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
+        .back-pill {
+            font-size: 0.76rem; font-weight: 700; color: var(--amber); text-decoration: none;
+            background: rgba(251, 191, 36, 0.12); border: 1px solid var(--border);
+            padding: 6px 12px; border-radius: 999px; display: inline-flex; align-items: center; gap: 6px;
+        }
+
+        .demo-banner {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.18), rgba(6, 95, 70, 0.24));
+            border: 1.5px solid rgba(16, 185, 129, 0.55); border-radius: 16px; padding: 14px;
+            display: flex; flex-direction: column; gap: 10px;
+        }
+        .demo-banner-head { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 0.92rem; color: #6ee7b7; }
+        .demo-banner p { font-size: 0.8rem; color: #d1fae5; line-height: 1.4; }
+        .demo-btn {
+            width: 100%; padding: 12px; border-radius: 12px; border: none; cursor: pointer;
+            background: linear-gradient(135deg, #10b981, #059669); color: #022c22;
+            font-weight: 900; font-size: 0.92rem; display: flex; align-items: center; justify-content: center; gap: 8px;
+            box-shadow: 0 8px 24px rgba(16, 185, 129, 0.3);
+        }
+
+        .card {
+            background: var(--card); border: 1px solid var(--border); border-radius: 20px;
+            padding: 18px; box-shadow: 0 20px 50px rgba(0,0,0,0.65);
+        }
+        .badge {
+            display: inline-flex; align-items: center; gap: 6px; font-size: 0.72rem; font-weight: 800;
+            color: var(--amber); background: rgba(251, 191, 36, 0.12); border: 1px solid rgba(251, 191, 36, 0.3);
+            padding: 4px 10px; border-radius: 999px; margin-bottom: 10px;
+        }
+        .card h1 { font-size: 1.25rem; font-weight: 800; margin-bottom: 4px; }
+        .card p.sub { font-size: 0.82rem; color: var(--muted); margin-bottom: 14px; }
+
+        .row-2 { display: grid; grid-template-columns: 1fr 92px; gap: 8px; }
+        .lbl { display: block; font-size: 0.74rem; font-weight: 700; color: var(--amber); margin-bottom: 5px; text-transform: uppercase; }
+        .inp {
+            width: 100%; padding: 11px 12px; border-radius: 11px; border: 1px solid rgba(255,255,255,0.14);
+            background: #06080d; color: #fff; font-size: 15px; outline: none; margin-bottom: 11px;
+        }
+        .inp:focus { border-color: var(--amber); }
+        textarea.inp { font-family: 'JetBrains Mono', monospace; font-size: 12px; min-height: 76px; resize: vertical; }
+
+        .key-toggle {
+            font-size: 0.76rem; color: var(--blue); cursor: pointer; font-weight: 700;
+            display: inline-flex; align-items: center; gap: 5px; margin-bottom: 10px;
+        }
+        .connect-btn {
+            width: 100%; padding: 14px; border: none; border-radius: 13px; cursor: pointer;
+            background: linear-gradient(135deg, var(--amber), var(--orange)); color: #09090b;
+            font-size: 1rem; font-weight: 900; display: flex; align-items: center; justify-content: center; gap: 8px;
+            box-shadow: 0 10px 26px rgba(234, 88, 12, 0.35);
+        }
+
+        .saved-wrap { margin-top: 14px; display: none; }
+        .saved-title { font-size: 0.72rem; color: var(--muted); font-weight: 700; margin-bottom: 7px; text-transform: uppercase; }
+        .saved-chips { display: flex; gap: 7px; flex-wrap: wrap; }
+        .saved-chip {
+            background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.14);
+            border-radius: 999px; padding: 6px 11px; font-size: 0.78rem; font-weight: 700;
+            cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+        }
+
+        /* TERMINAL SCREEN */
+        #ssh-screen {
+            display: none; position: fixed; left: 0; right: 0; top: 0; height: 100dvh;
+            background: #050608; z-index: 9999; flex-direction: column;
+        }
+        .term-header {
+            padding: max(6px, env(safe-area-inset-top)) 8px 6px;
+            background: #0b0e14; border-bottom: 1px solid rgba(251, 191, 36, 0.25);
+            display: flex; align-items: center; justify-content: space-between; gap: 6px; flex-wrap: wrap;
+        }
+        .term-host {
+            font-family: 'JetBrains Mono', monospace; font-size: 0.76rem; font-weight: 700;
+            color: var(--green); display: flex; align-items: center; gap: 6px;
+            max-width: 56vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+        .term-actions { display: flex; align-items: center; gap: 5px; }
+        .t-btn {
+            background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.16);
+            color: #fff; padding: 5px 9px; border-radius: 8px; font-size: 0.73rem; font-weight: 700;
+            cursor: pointer; display: inline-flex; align-items: center; gap: 5px;
+        }
+        .t-btn.danger { background: rgba(239,68,68,0.2); border-color: rgba(239,68,68,0.5); color: #fca5a5; }
+
+        /* CANLI SUNUCU NABIZ ŞERİDİ */
+        .health-bar {
+            height: 30px; padding: 0 8px; background: #080b10;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            display: flex; align-items: center; gap: 10px; overflow-x: auto; white-space: nowrap;
+            font-family: 'JetBrains Mono', monospace; font-size: 0.7rem;
+        }
+        .h-pill { display: inline-flex; align-items: center; gap: 4px; color: #cbd5e1; }
+        .h-pill b { color: var(--amber); }
+
+        #xterm-box {
+            flex: 1; min-height: 0; width: 100%; padding: 4px 6px; background: #050608; overflow: hidden;
+        }
+
+        /* TEK DOKUNUŞ KOMUT & KURTARMA ŞERİDİ */
+        .quick-cmd-bar {
+            height: 38px; padding: 4px 6px; background: #0d111a;
+            border-top: 1px solid rgba(251, 191, 36, 0.25);
+            display: flex; align-items: center; gap: 5px; overflow-x: auto; white-space: nowrap;
+        }
+        .q-key {
+            flex-shrink: 0; height: 100%; padding: 0 9px; border-radius: 7px;
+            background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.16);
+            color: #f8fafc; font-size: 0.72rem; font-weight: 800; cursor: pointer;
+            display: inline-flex; align-items: center; gap: 4px; touch-action: manipulation;
+        }
+        .q-key.warn { background: rgba(239, 68, 68, 0.18); border-color: rgba(239, 68, 68, 0.45); color: #fca5a5; }
+        .q-key.accent { background: rgba(16, 185, 129, 0.18); border-color: rgba(16, 185, 129, 0.45); color: #6ee7b7; }
+
+        .cmd-input-bar {
+            padding: 6px 8px max(6px, env(safe-area-inset-bottom));
+            background: #111520; border-top: 1px solid rgba(255,255,255,0.1);
+            display: flex; align-items: center; gap: 6px;
+        }
+        #cmd-line-input {
+            flex: 1; min-width: 0; padding: 9px 11px; border-radius: 9px;
+            border: 1px solid rgba(251, 191, 36, 0.3); background: #050608; color: #fff;
+            font-family: 'JetBrains Mono', monospace; font-size: 15px; outline: none;
+        }
+        .send-cmd-btn {
+            padding: 9px 13px; border-radius: 9px; border: 1px solid var(--amber);
+            background: rgba(251, 191, 36, 0.22); color: var(--amber); font-weight: 800; font-size: 0.78rem; cursor: pointer;
+        }
+
+        #toast {
+            position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+            background: rgba(15, 23, 42, 0.96); border: 1px solid var(--amber); color: #fff;
+            padding: 9px 16px; border-radius: 999px; font-size: 0.8rem; font-weight: 700;
+            z-index: 20000; opacity: 0; pointer-events: none; transition: opacity 0.25s; white-space: nowrap;
+        }
+    </style>
+</head>
+<body>
+    <div id="ssh-lobby">
+        <div>
+            <div class="top-bar" style="margin-bottom:14px;">
+                <a href="/mobil" class="brand">
+                    <img src="/logo.png" alt="B-Connect">
+                    <div>
+                        <div class="brand-t">B-CONNECT</div>
+                        <div class="brand-s">🐧 Linux Terminal Konsolu</div>
+                    </div>
+                </a>
+                <a href="/mobil" class="back-pill"><i class="fa-solid fa-desktop"></i> Ekran Bağlantısı</a>
+            </div>
+
+            <div class="demo-banner" style="margin-bottom:14px;">
+                <div class="demo-banner-head"><i class="fa-solid fa-flask"></i> Sunucu Kurmadan Hemen Test Edin!</div>
+                <p>Elinizde hazır bir Linux sunucu olmasa bile tek dokunuşla canlı Ubuntu 24.04 test ortamına bağlanıp tuşları, renkli terminali ve sistem göstergelerini deneyebilirsiniz:</p>
+                <button type="button" class="demo-btn" onclick="startDemoLinux()">
+                    <i class="fa-solid fa-terminal"></i> Canlı Demo Ubuntu Sunucuya Bağlan
+                </button>
+            </div>
+
+            <div class="card">
+                <div class="badge"><i class="fa-solid fa-shield-halved"></i> Kurulumsuz Standart SSH • Mobil & Web</div>
+                <h1>Linux Sunucuya Bağlan</h1>
+                <p class="sub">Grafik arayüzü olmayan Linux sunucularınıza karşı tarafa hiçbir ek program kurmadan anında bağlanın:</p>
+
+                <div class="row-2">
+                    <div>
+                        <label class="lbl" for="ssh-host">Sunucu IP veya Alan Adı</label>
+                        <input id="ssh-host" class="inp" type="text" placeholder="185.120.45.10 veya sunucu.com" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+                    </div>
+                    <div>
+                        <label class="lbl" for="ssh-port">Port</label>
+                        <input id="ssh-port" class="inp" type="number" value="22" inputmode="numeric">
+                    </div>
+                </div>
+
+                <div class="row-2" style="grid-template-columns: 1fr 1fr;">
+                    <div>
+                        <label class="lbl" for="ssh-user">Kullanıcı Adı</label>
+                        <input id="ssh-user" class="inp" type="text" value="root" autocomplete="off" autocapitalize="off" autocorrect="off">
+                    </div>
+                    <div>
+                        <label class="lbl" for="ssh-label">Kayıt Etiketi (Ops.)</label>
+                        <input id="ssh-label" class="inp" type="text" placeholder="Örn: Yedek Sunucu" autocomplete="off">
+                    </div>
+                </div>
+
+                <label class="lbl" for="ssh-pass">SSH Şifresi</label>
+                <input id="ssh-pass" class="inp" type="password" placeholder="Sunucu şifresi" autocomplete="off">
+
+                <div class="key-toggle" onclick="toggleKeyBox()">
+                    <i class="fa-solid fa-key"></i> <span>SSH Private Key (.pem / id_rsa) kullanmak için dokunun</span>
+                </div>
+                <div id="key-wrap" style="display:none;">
+                    <textarea id="ssh-key" class="inp" placeholder="-----BEGIN OPENSSH PRIVATE KEY-----"></textarea>
+                </div>
+
+                <button type="button" class="connect-btn" onclick="connectRealSsh()">
+                    <i class="fa-solid fa-bolt"></i> Linux Terminali Aç
+                </button>
+
+                <div id="saved-wrap" class="saved-wrap">
+                    <div class="saved-title"><i class="fa-solid fa-server"></i> Kayıtlı Linux Sunucularım</div>
+                    <div id="saved-chips" class="saved-chips"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CANLI LINUX TERMINAL EKRANI -->
+    <div id="ssh-screen">
+        <div class="term-header">
+            <div class="term-host">
+                <i class="fa-brands fa-linux" style="color:var(--amber);font-size:1rem;"></i>
+                <span id="active-host-lbl">root@linux</span>
+            </div>
+            <div class="term-actions">
+                <button type="button" class="t-btn" onpointerdown="event.preventDefault(); promptLogDownload();">
+                    <i class="fa-solid fa-download"></i> <span>Log İndir</span>
+                </button>
+                <button type="button" class="t-btn danger" onpointerdown="event.preventDefault(); disconnectSsh();">
+                    <i class="fa-solid fa-xmark"></i> <span>Kapat</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="health-bar">
+            <span class="h-pill"><i class="fa-solid fa-microchip" style="color:var(--green);"></i> CPU: <b id="st-cpu">--%</b></span>
+            <span class="h-pill"><i class="fa-solid fa-memory" style="color:var(--blue);"></i> RAM: <b id="st-ram">-- MB</b></span>
+            <span class="h-pill"><i class="fa-solid fa-hard-drive" style="color:var(--amber);"></i> DİSK: <b id="st-disk">--%</b></span>
+            <span class="h-pill"><i class="fa-solid fa-clock"></i> AÇIK: <b id="st-up">--</b></span>
+        </div>
+
+        <div id="xterm-box"></div>
+
+        <div class="quick-cmd-bar">
+            <button type="button" class="q-key warn" onpointerdown="event.preventDefault(); sendRaw('\x03');">Ctrl+C</button>
+            <button type="button" class="q-key" onpointerdown="event.preventDefault(); sendRaw('\t');">TAB ⇥</button>
+            <button type="button" class="q-key" onpointerdown="event.preventDefault(); sendRaw('\x1b[A');">↑</button>
+            <button type="button" class="q-key" onpointerdown="event.preventDefault(); sendRaw('\x1b[B');">↓</button>
+            <button type="button" class="q-key accent" onpointerdown="event.preventDefault(); sendCmd('systemctl status');">Servisler</button>
+            <button type="button" class="q-key accent" onpointerdown="event.preventDefault(); sendCmd('df -h');">Disk</button>
+            <button type="button" class="q-key accent" onpointerdown="event.preventDefault(); sendCmd('free -m');">RAM</button>
+            <button type="button" class="q-key accent" onpointerdown="event.preventDefault(); sendCmd('top -b -n 1 | head -n 15');">Süreçler</button>
+            <button type="button" class="q-key" onpointerdown="event.preventDefault(); sendCmd('docker ps');">Docker</button>
+            <button type="button" class="q-key" onpointerdown="event.preventDefault(); sendCmd('ls -la');">Dosyalar</button>
+            <button type="button" class="q-key" onpointerdown="event.preventDefault(); sendCmd('clear');">Temizle</button>
+        </div>
+
+        <div class="cmd-input-bar">
+            <input id="cmd-line-input" type="text" enterkeyhint="send" placeholder="Komut yazın (örn: df -h, systemctl status)..." autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+            <button type="button" class="send-cmd-btn" onpointerdown="event.preventDefault(); submitCmdBar();">⏎ Çalıştır</button>
+        </div>
+    </div>
+
+    <div id="toast"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/lib/xterm.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@xterm/addon-fit@0.10.0/lib/addon-fit.min.js"></script>
+    <script>
+        let ws = null;
+        let term = null;
+        let fitAddon = null;
+        let isDemoSession = false;
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.style.opacity = '1';
+            clearTimeout(window._tTimer);
+            window._tTimer = setTimeout(() => { t.style.opacity = '0'; }, 2600);
+        }
+
+        function toggleKeyBox() {
+            const el = document.getElementById('key-wrap');
+            el.style.display = el.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function utf8ToB64(str) {
+            const bytes = new TextEncoder().encode(str);
+            let bin = '';
+            for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+            return btoa(bin);
+        }
+
+        function b64ToBytes(b64) {
+            const bin = atob(b64);
+            const out = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+            return out;
+        }
+
+        function loadSavedServers() {
+            try {
+                const list = JSON.parse(localStorage.getItem('bconnect_ssh_servers') || '[]');
+                const wrap = document.getElementById('saved-wrap');
+                const box = document.getElementById('saved-chips');
+                if (!list.length) { wrap.style.display = 'none'; return; }
+                wrap.style.display = 'block';
+                box.innerHTML = list.map((s, idx) =>
+                    `<span class="saved-chip" onclick="pickSavedServer(${idx})"><i class="fa-brands fa-linux" style="color:var(--amber);"></i>${s.label || (s.user + '@' + s.host)}</span>`
+                ).join('');
+            } catch (e) {}
+        }
+
+        function saveServerProfile(host, port, user, label) {
+            if (!host || host === 'demo.bconnect.local') return;
+            try {
+                let list = JSON.parse(localStorage.getItem('bconnect_ssh_servers') || '[]');
+                list = [{ host, port, user, label }, ...list.filter(x => !(x.host === host && x.port === port && x.user === user))].slice(0, 6);
+                localStorage.setItem('bconnect_ssh_servers', JSON.stringify(list));
+                loadSavedServers();
+            } catch (e) {}
+        }
+
+        function pickSavedServer(idx) {
+            try {
+                const list = JSON.parse(localStorage.getItem('bconnect_ssh_servers') || '[]');
+                const s = list[idx];
+                if (!s) return;
+                document.getElementById('ssh-host').value = s.host || '';
+                document.getElementById('ssh-port').value = s.port || 22;
+                document.getElementById('ssh-user').value = s.user || 'root';
+                document.getElementById('ssh-label').value = s.label || '';
+                document.getElementById('ssh-pass').focus();
+            } catch (e) {}
+        }
+        loadSavedServers();
+
+        function ensureTerminalInit() {
+            const box = document.getElementById('xterm-box');
+            if (term) {
+                term.clear();
+                return;
+            }
+            if (typeof Terminal !== 'undefined') {
+                const isSmall = window.innerWidth < 600;
+                term = new Terminal({
+                    cursorBlink: true,
+                    fontSize: isSmall ? 13 : 14,
+                    fontFamily: "'JetBrains Mono', Menlo, Consolas, monospace",
+                    scrollback: 3000,
+                    theme: {
+                        background: '#050608',
+                        foreground: '#e2e8f0',
+                        cursor: '#fbbf24',
+                        selectionBackground: 'rgba(251, 191, 36, 0.3)'
+                    }
+                });
+                if (typeof FitAddon !== 'undefined') {
+                    fitAddon = new FitAddon.FitAddon();
+                    term.loadAddon(fitAddon);
+                }
+                term.open(box);
+                if (fitAddon) { try { fitAddon.fit(); } catch (e) {} }
+                term.onData((data) => {
+                    sendRaw(data);
+                });
+            } else {
+                box.innerHTML = '<pre id="fallback-pre" style="color:#e2e8f0;font-family:monospace;font-size:13px;height:100%;overflow:auto;padding:8px;white-space:pre-wrap;"></pre>';
+            }
+        }
+
+        function syncTermViewport() {
+            const sc = document.getElementById('ssh-screen');
+            if (!sc || sc.style.display !== 'flex') return;
+            if (window.visualViewport) {
+                sc.style.top = Math.max(0, window.visualViewport.offsetTop) + 'px';
+                sc.style.height = window.visualViewport.height + 'px';
+            }
+            if (fitAddon && term) {
+                try {
+                    fitAddon.fit();
+                    if (ws && ws.readyState === WebSocket.OPEN) {
+                        ws.send(JSON.stringify({ type: 'resize', cols: term.cols, rows: term.rows }));
+                    }
+                } catch (e) {}
+            }
+        }
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', syncTermViewport);
+            window.visualViewport.addEventListener('scroll', syncTermViewport);
+        }
+        window.addEventListener('resize', syncTermViewport);
+
+        function startDemoLinux() {
+            isDemoSession = true;
+            openSshSession({
+                host: 'demo.bconnect.local',
+                port: 22,
+                username: 'root',
+                password: 'demo',
+                privateKey: ''
+            });
+        }
+
+        function connectRealSsh() {
+            isDemoSession = false;
+            const host = document.getElementById('ssh-host').value.trim();
+            const port = parseInt(document.getElementById('ssh-port').value, 10) || 22;
+            const username = document.getElementById('ssh-user').value.trim() || 'root';
+            const password = document.getElementById('ssh-pass').value;
+            const privateKey = document.getElementById('ssh-key').value.trim();
+            const label = document.getElementById('ssh-label').value.trim();
+
+            if (!host) {
+                showToast('⚠️ Lütfen Linux sunucu IP veya alan adını girin.');
+                document.getElementById('ssh-host').focus();
+                return;
+            }
+            if (!password && !privateKey) {
+                showToast('⚠️ Lütfen SSH şifresi veya Private Key girin.');
+                document.getElementById('ssh-pass').focus();
+                return;
+            }
+            saveServerProfile(host, port, username, label);
+            openSshSession({ host, port, username, password, privateKey });
+        }
+
+        function openSshSession(cfg) {
+            if (ws) { try { ws.close(); } catch (e) {} }
+            document.getElementById('ssh-lobby').style.display = 'none';
+            document.getElementById('ssh-screen').style.display = 'flex';
+            document.getElementById('active-host-lbl').textContent = cfg.username + '@' + cfg.host;
+            document.getElementById('st-cpu').textContent = '--%';
+            document.getElementById('st-ram').textContent = '-- MB';
+            document.getElementById('st-disk').textContent = '--%';
+            document.getElementById('st-up').textContent = '--';
+
+            ensureTerminalInit();
+            syncTermViewport();
+
+            const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            ws = new WebSocket(`${proto}//${location.host}/ws/ssh-terminal`);
+
+            ws.onopen = () => {
+                ws.send(JSON.stringify({
+                    type: 'connect',
+                    host: cfg.host,
+                    port: cfg.port,
+                    username: cfg.username,
+                    password: cfg.password,
+                    privateKey: cfg.privateKey,
+                    cols: term ? term.cols : 100,
+                    rows: term ? term.rows : 30
+                }));
+            };
+
+            ws.onmessage = (ev) => {
+                try {
+                    const msg = JSON.parse(ev.data);
+                    if (msg.type === 'output' && msg.data) {
+                        const bytes = b64ToBytes(msg.data);
+                        if (term) {
+                            term.write(bytes);
+                        } else {
+                            const pre = document.getElementById('fallback-pre');
+                            if (pre) pre.textContent += new TextDecoder().decode(bytes);
+                        }
+                    } else if (msg.type === 'connected') {
+                        document.getElementById('active-host-lbl').textContent = msg.host || (cfg.username + '@' + cfg.host);
+                        showToast('✅ Bağlandı: ' + (msg.banner || 'Linux SSH'));
+                        syncTermViewport();
+                    } else if (msg.type === 'status') {
+                        showToast(msg.message);
+                    } else if (msg.type === 'stats') {
+                        document.getElementById('st-cpu').textContent = msg.cpuPct + '%';
+                        document.getElementById('st-ram').textContent = msg.ramUsedMb + '/' + msg.ramTotalMb + ' MB';
+                        document.getElementById('st-disk').textContent = msg.diskPct + '%';
+                        document.getElementById('st-up').textContent = msg.uptime || '--';
+                    } else if (msg.type === 'file_download' && msg.data) {
+                        const bytes = b64ToBytes(msg.data);
+                        const blob = new Blob([bytes], { type: 'application/octet-stream' });
+                        const a = document.createElement('a');
+                        a.href = URL.createObjectURL(blob);
+                        a.download = msg.fileName || 'server.log';
+                        document.body.appendChild(a);
+                        a.click();
+                        a.remove();
+                        showToast('📥 İndirildi: ' + (msg.fileName || 'server.log'));
+                    } else if (msg.type === 'notice') {
+                        showToast((msg.level === 'error' ? '❌ ' : 'ℹ️ ') + msg.message);
+                    } else if (msg.type === 'error') {
+                        showToast(msg.message);
+                        if (term) term.writeln('\r\n\x1b[1;31m' + msg.message + '\x1b[0m\r\n');
+                    }
+                } catch (e) {}
+            };
+
+            ws.onclose = () => {
+                if (term) term.writeln('\r\n\x1b[33m[Bağlantı sonlandı]\x1b[0m');
+            };
+        }
+
+        function sendRaw(str) {
+            if (!ws || ws.readyState !== WebSocket.OPEN) return;
+            ws.send(JSON.stringify({ type: 'input', data: utf8ToB64(str) }));
+        }
+
+        function sendCmd(cmd) {
+            if (isDemoSession && cmd.startsWith('top -b')) cmd = 'top';
+            sendRaw(cmd + '\r');
+        }
+
+        function submitCmdBar() {
+            const inp = document.getElementById('cmd-line-input');
+            const val = inp.value;
+            inp.value = '';
+            sendRaw(val + '\r');
+        }
+
+        document.getElementById('cmd-line-input').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                submitCmdBar();
+            } else if (e.key === 'Tab') {
+                e.preventDefault();
+                if (e.target.value) {
+                    sendRaw(e.target.value + '\t');
+                    e.target.value = '';
+                } else {
+                    sendRaw('\t');
+                }
+            }
+        });
+
+        function promptLogDownload() {
+            const path = prompt('İndirilecek sunucu dosya yolunu girin:', '/var/log/syslog');
+            if (!path || !ws || ws.readyState !== WebSocket.OPEN) return;
+            ws.send(JSON.stringify({ type: 'sftp_get', path: path.trim() }));
+            showToast('⏳ Dosya çekiliyor: ' + path.trim());
+        }
+
+        function disconnectSsh() {
+            if (ws) { try { ws.close(); } catch (e) {} ws = null; }
+            document.getElementById('ssh-screen').style.display = 'none';
+            document.getElementById('ssh-lobby').style.display = 'flex';
+        }
+
+        if (new URLSearchParams(location.search).get('demo') === '1') {
+            startDemoLinux();
+        }
+    </script>
+</body>
+</html>

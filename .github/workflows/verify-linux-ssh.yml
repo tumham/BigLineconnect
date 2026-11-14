@@ -1,0 +1,120 @@
+name: Verify Linux SSH Gateway on Real Ubuntu OpenSSH
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'BigLineconnect.Relay/LinuxSshGateway.cs'
+      - 'BigLineconnect.Relay/wwwroot/terminal.html'
+      - '.github/workflows/verify-linux-ssh.yml'
+
+jobs:
+  verify-ubuntu-ssh:
+    name: E2E Test SSH.NET Gateway Against Real Ubuntu 24.04 OpenSSH
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup .NET 9 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Configure Real OpenSSH Test User on Ubuntu 24.04
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq openssh-server
+          sudo useradd -m -s /bin/bash bconnecttest
+          echo "bconnecttest:TestPass2026!" | sudo chpasswd
+          sudo sed -i 's/^#*PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config
+          sudo systemctl restart ssh
+
+      - name: Build and Start BigLineconnect.Relay
+        run: |
+          dotnet build BigLineconnect.Relay/BigLineconnect.Relay.csproj -c Release -v minimal
+          BCONNECT_ALLOW_LOCAL_SSH_TEST=1 ASPNETCORE_URLS="http://127.0.0.1:5088" dotnet run --no-build -c Release --project BigLineconnect.Relay/BigLineconnect.Relay.csproj > relay_test.log 2>&1 &
+          for i in $(seq 1 25); do
+            if curl -sf http://127.0.0.1:5088/terminal > /dev/null; then
+              echo "Relay is up!"
+              break
+            fi
+            sleep 1
+          done
+
+      - name: Run Automated WebSocket -> SSH.NET -> Ubuntu OpenSSH E2E Test
+        run: |
+          dotnet new console -n SshE2ETest --force
+          cat << 'EOF' > SshE2ETest/Program.cs
+          using System;
+          using System.Net.WebSockets;
+          using System.Text;
+          using System.Text.Json;
+          using System.Threading;
+          using System.Threading.Tasks;
+
+          using var ws = new ClientWebSocket();
+          using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(25));
+          await ws.ConnectAsync(new Uri("ws://127.0.0.1:5088/ws/ssh-terminal"), cts.Token);
+
+          string connectReq = JsonSerializer.Serialize(new {
+              type = "connect",
+              host = "127.0.0.1",
+              port = 22,
+              username = "bconnecttest",
+              password = "TestPass2026!",
+              cols = 100,
+              rows = 30
+          });
+          await ws.SendAsync(Encoding.UTF8.GetBytes(connectReq), WebSocketMessageType.Text, true, cts.Token);
+
+          string cmd = Convert.ToBase64String(Encoding.UTF8.GetBytes("uname -s && echo E2E_OK_777\n"));
+          bool gotConnected = false, gotStats = false, gotCmdOut = false, gotFile = false;
+          var sb = new StringBuilder();
+          var buf = new byte[16384];
+
+          while ((!gotConnected || !gotStats || !gotCmdOut || !gotFile) && !cts.Token.IsCancellationRequested)
+          {
+              var res = await ws.ReceiveAsync(buf, cts.Token);
+              string json = Encoding.UTF8.GetString(buf, 0, res.Count);
+              using var doc = JsonDocument.Parse(json);
+              string t = doc.RootElement.GetProperty("type").GetString() ?? "";
+              if (t == "error") throw new Exception("Gateway error: " + doc.RootElement.GetProperty("message").GetString());
+              if (t == "connected")
+              {
+                  gotConnected = true;
+                  await ws.SendAsync(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new { type = "input", data = cmd })), WebSocketMessageType.Text, true, cts.Token);
+                  await ws.SendAsync(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new { type = "sftp_get", path = "/etc/os-release" })), WebSocketMessageType.Text, true, cts.Token);
+              }
+              else if (t == "stats")
+              {
+                  gotStats = doc.RootElement.GetProperty("ramTotalMb").GetInt32() > 0;
+                  Console.WriteLine($"[PASS] Live Ubuntu Stats: CPU={doc.RootElement.GetProperty("cpuPct")}% RAM={doc.RootElement.GetProperty("ramUsedMb")}/{doc.RootElement.GetProperty("ramTotalMb")}MB");
+              }
+              else if (t == "output")
+              {
+                  string chunk = Encoding.UTF8.GetString(Convert.FromBase64String(doc.RootElement.GetProperty("data").GetString() ?? ""));
+                  sb.Append(chunk);
+                  if (sb.ToString().Contains("Linux") && sb.ToString().Contains("E2E_OK_777"))
+                  {
+                      gotCmdOut = true;
+                      Console.WriteLine("[PASS] Real Ubuntu OpenSSH PTY Output Verified!");
+                  }
+              }
+              else if (t == "file_download")
+              {
+                  string fileContent = Encoding.UTF8.GetString(Convert.FromBase64String(doc.RootElement.GetProperty("data").GetString() ?? ""));
+                  if (fileContent.Contains("Ubuntu"))
+                  {
+                      gotFile = true;
+                      Console.WriteLine("[PASS] Real Ubuntu SFTP File Download (/etc/os-release) Verified!");
+                  }
+              }
+          }
+          Console.WriteLine("=== ALL REAL UBUNTU 24.04 OPENSSH E2E CHECKS PASSED ===");
+          EOF
+          dotnet run --project SshE2ETest/SshE2ETest.csproj
