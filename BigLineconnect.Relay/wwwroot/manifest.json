@@ -2,7 +2,7 @@
   "name": "B-Connect - Mobil Bayi & Destek Portalı",
   "short_name": "B-Connect",
   "description": "B-Connect Mobil Destek ve Uzaktan Kontrol Portalı",
-  "start_url": "/",
+  "start_url": "/mobil?pwa=1&v=3704",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#000000",

@@ -77,6 +77,21 @@
       ]
     }
     </script>
+    <!-- Mobil & Dokunmatik Telefonları (Eski Önbellek / Masaüstü Modu Dahil) Doğrudan Yeni Mobil Konsola Yönlendir -->
+    <script>
+        (function() {
+            try {
+                var qs = window.location.search || '';
+                var keepDesktop = qs.indexOf('desktop=1') !== -1 || qs.indexOf('token=') !== -1 || qs.indexOf('ticketToken=') !== -1;
+                var ua = navigator.userAgent || '';
+                var isTouchPhone = /iPhone|iPod|Android.*Mobile|Windows Phone/i.test(ua) ||
+                                   (navigator.maxTouchPoints >= 2 && Math.min(window.screen.width, window.screen.height) <= 900);
+                if (isTouchPhone && !keepDesktop) {
+                    window.location.replace('/mobil?v=3704' + (qs ? '&' + qs.slice(1) : ''));
+                }
+            } catch (e) {}
+        })();
+    </script>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1419,8 +1434,11 @@
 
         function doConnect() {
             console.log('[B-Connect] doConnect triggered');
-            if (/iPhone|iPad|iPod|Android|webOS|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(navigator.userAgent || '')) {
-                showToast('Mobil cihazdan masaüstü bağlantısı kapalıdır. Lütfen bilgisayarınızdaki B-Connect uygulamasını kullanın.', 'error');
+            if (/iPhone|iPod|Android.*Mobile|Windows Phone/i.test(navigator.userAgent || '') ||
+                (navigator.maxTouchPoints >= 2 && Math.min(window.screen.width, window.screen.height) <= 900)) {
+                var rawElem = document.getElementById('target-id') || document.getElementById('tid');
+                var rawId = rawElem ? (rawElem.value || '').replace(/\D/g, '') : '';
+                window.location.href = '/mobil?v=3704' + (rawId ? '&id=' + encodeURIComponent(rawId) : '');
                 return;
             }
 

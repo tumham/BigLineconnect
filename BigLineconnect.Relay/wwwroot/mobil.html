@@ -23,7 +23,7 @@
             --orange: #ea580c;
             --green: #10b981;
             --red: #ef4444;
-            --cyan: #38bdf8;
+            --cyan: #1d7dea;
             --text: #f8fafc;
             --muted: #94a3b8;
             --border: rgba(251, 191, 36, 0.25);
@@ -448,6 +448,16 @@
         }
         if (params.get('id')) {
             idInput.value = formatId(params.get('id'));
+        }
+
+        // Eski önbellekleri ve eski Service Worker sürümlerini (bigus.com.tr üzerinde kalmış olanları) anında temizle
+        if ('caches' in window) {
+            caches.keys().then(keys => keys.forEach(k => caches.delete(k))).catch(() => {});
+        }
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js?v=3704', { updateViaCache: 'none' })
+                .then(reg => { try { reg.update(); } catch (e) {} })
+                .catch(() => {});
         }
 
         window.addEventListener('beforeinstallprompt', (e) => {

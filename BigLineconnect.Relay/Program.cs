@@ -2087,27 +2087,26 @@ END";
                 bool forceDownload = ctx.Request.Query["force"] == "1";
                 bool forceDesktop = ctx.Request.Query["desktop"] == "1" || ctx.Request.Query.ContainsKey("token") || ctx.Request.Query.ContainsKey("ticketToken");
 
-                if (reqPath.Equals("/B-Connect.exe", StringComparison.OrdinalIgnoreCase) ||
-                    reqPath.Equals("/BigLineconnect.exe", StringComparison.OrdinalIgnoreCase) ||
-                    reqPath.Equals("/BigLineconnect_setup.exe", StringComparison.OrdinalIgnoreCase) ||
+                if (reqPath.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ||
                     reqPath.Equals("/download", StringComparison.OrdinalIgnoreCase) ||
                     reqPath.Equals("/indir", StringComparison.OrdinalIgnoreCase))
                 {
                     if (isMobile && !forceDownload)
                     {
                         DownloadTrackerManager.TrackHttpEvent(ctx, "PAGE_VISIT", "📱 Mobil Cep Konsolu (.EXE Yönlendirme)");
-                        ctx.Response.Redirect("/mobil?from=exe", false);
+                        ctx.Response.Headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0";
+                        ctx.Response.Redirect("/mobil?from=exe&v=3704", false);
                         return;
                     }
                     DownloadTrackerManager.TrackHttpEvent(ctx, "DOWNLOAD_EXE", "B-Connect.exe");
                 }
-                else if (reqPath.Equals("/B-Connect.zip", StringComparison.OrdinalIgnoreCase) ||
-                         reqPath.Equals("/BigLineconnect_setup.zip", StringComparison.OrdinalIgnoreCase))
+                else if (reqPath.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
                 {
                     if (isMobile && !forceDownload)
                     {
                         DownloadTrackerManager.TrackHttpEvent(ctx, "PAGE_VISIT", "📱 Mobil Cep Konsolu (.ZIP Yönlendirme)");
-                        ctx.Response.Redirect("/mobil?from=exe", false);
+                        ctx.Response.Headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0";
+                        ctx.Response.Redirect("/mobil?from=exe&v=3704", false);
                         return;
                     }
                     DownloadTrackerManager.TrackHttpEvent(ctx, "DOWNLOAD_ZIP", "B-Connect.zip");
@@ -2118,7 +2117,8 @@ END";
                     if (isMobile && !forceDesktop)
                     {
                         DownloadTrackerManager.TrackHttpEvent(ctx, "PAGE_VISIT", "📱 Mobil Cep Konsolu");
-                        ctx.Response.Redirect("/mobil", false);
+                        ctx.Response.Headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0";
+                        ctx.Response.Redirect("/mobil?v=3704", false);
                         return;
                     }
                     DownloadTrackerManager.TrackHttpEvent(ctx, "PAGE_VISIT", "Ana Sayfa");
@@ -2218,6 +2218,10 @@ END";
             {
                 app.MapGet(mobRoute, async context =>
                 {
+                    context.Response.Headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0";
+                    context.Response.Headers["Pragma"] = "no-cache";
+                    context.Response.Headers["Expires"] = "0";
+                    context.Response.Headers["CDN-Cache-Control"] = "no-store";
                     string mobPath = System.IO.Path.Combine(AppContext.BaseDirectory, "wwwroot", "mobil.html");
                     if (System.IO.File.Exists(mobPath))
                     {
@@ -2246,7 +2250,8 @@ END";
                 if (DealerBrandManager.IsMobileBrowser(context) && context.Request.Query["force"] != "1")
                 {
                     DownloadTrackerManager.TrackHttpEvent(context, "PAGE_VISIT", $"📱 Mobil Cep Konsolu (Bayi: {cleanCode})");
-                    context.Response.Redirect("/mobil?from=exe", false);
+                    context.Response.Headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0";
+                    context.Response.Redirect("/mobil?from=exe&v=3704", false);
                     return;
                 }
 
