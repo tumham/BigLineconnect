@@ -1948,6 +1948,8 @@ END";
             public uint LastForwardedAckSeq;
             public int KnownScreenW;
             public int KnownScreenH;
+            public int PendingScreenProbeW;
+            public int PendingScreenProbeH;
             public volatile bool MonitorSwitchPending;
             public long LastTopLeftKfReqTicks;
             public long LastWebAckTicks;
@@ -2657,18 +2659,64 @@ td{{padding:10px 12px;border-bottom:1px solid #e2e8f0;vertical-align:top;}}
                                         ushort subH = BitConverter.ToUInt16(msgBytes, 6);
 
                                         bool isFullJpegKeyframe = false;
-                                        if (subX == 0 && subY == 0 && subW >= 640 && subH >= 480)
+                                        if (subX == 0 && subY == 0 && subW >= 800 && subH >= 600)
                                         {
-                                            if (session.KnownScreenW == 0 || session.MonitorSwitchPending ||
-                                                (subW >= session.KnownScreenW && subH >= session.KnownScreenH))
+                                            bool isStandardMonitor =
+                                                (subW * 9 == subH * 16) ||
+                                                (subW * 10 == subH * 16) ||
+                                                (subW * 3 == subH * 4) ||
+                                                (subW * 4 == subH * 5) ||
+                                                (subW * 2 == subH * 3) ||
+                                                (subW == 1366 && subH == 768) ||
+                                                (subW == 1360 && subH == 768) ||
+                                                (subW == 1707 && subH == 1067) ||
+                                                (subW == 1504 && subH == 1003) ||
+                                                (subW == 3440 && subH == 1440) ||
+                                                (subW == 2560 && subH == 1080) ||
+                                                (session.PendingScreenProbeW == subW && session.PendingScreenProbeH == subH);
+
+                                            if (session.MonitorSwitchPending)
+                                            {
+                                                if (isStandardMonitor)
+                                                {
+                                                    session.KnownScreenW = subW;
+                                                    session.KnownScreenH = subH;
+                                                    session.PendingScreenProbeW = 0;
+                                                    session.PendingScreenProbeH = 0;
+                                                    session.MonitorSwitchPending = false;
+                                                    isFullJpegKeyframe = true;
+                                                }
+                                                else
+                                                {
+                                                    session.PendingScreenProbeW = subW;
+                                                    session.PendingScreenProbeH = subH;
+                                                }
+                                            }
+                                            else if (session.KnownScreenW == 0)
+                                            {
+                                                if (isStandardMonitor)
+                                                {
+                                                    session.KnownScreenW = subW;
+                                                    session.KnownScreenH = subH;
+                                                    session.PendingScreenProbeW = 0;
+                                                    session.PendingScreenProbeH = 0;
+                                                    isFullJpegKeyframe = true;
+                                                }
+                                                else
+                                                {
+                                                    session.PendingScreenProbeW = subW;
+                                                    session.PendingScreenProbeH = subH;
+                                                }
+                                            }
+                                            else if (subW >= session.KnownScreenW && subH >= session.KnownScreenH)
                                             {
                                                 session.KnownScreenW = subW;
                                                 session.KnownScreenH = subH;
-                                                session.MonitorSwitchPending = false;
                                                 isFullJpegKeyframe = true;
                                             }
                                         }
-                                        if (!isFullJpegKeyframe && subX == 0 && subY == 0 && subW >= 640 && subH >= 480)
+                                        // KRİTİK KORUMA: Boyutu ne olursa olsun (512x128 masaüstü ikonu dahil!) tam ekran olmayan TÜM (0,0) JPEG kutularını masaüstü izleyiciden koru!
+                                        if (!isFullJpegKeyframe && subX == 0 && subY == 0)
                                         {
                                             isTopLeftPartialTrap = true;
                                         }
@@ -2677,6 +2725,7 @@ td{{padding:10px 12px;border-bottom:1px solid #e2e8f0;vertical-align:top;}}
 
                                 var peers = session.ActivePeers;
                                 bool needProtectiveKeyframe = false;
+                                bool needRestoreNativeMode = false;
                                 if (peers.Length == 1)
                                 {
                                     // SINGLE-SPECIALIST ULTRA-FAST PATH
@@ -2684,6 +2733,10 @@ td{{padding:10px 12px;border-bottom:1px solid #e2e8f0;vertical-align:top;}}
                                     var clientSock = singlePeer.Socket;
                                     if (msgType == WebSocketMessageType.Binary)
                                     {
+                                        if (is12ByteJpeg && !singlePeer.IsWebClient)
+                                        {
+                                            needRestoreNativeMode = true;
+                                        }
                                         if (isTopLeftPartialTrap && !singlePeer.IsWebClient)
                                         {
                                             needProtectiveKeyframe = true;
@@ -2786,13 +2839,14 @@ td{{padding:10px 12px;border-bottom:1px solid #e2e8f0;vertical-align:top;}}
                                     }
                                 }
 
-                                if (needProtectiveKeyframe && session.HostSocket.State == WebSocketState.Open)
+                                if ((needProtectiveKeyframe || needRestoreNativeMode) && session.HostSocket.State == WebSocketState.Open)
                                 {
                                     long nowTicks = DateTime.UtcNow.Ticks;
                                     long prevKf = Interlocked.Read(ref session.LastTopLeftKfReqTicks);
-                                    if (nowTicks - prevKf > TimeSpan.FromMilliseconds(220).Ticks)
+                                    if (nowTicks - prevKf > TimeSpan.FromMilliseconds(150).Ticks)
                                     {
                                         Interlocked.Exchange(ref session.LastTopLeftKfReqTicks, nowTicks);
+                                        bool sendNativeSwitch = needRestoreNativeMode && !session.HasAnyWebPeer();
                                         _ = Task.Run(async () =>
                                         {
                                             bool hLocked = false;
@@ -2802,6 +2856,11 @@ td{{padding:10px 12px;border-bottom:1px solid #e2e8f0;vertical-align:top;}}
                                                 hLocked = true;
                                                 if (session.HostSocket.State == WebSocketState.Open)
                                                 {
+                                                    if (sendNativeSwitch)
+                                                    {
+                                                        byte[] natBytes = Encoding.UTF8.GetBytes("CLIENT:NATIVE_CPP");
+                                                        await session.HostSocket.SendAsync(new ArraySegment<byte>(natBytes), WebSocketMessageType.Text, true, CancellationToken.None).ConfigureAwait(false);
+                                                    }
                                                     byte[] kfBytes = Encoding.UTF8.GetBytes("KEYFRAME_REQ");
                                                     await session.HostSocket.SendAsync(new ArraySegment<byte>(kfBytes), WebSocketMessageType.Text, true, CancellationToken.None).ConfigureAwait(false);
                                                 }
@@ -2811,31 +2870,59 @@ td{{padding:10px 12px;border-bottom:1px solid #e2e8f0;vertical-align:top;}}
                                             {
                                                 if (hLocked) { try { session.HostSendLock.Release(); } catch { } }
                                             }
+
+                                            // Host tarafındaki 1000ms KEYFRAME_REQ debounce kilidini aşmak için 1050ms sonra ikinci tam ekran garantisi:
+                                            try
+                                            {
+                                                await Task.Delay(1050, session.Cts.Token).ConfigureAwait(false);
+                                                if (session.HostSocket.State == WebSocketState.Open && session.HasActiveClient)
+                                                {
+                                                    bool hLocked2 = false;
+                                                    try
+                                                    {
+                                                        await session.HostSendLock.WaitAsync(session.Cts.Token).ConfigureAwait(false);
+                                                        hLocked2 = true;
+                                                        if (session.HostSocket.State == WebSocketState.Open)
+                                                        {
+                                                            byte[] kfBytes2 = Encoding.UTF8.GetBytes("KEYFRAME_REQ");
+                                                            await session.HostSocket.SendAsync(new ArraySegment<byte>(kfBytes2), WebSocketMessageType.Text, true, CancellationToken.None).ConfigureAwait(false);
+                                                        }
+                                                    }
+                                                    finally
+                                                    {
+                                                        if (hLocked2) { try { session.HostSendLock.Release(); } catch { } }
+                                                    }
+                                                }
+                                            }
+                                            catch { }
                                         });
                                     }
                                 }
 
-                                lock (session.ViewOnlyClients)
+                                if (!isTopLeftPartialTrap)
                                 {
-                                    for (int j = session.ViewOnlyClients.Count - 1; j >= 0; j--)
+                                    lock (session.ViewOnlyClients)
                                     {
-                                        var soc = session.ViewOnlyClients[j];
-                                        if (soc.State == WebSocketState.Open)
+                                        for (int j = session.ViewOnlyClients.Count - 1; j >= 0; j--)
                                         {
-                                            try
+                                            var soc = session.ViewOnlyClients[j];
+                                            if (soc.State == WebSocketState.Open)
                                             {
-                                                _ = soc.SendAsync(
-                                                    new ArraySegment<byte>(msgBytes),
-                                                    msgType,
-                                                    true,
-                                                    CancellationToken.None
-                                                );
+                                                try
+                                                {
+                                                    _ = soc.SendAsync(
+                                                        new ArraySegment<byte>(msgBytes),
+                                                        msgType,
+                                                        true,
+                                                        CancellationToken.None
+                                                    );
+                                                }
+                                                catch { }
                                             }
-                                            catch { }
-                                        }
-                                        else
-                                        {
-                                            session.ViewOnlyClients.RemoveAt(j);
+                                            else
+                                            {
+                                                session.ViewOnlyClients.RemoveAt(j);
+                                            }
                                         }
                                     }
                                 }
@@ -3025,7 +3112,18 @@ td{{padding:10px 12px;border-bottom:1px solid #e2e8f0;vertical-align:top;}}
                         string tenantIdParam = context.Request.Query["tenantId"].ToString().Trim();
                         bool isExempt = (context.Request.Query["hwLicensed"].ToString().Trim() == "1");
 
+                        string reqUserAgent = context.Request.Headers["User-Agent"].ToString();
+                        bool hasOriginHeader = context.Request.Headers.ContainsKey("Origin");
                         var myPeer = new ClientPeer(clientSocket, session.Cts.Token, viewerId);
+                        if (reqUserAgent.Contains("BigLineNativeClient", StringComparison.OrdinalIgnoreCase))
+                        {
+                            myPeer.ConfirmedNative = true;
+                            myPeer.IsWebClient = false;
+                        }
+                        else if (hasOriginHeader)
+                        {
+                            myPeer.IsWebClient = true;
+                        }
                         var myClientCts = myPeer.Cts;
 
                         if (!isExempt)
@@ -3125,6 +3223,11 @@ td{{padding:10px 12px;border-bottom:1px solid #e2e8f0;vertical-align:top;}}
                             {
                                 await session.HostSendLock.WaitAsync(CancellationToken.None);
                                 hLocked = true;
+                                if (!myPeer.IsWebClient && !session.HasAnyWebPeer())
+                                {
+                                    byte[] nativeCmd = Encoding.UTF8.GetBytes("CLIENT:NATIVE_CPP");
+                                    await session.HostSocket.SendAsync(new ArraySegment<byte>(nativeCmd), WebSocketMessageType.Text, true, CancellationToken.None);
+                                }
                                 await session.HostSocket.SendAsync(new ArraySegment<byte>(startCmd), WebSocketMessageType.Text, true, CancellationToken.None);
                                 if (activePeerCount > 1)
                                 {
@@ -3204,15 +3307,18 @@ td{{padding:10px 12px;border-bottom:1px solid #e2e8f0;vertical-align:top;}}
                         {
                             Console.WriteLine($"[Relay] Last client disconnected from Host ID: {targetId}. Stopping stream.");
                             TelemetryManager.LogEvent(session.Hwid, session.IpAddress, session.ComputerName, session.Username, session.OsVersion, session.AppVersion, "disconnect", $"Son istemci bağlantısı kesildi. Hedef ID: {targetId}");
+                            Interlocked.Exchange(ref session.LastWebAckTicks, 0);
 
                             if (session.HostSocket.State == WebSocketState.Open)
                             {
+                                byte[] nativeResetCmd = Encoding.UTF8.GetBytes("CLIENT:NATIVE_CPP");
                                 byte[] stopCmd = Encoding.UTF8.GetBytes("STOP_STREAM");
                                 bool hLocked = false;
                                 try
                                 {
                                     await session.HostSendLock.WaitAsync(CancellationToken.None);
                                     hLocked = true;
+                                    await session.HostSocket.SendAsync(new ArraySegment<byte>(nativeResetCmd), WebSocketMessageType.Text, true, CancellationToken.None);
                                     await session.HostSocket.SendAsync(new ArraySegment<byte>(stopCmd), WebSocketMessageType.Text, true, CancellationToken.None);
                                 }
                                 catch { }
