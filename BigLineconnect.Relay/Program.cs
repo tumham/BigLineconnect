@@ -2691,6 +2691,8 @@ td{{padding:10px 12px;border-bottom:1px solid #e2e8f0;vertical-align:top;}}
                                 // a) Native FrameBundle (0xBC / 0x46+0xBC) içinden gerçek monitör çözünürlüğünü öğren
                                 // b) 12-bayt JPEG Subframe paketlerini ASLA DropOldest kuyruğunda düşürme (Hayalet pencereyi %100 önler!)
                                 // c) Sol-üst (0,0) kısmi kutuların eski masaüstü B-Connect izleyicilerde tuvali kırpmasını engelle!
+                                bool isMobileHost = session.AppVersion.Contains("ANDROID", StringComparison.OrdinalIgnoreCase) ||
+                                                    session.OsVersion.Contains("Android", StringComparison.OrdinalIgnoreCase);
                                 bool is12ByteJpeg = false;
                                 bool isTopLeftPartialTrap = false;
                                 if (msgType == WebSocketMessageType.Binary)
@@ -2716,7 +2718,14 @@ td{{padding:10px 12px;border-bottom:1px solid #e2e8f0;vertical-align:top;}}
                                         ushort subH = BitConverter.ToUInt16(msgBytes, 6);
 
                                         bool isFullJpegKeyframe = false;
-                                        if (subX == 0 && subY == 0 && subW >= 800 && subH >= 600)
+                                        if (isMobileHost && subX == 0 && subY == 0 && subW >= 320 && subH >= 320)
+                                        {
+                                            // Android / Mobil Host her zaman tam ekran telefon karesi (örn. dikey 720x1600) yollar; kısmi masaüstü kutusu değildir!
+                                            session.KnownScreenW = subW;
+                                            session.KnownScreenH = subH;
+                                            isFullJpegKeyframe = true;
+                                        }
+                                        else if (subX == 0 && subY == 0 && subW >= 800 && subH >= 600)
                                         {
                                             bool isStandardMonitor =
                                                 (subW * 9 == subH * 16) ||
@@ -2790,7 +2799,7 @@ td{{padding:10px 12px;border-bottom:1px solid #e2e8f0;vertical-align:top;}}
                                     var clientSock = singlePeer.Socket;
                                     if (msgType == WebSocketMessageType.Binary)
                                     {
-                                        if (is12ByteJpeg && !singlePeer.IsWebClient)
+                                        if (is12ByteJpeg && !singlePeer.IsWebClient && !isMobileHost)
                                         {
                                             needRestoreNativeMode = true;
                                         }
