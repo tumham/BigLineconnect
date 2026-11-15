@@ -667,14 +667,29 @@ VALUES (@TimestampTr, @EventType, @FileName, @ClientIp, @LocationIsp, @DeviceInf
         {
             string ua = ctx.Request.Headers["User-Agent"].ToString();
             if (string.IsNullOrWhiteSpace(ua)) return false;
-            if (ua.Contains("bot", StringComparison.OrdinalIgnoreCase) ||
-                ua.Contains("crawler", StringComparison.OrdinalIgnoreCase) ||
-                ua.Contains("spider", StringComparison.OrdinalIgnoreCase) ||
+
+            // Önizleme botlarını ayıkla (Gerçek telefon tarayıcıları ve WhatsApp/Instagram içi WebView'lar her zaman "Mozilla/" içerir!)
+            bool hasMozilla = ua.Contains("Mozilla/", StringComparison.OrdinalIgnoreCase);
+            if (!hasMozilla && (
                 ua.Contains("WhatsApp", StringComparison.OrdinalIgnoreCase) ||
-                ua.Contains("TelegramBot", StringComparison.OrdinalIgnoreCase))
+                ua.Contains("TelegramBot", StringComparison.OrdinalIgnoreCase) ||
+                ua.Contains("facebookexternalhit", StringComparison.OrdinalIgnoreCase) ||
+                ua.Contains("Twitterbot", StringComparison.OrdinalIgnoreCase)))
             {
                 return false;
             }
+
+            if (ua.Contains("Googlebot", StringComparison.OrdinalIgnoreCase) ||
+                ua.Contains("bingbot", StringComparison.OrdinalIgnoreCase) ||
+                ua.Contains("crawler", StringComparison.OrdinalIgnoreCase) ||
+                ua.Contains("spider", StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            string chMobile = ctx.Request.Headers["Sec-CH-UA-Mobile"].ToString();
+            if (chMobile == "?1") return true;
+
             return ua.Contains("iPhone", StringComparison.OrdinalIgnoreCase) ||
                    ua.Contains("iPad", StringComparison.OrdinalIgnoreCase) ||
                    ua.Contains("iPod", StringComparison.OrdinalIgnoreCase) ||
@@ -2097,7 +2112,7 @@ END";
                     {
                         DownloadTrackerManager.TrackHttpEvent(ctx, "PAGE_VISIT", "📱 Mobil Cep Konsolu (.EXE Yönlendirme)");
                         ctx.Response.Headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0";
-                        ctx.Response.Redirect("/mobil?from=exe&v=3704", false);
+                        ctx.Response.Redirect("/mobil?from=exe&v=3707", false);
                         return;
                     }
                     DownloadTrackerManager.TrackHttpEvent(ctx, "DOWNLOAD_EXE", "B-Connect.exe");
@@ -2108,7 +2123,7 @@ END";
                     {
                         DownloadTrackerManager.TrackHttpEvent(ctx, "PAGE_VISIT", "📱 Mobil Cep Konsolu (.ZIP Yönlendirme)");
                         ctx.Response.Headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0";
-                        ctx.Response.Redirect("/mobil?from=exe&v=3704", false);
+                        ctx.Response.Redirect("/mobil?from=exe&v=3707", false);
                         return;
                     }
                     DownloadTrackerManager.TrackHttpEvent(ctx, "DOWNLOAD_ZIP", "B-Connect.zip");
@@ -2120,7 +2135,7 @@ END";
                     {
                         DownloadTrackerManager.TrackHttpEvent(ctx, "PAGE_VISIT", "📱 Mobil Cep Konsolu");
                         ctx.Response.Headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0";
-                        ctx.Response.Redirect("/mobil?v=3704", false);
+                        ctx.Response.Redirect("/mobil?v=3707", false);
                         return;
                     }
                     DownloadTrackerManager.TrackHttpEvent(ctx, "PAGE_VISIT", "Ana Sayfa");
@@ -2170,7 +2185,7 @@ END";
                 });
             });
 
-            foreach (var dlRoute in new[] { "/download", "/indir", "/b-connect.exe", "/bconnect.exe", "/BConnect.exe" })
+            foreach (var dlRoute in new[] { "/download", "/indir", "/b-connect.exe", "/b-connec.exe", "/bconnect.exe", "/BConnect.exe" })
             {
                 app.MapGet(dlRoute, async context =>
                 {
@@ -2193,6 +2208,30 @@ END";
                     {
                         context.Response.StatusCode = 404;
                         await context.Response.WriteAsync("Kurulum dosyası bulunamadı.");
+                    }
+                });
+            }
+
+            foreach (var apkRoute in new[] { "/B-Connect-Android.apk", "/b-connect.apk", "/android.apk", "/apk" })
+            {
+                app.MapGet(apkRoute, async context =>
+                {
+                    context.Response.Headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0";
+                    context.Response.Headers["Pragma"] = "no-cache";
+                    context.Response.Headers["Expires"] = "0";
+                    DownloadTrackerManager.TrackHttpEvent(context, "DOWNLOAD_APK", "B-Connect-Android.apk");
+
+                    string apkPath = System.IO.Path.Combine(AppContext.BaseDirectory, "wwwroot", "B-Connect-Android.apk");
+                    if (System.IO.File.Exists(apkPath))
+                    {
+                        context.Response.ContentType = "application/vnd.android.package-archive";
+                        context.Response.Headers["Content-Disposition"] = "attachment; filename=\"B-Connect-Android.apk\"";
+                        await context.Response.SendFileAsync(apkPath);
+                    }
+                    else
+                    {
+                        context.Response.StatusCode = 404;
+                        await context.Response.WriteAsync("Android APK dosyası bulunamadı.");
                     }
                 });
             }
@@ -2283,7 +2322,7 @@ END";
                 {
                     DownloadTrackerManager.TrackHttpEvent(context, "PAGE_VISIT", $"📱 Mobil Cep Konsolu (Bayi: {cleanCode})");
                     context.Response.Headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0";
-                    context.Response.Redirect("/mobil?from=exe&v=3704", false);
+                    context.Response.Redirect("/mobil?from=exe&v=3707", false);
                     return;
                 }
 
