@@ -2236,6 +2236,24 @@ END";
                 });
             }
 
+            app.MapGet("/B-Connect-Kontrol-Eklentisi.apk", async context =>
+            {
+                context.Response.Headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0";
+                DownloadTrackerManager.TrackHttpEvent(context, "DOWNLOAD_APK_ADDON", "B-Connect-Kontrol-Eklentisi.apk");
+                string addonPath = System.IO.Path.Combine(AppContext.BaseDirectory, "wwwroot", "B-Connect-Kontrol-Eklentisi.apk");
+                if (System.IO.File.Exists(addonPath))
+                {
+                    context.Response.ContentType = "application/vnd.android.package-archive";
+                    context.Response.Headers["Content-Disposition"] = "attachment; filename=\"B-Connect-Kontrol-Eklentisi.apk\"";
+                    await context.Response.SendFileAsync(addonPath);
+                }
+                else
+                {
+                    context.Response.StatusCode = 404;
+                    await context.Response.WriteAsync("Kontrol eklentisi bulunamadı.");
+                }
+            });
+
             app.MapGet("/BigLineconnect_setup.zip", async context =>
             {
                 string setupPath = System.IO.Path.Combine(AppContext.BaseDirectory, "wwwroot", "BigLineconnect_setup.zip");
