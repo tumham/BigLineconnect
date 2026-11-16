@@ -505,7 +505,8 @@
         const isInAppWebView = /WhatsApp|WA4A|WA4iOS|Instagram|FBAN|FBIOS/i.test(uaStr);
         const params = new URLSearchParams(window.location.search);
 
-        if (isAndroidDevice) {
+        const SHOW_PUBLIC_APK = false; // Google Play Store yayını tamamlandığında true yapılacak
+        if (SHOW_PUBLIC_APK && isAndroidDevice) {
             const apkStrip = document.getElementById('android-apk-strip');
             const footApk = document.getElementById('footer-apk-link');
             const smartApk = document.getElementById('smart-apk-btn');
