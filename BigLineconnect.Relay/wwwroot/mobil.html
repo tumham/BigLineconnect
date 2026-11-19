@@ -127,14 +127,63 @@
             color: #fff; font-size: 1rem; font-weight: 600; text-align: center;
             outline: none; margin-bottom: 14px;
         }
+        .action-row {
+            display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: stretch;
+        }
         .connect-btn {
-            width: 100%; padding: 16px; border: none; border-radius: 14px;
+            width: 100%; padding: 15px 14px; border: none; border-radius: 14px;
             background: linear-gradient(135deg, var(--amber), var(--orange));
-            color: #000; font-size: 1.05rem; font-weight: 900; cursor: pointer;
-            display: flex; align-items: center; justify-content: center; gap: 9px;
+            color: #000; font-size: 1.02rem; font-weight: 900; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
             box-shadow: 0 10px 26px rgba(234, 88, 12, 0.35);
         }
         .connect-btn:active { transform: scale(0.985); }
+        .save-id-btn {
+            padding: 0 14px; border-radius: 14px;
+            background: rgba(245, 158, 11, 0.14); border: 1px solid rgba(245, 158, 11, 0.45);
+            color: #fcd34d; font-size: 0.84rem; font-weight: 800; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 6px;
+            white-space: nowrap;
+        }
+        .save-id-btn:active { transform: scale(0.97); background: rgba(245, 158, 11, 0.25); }
+
+        .saved-wrap { margin-top: 15px; display: none; }
+        .saved-head {
+            display: flex; align-items: center; justify-content: space-between;
+            font-size: 0.72rem; color: #fcd34d; font-weight: 800; margin-bottom: 8px; text-transform: uppercase;
+        }
+        .saved-list { display: flex; flex-direction: column; gap: 7px; }
+        .saved-item {
+            display: flex; align-items: center; justify-content: space-between; gap: 8px;
+            background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px; padding: 9px 10px;
+        }
+        .saved-info { flex: 1; min-width: 0; cursor: pointer; }
+        .saved-name {
+            font-size: 0.88rem; font-weight: 800; color: #fff;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .saved-meta {
+            font-size: 0.75rem; color: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+            display: flex; align-items: center; gap: 6px; margin-top: 2px;
+        }
+        .saved-pwd-tag {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 0.65rem; font-weight: 700; color: #6ee7b7;
+            background: rgba(16, 185, 129, 0.14); border: 1px solid rgba(16, 185, 129, 0.3);
+            padding: 1px 6px; border-radius: 999px;
+        }
+        .saved-btns { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
+        .saved-go-btn {
+            background: linear-gradient(135deg, #10b981, #059669); border: none; color: #022c22;
+            padding: 7px 11px; border-radius: 9px; font-size: 0.76rem; font-weight: 900; cursor: pointer;
+        }
+        .saved-ico-btn {
+            background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+            color: var(--muted); width: 30px; height: 30px; border-radius: 8px;
+            display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; cursor: pointer;
+        }
+        .saved-ico-btn.del { color: #fca5a5; border-color: rgba(239, 68, 68, 0.25); }
 
         .recent-wrap { margin-top: 14px; display: none; }
         .recent-title { font-size: 0.72rem; color: var(--muted); font-weight: 700; margin-bottom: 6px; text-transform: uppercase; }
@@ -332,9 +381,22 @@
                 <label class="field-label" for="m-target-pass"><i class="fa-solid fa-key"></i> Erişim Şifresi (Varsa)</label>
                 <input id="m-target-pass" class="pass-input" type="password" placeholder="Şifreyi biliyorsanız girin (Opsiyonel)" autocomplete="off">
 
-                <button id="m-connect-btn" class="connect-btn" onclick="startMobileConnect()">
-                    <i class="fa-solid fa-rocket"></i> <span>Bilgisayara Bağlan</span>
-                </button>
+                <div class="action-row">
+                    <button id="m-connect-btn" class="connect-btn" onclick="startMobileConnect()">
+                        <i class="fa-solid fa-rocket"></i> <span>Bağlan</span>
+                    </button>
+                    <button id="m-save-btn" type="button" class="save-id-btn" onclick="openSaveDeviceModal()">
+                        <i class="fa-solid fa-bookmark"></i> <span>ID Kaydet</span>
+                    </button>
+                </div>
+
+                <div id="saved-wrap" class="saved-wrap">
+                    <div class="saved-head">
+                        <span><i class="fa-solid fa-star"></i> Kayıtlı Cihazlarım (Rehber)</span>
+                        <span id="saved-count" style="color:var(--muted);font-weight:700;"></span>
+                    </div>
+                    <div id="saved-list" class="saved-list"></div>
+                </div>
 
                 <div id="recent-wrap" class="recent-wrap">
                     <div class="recent-title"><i class="fa-solid fa-clock-rotate-left"></i> Son Bağlanılan Cihazlar</div>
@@ -474,6 +536,28 @@
         </div>
     </div>
 
+    <!-- CİHAZ / ID KAYDETME MODALI -->
+    <div id="save-device-modal" class="modal-bg" onclick="this.style.display='none'">
+        <div class="modal-box" onclick="event.stopPropagation()" style="text-align:left;">
+            <h3 style="margin-bottom:4px;text-align:center;"><i class="fa-solid fa-bookmark" style="color:var(--amber);"></i> Cihazı Rehbere Kaydet</h3>
+            <p style="font-size:0.78rem; color:var(--muted); text-align:center; margin-bottom:14px;">Bu telefonda saklanır; tek dokunuşla bağlanabilirsiniz.</p>
+
+            <label class="field-label" for="sd-id">9 Haneli Bilgisayar ID</label>
+            <input id="sd-id" class="pass-input" type="tel" inputmode="numeric" maxlength="11" placeholder="123 456 789" style="margin-bottom:10px;font-family:ui-monospace,monospace;letter-spacing:1.5px;">
+
+            <label class="field-label" for="sd-name">Cihaz / Müşteri Adı</label>
+            <input id="sd-name" class="pass-input" type="text" maxlength="40" placeholder="Örn: Muhasebe Server, Ofis PC..." style="margin-bottom:10px;text-align:left;">
+
+            <label class="field-label" for="sd-pass">Erişim Şifresi (Opsiyonel)</label>
+            <input id="sd-pass" class="pass-input" type="password" placeholder="Boş bırakırsanız bağlanırken sorar" style="margin-bottom:14px;text-align:left;">
+
+            <div style="display:flex; gap:8px;">
+                <button type="button" class="quick-btn" style="flex:1;padding:11px;flex-direction:row;" onclick="document.getElementById('save-device-modal').style.display='none'">İptal</button>
+                <button type="button" class="connect-btn" style="flex:2;padding:11px;font-size:0.95rem;" onclick="confirmSaveDevice()"><i class="fa-solid fa-check"></i> Kaydet</button>
+            </div>
+        </div>
+    </div>
+
     <div id="toast"></div>
 
     <script>
@@ -567,14 +651,102 @@
             window._mToast = setTimeout(() => { t.style.opacity = '0'; }, 2400);
         }
 
+        const SAVED_KEY = 'bconnect_mobile_saved_v1';
+        function escHtml(s) {
+            return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+        function getSavedDevices() {
+            try {
+                const arr = JSON.parse(localStorage.getItem(SAVED_KEY) || '[]');
+                return Array.isArray(arr) ? arr : [];
+            } catch (e) { return []; }
+        }
+        function setSavedDevices(arr) {
+            try { localStorage.setItem(SAVED_KEY, JSON.stringify(arr.slice(0, 40))); } catch (e) {}
+        }
+        function renderSavedDevices() {
+            const list = getSavedDevices();
+            const wrap = document.getElementById('saved-wrap');
+            const box = document.getElementById('saved-list');
+            const cnt = document.getElementById('saved-count');
+            if (!wrap || !box) return;
+            if (!list.length) { wrap.style.display = 'none'; return; }
+            wrap.style.display = 'block';
+            if (cnt) cnt.textContent = list.length + ' cihaz';
+            box.innerHTML = list.map(d => {
+                const pwdTag = d.pass ? '<span class="saved-pwd-tag"><i class="fa-solid fa-lock"></i> Şifre Kayıtlı</span>' : '';
+                return `<div class="saved-item">
+                    <div class="saved-info" onclick="fillFromSaved('${d.id}')">
+                        <div class="saved-name">${escHtml(d.name || ('PC ' + formatId(d.id)))}</div>
+                        <div class="saved-meta"><span>${formatId(d.id)}</span>${pwdTag}</div>
+                    </div>
+                    <div class="saved-btns">
+                        <button type="button" class="saved-go-btn" onclick="connectFromSaved('${d.id}')">Bağlan</button>
+                        <button type="button" class="saved-ico-btn" title="Düzenle" onclick="openSaveDeviceModal('${d.id}')"><i class="fa-solid fa-pen"></i></button>
+                        <button type="button" class="saved-ico-btn del" title="Sil" onclick="deleteSavedDevice('${d.id}')"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+        function openSaveDeviceModal(editCleanId) {
+            const sdId = document.getElementById('sd-id');
+            const sdName = document.getElementById('sd-name');
+            const sdPass = document.getElementById('sd-pass');
+            const list = getSavedDevices();
+            let targetId = editCleanId ? String(editCleanId).replace(/\D/g, '').slice(0, 9) : idInput.value.replace(/\D/g, '').slice(0, 9);
+            const existing = targetId ? list.find(x => x.id === targetId) : null;
+            sdId.value = targetId ? formatId(targetId) : '';
+            sdName.value = existing ? (existing.name || '') : '';
+            sdPass.value = existing ? (existing.pass || '') : (passInput.value || '');
+            document.getElementById('save-device-modal').style.display = 'flex';
+            setTimeout(() => { (targetId.length === 9 ? sdName : sdId).focus(); }, 60);
+        }
+        document.getElementById('sd-id').addEventListener('input', (e) => { e.target.value = formatId(e.target.value); });
+        function confirmSaveDevice() {
+            const cleanId = document.getElementById('sd-id').value.replace(/\D/g, '').slice(0, 9);
+            if (cleanId.length !== 9) { showToast('Lütfen geçerli 9 haneli ID girin'); return; }
+            const name = (document.getElementById('sd-name').value || '').trim() || ('Cihaz ' + formatId(cleanId));
+            const pass = (document.getElementById('sd-pass').value || '').trim();
+            let list = getSavedDevices().filter(x => x.id !== cleanId);
+            list.unshift({ id: cleanId, name: name, pass: pass });
+            setSavedDevices(list);
+            idInput.value = formatId(cleanId);
+            if (pass) passInput.value = pass;
+            document.getElementById('save-device-modal').style.display = 'none';
+            renderSavedDevices();
+            showToast('💾 "' + name + '" rehbere kaydedildi!');
+        }
+        function fillFromSaved(cleanId) {
+            const item = getSavedDevices().find(x => x.id === cleanId);
+            if (!item) return;
+            idInput.value = formatId(item.id);
+            passInput.value = item.pass || '';
+            showToast('Seçildi: ' + (item.name || formatId(item.id)));
+        }
+        function connectFromSaved(cleanId) {
+            fillFromSaved(cleanId);
+            startMobileConnect();
+        }
+        function deleteSavedDevice(cleanId) {
+            const list = getSavedDevices().filter(x => x.id !== cleanId);
+            setSavedDevices(list);
+            renderSavedDevices();
+            showToast('Kayıt rehberden silindi');
+        }
+
         function loadRecents() {
             try {
                 const list = JSON.parse(localStorage.getItem('bconnect_mobile_recents') || '[]');
+                const savedMap = new Map(getSavedDevices().map(x => [x.id, x]));
                 const wrap = document.getElementById('recent-wrap');
                 const chips = document.getElementById('recent-chips');
                 if (!list.length) { wrap.style.display = 'none'; return; }
                 wrap.style.display = 'block';
-                chips.innerHTML = list.map(id => `<span class="recent-chip" onclick="selectRecent('${id}')"><i class="fa-solid fa-desktop" style="color:var(--amber);margin-right:4px;"></i>${formatId(id)}</span>`).join('');
+                chips.innerHTML = list.map(id => {
+                    const s = savedMap.get(id);
+                    const lbl = s && s.name ? `${escHtml(s.name)} (${formatId(id)})` : formatId(id);
+                    return `<span class="recent-chip" onclick="selectRecent('${id}')"><i class="fa-solid fa-desktop" style="color:var(--amber);margin-right:4px;"></i>${lbl}</span>`;
+                }).join('');
             } catch (e) {}
         }
         function saveRecent(cleanId) {
@@ -585,7 +757,12 @@
                 loadRecents();
             } catch (e) {}
         }
-        function selectRecent(id) { idInput.value = formatId(id); }
+        function selectRecent(id) {
+            idInput.value = formatId(id);
+            const s = getSavedDevices().find(x => x.id === id);
+            if (s && s.pass) passInput.value = s.pass;
+        }
+        renderSavedDevices();
         loadRecents();
 
         function getViewerHwId() {
