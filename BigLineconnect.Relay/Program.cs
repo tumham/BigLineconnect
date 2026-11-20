@@ -2254,6 +2254,23 @@ END";
                 }
             });
 
+            foreach (var privRoute in new[] { "/gizlilik", "/privacy", "/privacy-policy" })
+            {
+                app.MapGet(privRoute, async context =>
+                {
+                    string privPath = System.IO.Path.Combine(AppContext.BaseDirectory, "wwwroot", "gizlilik.html");
+                    if (System.IO.File.Exists(privPath))
+                    {
+                        context.Response.ContentType = "text/html; charset=utf-8";
+                        await context.Response.SendFileAsync(privPath);
+                    }
+                    else
+                    {
+                        context.Response.StatusCode = 404;
+                    }
+                });
+            }
+
             app.MapGet("/BigLineconnect_setup.zip", async context =>
             {
                 string setupPath = System.IO.Path.Combine(AppContext.BaseDirectory, "wwwroot", "BigLineconnect_setup.zip");
