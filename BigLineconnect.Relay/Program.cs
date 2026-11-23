@@ -1865,6 +1865,8 @@ END";
             public volatile bool IsRegistered = true;
             public volatile bool IsWebClient = false;
             public volatile bool ConfirmedNative = false;
+            public volatile int LastSentMobileW = 0;
+            public volatile int LastSentMobileH = 0;
 
             private readonly Channel<(byte[] Data, WebSocketMessageType Type)> _orderedChannel;
             private readonly CancellationTokenSource _pumpCts;
@@ -2712,6 +2714,8 @@ td{{padding:10px 12px;border-bottom:1px solid #e2e8f0;vertical-align:top;}}
                                                     session.OsVersion.Contains("Android", StringComparison.OrdinalIgnoreCase);
                                 bool is12ByteJpeg = false;
                                 bool isTopLeftPartialTrap = false;
+                                ushort mobileFrameW = 0;
+                                ushort mobileFrameH = 0;
                                 if (msgType == WebSocketMessageType.Binary)
                                 {
                                     if (msgBytes.Length >= 16 && msgBytes[0] == 0xBC && msgBytes[1] == 4)
@@ -2740,6 +2744,8 @@ td{{padding:10px 12px;border-bottom:1px solid #e2e8f0;vertical-align:top;}}
                                             // Android / Mobil Host her zaman tam ekran telefon karesi (örn. dikey 720x1600) yollar; kısmi masaüstü kutusu değildir!
                                             session.KnownScreenW = subW;
                                             session.KnownScreenH = subH;
+                                            mobileFrameW = subW;
+                                            mobileFrameH = subH;
                                             isFullJpegKeyframe = true;
                                         }
                                         else if (subX == 0 && subY == 0 && subW >= 800 && subH >= 600)
@@ -2836,6 +2842,31 @@ td{{padding:10px 12px;border-bottom:1px solid #e2e8f0;vertical-align:top;}}
                                                     locked = true;
                                                     if (clientSock.State == WebSocketState.Open)
                                                     {
+                                                        // Mobil Host (örn. 720x1600 dikey telefon) -> Masaüstü Native B-Connect.exe:
+                                                        // Eski/mevcut B-Connect.exe varsayılan 1920x1080 tuvalini 720x1600'e otomatik küçültmediği için alt kısım kesilmesin diye
+                                                        // 18-baytlık sıfır-karolu FrameBundleHeader çözünürlük senkron paketi yolla (tileCount=0, isLastInFrame=0).
+                                                        if (mobileFrameW > 0 && mobileFrameH > 0 && !singlePeer.IsWebClient &&
+                                                            (singlePeer.LastSentMobileW != mobileFrameW || singlePeer.LastSentMobileH != mobileFrameH))
+                                                        {
+                                                            byte[] resSync = new byte[18];
+                                                            resSync[0] = 0xBC; // magic
+                                                            resSync[1] = 0x0C; // PKT_FRAME_BUNDLE
+                                                            resSync[4] = 18;   // totalSize = 18
+                                                            resSync[12] = (byte)(mobileFrameW & 0xFF);
+                                                            resSync[13] = (byte)((mobileFrameW >> 8) & 0xFF);
+                                                            resSync[14] = (byte)(mobileFrameH & 0xFF);
+                                                            resSync[15] = (byte)((mobileFrameH >> 8) & 0xFF);
+                                                            resSync[16] = 0;   // isLastInFrame = 0
+                                                            resSync[17] = 0;   // flags = 0
+                                                            await clientSock.SendAsync(
+                                                                new ArraySegment<byte>(resSync),
+                                                                WebSocketMessageType.Binary,
+                                                                true,
+                                                                session.Cts.Token
+                                                            ).ConfigureAwait(false);
+                                                            singlePeer.LastSentMobileW = mobileFrameW;
+                                                            singlePeer.LastSentMobileH = mobileFrameH;
+                                                        }
                                                         await clientSock.SendAsync(
                                                             new ArraySegment<byte>(msgBytes),
                                                             WebSocketMessageType.Binary,
@@ -2912,6 +2943,21 @@ td{{padding:10px 12px;border-bottom:1px solid #e2e8f0;vertical-align:top;}}
                                             }
                                             if (isOrderedPacket)
                                             {
+                                                if (mobileFrameW > 0 && mobileFrameH > 0 && !peer.IsWebClient &&
+                                                    (peer.LastSentMobileW != mobileFrameW || peer.LastSentMobileH != mobileFrameH))
+                                                {
+                                                    byte[] resSync = new byte[18];
+                                                    resSync[0] = 0xBC;
+                                                    resSync[1] = 0x0C;
+                                                    resSync[4] = 18;
+                                                    resSync[12] = (byte)(mobileFrameW & 0xFF);
+                                                    resSync[13] = (byte)((mobileFrameW >> 8) & 0xFF);
+                                                    resSync[14] = (byte)(mobileFrameH & 0xFF);
+                                                    resSync[15] = (byte)((mobileFrameH >> 8) & 0xFF);
+                                                    peer.EnqueueOrdered(resSync, WebSocketMessageType.Binary);
+                                                    peer.LastSentMobileW = mobileFrameW;
+                                                    peer.LastSentMobileH = mobileFrameH;
+                                                }
                                                 peer.EnqueueOrdered(msgBytes, msgType);
                                             }
                                             else
