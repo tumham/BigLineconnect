@@ -1,0 +1,1075 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>B-Connect CRM & Mikro Fatura Merkezi</title>
+    <link rel="icon" type="image/png" href="/logo.png">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg: #07090f;
+            --card: #10141f;
+            --card2: #151b2b;
+            --border: rgba(245, 158, 11, 0.22);
+            --border-soft: rgba(255, 255, 255, 0.08);
+            --amber: #f59e0b;
+            --amber-light: #fbbf24;
+            --green: #10b981;
+            --orange: #f97316;
+            --blue: #38bdf8;
+            --red: #ef4444;
+            --text: #f8fafc;
+            --muted: #94a3b8;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif; }
+        body {
+            background: radial-gradient(circle at 12% 8%, rgba(245, 158, 11, 0.09), transparent 40%),
+                        radial-gradient(circle at 88% 92%, rgba(16, 185, 129, 0.07), transparent 40%),
+                        var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 20px 24px 60px;
+        }
+        .topbar {
+            display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+            background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+            padding: 14px 20px; margin-bottom: 18px;
+        }
+        .brand { display: flex; align-items: center; gap: 12px; }
+        .brand img { width: 40px; height: 40px; border-radius: 10px; }
+        .brand h1 { font-size: 1.25rem; font-weight: 900; letter-spacing: 0.3px; }
+        .brand .sub { font-size: 0.78rem; color: var(--amber-light); font-weight: 700; }
+        .top-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+        .btn {
+            display: inline-flex; align-items: center; gap: 7px; padding: 9px 14px; border-radius: 10px;
+            border: 1px solid var(--border-soft); background: rgba(255,255,255,0.06); color: var(--text);
+            font-size: 0.85rem; font-weight: 700; cursor: pointer; text-decoration: none; transition: 0.15s;
+        }
+        .btn:hover { background: rgba(255,255,255,0.12); transform: translateY(-1px); }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--amber-light), #ea580c); color: #0b0d14; border-color: transparent;
+        }
+        .btn-primary:hover { filter: brightness(1.06); background: linear-gradient(135deg, var(--amber-light), #ea580c); }
+        .btn-green { background: rgba(16, 185, 129, 0.16); border-color: rgba(16, 185, 129, 0.45); color: #6ee7b7; }
+        .btn-danger { background: rgba(239, 68, 68, 0.14); border-color: rgba(239, 68, 68, 0.4); color: #fca5a5; }
+        .btn-sm { padding: 6px 10px; font-size: 0.78rem; border-radius: 8px; }
+
+        .kpi-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-bottom: 18px;
+        }
+        .kpi {
+            background: var(--card); border: 1px solid var(--border-soft); border-radius: 14px; padding: 15px 17px;
+        }
+        .kpi-lbl { font-size: 0.74rem; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; }
+        .kpi-val { font-size: 1.7rem; font-weight: 900; margin-top: 4px; }
+        .kpi-sub { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+
+        .tabs {
+            display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px;
+        }
+        .tab-btn {
+            padding: 10px 18px; border-radius: 12px; border: 1px solid var(--border-soft);
+            background: var(--card); color: var(--muted); font-weight: 800; font-size: 0.88rem; cursor: pointer;
+            display: inline-flex; align-items: center; gap: 8px;
+        }
+        .tab-btn.active {
+            background: rgba(245, 158, 11, 0.16); border-color: var(--amber); color: var(--amber-light);
+        }
+        .panel { display: none; }
+        .panel.active { display: block; }
+
+        .card {
+            background: var(--card); border: 1px solid var(--border-soft); border-radius: 16px; padding: 18px;
+        }
+        .toolbar {
+            display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 14px;
+        }
+        .filters { display: flex; gap: 8px; flex-wrap: wrap; flex: 1; }
+        input[type="text"], input[type="number"], input[type="date"], input[type="password"], input[type="email"], select, textarea {
+            background: #090c14; border: 1px solid rgba(255,255,255,0.14); color: var(--text);
+            padding: 9px 12px; border-radius: 10px; font-size: 0.86rem; outline: none;
+        }
+        input:focus, select:focus, textarea:focus { border-color: var(--amber); }
+
+        .table-wrap { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+        th {
+            text-align: left; padding: 11px 10px; color: var(--muted); font-size: 0.75rem;
+            text-transform: uppercase; letter-spacing: 0.6px; border-bottom: 1px solid var(--border-soft);
+        }
+        td { padding: 12px 10px; border-bottom: 1px solid rgba(255,255,255,0.05); vertical-align: middle; }
+        tr:hover td { background: rgba(255,255,255,0.02); }
+
+        .pill {
+            display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 999px;
+            font-size: 0.75rem; font-weight: 800; white-space: nowrap;
+        }
+        .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.8rem; }
+
+        /* Modals */
+        .modal-bg {
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.78); backdrop-filter: blur(6px);
+            z-index: 1000; align-items: center; justify-content: center; padding: 16px; overflow-y: auto;
+        }
+        .modal-bg.open { display: flex; }
+        .modal {
+            background: var(--card2); border: 1px solid var(--border); border-radius: 18px;
+            width: 100%; max-width: 780px; max-height: 92vh; overflow-y: auto; padding: 22px;
+        }
+        .modal-head {
+            display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;
+            padding-bottom: 12px; border-bottom: 1px solid var(--border-soft);
+        }
+        .modal-head h2 { font-size: 1.15rem; font-weight: 900; color: var(--amber-light); }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .form-full { grid-column: 1 / -1; }
+        .fg label { display: block; font-size: 0.76rem; font-weight: 700; color: var(--muted); margin-bottom: 5px; }
+        .fg input, .fg select, .fg textarea { width: 100%; }
+        .section-divider {
+            grid-column: 1 / -1; font-size: 0.8rem; font-weight: 900; color: var(--amber-light);
+            text-transform: uppercase; letter-spacing: 0.7px; margin-top: 8px; padding-top: 10px;
+            border-top: 1px dashed rgba(245, 158, 11, 0.3);
+        }
+        .modal-foot {
+            display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; padding-top: 14px;
+            border-top: 1px solid var(--border-soft);
+        }
+        .alert-box {
+            padding: 12px 14px; border-radius: 12px; font-size: 0.84rem; font-weight: 700; margin-bottom: 12px;
+        }
+        .calc-box {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+            background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 12px; padding: 12px; margin-top: 6px; text-align: center;
+        }
+        pre.json-pre {
+            background: #06080d; border: 1px solid var(--border-soft); border-radius: 12px;
+            padding: 14px; overflow-x: auto; font-size: 0.8rem; color: #a7f3d0; line-height: 1.5;
+        }
+        #toast {
+            position: fixed; bottom: 24px; right: 24px; z-index: 2000;
+            background: #0f172a; border: 1px solid var(--amber); color: #fff;
+            padding: 12px 18px; border-radius: 12px; font-weight: 700; font-size: 0.86rem;
+            display: none; box-shadow: 0 12px 32px rgba(0,0,0,0.6);
+        }
+        @media (max-width: 700px) { .form-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+
+<div class="topbar">
+    <div class="brand">
+        <img src="/logo.png" alt="B-Connect">
+        <div>
+            <h1>B-Connect CRM & Mikro Fatura Merkezi</h1>
+            <div class="sub">🧪 İzole Test Modu — Mevcut Canlı Veriler %100 Korunur</div>
+        </div>
+    </div>
+    <div class="top-actions">
+        <button class="btn btn-green" onclick="seedDemoData()"><i class="fa-solid fa-wand-magic-sparkles"></i> 3 Örnek Firma Yükle</button>
+        <button class="btn" onclick="loadOverview()"><i class="fa-solid fa-rotate-right"></i> Yenile</button>
+        <a href="/admin.html" class="btn"><i class="fa-solid fa-chart-line"></i> Eski Admin Panel</a>
+    </div>
+</div>
+
+<!-- KPI Strip -->
+<div class="kpi-grid">
+    <div class="kpi">
+        <div class="kpi-lbl">Toplam Firma</div>
+        <div class="kpi-val" id="k-total">0</div>
+        <div class="kpi-sub" id="k-sub-free">Ücretsiz: 0</div>
+    </div>
+    <div class="kpi">
+        <div class="kpi-lbl">Bakım Anlaşmalı</div>
+        <div class="kpi-val" id="k-contract" style="color: var(--green);">0</div>
+        <div class="kpi-sub" id="k-sub-exp">Bitiyor: 0 • Dolmuş: 0</div>
+    </div>
+    <div class="kpi">
+        <div class="kpi-lbl">Ücretli Destek Firması</div>
+        <div class="kpi-val" id="k-paid" style="color: var(--orange);">0</div>
+        <div class="kpi-sub">İşlem başı faturalanır</div>
+    </div>
+    <div class="kpi">
+        <div class="kpi-lbl">Destek Kayıtları</div>
+        <div class="kpi-val" id="k-rec" style="color: var(--blue);">0</div>
+        <div class="kpi-sub" id="k-sub-mikro">Mikro Aktarım: 0</div>
+    </div>
+    <div class="kpi">
+        <div class="kpi-lbl">Toplam Faturalanan (KDV Dahil)</div>
+        <div class="kpi-val" id="k-rev" style="color: var(--amber-light);">0 ₺</div>
+        <div class="kpi-sub" id="k-mode-lbl">Mod: Simülasyon</div>
+    </div>
+</div>
+
+<!-- Tabs -->
+<div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('companies', this)"><i class="fa-solid fa-building"></i> Firmalar & Anlaşmalar</button>
+    <button class="tab-btn" onclick="switchTab('records', this)"><i class="fa-solid fa-headset"></i> Destek & Hizmet Faturaları</button>
+    <button class="tab-btn" onclick="switchTab('lookup', this)"><i class="fa-solid fa-bolt"></i> ID İstihbarat Testi</button>
+    <button class="tab-btn" onclick="switchTab('mikro', this)"><i class="fa-solid fa-plug"></i> Mikro ERP Ayarları</button>
+</div>
+
+<!-- TAB 1: COMPANIES -->
+<div id="tab-companies" class="panel active">
+    <div class="card">
+        <div class="toolbar">
+            <div class="filters">
+                <input type="text" id="f-search" placeholder="Firma adı, Mikro Cari Kodu, VKN veya ID ara..." oninput="renderCompanies()" style="min-width: 260px; flex: 1;">
+                <select id="f-category" onchange="renderCompanies()">
+                    <option value="">🏷️ Tüm Kategoriler</option>
+                </select>
+                <select id="f-service" onchange="renderCompanies()">
+                    <option value="">📋 Tüm Hizmet Tipleri</option>
+                    <option value="Bakım Anlaşmalı">🟢 Bakım Anlaşmalı</option>
+                    <option value="Ücretli">🟠 Ücretli Destek</option>
+                    <option value="Ücretsiz">🔵 Ücretsiz / Garanti</option>
+                    <option value="EXPIRED">🔴 Süresi Dolmuş Anlaşmalar</option>
+                </select>
+            </div>
+            <div style="display:flex; gap:8px;">
+                <button class="btn" onclick="openCategoryModal()"><i class="fa-solid fa-tags"></i> Kategoriler</button>
+                <button class="btn btn-primary" onclick="openCompanyModal()"><i class="fa-solid fa-plus"></i> Yeni Firma Ekle</button>
+            </div>
+        </div>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Firma / Yetkili</th>
+                        <th>Kategori</th>
+                        <th>Servis Hizmeti & Bitiş</th>
+                        <th>Mikro Cari & VKN</th>
+                        <th>B-Connect ID'leri</th>
+                        <th>Destek / Fatura</th>
+                        <th style="text-align:right;">İşlem</th>
+                    </tr>
+                </thead>
+                <tbody id="tbody-companies"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- TAB 2: SUPPORT RECORDS & INVOICES -->
+<div id="tab-records" class="panel">
+    <div class="card">
+        <div class="toolbar">
+            <div class="filters">
+                <input type="text" id="r-search" placeholder="Firma, sorun, evrak no ara..." oninput="renderRecords()" style="min-width:250px;">
+                <select id="r-mikro-filter" onchange="renderRecords()">
+                    <option value="">🧾 Tüm Fatura Durumları</option>
+                    <option value="Simüle Edildi (Test)">🧪 Simüle Edildi (Test)</option>
+                    <option value="Mikro'ya Aktarıldı">✅ Mikro'ya Aktarıldı</option>
+                    <option value="Bekliyor">⏳ Bekliyor</option>
+                    <option value="Hata">❌ Hata</option>
+                    <option value="Gerekmiyor">➖ Fatura Gerekmiyor</option>
+                </select>
+            </div>
+            <button class="btn btn-primary" onclick="openRecordModal()"><i class="fa-solid fa-plus"></i> Yeni Destek Kaydı / Fatura Kes</button>
+        </div>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Tarih</th>
+                        <th>Firma & Kategori</th>
+                        <th>Sorun / Çözüm</th>
+                        <th>Süre</th>
+                        <th>Tutar (KDV Dahil)</th>
+                        <th>Mikro Hizmet Faturası</th>
+                        <th style="text-align:right;">İşlem</th>
+                    </tr>
+                </thead>
+                <tbody id="tbody-records"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- TAB 3: HOST ID SMART LOOKUP TEST -->
+<div id="tab-lookup" class="panel">
+    <div class="card" style="max-width: 680px;">
+        <h2 style="font-size:1.1rem; color:var(--amber-light); margin-bottom:8px;">⚡ Bağlanmadan Önce "Akıllı Müşteri İstihbarat Kartı" Testi</h2>
+        <p style="font-size:0.86rem; color:var(--muted); margin-bottom:14px;">
+            Teknisyen B-Connect'te 9 haneli ID yazdığı an arka planda bu API sorgulanır ve anlaşma/ücret durumu saniyesinde ekrana gelir. (Örnek demo ID'leri: <code class="mono">112233445</code>, <code class="mono">998877665</code>, <code class="mono">776655443</code>)
+        </p>
+        <div style="display:flex; gap:8px; margin-bottom:16px;">
+            <input type="text" id="lookup-id" placeholder="9 haneli B-Connect ID girin (örn: 998877665)" style="flex:1; font-size:1rem; font-weight:700;">
+            <button class="btn btn-primary" onclick="runLookup()"><i class="fa-solid fa-magnifying-glass"></i> Sorgula</button>
+        </div>
+        <div id="lookup-result"></div>
+    </div>
+</div>
+
+<!-- TAB 4: MIKRO ERP CONFIG -->
+<div id="tab-mikro" class="panel">
+    <div class="card" style="max-width: 780px;">
+        <h2 style="font-size:1.1rem; color:var(--amber-light); margin-bottom:6px;">🔌 Mikro ERP Hizmet Satış Faturası Entegrasyon Ayarları</h2>
+        <p style="font-size:0.84rem; color:var(--muted); margin-bottom:16px;">
+            Önce <b>Simülasyon (Test) Modu</b> ile tüm akışı güvenle test edin. Onay verdiğinizde <b>Mikro API</b> bilgilerinizi girip canlı aktarıma geçebilirsiniz.
+        </p>
+        <div class="form-grid">
+            <div class="fg form-full">
+                <label>Çalışma Modu</label>
+                <select id="m-mode" onchange="toggleMikroModeFields()">
+                    <option value="Simulation">🧪 Simülasyon / Test Modu (Gerçek Mikro'ya Dokunmaz — Güvenli)</option>
+                    <option value="Api">🌐 Mikro API Modu (Önerilen Canlı — API Key ile Hizmet Satış Faturası)</option>
+                    <option value="Sql">🗄️ Doğrudan SQL Modu (Yerel SQL Server Bağlantı Testi)</option>
+                </select>
+            </div>
+            <div class="fg">
+                <label>Mikro Firma Kodu</label>
+                <input type="text" id="m-firma" placeholder="BIGUS">
+            </div>
+            <div class="fg">
+                <label>Çalışma Yılı</label>
+                <input type="number" id="m-yil" value="2026">
+            </div>
+            <div class="fg">
+                <label>Şube No</label>
+                <input type="number" id="m-sube" value="0">
+            </div>
+            <div class="fg">
+                <label>Kullanıcı No</label>
+                <input type="number" id="m-kul" value="1">
+            </div>
+            <div class="fg">
+                <label>Evrak Seri</label>
+                <input type="text" id="m-seri" placeholder="HZM">
+            </div>
+            <div class="fg">
+                <label>Varsayılan Hizmet Kodu</label>
+                <input type="text" id="m-hizmet" placeholder="HZM-DESTEK-01">
+            </div>
+            <div class="fg">
+                <label>Varsayılan KDV Oranı (%)</label>
+                <input type="number" id="m-kdv" value="20">
+            </div>
+            <div class="fg" id="wrap-api-url">
+                <label>Mikro API URL</label>
+                <input type="text" id="m-api-url" placeholder="http://192.168.1.10:8094/Api/APIMethods/FaturaKaydetV2">
+            </div>
+            <div class="fg form-full" id="wrap-api-key">
+                <label>Mikro API Key</label>
+                <input type="password" id="m-api-key" placeholder="Mikro API anahtarınız">
+            </div>
+            <div class="fg form-full" id="wrap-sql-conn" style="display:none;">
+                <label>SQL Server Bağlantı Cümlesi (Opsiyonel)</label>
+                <input type="text" id="m-sql-conn" placeholder="Server=192.168.1.10;Database=MikroDB_V16_BIGUS;User Id=sa;Password=...;Encrypt=False;">
+            </div>
+        </div>
+        <div id="mikro-test-msg" style="margin-top:14px;"></div>
+        <div style="display:flex; gap:10px; margin-top:16px;">
+            <button class="btn btn-green" onclick="testMikroConfig()"><i class="fa-solid fa-vial"></i> Bağlantıyı Test Et</button>
+            <button class="btn btn-primary" onclick="saveMikroConfig()"><i class="fa-solid fa-floppy-disk"></i> Ayarları Kaydet</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: COMPANY -->
+<div class="modal-bg" id="modal-company">
+    <div class="modal">
+        <div class="modal-head">
+            <h2 id="mc-title">Yeni Firma Kartı</h2>
+            <button class="btn btn-sm" onclick="closeModal('modal-company')">✕</button>
+        </div>
+        <input type="hidden" id="c-id">
+        <div class="form-grid">
+            <div class="fg">
+                <label>Firma Adı *</label>
+                <input type="text" id="c-name" placeholder="Örn: Anadolu Makina A.Ş.">
+            </div>
+            <div class="fg">
+                <label>Firma Kategorisi</label>
+                <select id="c-category"></select>
+            </div>
+            <div class="fg">
+                <label>Servis Hizmeti Cinsi *</label>
+                <select id="c-service-type" onchange="onServiceTypeChange()">
+                    <option value="Bakım Anlaşmalı">🟢 Bakım Anlaşmalı (Tarihli)</option>
+                    <option value="Ücretli">🟠 Ücretli Destek (Fatura Kesilir)</option>
+                    <option value="Ücretsiz">🔵 Ücretsiz / Garanti / Demo</option>
+                </select>
+            </div>
+            <div class="fg" id="wrap-contract-end">
+                <label>Bakım Anlaşması Bitiş Tarihi</label>
+                <input type="date" id="c-contract-end" value="2027-12-31">
+            </div>
+            <div class="fg" id="wrap-default-fee" style="display:none;">
+                <label>Varsayılan Destek Ücreti (TL, KDV Hariç)</label>
+                <input type="number" id="c-default-fee" step="0.01" placeholder="1500">
+            </div>
+            <div class="fg form-full">
+                <label>Bağlı B-Connect Cihaz ID'leri (virgülle ayırın)</label>
+                <input type="text" id="c-host-ids" placeholder="Örn: 112233445, 554433221">
+            </div>
+
+            <div class="section-divider">🧾 Müşteri Fatura & Mikro ERP Bilgileri</div>
+            <div class="fg">
+                <label>Mikro Cari Kodu *</label>
+                <input type="text" id="c-mikro-cari" placeholder="Örn: 120.01.001">
+            </div>
+            <div class="fg">
+                <label>Varsayılan Mikro Hizmet Kodu</label>
+                <input type="text" id="c-mikro-hizmet" placeholder="HZM-DESTEK-01">
+            </div>
+            <div class="fg form-full">
+                <label>Resmi Fatura Unvanı</label>
+                <input type="text" id="c-inv-title" placeholder="ANADOLU MAKİNA SAN. VE TİC. A.Ş.">
+            </div>
+            <div class="fg">
+                <label>Vergi Dairesi</label>
+                <input type="text" id="c-tax-office" placeholder="Büyük Mükellefler V.D.">
+            </div>
+            <div class="fg">
+                <label>VKN / TCKN</label>
+                <input type="text" id="c-tax-no" placeholder="1234567890">
+            </div>
+            <div class="fg">
+                <label>KDV Oranı (%)</label>
+                <input type="number" id="c-vat" value="20">
+            </div>
+            <div class="fg">
+                <label>Yetkili Kişi / Telefon</label>
+                <input type="text" id="c-contact" placeholder="Ahmet Yılmaz — 0532...">
+            </div>
+            <div class="fg form-full">
+                <label>Fatura Adresi</label>
+                <input type="text" id="c-address" placeholder="Açık fatura adresi">
+            </div>
+            <div class="fg form-full">
+                <label>Notlar</label>
+                <textarea id="c-notes" rows="2" placeholder="Özel anlaşma veya teknik notlar..."></textarea>
+            </div>
+        </div>
+        <div class="modal-foot">
+            <button class="btn" onclick="closeModal('modal-company')">İptal</button>
+            <button class="btn btn-primary" onclick="saveCompany()"><i class="fa-solid fa-check"></i> Firmayı Kaydet</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: SUPPORT RECORD & BILLING -->
+<div class="modal-bg" id="modal-record">
+    <div class="modal">
+        <div class="modal-head">
+            <h2>🎧 Destek Kaydı Kapatma & Ücretlendirme</h2>
+            <button class="btn btn-sm" onclick="closeModal('modal-record')">✕</button>
+        </div>
+        <div id="rec-contract-banner"></div>
+        <div class="form-grid">
+            <div class="fg form-full">
+                <label>Firma Seçin *</label>
+                <select id="r-company" onchange="onRecordCompanyChange()"></select>
+            </div>
+            <div class="fg">
+                <label>Bağlanılan B-Connect ID</label>
+                <input type="text" id="r-host" placeholder="998877665">
+            </div>
+            <div class="fg">
+                <label>Destek Uzmanı</label>
+                <input type="text" id="r-operator" value="Uzman Mahmut">
+            </div>
+            <div class="fg">
+                <label>Süre (Dakika)</label>
+                <input type="number" id="r-duration" value="20" min="1">
+            </div>
+            <div class="fg">
+                <label>Durum</label>
+                <select id="r-status">
+                    <option value="Çözüldü">✅ Çözüldü</option>
+                    <option value="Açık">⏳ Açık / Takipte</option>
+                    <option value="İptal">❌ İptal</option>
+                </select>
+            </div>
+            <div class="fg form-full">
+                <label>Yapılan İşlem / Bildirilen Sorun *</label>
+                <input type="text" id="r-issue" placeholder="Örn: Mikro e-Fatura bağlantı ayarı ve SQL servis yenilemesi">
+            </div>
+            <div class="fg form-full">
+                <label>Çözüm Notu</label>
+                <textarea id="r-notes" rows="2" placeholder="Detaylı teknik notlar..."></textarea>
+            </div>
+
+            <div class="section-divider">💳 Ücretlendirme & Mikro Hizmet Satış Faturası</div>
+            <div class="fg form-full">
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer; color:var(--text); font-size:0.9rem;">
+                    <input type="checkbox" id="r-billable" onchange="toggleBillingFields()" style="width:18px; height:18px;">
+                    <span>Bu destek <b>Ücretli</b> — Mikro Hizmet Satış Faturası oluşturulsun</span>
+                </label>
+            </div>
+            <div id="billing-fields" class="form-full" style="display:none;">
+                <div class="form-grid">
+                    <div class="fg">
+                        <label>Destek Ücreti (Net, KDV Hariç TL) *</label>
+                        <input type="number" id="r-net" step="0.01" value="1500" oninput="recalcTotals()">
+                    </div>
+                    <div class="fg">
+                        <label>KDV Oranı (%)</label>
+                        <input type="number" id="r-vat" value="20" oninput="recalcTotals()">
+                    </div>
+                    <div class="fg">
+                        <label>Mikro Cari Kodu</label>
+                        <input type="text" id="r-cari">
+                    </div>
+                    <div class="fg">
+                        <label>Mikro Hizmet Kodu</label>
+                        <input type="text" id="r-hizmet" value="HZM-DESTEK-01">
+                    </div>
+                </div>
+                <div class="calc-box">
+                    <div><div class="kpi-lbl">Net Tutar</div><div style="font-weight:900;font-size:1.1rem;" id="calc-net">1.500,00 ₺</div></div>
+                    <div><div class="kpi-lbl">KDV Tutarı</div><div style="font-weight:900;font-size:1.1rem;color:var(--amber-light);" id="calc-vat">300,00 ₺</div></div>
+                    <div><div class="kpi-lbl">Genel Toplam</div><div style="font-weight:900;font-size:1.15rem;color:var(--green);" id="calc-tot">1.800,00 ₺</div></div>
+                </div>
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer; margin-top:12px; color:#6ee7b7; font-weight:800; font-size:0.88rem;">
+                    <input type="checkbox" id="r-send-mikro" checked style="width:18px; height:18px;">
+                    <span>Kaydeder kaydetmez Mikro Hizmet Satış Faturasını hemen oluştur!</span>
+                </label>
+            </div>
+        </div>
+        <div class="modal-foot">
+            <button class="btn" onclick="closeModal('modal-record')">İptal</button>
+            <button class="btn btn-primary" onclick="saveRecord()"><i class="fa-solid fa-paper-plane"></i> Kaydet</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: CATEGORIES -->
+<div class="modal-bg" id="modal-cats">
+    <div class="modal" style="max-width:520px;">
+        <div class="modal-head">
+            <h2>🏷️ Firma Kategorileri</h2>
+            <button class="btn btn-sm" onclick="closeModal('modal-cats')">✕</button>
+        </div>
+        <div style="display:flex; gap:8px; margin-bottom:14px;">
+            <input type="text" id="new-cat-name" placeholder="Yeni kategori adı..." style="flex:1;">
+            <input type="color" id="new-cat-color" value="#f59e0b" style="width:46px; height:38px; padding:2px; cursor:pointer;">
+            <button class="btn btn-primary" onclick="addCategory()">Ekle</button>
+        </div>
+        <div id="cat-list" style="display:flex; flex-direction:column; gap:8px;"></div>
+    </div>
+</div>
+
+<!-- MODAL: MIKRO PAYLOAD PREVIEW -->
+<div class="modal-bg" id="modal-payload">
+    <div class="modal" style="max-width:720px;">
+        <div class="modal-head">
+            <h2>📄 Mikro Hizmet Satış Faturası Paketi (Önizleme)</h2>
+            <button class="btn btn-sm" onclick="closeModal('modal-payload')">✕</button>
+        </div>
+        <pre class="json-pre" id="payload-content"></pre>
+        <div class="modal-foot">
+            <button class="btn btn-primary" onclick="closeModal('modal-payload')">Kapat</button>
+        </div>
+    </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+    let STATE = { categories: [], companies: [], records: [], mikroConfig: {}, kpis: {} };
+
+    function toast(msg) {
+        const el = document.getElementById('toast');
+        el.innerText = msg;
+        el.style.display = 'block';
+        clearTimeout(el._t);
+        el._t = setTimeout(() => el.style.display = 'none', 3200);
+    }
+
+    function fmtMoney(n) {
+        return Number(n || 0).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ₺';
+    }
+
+    function esc(s) {
+        return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function switchTab(id, btn) {
+        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('tab-' + id).classList.add('active');
+        if (btn) btn.classList.add('active');
+    }
+
+    function openModal(id) { document.getElementById(id).classList.add('open'); }
+    function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+    async function loadOverview() {
+        const res = await fetch('/api/crm/overview');
+        if (!res.ok) return toast('Veri yüklenemedi!');
+        STATE = await res.json();
+        renderKpis();
+        populateCategorySelects();
+        renderCompanies();
+        renderRecords();
+        fillMikroConfigForm();
+    }
+
+    function renderKpis() {
+        const k = STATE.kpis || {};
+        document.getElementById('k-total').innerText = k.totalCompanies || 0;
+        document.getElementById('k-sub-free').innerText = `Ücretsiz / Demo: ${k.freeCompanies || 0}`;
+        document.getElementById('k-contract').innerText = k.activeContracts || 0;
+        document.getElementById('k-sub-exp').innerText = `Bitiyor: ${k.expiringSoon || 0} • Dolmuş: ${k.expiredContracts || 0}`;
+        document.getElementById('k-paid').innerText = k.paidCompanies || 0;
+        document.getElementById('k-rec').innerText = k.totalRecords || 0;
+        document.getElementById('k-sub-mikro').innerText = `Mikro Aktarım/Sim: ${k.mikroSyncedCount || 0}`;
+        document.getElementById('k-rev').innerText = fmtMoney(k.totalRevenue || 0);
+        const modeMap = { Simulation: 'Simülasyon (Test)', Api: 'Mikro API (Canlı)', Sql: 'SQL Modu' };
+        document.getElementById('k-mode-lbl').innerText = 'Mod: ' + (modeMap[STATE.mikroConfig?.mode] || 'Simülasyon');
+    }
+
+    function getCatColor(name) {
+        const c = (STATE.categories || []).find(x => x.name === name);
+        return c ? c.color : '#94a3b8';
+    }
+
+    function populateCategorySelects() {
+        const cats = STATE.categories || [];
+        const fCat = document.getElementById('f-category');
+        const prev = fCat.value;
+        fCat.innerHTML = '<option value="">🏷️ Tüm Kategoriler</option>' +
+            cats.map(c => `<option value="${esc(c.name)}">${esc(c.name)}</option>`).join('');
+        fCat.value = prev;
+
+        const cCat = document.getElementById('c-category');
+        cCat.innerHTML = cats.map(c => `<option value="${esc(c.name)}">${esc(c.name)}</option>`).join('');
+    }
+
+    function renderCompanies() {
+        const q = (document.getElementById('f-search').value || '').toLowerCase().trim();
+        const cat = document.getElementById('f-category').value;
+        const srv = document.getElementById('f-service').value;
+
+        const list = (STATE.companies || []).filter(c => {
+            if (cat && c.category !== cat) return false;
+            if (srv === 'EXPIRED' && !c.isExpired) return false;
+            if (srv && srv !== 'EXPIRED' && c.serviceType !== srv) return false;
+            if (q) {
+                const hay = `${c.name} ${c.mikroCariKod} ${c.taxNumber} ${c.hostIds} ${c.contactPerson}`.toLowerCase();
+                if (!hay.includes(q)) return false;
+            }
+            return true;
+        });
+
+        const tbody = document.getElementById('tbody-companies');
+        if (!list.length) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:28px;">Henüz firma yok. Üstten <b>"3 Örnek Firma Yükle"</b> veya <b>"Yeni Firma Ekle"</b> butonuna basın!</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = list.map(c => {
+            const cc = getCatColor(c.category);
+            return `<tr>
+                <td>
+                    <div style="font-weight:800;">${esc(c.name)}</div>
+                    <div style="font-size:0.76rem;color:var(--muted);">${esc(c.contactPerson || c.phone || '-')}</div>
+                </td>
+                <td><span class="pill" style="background:${cc}22;color:${cc};border:1px solid ${cc}55;">${esc(c.category)}</span></td>
+                <td>
+                    <span class="pill" style="background:${c.contractColor}22;color:${c.contractColor};border:1px solid ${c.contractColor}55;">
+                        ${esc(c.contractBadge)}
+                    </span>
+                    ${c.serviceType === 'Ücretli' && c.defaultFee > 0 ? `<div style="font-size:0.74rem;color:var(--muted);margin-top:3px;">Varsayılan: ${fmtMoney(c.defaultFee)} + KDV</div>` : ''}
+                </td>
+                <td>
+                    <div class="mono" style="color:var(--amber-light);font-weight:700;">${esc(c.mikroCariKod || 'Tanımsız')}</div>
+                    <div style="font-size:0.74rem;color:var(--muted);">VKN: ${esc(c.taxNumber || '-')}</div>
+                </td>
+                <td class="mono" style="color:#cbd5e1;">${esc(c.hostIds || '-')}</td>
+                <td>
+                    <div style="font-weight:700;">${c.supportCount || 0} destek</div>
+                    <div style="font-size:0.75rem;color:var(--green);">${c.totalBilled > 0 ? fmtMoney(c.totalBilled) : '-'}</div>
+                </td>
+                <td style="text-align:right;white-space:nowrap;">
+                    <button class="btn btn-sm btn-green" onclick="openRecordModal('${c.id}')" title="Destek Kaydı & Fatura"><i class="fa-solid fa-headset"></i> Destek</button>
+                    <button class="btn btn-sm" onclick="editCompany('${c.id}')"><i class="fa-solid fa-pen"></i></button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteCompany('${c.id}')"><i class="fa-solid fa-trash"></i></button>
+                </td>
+            </tr>`;
+        }).join('');
+    }
+
+    function onServiceTypeChange() {
+        const v = document.getElementById('c-service-type').value;
+        document.getElementById('wrap-contract-end').style.display = v === 'Bakım Anlaşmalı' ? 'block' : 'none';
+        document.getElementById('wrap-default-fee').style.display = v === 'Ücretli' ? 'block' : 'none';
+    }
+
+    function openCompanyModal() {
+        document.getElementById('mc-title').innerText = 'Yeni Firma Kartı';
+        ['c-id','c-name','c-host-ids','c-mikro-cari','c-inv-title','c-tax-office','c-tax-no','c-contact','c-address','c-notes'].forEach(id => document.getElementById(id).value = '');
+        document.getElementById('c-service-type').value = 'Bakım Anlaşmalı';
+        document.getElementById('c-contract-end').value = '2027-12-31';
+        document.getElementById('c-default-fee').value = '1500';
+        document.getElementById('c-mikro-hizmet').value = STATE.mikroConfig?.defaultHizmetKodu || 'HZM-DESTEK-01';
+        document.getElementById('c-vat').value = STATE.mikroConfig?.defaultKdvOrani || 20;
+        onServiceTypeChange();
+        openModal('modal-company');
+    }
+
+    function editCompany(id) {
+        const c = (STATE.companies || []).find(x => x.id === id);
+        if (!c) return;
+        document.getElementById('mc-title').innerText = 'Firma Düzenle — ' + c.name;
+        document.getElementById('c-id').value = c.id;
+        document.getElementById('c-name').value = c.name || '';
+        document.getElementById('c-category').value = c.category || '';
+        document.getElementById('c-service-type').value = c.serviceType || 'Bakım Anlaşmalı';
+        document.getElementById('c-contract-end').value = c.contractEndDate || '';
+        document.getElementById('c-default-fee').value = c.defaultFee || 0;
+        document.getElementById('c-host-ids').value = c.hostIds || '';
+        document.getElementById('c-mikro-cari').value = c.mikroCariKod || '';
+        document.getElementById('c-mikro-hizmet').value = c.defaultServiceCode || 'HZM-DESTEK-01';
+        document.getElementById('c-inv-title').value = c.invoiceTitle || '';
+        document.getElementById('c-tax-office').value = c.taxOffice || '';
+        document.getElementById('c-tax-no').value = c.taxNumber || '';
+        document.getElementById('c-vat').value = c.vatRate ?? 20;
+        document.getElementById('c-contact').value = c.contactPerson || '';
+        document.getElementById('c-address').value = c.invoiceAddress || '';
+        document.getElementById('c-notes').value = c.notes || '';
+        onServiceTypeChange();
+        openModal('modal-company');
+    }
+
+    async function saveCompany() {
+        const payload = {
+            id: document.getElementById('c-id').value,
+            name: document.getElementById('c-name').value.trim(),
+            category: document.getElementById('c-category').value,
+            serviceType: document.getElementById('c-service-type').value,
+            contractEndDate: document.getElementById('c-service-type').value === 'Bakım Anlaşmalı' ? document.getElementById('c-contract-end').value : '',
+            defaultFee: parseFloat(document.getElementById('c-default-fee').value) || 0,
+            hostIds: document.getElementById('c-host-ids').value.trim(),
+            mikroCariKod: document.getElementById('c-mikro-cari').value.trim(),
+            defaultServiceCode: document.getElementById('c-mikro-hizmet').value.trim() || 'HZM-DESTEK-01',
+            invoiceTitle: document.getElementById('c-inv-title').value.trim(),
+            taxOffice: document.getElementById('c-tax-office').value.trim(),
+            taxNumber: document.getElementById('c-tax-no').value.trim(),
+            vatRate: parseInt(document.getElementById('c-vat').value) || 20,
+            contactPerson: document.getElementById('c-contact').value.trim(),
+            invoiceAddress: document.getElementById('c-address').value.trim(),
+            notes: document.getElementById('c-notes').value.trim()
+        };
+        if (!payload.name) return toast('Firma adı zorunludur!');
+        const res = await fetch('/api/crm/companies/save', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+        if (res.ok) {
+            closeModal('modal-company');
+            toast('Firma kaydedildi ✅');
+            await loadOverview();
+        }
+    }
+
+    async function deleteCompany(id) {
+        if (!confirm('Bu firmayı silmek istediğinize emin misiniz?')) return;
+        await fetch('/api/crm/companies/delete', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ id }) });
+        toast('Firma silindi');
+        await loadOverview();
+    }
+
+    // --- SUPPORT RECORDS & BILLING ---
+    function openRecordModal(preCompanyId) {
+        const sel = document.getElementById('r-company');
+        const comps = STATE.companies || [];
+        if (!comps.length) return toast('Önce en az 1 firma ekleyin veya "3 Örnek Firma Yükle"ye basın!');
+        sel.innerHTML = comps.map(c => `<option value="${c.id}">${esc(c.name)} (${esc(c.contractBadge)})</option>`).join('');
+        if (preCompanyId) sel.value = preCompanyId;
+        document.getElementById('r-issue').value = '';
+        document.getElementById('r-notes').value = '';
+        document.getElementById('r-duration').value = 20;
+        document.getElementById('r-status').value = 'Çözüldü';
+        onRecordCompanyChange();
+        openModal('modal-record');
+    }
+
+    function onRecordCompanyChange() {
+        const id = document.getElementById('r-company').value;
+        const c = (STATE.companies || []).find(x => x.id === id);
+        if (!c) return;
+        const firstHost = (c.hostIds || '').split(',')[0].trim();
+        document.getElementById('r-host').value = firstHost;
+        document.getElementById('r-cari').value = c.mikroCariKod || '';
+        document.getElementById('r-hizmet').value = c.defaultServiceCode || STATE.mikroConfig?.defaultHizmetKodu || 'HZM-DESTEK-01';
+        document.getElementById('r-vat').value = c.vatRate ?? 20;
+        document.getElementById('r-net').value = c.defaultFee > 0 ? c.defaultFee : 1500;
+
+        const banner = document.getElementById('rec-contract-banner');
+        const shouldBill = (c.serviceType === 'Ücretli') || c.isExpired;
+        document.getElementById('r-billable').checked = shouldBill;
+        if (c.serviceType === 'Bakım Anlaşmalı' && !c.isExpired) {
+            banner.innerHTML = `<div class="alert-box" style="background:rgba(16,185,129,0.14);border:1px solid rgba(16,185,129,0.4);color:#6ee7b7;">
+                🟢 <b>${esc(c.contractBadge)}</b> — Bu firma bakım anlaşması kapsamındadır (varsayılan 0 ₺). İsterseniz ekstra ücretli iş için kutuyu işaretleyebilirsiniz.
+            </div>`;
+        } else if (c.isExpired) {
+            banner.innerHTML = `<div class="alert-box" style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.45);color:#fca5a5;">
+                🔴 <b>BAKIM ANLAŞMASI SÜRESİ DOLMUŞ!</b> (${esc(c.contractBadge)}) — Ücretli faturalama otomatik açıldı!
+            </div>`;
+        } else if (c.serviceType === 'Ücretli') {
+            banner.innerHTML = `<div class="alert-box" style="background:rgba(249,115,22,0.15);border:1px solid rgba(249,115,22,0.45);color:#fdba74;">
+                🟠 <b>ÜCRETLİ DESTEK FİRMASI</b> — Kaydettiğinizde Mikro Hizmet Satış Faturası otomatik oluşturulacak!
+            </div>`;
+        } else {
+            banner.innerHTML = `<div class="alert-box" style="background:rgba(56,189,248,0.14);border:1px solid rgba(56,189,248,0.4);color:#7dd3fc;">
+                🔵 <b>ÜCRETSİZ / GARANTİ / DEMO</b> — Fatura kesilmeyecek.
+            </div>`;
+        }
+        toggleBillingFields();
+        recalcTotals();
+    }
+
+    function toggleBillingFields() {
+        document.getElementById('billing-fields').style.display = document.getElementById('r-billable').checked ? 'block' : 'none';
+    }
+
+    function recalcTotals() {
+        const net = parseFloat(document.getElementById('r-net').value) || 0;
+        const vatRate = parseFloat(document.getElementById('r-vat').value) || 0;
+        const vat = Math.round(net * vatRate) / 100;
+        const tot = net + vat;
+        document.getElementById('calc-net').innerText = fmtMoney(net);
+        document.getElementById('calc-vat').innerText = fmtMoney(vat);
+        document.getElementById('calc-tot').innerText = fmtMoney(tot);
+    }
+
+    async function saveRecord() {
+        const billable = document.getElementById('r-billable').checked;
+        const payload = {
+            companyId: document.getElementById('r-company').value,
+            hostId: document.getElementById('r-host').value.trim(),
+            operatorName: document.getElementById('r-operator').value.trim(),
+            durationMinutes: parseInt(document.getElementById('r-duration').value) || 15,
+            status: document.getElementById('r-status').value,
+            issue: document.getElementById('r-issue').value.trim(),
+            solutionNotes: document.getElementById('r-notes').value.trim(),
+            isBillable: billable,
+            netAmount: billable ? (parseFloat(document.getElementById('r-net').value) || 0) : 0,
+            vatRate: parseInt(document.getElementById('r-vat').value) || 20,
+            mikroCariKod: document.getElementById('r-cari').value.trim(),
+            mikroServiceCode: document.getElementById('r-hizmet').value.trim(),
+            sendToMikro: billable && document.getElementById('r-send-mikro').checked
+        };
+        if (!payload.issue) return toast('Lütfen yapılan işlemi / sorunu yazın!');
+        const res = await fetch('/api/crm/records/save', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+        const data = await res.json();
+        if (res.ok) {
+            closeModal('modal-record');
+            if (data.record?.mikroError) toast('Kaydedildi ama Mikro uyarısı: ' + data.record.mikroError);
+            else if (data.record?.mikroInvoiceNo) toast(`✅ Kaydedildi & Mikro Fatura: ${data.record.mikroInvoiceNo}`);
+            else toast('Destek kaydı kaydedildi ✅');
+            await loadOverview();
+            switchTab('records', document.querySelectorAll('.tab-btn')[1]);
+        } else {
+            toast(data.error || 'Hata oluştu');
+        }
+    }
+
+    function renderRecords() {
+        const q = (document.getElementById('r-search').value || '').toLowerCase().trim();
+        const mf = document.getElementById('r-mikro-filter').value;
+        const list = (STATE.records || []).filter(r => {
+            if (mf && r.mikroInvoiceStatus !== mf) return false;
+            if (q) {
+                const hay = `${r.companyName} ${r.issue} ${r.solutionNotes} ${r.mikroInvoiceNo} ${r.mikroCariKod}`.toLowerCase();
+                if (!hay.includes(q)) return false;
+            }
+            return true;
+        });
+
+        const tbody = document.getElementById('tbody-records');
+        if (!list.length) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:28px;">Henüz destek kaydı yok.</td></tr>';
+            return;
+        }
+        tbody.innerHTML = list.map(r => {
+            let mColor = '#94a3b8';
+            if (r.mikroInvoiceStatus === "Mikro'ya Aktarıldı") mColor = '#10b981';
+            else if (r.mikroInvoiceStatus === 'Simüle Edildi (Test)') mColor = '#38bdf8';
+            else if (r.mikroInvoiceStatus === 'Bekliyor') mColor = '#f59e0b';
+            else if (r.mikroInvoiceStatus === 'Hata') mColor = '#ef4444';
+
+            return `<tr>
+                <td style="font-size:0.78rem;color:var(--muted);">${esc(r.createdAt)}</td>
+                <td>
+                    <div style="font-weight:800;">${esc(r.companyName)}</div>
+                    <div style="font-size:0.74rem;color:var(--muted);">${esc(r.category)} • ${esc(r.serviceType)}</div>
+                </td>
+                <td>
+                    <div style="font-weight:600;">${esc(r.issue)}</div>
+                    ${r.solutionNotes ? `<div style="font-size:0.76rem;color:var(--muted);">${esc(r.solutionNotes)}</div>` : ''}
+                </td>
+                <td>${r.durationMinutes} dk</td>
+                <td style="font-weight:800;color:${r.isBillable ? 'var(--amber-light)' : 'var(--muted)'};">
+                    ${r.isBillable ? fmtMoney(r.totalAmount) : '0,00 ₺'}
+                    ${r.isBillable ? `<div style="font-size:0.72rem;color:var(--muted);">Net: ${fmtMoney(r.netAmount)}</div>` : ''}
+                </td>
+                <td>
+                    <span class="pill" style="background:${mColor}22;color:${mColor};border:1px solid ${mColor}55;">${esc(r.mikroInvoiceStatus)}</span>
+                    ${r.mikroInvoiceNo ? `<div class="mono" style="font-size:0.74rem;color:#cbd5e1;margin-top:3px;">${esc(r.mikroInvoiceNo)}</div>` : ''}
+                    ${r.mikroError ? `<div style="font-size:0.72rem;color:#fca5a5;margin-top:3px;">${esc(r.mikroError)}</div>` : ''}
+                </td>
+                <td style="text-align:right;white-space:nowrap;">
+                    ${r.mikroPayloadPreview ? `<button class="btn btn-sm" onclick="showPayload('${r.id}')" title="Mikro JSON Önizle"><i class="fa-solid fa-code"></i></button>` : ''}
+                    ${r.isBillable ? `<button class="btn btn-sm btn-green" onclick="sendRecordToMikro('${r.id}')" title="Mikro'ya Gönder / Tekrar Dene"><i class="fa-solid fa-paper-plane"></i></button>` : ''}
+                    <button class="btn btn-sm btn-danger" onclick="deleteRecord('${r.id}')"><i class="fa-solid fa-trash"></i></button>
+                </td>
+            </tr>`;
+        }).join('');
+    }
+
+    function showPayload(id) {
+        const r = (STATE.records || []).find(x => x.id === id);
+        if (!r) return;
+        document.getElementById('payload-content').innerText = r.mikroPayloadPreview || '{}';
+        openModal('modal-payload');
+    }
+
+    async function sendRecordToMikro(id) {
+        const res = await fetch('/api/crm/records/send-mikro', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ id }) });
+        const data = await res.json();
+        toast(data.success ? `✅ Mikro Fatura: ${data.record?.mikroInvoiceNo}` : ('❌ ' + (data.error || 'Hata')));
+        await loadOverview();
+    }
+
+    async function deleteRecord(id) {
+        if (!confirm('Bu destek kaydını silmek istediğinize emin misiniz?')) return;
+        await fetch('/api/crm/records/delete', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ id }) });
+        toast('Kayıt silindi');
+        await loadOverview();
+    }
+
+    // --- CATEGORIES ---
+    function openCategoryModal() {
+        renderCategoryList();
+        openModal('modal-cats');
+    }
+
+    function renderCategoryList() {
+        const el = document.getElementById('cat-list');
+        el.innerHTML = (STATE.categories || []).map(c => `
+            <div style="display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.04);padding:8px 12px;border-radius:10px;">
+                <span class="pill" style="background:${c.color}22;color:${c.color};border:1px solid ${c.color}55;">${esc(c.name)}</span>
+                <button class="btn btn-sm btn-danger" onclick="deleteCategory('${c.id}')"><i class="fa-solid fa-trash"></i></button>
+            </div>
+        `).join('');
+    }
+
+    async function addCategory() {
+        const name = document.getElementById('new-cat-name').value.trim();
+        const color = document.getElementById('new-cat-color').value;
+        if (!name) return;
+        await fetch('/api/crm/categories/save', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ name, color }) });
+        document.getElementById('new-cat-name').value = '';
+        await loadOverview();
+        renderCategoryList();
+        toast('Kategori eklendi ✅');
+    }
+
+    async function deleteCategory(id) {
+        await fetch('/api/crm/categories/delete', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ id }) });
+        await loadOverview();
+        renderCategoryList();
+    }
+
+    // --- HOST ID LOOKUP ---
+    async function runLookup() {
+        const id = document.getElementById('lookup-id').value.trim();
+        const res = await fetch('/api/crm/lookup?hostId=' + encodeURIComponent(id));
+        const d = await res.json();
+        const out = document.getElementById('lookup-result');
+        if (!d.found) {
+            out.innerHTML = `<div class="alert-box" style="background:rgba(255,255,255,0.05);color:var(--muted);">Bu ID (${esc(id)}) henüz hiçbir firma kartına bağlı değil.</div>`;
+            return;
+        }
+        const c = d.company;
+        out.innerHTML = `
+            <div style="background:rgba(15,23,42,0.9);border:1.5px solid ${d.contractColor};border-radius:14px;padding:16px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+                    <div>
+                        <div style="font-size:1.15rem;font-weight:900;">${esc(c.name)}</div>
+                        <div style="font-size:0.82rem;color:var(--muted);">Kategori: <b>${esc(c.category)}</b> • Mikro Cari: <span class="mono" style="color:var(--amber-light);">${esc(c.mikroCariKod || '-')}</span></div>
+                    </div>
+                    <span class="pill" style="background:${d.contractColor}22;color:${d.contractColor};border:1px solid ${d.contractColor}66;font-size:0.86rem;">
+                        ${esc(d.contractBadge)}
+                    </span>
+                </div>
+                <div style="margin-top:12px;font-size:0.82rem;color:#cbd5e1;">
+                    <b>Yetkili:</b> ${esc(c.contactPerson || '-')} &nbsp;|&nbsp; <b>VKN:</b> ${esc(c.taxNumber || '-')}
+                </div>
+                ${d.recentRecords?.length ? `<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border-soft);font-size:0.8rem;">
+                    <b>Son Destekler:</b>
+                    ${d.recentRecords.map(r => `<div style="color:var(--muted);margin-top:4px;">• ${esc(r.createdAt)} — ${esc(r.issue)} (${r.isBillable ? fmtMoney(r.totalAmount) : 'Anlaşmalı/Ücretsiz'})</div>`).join('')}
+                </div>` : ''}
+            </div>
+        `;
+    }
+
+    // --- MIKRO CONFIG ---
+    function fillMikroConfigForm() {
+        const m = STATE.mikroConfig || {};
+        document.getElementById('m-mode').value = m.mode || 'Simulation';
+        document.getElementById('m-firma').value = m.firmaKodu || 'BIGUS';
+        document.getElementById('m-yil').value = m.calismaYili || 2026;
+        document.getElementById('m-sube').value = m.subeNo ?? 0;
+        document.getElementById('m-kul').value = m.kullaniciNo ?? 1;
+        document.getElementById('m-seri').value = m.evrakSeri || 'HZM';
+        document.getElementById('m-hizmet').value = m.defaultHizmetKodu || 'HZM-DESTEK-01';
+        document.getElementById('m-kdv').value = m.defaultKdvOrani ?? 20;
+        document.getElementById('m-api-url').value = m.apiBaseUrl || '';
+        document.getElementById('m-api-key').value = m.apiKey || '';
+        document.getElementById('m-sql-conn').value = m.sqlConnectionString || '';
+        toggleMikroModeFields();
+    }
+
+    function toggleMikroModeFields() {
+        const mode = document.getElementById('m-mode').value;
+        document.getElementById('wrap-api-url').style.display = mode === 'Api' ? 'block' : 'none';
+        document.getElementById('wrap-api-key').style.display = mode === 'Api' ? 'block' : 'none';
+        document.getElementById('wrap-sql-conn').style.display = mode === 'Sql' ? 'block' : 'none';
+    }
+
+    function readMikroForm() {
+        return {
+            mode: document.getElementById('m-mode').value,
+            firmaKodu: document.getElementById('m-firma').value.trim(),
+            calismaYili: parseInt(document.getElementById('m-yil').value) || 2026,
+            subeNo: parseInt(document.getElementById('m-sube').value) || 0,
+            kullaniciNo: parseInt(document.getElementById('m-kul').value) || 1,
+            evrakSeri: document.getElementById('m-seri').value.trim() || 'HZM',
+            defaultHizmetKodu: document.getElementById('m-hizmet').value.trim() || 'HZM-DESTEK-01',
+            defaultKdvOrani: parseInt(document.getElementById('m-kdv').value) || 20,
+            apiBaseUrl: document.getElementById('m-api-url').value.trim(),
+            apiKey: document.getElementById('m-api-key').value.trim(),
+            sqlConnectionString: document.getElementById('m-sql-conn').value.trim()
+        };
+    }
+
+    async function saveMikroConfig() {
+        const res = await fetch('/api/crm/mikro/config', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(readMikroForm()) });
+        if (res.ok) {
+            toast('Mikro ayarları kaydedildi ✅');
+            await loadOverview();
+        }
+    }
+
+    async function testMikroConfig() {
+        const res = await fetch('/api/crm/mikro/test', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(readMikroForm()) });
+        const d = await res.json();
+        document.getElementById('mikro-test-msg').innerHTML = `<div class="alert-box" style="background:${d.success ? 'rgba(16,185,129,0.14)' : 'rgba(239,68,68,0.14)'};border:1px solid ${d.success ? '#10b981' : '#ef4444'};color:${d.success ? '#6ee7b7' : '#fca5a5'};">${esc(d.message)}</div>`;
+    }
+
+    async function seedDemoData() {
+        const res = await fetch('/api/crm/seed-demo', { method: 'POST' });
+        if (res.ok) {
+            toast('3 örnek firma (Bakım Anlaşmalı, Ücretli, Ücretsiz) eklendi ✅');
+            await loadOverview();
+        }
+    }
+
+    loadOverview();
+</script>
+</body>
+</html>

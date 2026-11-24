@@ -6083,6 +6083,9 @@ td{{padding:10px 12px;border-bottom:1px solid #e2e8f0;vertical-align:top;}}
                 return Results.Ok(new { success = true, message = $"Test bildirimi '{t}' kanalına gönderildi." });
             });
 
+            // CRM v2 & Mikro ERP Hizmet Satis Faturasi Modulu (izole & geriye uyumlu)
+            CrmMikroModule.MapEndpoints(app);
+
             // Start server
             app.Run();
         }

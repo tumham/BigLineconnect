@@ -1,0 +1,739 @@
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Net.Http;
+using System.Text;
+using System.Text.Json;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
+
+public static class CrmMikroModule
+{
+    public class CrmCategory
+    {
+        public string Id { get; set; } = "";
+        public string Name { get; set; } = "";
+        public string Color { get; set; } = "#f59e0b";
+    }
+
+    public class CrmCompany
+    {
+        public string Id { get; set; } = "";
+        public string Name { get; set; } = "";
+        public string Category { get; set; } = "Kurumsal";
+        // "Bakım Anlaşmalı" | "Ücretli" | "Ücretsiz"
+        public string ServiceType { get; set; } = "Bakım Anlaşmalı";
+        // ISO yyyy-MM-dd (e.g. "2027-12-31")
+        public string ContractEndDate { get; set; } = "";
+        public decimal DefaultFee { get; set; } = 0;
+        public string HostIds { get; set; } = "";
+
+        // Fatura & Mikro Eşleştirme Bilgileri
+        public string MikroCariKod { get; set; } = "";
+        public string InvoiceTitle { get; set; } = "";
+        public string TaxOffice { get; set; } = "";
+        public string TaxNumber { get; set; } = "";
+        public string InvoiceAddress { get; set; } = "";
+        public string ContactPerson { get; set; } = "";
+        public string Phone { get; set; } = "";
+        public string Email { get; set; } = "";
+        public string DefaultServiceCode { get; set; } = "HZM-DESTEK-01";
+        public int VatRate { get; set; } = 20;
+        public string Notes { get; set; } = "";
+        public string CreatedAt { get; set; } = "";
+        public string UpdatedAt { get; set; } = "";
+    }
+
+    public class CrmSupportRecord
+    {
+        public string Id { get; set; } = "";
+        public string CompanyId { get; set; } = "";
+        public string CompanyName { get; set; } = "";
+        public string Category { get; set; } = "";
+        public string ServiceType { get; set; } = "";
+        public string HostId { get; set; } = "";
+        public string OperatorName { get; set; } = "";
+        public string Issue { get; set; } = "";
+        public string SolutionNotes { get; set; } = "";
+        public int DurationMinutes { get; set; } = 15;
+        public string Status { get; set; } = "Çözüldü"; // "Açık" | "Çözüldü" | "İptal"
+
+        // Ücretlendirme & Mikro Hizmet Satış Faturası
+        public bool IsBillable { get; set; } = false;
+        public decimal NetAmount { get; set; } = 0;
+        public int VatRate { get; set; } = 20;
+        public decimal VatAmount { get; set; } = 0;
+        public decimal TotalAmount { get; set; } = 0;
+        public string MikroCariKod { get; set; } = "";
+        public string MikroServiceCode { get; set; } = "HZM-DESTEK-01";
+        public string MikroInvoiceStatus { get; set; } = "Gerekmiyor"; // Gerekmiyor | Bekliyor | Simüle Edildi (Test) | Mikro'ya Aktarıldı | Hata
+        public string MikroInvoiceNo { get; set; } = "";
+        public string MikroPayloadPreview { get; set; } = "";
+        public string MikroError { get; set; } = "";
+
+        public string CreatedAt { get; set; } = "";
+        public string ClosedAt { get; set; } = "";
+    }
+
+    public class MikroConfig
+    {
+        // "Simulation" | "Api" | "Sql"
+        public string Mode { get; set; } = "Simulation";
+        public string ApiBaseUrl { get; set; } = "http://127.0.0.1:8094/Api/APIMethods/FaturaKaydetV2";
+        public string ApiKey { get; set; } = "";
+        public string FirmaKodu { get; set; } = "BIGUS";
+        public int CalismaYili { get; set; } = 2026;
+        public int SubeNo { get; set; } = 0;
+        public int KullaniciNo { get; set; } = 1;
+        public string EvrakSeri { get; set; } = "HZM";
+        public int LastSimulatedSeq { get; set; } = 1000;
+        public string DefaultHizmetKodu { get; set; } = "HZM-DESTEK-01";
+        public int DefaultKdvOrani { get; set; } = 20;
+        public string SqlConnectionString { get; set; } = "";
+    }
+
+    private static readonly object _lock = new();
+    private static readonly JsonSerializerOptions _jsonOpts = new()
+    {
+        WriteIndented = true,
+        PropertyNameCaseInsensitive = true
+    };
+    private static readonly HttpClient _http = new() { Timeout = TimeSpan.FromSeconds(10) };
+
+    private static string DataDir
+    {
+        get
+        {
+            string dir = Path.Combine(AppContext.BaseDirectory, "crm_data");
+            if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
+            return dir;
+        }
+    }
+
+    private static string CategoriesPath => Path.Combine(DataDir, "crm_categories.json");
+    private static string CompaniesPath => Path.Combine(DataDir, "crm_companies.json");
+    private static string RecordsPath => Path.Combine(DataDir, "crm_records.json");
+    private static string MikroConfigPath => Path.Combine(DataDir, "crm_mikro_config.json");
+
+    private static string NowTr() => DateTime.UtcNow.AddHours(3).ToString("dd.MM.yyyy HH:mm:ss");
+
+    private static T LoadJson<T>(string path, Func<T> defaultFactory)
+    {
+        lock (_lock)
+        {
+            try
+            {
+                if (File.Exists(path))
+                {
+                    string txt = File.ReadAllText(path, Encoding.UTF8);
+                    if (!string.IsNullOrWhiteSpace(txt))
+                    {
+                        var val = JsonSerializer.Deserialize<T>(txt, _jsonOpts);
+                        if (val != null) return val;
+                    }
+                }
+            }
+            catch { }
+            var def = defaultFactory();
+            SaveJson(path, def);
+            return def;
+        }
+    }
+
+    private static void SaveJson<T>(string path, T data)
+    {
+        lock (_lock)
+        {
+            try
+            {
+                string json = JsonSerializer.Serialize(data, _jsonOpts);
+                File.WriteAllText(path, json, Encoding.UTF8);
+            }
+            catch { }
+        }
+    }
+
+    private static List<CrmCategory> LoadCategories() => LoadJson(CategoriesPath, () => new List<CrmCategory>
+    {
+        new() { Id = "cat-vip", Name = "VIP", Color = "#f59e0b" },
+        new() { Id = "cat-kurumsal", Name = "Kurumsal", Color = "#3b82f6" },
+        new() { Id = "cat-kobi", Name = "KOBİ", Color = "#10b981" },
+        new() { Id = "cat-bayi", Name = "Bayi", Color = "#a855f7" },
+        new() { Id = "cat-muhasebe", Name = "Muhasebe / Mali Müşavir", Color = "#06b6d4" },
+        new() { Id = "cat-uretim", Name = "Üretim / Sanayi", Color = "#ef4444" }
+    });
+
+    private static List<CrmCompany> LoadCompanies() => LoadJson(CompaniesPath, () => new List<CrmCompany>());
+    private static List<CrmSupportRecord> LoadRecords() => LoadJson(RecordsPath, () => new List<CrmSupportRecord>());
+    private static MikroConfig LoadMikroConfig() => LoadJson(MikroConfigPath, () => new MikroConfig());
+
+    private static (string ContractBadge, string ContractColor, int? DaysRemaining, bool IsExpired) EvaluateContract(CrmCompany c)
+    {
+        if (string.Equals(c.ServiceType, "Ücretli", StringComparison.OrdinalIgnoreCase))
+            return ("Ücretli Destek", "#f97316", null, false);
+
+        if (string.Equals(c.ServiceType, "Ücretsiz", StringComparison.OrdinalIgnoreCase))
+            return ("Ücretsiz / Garanti", "#38bdf8", null, false);
+
+        // Bakım Anlaşmalı
+        if (DateTime.TryParseExact(c.ContractEndDate, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var endDate))
+        {
+            var today = DateTime.UtcNow.AddHours(3).Date;
+            int days = (endDate.Date - today).Days;
+            if (days < 0)
+                return ($"Süresi Doldu ({endDate:dd.MM.yyyy})", "#ef4444", days, true);
+            if (days <= 30)
+                return ($"Bitiyor ({days} gün — {endDate:dd.MM.yyyy})", "#f59e0b", days, false);
+            return ($"Bakım Anlaşmalı ({endDate:dd.MM.yyyy})", "#10b981", days, false);
+        }
+
+        return ("Bakım Anlaşmalı (Tarihsiz)", "#10b981", null, false);
+    }
+
+    private static string BuildMikroServiceInvoicePayload(CrmSupportRecord rec, CrmCompany? comp, MikroConfig cfg, int seqNo)
+    {
+        string tarih = DateTime.UtcNow.AddHours(3).ToString("dd.MM.yyyy");
+        string cariKod = !string.IsNullOrWhiteSpace(rec.MikroCariKod) ? rec.MikroCariKod : (comp?.MikroCariKod ?? "");
+        string hizmetKod = !string.IsNullOrWhiteSpace(rec.MikroServiceCode) ? rec.MikroServiceCode : cfg.DefaultHizmetKodu;
+        string aciklama = $"B-Connect Uzak Destek ({rec.DurationMinutes} dk) - {rec.Issue}";
+        if (aciklama.Length > 120) aciklama = aciklama.Substring(0, 120);
+
+        var mikroObj = new
+        {
+            Mikro = new
+            {
+                FirmaKodu = cfg.FirmaKodu,
+                CalismaYili = cfg.CalismaYili,
+                ApiKey = string.IsNullOrEmpty(cfg.ApiKey) ? "(API_KEY_TANIMSIZ)" : "***GIZLI***",
+                KullaniciNo = cfg.KullaniciNo,
+                SubeNo = cfg.SubeNo,
+                EvrakTipi = "HizmetSatisFaturasi",
+                Evrak = new
+                {
+                    cha_evrakno_seri = cfg.EvrakSeri,
+                    cha_evrakno_sira = seqNo,
+                    cha_tarihi = tarih,
+                    cha_kod = cariKod,
+                    cha_unvan = comp?.InvoiceTitle ?? rec.CompanyName,
+                    cha_vergi_dairesi = comp?.TaxOffice ?? "",
+                    cha_vergi_no = comp?.TaxNumber ?? "",
+                    cha_aciklama = aciklama,
+                    cha_kdv_orani = rec.VatRate,
+                    cha_meblag_net = rec.NetAmount,
+                    cha_vergi_tutar = rec.VatAmount,
+                    cha_toplam_tutar = rec.TotalAmount,
+                    satirlar = new[]
+                    {
+                        new
+                        {
+                            hizmet_kodu = hizmetKod,
+                            miktar = 1,
+                            birim_fiyat = rec.NetAmount,
+                            kdv_orani = rec.VatRate,
+                            aciklama = aciklama
+                        }
+                    }
+                }
+            }
+        };
+
+        return JsonSerializer.Serialize(mikroObj, _jsonOpts);
+    }
+
+    private static async Task<(bool Ok, string Status, string InvoiceNo, string Payload, string Error)> DispatchToMikroAsync(CrmSupportRecord rec, CrmCompany? comp)
+    {
+        var cfg = LoadMikroConfig();
+        string cariKod = !string.IsNullOrWhiteSpace(rec.MikroCariKod) ? rec.MikroCariKod : (comp?.MikroCariKod ?? "");
+        if (string.IsNullOrWhiteSpace(cariKod))
+        {
+            return (false, "Hata", "", "", "Müşteri kartında 'Mikro Cari Kodu' tanımlı değil! Lütfen firma kartından Mikro Cari Kodu girin.");
+        }
+        if (rec.NetAmount <= 0)
+        {
+            return (false, "Hata", "", "", "Fatura tutarı 0 TL'den büyük olmalıdır.");
+        }
+
+        int seqNo;
+        lock (_lock)
+        {
+            cfg.LastSimulatedSeq++;
+            seqNo = cfg.LastSimulatedSeq;
+            SaveJson(MikroConfigPath, cfg);
+        }
+
+        string invoiceNo = $"{cfg.EvrakSeri}-{cfg.CalismaYili}-{seqNo:D5}";
+        string previewPayload = BuildMikroServiceInvoicePayload(rec, comp, cfg, seqNo);
+
+        if (string.Equals(cfg.Mode, "Simulation", StringComparison.OrdinalIgnoreCase))
+        {
+            return (true, "Simüle Edildi (Test)", invoiceNo, previewPayload, "");
+        }
+
+        if (string.Equals(cfg.Mode, "Api", StringComparison.OrdinalIgnoreCase))
+        {
+            if (string.IsNullOrWhiteSpace(cfg.ApiBaseUrl))
+                return (false, "Hata", "", previewPayload, "Mikro API URL tanımlı değil.");
+
+            try
+            {
+                string realPayload = previewPayload.Replace("***GIZLI***", cfg.ApiKey ?? "");
+                using var req = new HttpRequestMessage(HttpMethod.Post, cfg.ApiBaseUrl);
+                req.Content = new StringContent(realPayload, Encoding.UTF8, "application/json");
+                if (!string.IsNullOrWhiteSpace(cfg.ApiKey))
+                    req.Headers.TryAddWithoutValidation("X-API-Key", cfg.ApiKey);
+
+                using var res = await _http.SendAsync(req);
+                string body = await res.Content.ReadAsStringAsync();
+                if (res.IsSuccessStatusCode)
+                    return (true, "Mikro'ya Aktarıldı", invoiceNo, previewPayload, "");
+
+                return (false, "Hata", "", previewPayload, $"Mikro API HTTP {(int)res.StatusCode}: {(body.Length > 200 ? body.Substring(0, 200) : body)}");
+            }
+            catch (Exception ex)
+            {
+                return (false, "Hata", "", previewPayload, $"Mikro API bağlantı hatası: {ex.Message}");
+            }
+        }
+
+        if (string.Equals(cfg.Mode, "Sql", StringComparison.OrdinalIgnoreCase))
+        {
+            // Güvenlik gereği SQL modunda şimdilik sadece güvenli önizleme ve bağlantı doğrulaması yapılır
+            if (string.IsNullOrWhiteSpace(cfg.SqlConnectionString))
+                return (false, "Hata", "", previewPayload, "SQL bağlantı cümlesi tanımlı değil.");
+
+            return (true, "Simüle Edildi (Test)", invoiceNo, previewPayload + "\n\n-- SQL Modu: Canlı Mikro tablo yazımı onay sonrası aktif edilecektir.", "");
+        }
+
+        return (false, "Hata", "", previewPayload, "Bilinmeyen Mikro çalışma modu.");
+    }
+
+    public static void MapEndpoints(WebApplication app)
+    {
+        // Serve /crm page cleanly
+        app.MapGet("/crm", async context =>
+        {
+            string crmFile = Path.Combine(AppContext.BaseDirectory, "wwwroot", "crm.html");
+            if (!File.Exists(crmFile))
+            {
+                context.Response.StatusCode = 404;
+                await context.Response.WriteAsync("crm.html not found");
+                return;
+            }
+            context.Response.ContentType = "text/html; charset=utf-8";
+            await context.Response.SendFileAsync(crmFile);
+        });
+
+        // Overview: categories + enriched companies + records + mikro config + KPIs
+        app.MapGet("/api/crm/overview", () =>
+        {
+            var categories = LoadCategories();
+            var companies = LoadCompanies();
+            var records = LoadRecords().OrderByDescending(r => r.CreatedAt).ToList();
+            var mikro = LoadMikroConfig();
+
+            var enrichedCompanies = companies.Select(c =>
+            {
+                var eval = EvaluateContract(c);
+                int supportCount = records.Count(r => r.CompanyId == c.Id);
+                decimal totalBilled = records.Where(r => r.CompanyId == c.Id && r.IsBillable).Sum(r => r.TotalAmount);
+                return new
+                {
+                    c.Id,
+                    c.Name,
+                    c.Category,
+                    c.ServiceType,
+                    c.ContractEndDate,
+                    c.DefaultFee,
+                    c.HostIds,
+                    c.MikroCariKod,
+                    c.InvoiceTitle,
+                    c.TaxOffice,
+                    c.TaxNumber,
+                    c.InvoiceAddress,
+                    c.ContactPerson,
+                    c.Phone,
+                    c.Email,
+                    c.DefaultServiceCode,
+                    c.VatRate,
+                    c.Notes,
+                    c.CreatedAt,
+                    c.UpdatedAt,
+                    ContractBadge = eval.ContractBadge,
+                    ContractColor = eval.ContractColor,
+                    DaysRemaining = eval.DaysRemaining,
+                    IsExpired = eval.IsExpired,
+                    SupportCount = supportCount,
+                    TotalBilled = totalBilled
+                };
+            }).OrderBy(x => x.Name).ToList();
+
+            var kpis = new
+            {
+                totalCompanies = companies.Count,
+                activeContracts = enrichedCompanies.Count(x => x.ServiceType == "Bakım Anlaşmalı" && !x.IsExpired),
+                expiringSoon = enrichedCompanies.Count(x => x.ServiceType == "Bakım Anlaşmalı" && x.DaysRemaining.HasValue && x.DaysRemaining.Value >= 0 && x.DaysRemaining.Value <= 30),
+                expiredContracts = enrichedCompanies.Count(x => x.IsExpired),
+                paidCompanies = companies.Count(x => x.ServiceType == "Ücretli"),
+                freeCompanies = companies.Count(x => x.ServiceType == "Ücretsiz"),
+                totalRecords = records.Count,
+                billableRecords = records.Count(x => x.IsBillable),
+                totalRevenue = records.Where(x => x.IsBillable).Sum(x => x.TotalAmount),
+                mikroSyncedCount = records.Count(x => x.MikroInvoiceStatus == "Mikro'ya Aktarıldı" || x.MikroInvoiceStatus == "Simüle Edildi (Test)")
+            };
+
+            return Results.Ok(new
+            {
+                categories,
+                companies = enrichedCompanies,
+                records,
+                mikroConfig = mikro,
+                kpis
+            });
+        });
+
+        // Smart Host ID Lookup (for future B-Connect.exe / Web pre-connect intelligence card!)
+        app.MapGet("/api/crm/lookup", (string? hostId) =>
+        {
+            string clean = new string((hostId ?? "").Where(char.IsDigit).ToArray());
+            if (string.IsNullOrEmpty(clean)) return Results.Ok(new { found = false });
+
+            var companies = LoadCompanies();
+            var match = companies.FirstOrDefault(c =>
+                (c.HostIds ?? "").Split(new[] { ',', ';', ' ', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+                .Any(h => new string(h.Where(char.IsDigit).ToArray()) == clean));
+
+            if (match == null) return Results.Ok(new { found = false });
+
+            var eval = EvaluateContract(match);
+            var recent = LoadRecords().Where(r => r.CompanyId == match.Id).OrderByDescending(r => r.CreatedAt).Take(3).ToList();
+            return Results.Ok(new
+            {
+                found = true,
+                company = match,
+                contractBadge = eval.ContractBadge,
+                contractColor = eval.ContractColor,
+                daysRemaining = eval.DaysRemaining,
+                isExpired = eval.IsExpired,
+                recentRecords = recent
+            });
+        });
+
+        // Save Category
+        app.MapPost("/api/crm/categories/save", async (HttpContext ctx) =>
+        {
+            var body = await JsonSerializer.DeserializeAsync<CrmCategory>(ctx.Request.Body, _jsonOpts);
+            if (body == null || string.IsNullOrWhiteSpace(body.Name))
+                return Results.BadRequest(new { error = "Kategori adı boş olamaz." });
+
+            var list = LoadCategories();
+            if (string.IsNullOrWhiteSpace(body.Id))
+                body.Id = "cat-" + Guid.NewGuid().ToString("N").Substring(0, 8);
+
+            var existing = list.FirstOrDefault(x => x.Id == body.Id || x.Name.Equals(body.Name.Trim(), StringComparison.OrdinalIgnoreCase));
+            if (existing != null)
+            {
+                existing.Name = body.Name.Trim();
+                existing.Color = string.IsNullOrWhiteSpace(body.Color) ? "#f59e0b" : body.Color;
+            }
+            else
+            {
+                body.Name = body.Name.Trim();
+                list.Add(body);
+            }
+            SaveJson(CategoriesPath, list);
+            return Results.Ok(new { success = true, categories = list });
+        });
+
+        // Delete Category
+        app.MapPost("/api/crm/categories/delete", async (HttpContext ctx) =>
+        {
+            using var doc = await JsonDocument.ParseAsync(ctx.Request.Body);
+            string id = doc.RootElement.TryGetProperty("id", out var p) ? p.GetString() ?? "" : "";
+            var list = LoadCategories();
+            list.RemoveAll(x => x.Id == id);
+            SaveJson(CategoriesPath, list);
+            return Results.Ok(new { success = true, categories = list });
+        });
+
+        // Save Company
+        app.MapPost("/api/crm/companies/save", async (HttpContext ctx) =>
+        {
+            var body = await JsonSerializer.DeserializeAsync<CrmCompany>(ctx.Request.Body, _jsonOpts);
+            if (body == null || string.IsNullOrWhiteSpace(body.Name))
+                return Results.BadRequest(new { error = "Firma adı zorunludur." });
+
+            var list = LoadCompanies();
+            string now = NowTr();
+            if (string.IsNullOrWhiteSpace(body.Id))
+            {
+                body.Id = "cmp-" + Guid.NewGuid().ToString("N").Substring(0, 10);
+                body.CreatedAt = now;
+                body.UpdatedAt = now;
+                list.Add(body);
+            }
+            else
+            {
+                var idx = list.FindIndex(x => x.Id == body.Id);
+                if (idx >= 0)
+                {
+                    body.CreatedAt = string.IsNullOrEmpty(list[idx].CreatedAt) ? now : list[idx].CreatedAt;
+                    body.UpdatedAt = now;
+                    list[idx] = body;
+                }
+                else
+                {
+                    body.CreatedAt = now;
+                    body.UpdatedAt = now;
+                    list.Add(body);
+                }
+            }
+            SaveJson(CompaniesPath, list);
+            return Results.Ok(new { success = true, company = body });
+        });
+
+        // Delete Company
+        app.MapPost("/api/crm/companies/delete", async (HttpContext ctx) =>
+        {
+            using var doc = await JsonDocument.ParseAsync(ctx.Request.Body);
+            string id = doc.RootElement.TryGetProperty("id", out var p) ? p.GetString() ?? "" : "";
+            var list = LoadCompanies();
+            list.RemoveAll(x => x.Id == id);
+            SaveJson(CompaniesPath, list);
+            return Results.Ok(new { success = true });
+        });
+
+        // Save Support Record & optionally create Mikro Service Invoice
+        app.MapPost("/api/crm/records/save", async (HttpContext ctx) =>
+        {
+            using var doc = await JsonDocument.ParseAsync(ctx.Request.Body);
+            var root = doc.RootElement;
+            bool sendToMikro = root.TryGetProperty("sendToMikro", out var sm) && sm.GetBoolean();
+
+            var rec = JsonSerializer.Deserialize<CrmSupportRecord>(root.GetRawText(), _jsonOpts);
+            if (rec == null || string.IsNullOrWhiteSpace(rec.Issue))
+                return Results.BadRequest(new { error = "Destek açıklaması zorunludur." });
+
+            var companies = LoadCompanies();
+            var comp = companies.FirstOrDefault(c => c.Id == rec.CompanyId);
+            if (comp != null)
+            {
+                rec.CompanyName = comp.Name;
+                rec.Category = comp.Category;
+                rec.ServiceType = comp.ServiceType;
+                if (string.IsNullOrWhiteSpace(rec.MikroCariKod)) rec.MikroCariKod = comp.MikroCariKod;
+                if (string.IsNullOrWhiteSpace(rec.MikroServiceCode)) rec.MikroServiceCode = comp.DefaultServiceCode;
+            }
+
+            if (rec.VatRate < 0 || rec.VatRate > 100) rec.VatRate = 20;
+            rec.VatAmount = Math.Round(rec.NetAmount * rec.VatRate / 100m, 2);
+            rec.TotalAmount = Math.Round(rec.NetAmount + rec.VatAmount, 2);
+
+            string now = NowTr();
+            if (string.IsNullOrWhiteSpace(rec.Id))
+            {
+                rec.Id = "sup-" + Guid.NewGuid().ToString("N").Substring(0, 10);
+                rec.CreatedAt = now;
+            }
+            if (rec.Status == "Çözüldü" && string.IsNullOrWhiteSpace(rec.ClosedAt))
+                rec.ClosedAt = now;
+
+            if (!rec.IsBillable || rec.NetAmount <= 0)
+            {
+                rec.MikroInvoiceStatus = "Gerekmiyor";
+                rec.MikroError = "";
+            }
+            else if (sendToMikro)
+            {
+                var res = await DispatchToMikroAsync(rec, comp);
+                rec.MikroInvoiceStatus = res.Status;
+                rec.MikroInvoiceNo = res.InvoiceNo;
+                rec.MikroPayloadPreview = res.Payload;
+                rec.MikroError = res.Error;
+            }
+            else if (string.IsNullOrWhiteSpace(rec.MikroInvoiceStatus) || rec.MikroInvoiceStatus == "Gerekmiyor")
+            {
+                rec.MikroInvoiceStatus = "Bekliyor";
+            }
+
+            var records = LoadRecords();
+            int idx = records.FindIndex(x => x.Id == rec.Id);
+            if (idx >= 0) records[idx] = rec;
+            else records.Insert(0, rec);
+            SaveJson(RecordsPath, records);
+
+            return Results.Ok(new { success = true, record = rec });
+        });
+
+        // Re-send / Trigger Mikro Invoice on existing record
+        app.MapPost("/api/crm/records/send-mikro", async (HttpContext ctx) =>
+        {
+            using var doc = await JsonDocument.ParseAsync(ctx.Request.Body);
+            string id = doc.RootElement.TryGetProperty("id", out var p) ? p.GetString() ?? "" : "";
+            var records = LoadRecords();
+            var rec = records.FirstOrDefault(x => x.Id == id);
+            if (rec == null) return Results.NotFound(new { error = "Kayıt bulunamadı." });
+
+            var comp = LoadCompanies().FirstOrDefault(c => c.Id == rec.CompanyId);
+            var res = await DispatchToMikroAsync(rec, comp);
+            rec.MikroInvoiceStatus = res.Status;
+            rec.MikroInvoiceNo = res.InvoiceNo;
+            rec.MikroPayloadPreview = res.Payload;
+            rec.MikroError = res.Error;
+            SaveJson(RecordsPath, records);
+
+            return Results.Ok(new { success = res.Ok, record = rec, error = res.Error });
+        });
+
+        // Delete Support Record
+        app.MapPost("/api/crm/records/delete", async (HttpContext ctx) =>
+        {
+            using var doc = await JsonDocument.ParseAsync(ctx.Request.Body);
+            string id = doc.RootElement.TryGetProperty("id", out var p) ? p.GetString() ?? "" : "";
+            var records = LoadRecords();
+            records.RemoveAll(x => x.Id == id);
+            SaveJson(RecordsPath, records);
+            return Results.Ok(new { success = true });
+        });
+
+        // Save Mikro Config
+        app.MapPost("/api/crm/mikro/config", async (HttpContext ctx) =>
+        {
+            var cfg = await JsonSerializer.DeserializeAsync<MikroConfig>(ctx.Request.Body, _jsonOpts);
+            if (cfg == null) return Results.BadRequest(new { error = "Geçersiz ayar." });
+            var old = LoadMikroConfig();
+            if (cfg.LastSimulatedSeq < old.LastSimulatedSeq) cfg.LastSimulatedSeq = old.LastSimulatedSeq;
+            SaveJson(MikroConfigPath, cfg);
+            return Results.Ok(new { success = true, mikroConfig = cfg });
+        });
+
+        // Test Mikro Connection
+        app.MapPost("/api/crm/mikro/test", async (HttpContext ctx) =>
+        {
+            var cfg = await JsonSerializer.DeserializeAsync<MikroConfig>(ctx.Request.Body, _jsonOpts) ?? LoadMikroConfig();
+            if (string.Equals(cfg.Mode, "Simulation", StringComparison.OrdinalIgnoreCase))
+            {
+                return Results.Ok(new { success = true, message = "🧪 Simülasyon (Test) Modu aktif! Gerçek Mikro veritabanına dokunmadan tüm Hizmet Satış Faturası akışını güvenle test edebilirsiniz." });
+            }
+            if (string.Equals(cfg.Mode, "Api", StringComparison.OrdinalIgnoreCase))
+            {
+                if (string.IsNullOrWhiteSpace(cfg.ApiBaseUrl))
+                    return Results.Ok(new { success = false, message = "Mikro API URL adresi boş!" });
+                try
+                {
+                    using var res = await _http.GetAsync(cfg.ApiBaseUrl);
+                    return Results.Ok(new { success = true, message = $"Mikro API sunucusuna ulaşıldı (HTTP {(int)res.StatusCode})." });
+                }
+                catch (Exception ex)
+                {
+                    return Results.Ok(new { success = false, message = $"Mikro API erişilemedi: {ex.Message}" });
+                }
+            }
+            if (string.Equals(cfg.Mode, "Sql", StringComparison.OrdinalIgnoreCase))
+            {
+                if (string.IsNullOrWhiteSpace(cfg.SqlConnectionString))
+                    return Results.Ok(new { success = false, message = "SQL bağlantı cümlesi boş!" });
+                try
+                {
+                    using var conn = new System.Data.SqlClient.SqlConnection(cfg.SqlConnectionString);
+                    await conn.OpenAsync();
+                    return Results.Ok(new { success = true, message = $"SQL Server bağlantısı başarılı! Veritabanı: {conn.Database}" });
+                }
+                catch (Exception ex)
+                {
+                    return Results.Ok(new { success = false, message = $"SQL bağlantı hatası: {ex.Message}" });
+                }
+            }
+            return Results.Ok(new { success = false, message = "Geçersiz mod." });
+        });
+
+        // Seed 3 realistic Turkish demo companies for instant testing
+        app.MapPost("/api/crm/seed-demo", () =>
+        {
+            var companies = LoadCompanies();
+            string now = NowTr();
+            var demos = new List<CrmCompany>
+            {
+                new()
+                {
+                    Id = "cmp-demo-bakim",
+                    Name = "Anadolu Makina Sanayi A.Ş.",
+                    Category = "Üretim / Sanayi",
+                    ServiceType = "Bakım Anlaşmalı",
+                    ContractEndDate = "2027-12-31",
+                    DefaultFee = 0,
+                    HostIds = "112233445, 554433221",
+                    MikroCariKod = "120.01.001",
+                    InvoiceTitle = "ANADOLU MAKİNA SANAYİ VE TİCARET A.Ş.",
+                    TaxOffice = "Büyük Mükellefler",
+                    TaxNumber = "1234567890",
+                    InvoiceAddress = "İkitelli OSB Mah. 12. Cad. No:45 Başakşehir / İstanbul",
+                    ContactPerson = "Ahmet Yılmaz",
+                    Phone = "0532 111 22 33",
+                    Email = "bilgi@anadolumakina.com.tr",
+                    DefaultServiceCode = "HZM-BAKIM-01",
+                    VatRate = 20,
+                    Notes = "Yıllık tam kapsamlı Mikro ERP + Sunucu bakım anlaşmalı VIP müşteri.",
+                    CreatedAt = now,
+                    UpdatedAt = now
+                },
+                new()
+                {
+                    Id = "cmp-demo-ucretli",
+                    Name = "Yıldız Tekstil & Konfeksiyon Ltd.",
+                    Category = "KOBİ",
+                    ServiceType = "Ücretli",
+                    ContractEndDate = "",
+                    DefaultFee = 1500,
+                    HostIds = "998877665",
+                    MikroCariKod = "120.01.042",
+                    InvoiceTitle = "YILDIZ TEKSTİL KONFEKSİYON SAN. TİC. LTD. ŞTİ.",
+                    TaxOffice = "Merter V.D.",
+                    TaxNumber = "9876543210",
+                    InvoiceAddress = "Mehmet Nesih Özmen Mah. Merter / İstanbul",
+                    ContactPerson = "Fatma Kaya",
+                    Phone = "0533 444 55 66",
+                    Email = "muhasebe@yildiztekstil.com.tr",
+                    DefaultServiceCode = "HZM-DESTEK-01",
+                    VatRate = 20,
+                    Notes = "Bakım anlaşması yok — her uzaktan destek sonrası Hizmet Satış Faturası kesilir.",
+                    CreatedAt = now,
+                    UpdatedAt = now
+                },
+                new()
+                {
+                    Id = "cmp-demo-ucretsiz",
+                    Name = "Örnek Mali Müşavirlik (Demo)",
+                    Category = "Muhasebe / Mali Müşavir",
+                    ServiceType = "Ücretsiz",
+                    ContractEndDate = "",
+                    DefaultFee = 0,
+                    HostIds = "776655443",
+                    MikroCariKod = "120.01.099",
+                    InvoiceTitle = "ÖRNEK MALİ MÜŞAVİRLİK",
+                    TaxOffice = "Kadıköy V.D.",
+                    TaxNumber = "5556667778",
+                    InvoiceAddress = "Caferağa Mah. Kadıköy / İstanbul",
+                    ContactPerson = "Mehmet Demir",
+                    Phone = "0542 777 88 99",
+                    Email = "info@ornekmali.com",
+                    DefaultServiceCode = "HZM-DESTEK-01",
+                    VatRate = 20,
+                    Notes = "İlk 30 gün ücretsiz kurulum & eğitim kapsamında.",
+                    CreatedAt = now,
+                    UpdatedAt = now
+                }
+            };
+
+            foreach (var d in demos)
+            {
+                if (!companies.Any(x => x.Id == d.Id))
+                    companies.Add(d);
+            }
+            SaveJson(CompaniesPath, companies);
+            return Results.Ok(new { success = true, count = companies.Count });
+        });
+    }
+}
