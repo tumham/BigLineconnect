@@ -357,8 +357,8 @@
                 <p><b>B-Connect.exe</b> paketi yalnızca Windows bilgisayarlarda (Masaüstünden Masaüstüne) çalışır; <b>iPhone</b> ve <b>Android</b> telefonlara kurulmaz.</p>
                 <p class="ok-line">✅ Kurulum yapmanıza gerek yok! Doğrudan bu tarayıcı ekranından (Safari / Chrome) aşağıdaki kutuya 9 haneli ID yazarak hemen bağlanabilirsiniz.</p>
                 <div class="smart-actions">
-                    <a id="smart-apk-btn" href="/B-Connect-Android.apk?v=443" class="smart-act-btn apk" style="display:none;">
-                        <i class="fa-brands fa-android"></i> Android APK İndir
+                    <a id="smart-apk-btn" href="https://play.google.com/store/apps/details?id=com.bigus.bconnect" target="_blank" rel="noopener" class="smart-act-btn apk" style="display:none;">
+                        <i class="fa-brands fa-google-play"></i> Google Play'den İndir
                     </a>
                     <button id="smart-pwa-btn" type="button" class="smart-act-btn" onclick="installMobilePwa()" style="display:none;">
                         <i class="fa-solid fa-mobile-screen-button" style="color:#fbbf24;"></i> Ana Ekrana Ekle
@@ -414,14 +414,14 @@
                     <span>Linux Sunucu Terminali (SSH)</span>
                 </button>
             </div>
-            <a id="android-apk-strip" href="/B-Connect-Android.apk?v=443" class="android-apk-strip">
-                <i class="fa-brands fa-android" style="font-size:1.05rem;color:#34d399;"></i>
-                <span>Android Uygulamasını İndir (.APK • Ekran Paylaşım Destekli)</span>
+            <a id="android-apk-strip" href="https://play.google.com/store/apps/details?id=com.bigus.bconnect" target="_blank" rel="noopener" class="android-apk-strip">
+                <i class="fa-brands fa-google-play" style="font-size:1.05rem;color:#34d399;"></i>
+                <span>Google Play'den Android Uygulamasını İndir (Ekran Paylaşım Destekli)</span>
             </a>
         </div>
 
         <div class="footer-links">
-            <a id="footer-apk-link" href="/B-Connect-Android.apk?v=443" style="display:none;"><i class="fa-brands fa-android" style="color:#34d399;"></i> Android APK</a>
+            <a id="footer-apk-link" href="https://play.google.com/store/apps/details?id=com.bigus.bconnect" target="_blank" rel="noopener"><i class="fa-brands fa-google-play" style="color:#34d399;"></i> Google Play</a>
             <a href="/terminal"><i class="fa-solid fa-terminal"></i> Linux Terminal</a>
             <a href="#" onclick="sharePcLinkWhatsApp(); return false;"><i class="fa-brands fa-whatsapp" style="color:#25D366;"></i> PC Linki Gönder</a>
             <a href="/?desktop=1"><i class="fa-solid fa-laptop"></i> Masaüstü Site</a>
@@ -589,13 +589,11 @@
         const isInAppWebView = /WhatsApp|WA4A|WA4iOS|Instagram|FBAN|FBIOS/i.test(uaStr);
         const params = new URLSearchParams(window.location.search);
 
-        const SHOW_PUBLIC_APK = false; // Google Play Store yayını tamamlandığında true yapılacak
-        if (SHOW_PUBLIC_APK && isAndroidDevice) {
+        const SHOW_GOOGLE_PLAY = true; // Resmi Google Play Store yayını aktif
+        if (SHOW_GOOGLE_PLAY && isAndroidDevice) {
             const apkStrip = document.getElementById('android-apk-strip');
-            const footApk = document.getElementById('footer-apk-link');
             const smartApk = document.getElementById('smart-apk-btn');
             if (apkStrip) apkStrip.style.display = 'flex';
-            if (footApk) footApk.style.display = 'inline-flex';
             if (smartApk) smartApk.style.display = 'inline-flex';
         } else {
             const smartPwa = document.getElementById('smart-pwa-btn');
