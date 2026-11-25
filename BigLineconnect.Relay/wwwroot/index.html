@@ -459,7 +459,7 @@
         </div>
 
         <!-- Remote screen rendering canvas container (Only contains canvas & img, zoomed independently) -->
-        <div class="canvas-container" id="canvas-container" style="touch-action: none; position: relative; overflow: hidden;">
+        <div class="canvas-container" id="canvas-container" style="touch-action: none; position: relative; overflow: hidden; box-sizing: border-box; padding-bottom: 72px;">
             <canvas id="screen-canvas" style="width: auto; height: auto; margin: auto; cursor: default; display: block; user-select: none; image-rendering: -webkit-optimize-contrast; image-rendering: high-quality; -webkit-font-smoothing: antialiased;"></canvas>
             <img id="screen-img" style="width: auto; height: auto; margin: auto; display: none;">
         </div>
@@ -1882,7 +1882,9 @@
             if (nativeW <= 100 || nativeH <= 100) return;
 
             var containerW = container.clientWidth || window.innerWidth;
-            var containerH = container.clientHeight || (window.innerHeight - 60);
+            var dockEl = document.getElementById('floating-controls');
+            var dockReserve = (dockEl && dockEl.style.display !== 'none') ? 74 : 0;
+            var containerH = Math.max(120, (container.clientHeight || (window.innerHeight - 60)) - dockReserve);
             if (containerW <= 10 || containerH <= 10) return;
 
             var nativeAspect = nativeW / nativeH;
