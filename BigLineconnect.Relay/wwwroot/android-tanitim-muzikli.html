@@ -60,6 +60,22 @@
             background: rgba(251, 191, 36, 0.14); border: 1px solid rgba(251, 191, 36, 0.4);
             padding: 3px 10px; border-radius: 999px; letter-spacing: 0.6px; text-transform: uppercase;
         }
+        .final-links-box {
+            width: 100%; max-width: 920px; margin-top: 8px;
+            background: rgba(16, 185, 129, 0.08); border: 1.5px solid rgba(16, 185, 129, 0.35);
+            border-radius: 16px; padding: 14px 16px;
+            display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px;
+        }
+        .fl-btn {
+            display: inline-flex; align-items: center; gap: 7px; padding: 10px 15px; border-radius: 11px;
+            font-size: 0.84rem; font-weight: 800; text-decoration: none; cursor: pointer;
+            border: 1px solid rgba(255,255,255,0.16); background: rgba(255,255,255,0.07); color: #fff;
+            transition: transform 0.15s, filter 0.15s;
+        }
+        .fl-btn:hover { transform: translateY(-1px); filter: brightness(1.1); }
+        .fl-btn.amber { background: linear-gradient(135deg, var(--amber), var(--orange)); color: #05070d; border: none; }
+        .fl-btn.wa { background: rgba(37, 211, 102, 0.18); border-color: rgba(37, 211, 102, 0.5); color: #86efac; }
+        .fl-btn.blue { background: rgba(56, 189, 248, 0.16); border-color: rgba(56, 189, 248, 0.45); color: #bae6fd; }
         .head-btns { display: flex; gap: 8px; flex-wrap: wrap; }
         .h-btn {
             display: inline-flex; align-items: center; gap: 6px; padding: 8px 13px; border-radius: 10px;
@@ -134,9 +150,9 @@
             position: absolute; inset: 7px; border-radius: 23px; pointer-events: none; overflow: hidden;
         }
         .tap-marker {
-            position: absolute; left: 50%; transform: translate(-50%, -50%);
-            display: flex; flex-direction: column; align-items: center; gap: 4px;
-            opacity: 0; transition: opacity 0.35s ease, top 0.4s ease;
+            position: absolute; left: 50%; transform: translate(-50%, -88%);
+            display: flex; flex-direction: column; align-items: center; gap: 3px;
+            opacity: 0; transition: opacity 0.35s ease, top 0.45s ease, left 0.45s ease;
         }
         .tap-marker.show { opacity: 1; }
         .tap-label {
@@ -267,7 +283,7 @@
             <img src="/logo.png" alt="B-Connect">
             <div>
                 <div class="brand-name">B-CONNECT ANDROID</div>
-                <div class="brand-tag"><i class="fa-solid fa-music"></i> Sinematik Müzikli Tanıtım</div>
+                <div class="brand-tag"><i class="fa-brands fa-google-play"></i> Uzak Masaüstü & Kontrol Eklentisi</div>
             </div>
         </div>
         <div class="head-btns">
@@ -311,7 +327,7 @@
         </div>
 
         <!-- SAHNE 2 -->
-        <div class="scene" data-duration="15000" data-caption="B-Connect Uzak Masaüstü: Müşteri telefonundan tek dokunuşla canlı ekran paylaşımı — masaüstünüzde tam dikey ve kristal netliğinde!">
+        <div class="scene" data-duration="20000" data-caption="B-Connect Uzak Masaüstü: Müşteri telefonundan tek dokunuşla canlı ekran paylaşımı — masaüstünüzde tam dikey ve kristal netliğinde!">
             <div>
                 <div class="step-pill"><i class="fa-brands fa-google-play"></i> Sahne 2 / 5 • Ana Uygulama (Canlı Video)</div>
                 <h2 class="scene-h"><span class="grad">B-Connect Uzak Masaüstü</span><br>Anında Canlı Ekran Paylaşımı</h2>
@@ -364,7 +380,7 @@
         </div>
 
         <!-- SAHNE 4 -->
-        <div class="scene" data-duration="15000" data-caption="B-Connect Kontrol Eklentisi: İki dokunuşla Erişilebilirlik izni açılır ve bilgisayar fareniz karşı telefonda gerçek parmak gibi çalışır!">
+        <div class="scene" data-duration="19000" data-caption="B-Connect Kontrol Eklentisi: İki dokunuşla Erişilebilirlik izni açılır ve bilgisayar fareniz karşı telefonda gerçek parmak gibi çalışır!">
             <div>
                 <div class="step-pill green"><i class="fa-solid fa-hand-pointer"></i> Sahne 4 / 5 • Kontrol Eklentisi (Canlı Video)</div>
                 <h2 class="scene-h"><span class="grad-g">B-Connect Kontrol Eklentisi</span><br>PC'den Telefona Tam Müdahale</h2>
@@ -437,6 +453,23 @@
                     </a>
                 </div>
             </div>
+            <div class="final-links-box">
+                <a class="fl-btn amber" href="https://biglineconnect.bigus.com.tr/" target="_blank" rel="noopener">
+                    <i class="fa-solid fa-globe"></i> B-Connect Resmi Siteye Git
+                </a>
+                <a class="fl-btn blue" href="https://biglineconnect.bigus.com.tr/mobil" target="_blank" rel="noopener">
+                    <i class="fa-solid fa-mobile-screen-button"></i> Mobil Konsoldan Bağlan
+                </a>
+                <a class="fl-btn" href="https://biglineconnect.bigus.com.tr/B-Connect.exe" download>
+                    <i class="fa-brands fa-windows"></i> Windows B-Connect.exe İndir
+                </a>
+                <button class="fl-btn wa" onclick="shareWhatsApp()">
+                    <i class="fa-brands fa-whatsapp"></i> WhatsApp'ta Paylaş
+                </button>
+                <button class="fl-btn" onclick="restartPromo()">
+                    <i class="fa-solid fa-rotate-left"></i> Tekrar İzle
+                </button>
+            </div>
         </div>
     </div>
 
@@ -449,7 +482,7 @@
             <button class="c-btn primary" id="btn-play" onclick="togglePlay()"><i class="fa-solid fa-pause"></i> Duraklat</button>
             <button class="c-btn" onclick="prevScene()"><i class="fa-solid fa-backward-step"></i></button>
             <button class="c-btn" onclick="nextScene()"><i class="fa-solid fa-forward-step"></i></button>
-            <button class="c-btn music-on" id="btn-music" onclick="toggleMusic()"><i class="fa-solid fa-volume-high"></i> Müzik: Açık (Flüt Synth)</button>
+            <button class="c-btn music-on" id="btn-music" onclick="toggleMusic()"><i class="fa-solid fa-volume-high"></i> Müzik: Açık</button>
         </div>
         <div class="dots" id="dots"></div>
         <div style="font-size:0.78rem; color:var(--muted); font-weight:700;">
@@ -565,7 +598,7 @@
         const btn = document.getElementById('btn-music');
         if (musicOn) {
             btn.classList.add('music-on');
-            btn.innerHTML = '<i class="fa-solid fa-volume-high"></i> Müzik: Açık (Flüt Synth)';
+            btn.innerHTML = '<i class="fa-solid fa-volume-high"></i> Müzik: Açık';
         } else {
             btn.classList.remove('music-on');
             btn.innerHTML = '<i class="fa-solid fa-music"></i> Müzik: Kapalı';
@@ -590,22 +623,26 @@
         }, { passive: true });
     });
 
-    // --- VİDEO SENKRONLU CANLI TIKLAMA OKLARI ---
+    // --- VİDEO SENKRONLU CANLI TIKLAMA OKLARI (Gerçek buton koordinatlarına kalibre + 0.72x rahat izleme hızı) ---
     const vidMainEl = document.getElementById('vid-main');
     const tapMainEl = document.getElementById('tap-main');
     const tapMainLbl = document.getElementById('tap-main-lbl');
     if (vidMainEl && tapMainEl) {
+        vidMainEl.playbackRate = 0.72;
         vidMainEl.addEventListener('timeupdate', () => {
             const t = vidMainEl.currentTime || 0;
-            if (t < 5.0) {
-                tapMainEl.style.top = '64%';
+            if (t < 4.5) {
+                tapMainEl.style.top = '62%';
+                tapMainEl.style.left = '50%';
                 tapMainLbl.innerText = "👆 1. Ekranımı Paylaş'a Dokun";
-            } else if (t < 10.0) {
-                tapMainEl.style.top = '75%';
+            } else if (t < 9.5) {
+                tapMainEl.style.top = '60%';
+                tapMainEl.style.left = '66%';
                 tapMainLbl.innerText = "👆 2. Şimdi Başlat'a Onay Ver";
             } else {
-                tapMainEl.style.top = '22%';
-                tapMainLbl.innerText = "✅ Canlı Ekran Yayını Aktif!";
+                tapMainEl.style.top = '28%';
+                tapMainEl.style.left = '50%';
+                tapMainLbl.innerText = "✅ Canlı Yayın Aktif — 9 Haneli ID!";
             }
         });
     }
@@ -614,16 +651,20 @@
     const tapAddonEl = document.getElementById('tap-addon');
     const tapAddonLbl = document.getElementById('tap-addon-lbl');
     if (vidAddonEl && tapAddonEl) {
+        vidAddonEl.playbackRate = 0.72;
         vidAddonEl.addEventListener('timeupdate', () => {
             const t = vidAddonEl.currentTime || 0;
-            if (t < 4.3) {
-                tapAddonEl.style.top = '59%';
+            if (t < 4.1) {
+                tapAddonEl.style.top = '60%';
+                tapAddonEl.style.left = '50%';
                 tapAddonLbl.innerText = "👆 1. Dokunma Servisi Ayarlarını Aç";
-            } else if (t < 9.2) {
+            } else if (t < 9.1) {
                 tapAddonEl.style.top = '63%';
+                tapAddonEl.style.left = '65%';
                 tapAddonLbl.innerText = "👆 2. Kabul Et ve Ayarları Aç";
             } else {
                 tapAddonEl.style.top = '44%';
+                tapAddonEl.style.left = '50%';
                 tapAddonLbl.innerText = "👆 3. B-Connect Eklentisini Aç!";
             }
         });
@@ -655,14 +696,14 @@
         const vMain = document.getElementById('vid-main');
         const vAddon = document.getElementById('vid-addon');
         [vMain, vAddon].forEach(v => { if (v) v.pause(); });
-        if (activeIdx === 1 && vMain) { vMain.currentTime = 0; vMain.play().catch(() => {}); }
-        if (activeIdx === 3 && vAddon) { vAddon.currentTime = 0; vAddon.play().catch(() => {}); }
+        if (activeIdx === 1 && vMain) { vMain.currentTime = 0; vMain.playbackRate = 0.72; vMain.play().catch(() => {}); }
+        if (activeIdx === 3 && vAddon) { vAddon.currentTime = 0; vAddon.playbackRate = 0.72; vAddon.play().catch(() => {}); }
     }
 
     function goScene(nextIdx) {
         clearTimeout(timer);
         cancelAnimationFrame(rafId);
-        idx = (nextIdx + scenes.length) % scenes.length;
+        idx = Math.max(0, Math.min(scenes.length - 1, nextIdx));
         scenes.forEach((s, i) => s.classList.toggle('active', i === idx));
         dots.forEach((d, i) => {
             d.classList.remove('active', 'done');
@@ -677,9 +718,10 @@
     }
 
     function scheduleNext() {
-        const dur = parseInt(scenes[idx].getAttribute('data-duration') || '12000', 10);
+        const dur = parseInt(scenes[idx].getAttribute('data-duration') || '14000', 10);
         startTime = performance.now();
         const fill = dots[idx].querySelector('.fill');
+        const isLast = (idx === scenes.length - 1);
         function tick(now) {
             if (!playing) return;
             const p = Math.min(100, ((now - startTime) / dur) * 100);
@@ -687,10 +729,30 @@
             if (p < 100) rafId = requestAnimationFrame(tick);
         }
         rafId = requestAnimationFrame(tick);
-        timer = setTimeout(() => goScene(idx + 1), dur);
+        timer = setTimeout(() => {
+            if (isLast) {
+                // Son sahnede başa dönme — bağlantılara tıklayabilmesi için burada dur!
+                playing = false;
+                fill.style.width = '100%';
+                dots[idx].classList.add('done');
+                btnPlay.innerHTML = '<i class="fa-solid fa-rotate-left"></i> Tekrar İzle';
+            } else {
+                goScene(idx + 1);
+            }
+        }, dur);
+    }
+
+    function restartPromo() {
+        playing = true;
+        btnPlay.innerHTML = '<i class="fa-solid fa-pause"></i> Duraklat';
+        goScene(0);
     }
 
     function togglePlay() {
+        if (!playing && idx === scenes.length - 1) {
+            restartPromo();
+            return;
+        }
         playing = !playing;
         btnPlay.innerHTML = playing ? '<i class="fa-solid fa-pause"></i> Duraklat' : '<i class="fa-solid fa-play"></i> Oynat';
         if (playing) {
@@ -706,8 +768,8 @@
         }
     }
 
-    function nextScene() { goScene(idx + 1); }
-    function prevScene() { goScene(idx - 1); }
+    function nextScene() { if (idx < scenes.length - 1) goScene(idx + 1); }
+    function prevScene() { if (idx > 0) goScene(idx - 1); }
 
     function shareWhatsApp() {
         const url = window.location.href;
