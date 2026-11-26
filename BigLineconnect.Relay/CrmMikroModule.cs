@@ -453,6 +453,26 @@ public static class CrmMikroModule
         return (false, "Hata", "", previewPayload, "Bilinmeyen Mikro çalışma modu.");
     }
 
+    public static HashSet<string> GetHostIdsForTenant(string? tenantId)
+    {
+        var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        string t = NormalizeTenant(tenantId);
+        foreach (var c in LoadCompanies(t))
+        {
+            foreach (var raw in (c.HostIds ?? "").Split(new[] { ',', ';', ' ', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries))
+            {
+                string digits = new string(raw.Where(char.IsDigit).ToArray());
+                if (!string.IsNullOrEmpty(digits)) set.Add(digits);
+            }
+        }
+        return set;
+    }
+
+    public static int GetRecordCountForTenant(string? tenantId)
+    {
+        return LoadRecords(NormalizeTenant(tenantId)).Count;
+    }
+
     public static void MapEndpoints(WebApplication app)
     {
         // Serve /crm page cleanly

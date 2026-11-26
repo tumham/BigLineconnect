@@ -4732,10 +4732,32 @@ td{{padding:10px 12px;border-bottom:1px solid #e2e8f0;vertical-align:top;}}
 
             app.MapGet("/api/bayi/dashboard", async context =>
             {
-                string tenantId = context.Request.Query["tenantId"].ToString();
+                string tenantId = (context.Request.Query["tenantId"].ToString() ?? "").Trim().ToUpperInvariant();
+                if (string.IsNullOrEmpty(tenantId))
+                {
+                    context.Response.StatusCode = 400;
+                    await context.Response.WriteAsync("{\"error\":\"tenantId gerekli\"}");
+                    return;
+                }
+
+                // Siki Bayi Izolasyonu: Bayi yalnizca kendi CRM firmalarina veya kendi destek taleplerine ait cihazlari gorur!
+                var allowedHostIds = CrmMikroModule.GetHostIdsForTenant(tenantId);
+                var tenantHistory = LoadSupportHistory()
+                    .Where(x => string.Equals((x.TenantId ?? "").Trim(), tenantId, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+                foreach (var th in tenantHistory)
+                {
+                    string digits = new string((th.HostId ?? "").Where(char.IsDigit).ToArray());
+                    if (!string.IsNullOrEmpty(digits)) allowedHostIds.Add(digits);
+                }
+
                 var hostsList = new List<object>();
                 foreach (var h in ActiveHosts.Values)
                 {
+                    string hDigits = new string((h.Id ?? "").Where(char.IsDigit).ToArray());
+                    if (string.IsNullOrEmpty(hDigits) || !allowedHostIds.Contains(hDigits))
+                        continue;
+
                     hostsList.Add(new
                     {
                         id = h.Id,
@@ -4747,12 +4769,14 @@ td{{padding:10px 12px;border-bottom:1px solid #e2e8f0;vertical-align:top;}}
                     });
                 }
 
+                int crmCount = CrmMikroModule.GetRecordCountForTenant(tenantId);
                 var dashboardData = new
                 {
                     tenantId = tenantId,
                     maxQuota = 50,
                     hosts = hostsList,
-                    history = SqliteManager.LoadAllTickets()
+                    history = tenantHistory,
+                    crmRecordCount = crmCount
                 };
 
                 context.Response.ContentType = "application/json; charset=utf-8";
