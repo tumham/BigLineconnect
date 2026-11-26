@@ -168,9 +168,12 @@
         </div>
     </div>
     <div class="top-actions">
+        <select id="admin-tenant-select" style="display:none; background:#0b1220; border:1px solid var(--amber); color:var(--amber-light); font-weight:800; padding:8px 12px; border-radius:10px;" onchange="switchAdminTenant(this.value)"></select>
+        <span id="active-tenant-pill" class="pill" style="background:rgba(16,185,129,0.16);color:#6ee7b7;border:1px solid rgba(16,185,129,0.45);padding:7px 12px;font-size:0.8rem;">🏢 BIGLINE</span>
         <button class="btn btn-green" onclick="seedDemoData()"><i class="fa-solid fa-wand-magic-sparkles"></i> 3 Örnek Firma Yükle</button>
         <button class="btn" onclick="loadOverview()"><i class="fa-solid fa-rotate-right"></i> Yenile</button>
-        <a href="/admin.html" class="btn"><i class="fa-solid fa-chart-line"></i> Eski Admin Panel</a>
+        <a id="back-portal-btn" href="/admin.html" class="btn"><i class="fa-solid fa-chart-line"></i> Yönetim Paneli</a>
+        <button class="btn btn-danger" onclick="crmLogout()" title="Çıkış Yap"><i class="fa-solid fa-right-from-bracket"></i></button>
     </div>
 </div>
 
@@ -571,6 +574,14 @@
 
 <script>
     let STATE = { categories: [], companies: [], records: [], mikroConfig: {}, kpis: {} };
+    let ACTIVE_TENANT = 'BIGLINE';
+    let IS_SUPER_ADMIN = false;
+    let ACTIVE_COMPANY_LABEL = 'Merkez (BIGLINE)';
+
+    function crmFetch(url, opts = {}) {
+        const headers = Object.assign({}, opts.headers || {}, { 'X-Tenant-Id': ACTIVE_TENANT });
+        return fetch(url, Object.assign({}, opts, { headers }));
+    }
 
     function toast(msg) {
         const el = document.getElementById('toast');
@@ -599,15 +610,16 @@
     function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 
     async function loadOverview() {
-        const res = await fetch('/api/crm/overview');
+        const res = await crmFetch('/api/crm/overview');
         if (!res.ok) return toast('Veri yüklenemedi!');
         STATE = await res.json();
         const sb = document.getElementById('storage-badge');
         if (sb) {
-            sb.innerText = STATE.sqlPersistent
-                ? '🗄️ SQL Server (BigusDb) Kalıcı Kayıt Aktif • Mevcut Canlı Veriler %100 Korunur'
-                : '💾 Yerel JSON Yedek Modu • Mevcut Canlı Veriler %100 Korunur';
+            const roleTxt = IS_SUPER_ADMIN ? `👑 Süper Admin • Görüntülenen: ${ACTIVE_TENANT}` : `🏢 Bayi İzole Alanı: ${ACTIVE_COMPANY_LABEL}`;
+            sb.innerText = (STATE.sqlPersistent ? '🗄️ SQL Kalıcı Kayıt Aktif • ' : '💾 Yerel Yedek • ') + roleTxt;
         }
+        const pill = document.getElementById('active-tenant-pill');
+        if (pill) pill.innerText = (IS_SUPER_ADMIN ? '👑 ' : '🏢 ') + ACTIVE_TENANT;
         renderKpis();
         populateCategorySelects();
         renderCompanies();
@@ -762,7 +774,7 @@
             notes: document.getElementById('c-notes').value.trim()
         };
         if (!payload.name) return toast('Firma adı zorunludur!');
-        const res = await fetch('/api/crm/companies/save', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+        const res = await crmFetch('/api/crm/companies/save', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
         if (res.ok) {
             closeModal('modal-company');
             toast('Firma kaydedildi ✅');
@@ -772,7 +784,7 @@
 
     async function deleteCompany(id) {
         if (!confirm('Bu firmayı silmek istediğinize emin misiniz?')) return;
-        await fetch('/api/crm/companies/delete', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ id }) });
+        await crmFetch('/api/crm/companies/delete', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ id }) });
         toast('Firma silindi');
         await loadOverview();
     }
@@ -859,7 +871,7 @@
             sendToMikro: billable && document.getElementById('r-send-mikro').checked
         };
         if (!payload.issue) return toast('Lütfen yapılan işlemi / sorunu yazın!');
-        const res = await fetch('/api/crm/records/save', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+        const res = await crmFetch('/api/crm/records/save', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
         const data = await res.json();
         if (res.ok) {
             closeModal('modal-record');
@@ -934,7 +946,7 @@
     }
 
     async function sendRecordToMikro(id) {
-        const res = await fetch('/api/crm/records/send-mikro', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ id }) });
+        const res = await crmFetch('/api/crm/records/send-mikro', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ id }) });
         const data = await res.json();
         toast(data.success ? `✅ Mikro Fatura: ${data.record?.mikroInvoiceNo}` : ('❌ ' + (data.error || 'Hata')));
         await loadOverview();
@@ -942,7 +954,7 @@
 
     async function deleteRecord(id) {
         if (!confirm('Bu destek kaydını silmek istediğinize emin misiniz?')) return;
-        await fetch('/api/crm/records/delete', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ id }) });
+        await crmFetch('/api/crm/records/delete', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ id }) });
         toast('Kayıt silindi');
         await loadOverview();
     }
@@ -967,7 +979,7 @@
         const name = document.getElementById('new-cat-name').value.trim();
         const color = document.getElementById('new-cat-color').value;
         if (!name) return;
-        await fetch('/api/crm/categories/save', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ name, color }) });
+        await crmFetch('/api/crm/categories/save', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ name, color }) });
         document.getElementById('new-cat-name').value = '';
         await loadOverview();
         renderCategoryList();
@@ -975,7 +987,7 @@
     }
 
     async function deleteCategory(id) {
-        await fetch('/api/crm/categories/delete', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ id }) });
+        await crmFetch('/api/crm/categories/delete', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ id }) });
         await loadOverview();
         renderCategoryList();
     }
@@ -983,7 +995,7 @@
     // --- HOST ID LOOKUP ---
     async function runLookup() {
         const id = document.getElementById('lookup-id').value.trim();
-        const res = await fetch('/api/crm/lookup?hostId=' + encodeURIComponent(id));
+        const res = await crmFetch('/api/crm/lookup?hostId=' + encodeURIComponent(id));
         const d = await res.json();
         const out = document.getElementById('lookup-result');
         if (!d.found) {
@@ -1054,7 +1066,7 @@
     }
 
     async function saveMikroConfig() {
-        const res = await fetch('/api/crm/mikro/config', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(readMikroForm()) });
+        const res = await crmFetch('/api/crm/mikro/config', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(readMikroForm()) });
         if (res.ok) {
             toast('Mikro ayarları kaydedildi ✅');
             await loadOverview();
@@ -1062,23 +1074,100 @@
     }
 
     async function testMikroConfig() {
-        const res = await fetch('/api/crm/mikro/test', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(readMikroForm()) });
+        const res = await crmFetch('/api/crm/mikro/test', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(readMikroForm()) });
         const d = await res.json();
         document.getElementById('mikro-test-msg').innerHTML = `<div class="alert-box" style="background:${d.success ? 'rgba(16,185,129,0.14)' : 'rgba(239,68,68,0.14)'};border:1px solid ${d.success ? '#10b981' : '#ef4444'};color:${d.success ? '#6ee7b7' : '#fca5a5'};">${esc(d.message)}</div>`;
     }
 
     async function seedDemoData() {
-        const res = await fetch('/api/crm/seed-demo', { method: 'POST' });
+        const res = await crmFetch('/api/crm/seed-demo', { method: 'POST' });
         if (res.ok) {
-            toast('3 örnek firma (Bakım Anlaşmalı, Ücretli, Ücretsiz) eklendi ✅');
+            toast(`${ACTIVE_TENANT} alanına 3 örnek firma eklendi ✅`);
             await loadOverview();
+        }
+    }
+
+    // --- MULTI-TENANT AUTH (BAYİ + MERKEZ YÖNETİCİ) ---
+    function switchLoginTab(mode) {
+        document.getElementById('login-form-bayi').style.display = mode === 'bayi' ? 'block' : 'none';
+        document.getElementById('login-form-admin').style.display = mode === 'admin' ? 'block' : 'none';
+        document.getElementById('ltab-bayi').classList.toggle('btn-primary', mode === 'bayi');
+        document.getElementById('ltab-admin').classList.toggle('btn-primary', mode === 'admin');
+        const errEl = document.getElementById('crm-login-err');
+        if (errEl) errEl.style.display = 'none';
+    }
+
+    async function loadAdminTenantSelector() {
+        const sel = document.getElementById('admin-tenant-select');
+        if (!sel || !IS_SUPER_ADMIN) return;
+        try {
+            const res = await fetch('/api/crm/tenants');
+            const d = await res.json();
+            const list = d.tenants || ['BIGLINE'];
+            sel.innerHTML = list.map(t => `<option value="${esc(t)}">${t === 'BIGLINE' ? '👑 BIGLINE (Merkez)' : '🏢 Bayi: ' + esc(t)}</option>`).join('');
+            sel.value = ACTIVE_TENANT;
+            sel.style.display = 'inline-block';
+        } catch (e) {}
+    }
+
+    function switchAdminTenant(t) {
+        if (!IS_SUPER_ADMIN) return;
+        ACTIVE_TENANT = t || 'BIGLINE';
+        loadOverview();
+    }
+
+    function enterAsBayi(session) {
+        IS_SUPER_ADMIN = false;
+        ACTIVE_TENANT = (session.tenantId || 'BIGLINE').toUpperCase();
+        ACTIVE_COMPANY_LABEL = `${ACTIVE_TENANT}${session.companyName ? ' (' + session.companyName + ')' : ''}`;
+        const backBtn = document.getElementById('back-portal-btn');
+        if (backBtn) { backBtn.href = '/bayi.html'; backBtn.innerHTML = '<i class="fa-solid fa-store"></i> Bayi Portalı'; }
+        const sel = document.getElementById('admin-tenant-select');
+        if (sel) sel.style.display = 'none';
+        document.getElementById('crm-login-modal').style.display = 'none';
+        loadOverview();
+    }
+
+    function enterAsAdmin() {
+        IS_SUPER_ADMIN = true;
+        ACTIVE_TENANT = 'BIGLINE';
+        ACTIVE_COMPANY_LABEL = 'Merkez (BIGLINE)';
+        const backBtn = document.getElementById('back-portal-btn');
+        if (backBtn) { backBtn.href = '/admin.html'; backBtn.innerHTML = '<i class="fa-solid fa-chart-line"></i> Admin Panel'; }
+        document.getElementById('crm-login-modal').style.display = 'none';
+        loadAdminTenantSelector();
+        loadOverview();
+    }
+
+    async function submitCrmBayiLogin(e) {
+        if (e) e.preventDefault();
+        const id = document.getElementById('crm-bayi-id').value.trim();
+        const pass = document.getElementById('crm-bayi-pass').value.trim();
+        const errEl = document.getElementById('crm-login-err');
+        if (errEl) errEl.style.display = 'none';
+        try {
+            const res = await fetch('/api/bayi/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ emailOrTenantId: id, password: pass })
+            });
+            const data = await res.json();
+            if (res.ok && data.tenantId) {
+                sessionStorage.removeItem('adminToken');
+                sessionStorage.setItem('bayiSession', JSON.stringify(data));
+                enterAsBayi(data);
+            } else {
+                if (errEl) { errEl.innerText = data.error || 'Bayi kodu veya şifre hatalı!'; errEl.style.display = 'block'; }
+            }
+        } catch (err) {
+            if (errEl) { errEl.innerText = 'Sunucu bağlantı hatası.'; errEl.style.display = 'block'; }
         }
     }
 
     async function submitCrmAdminLogin(e) {
         if (e) e.preventDefault();
         const pass = document.getElementById('crm-admin-pass').value.trim();
-        const errEl = document.getElementById('crm-admin-err');
+        const errEl = document.getElementById('crm-login-err');
         if (errEl) errEl.style.display = 'none';
         try {
             const res = await fetch('/api/admin/verify', {
@@ -1088,9 +1177,9 @@
             });
             const data = await res.json();
             if (data.success) {
+                sessionStorage.removeItem('bayiSession');
                 sessionStorage.setItem('adminToken', 'authenticated');
-                document.getElementById('crm-login-modal').style.display = 'none';
-                loadOverview();
+                enterAsAdmin();
             } else {
                 if (errEl) { errEl.innerText = 'Geçersiz yönetici şifresi!'; errEl.style.display = 'block'; }
             }
@@ -1099,30 +1188,58 @@
         }
     }
 
+    function crmLogout() {
+        sessionStorage.removeItem('adminToken');
+        sessionStorage.removeItem('bayiSession');
+        IS_SUPER_ADMIN = false;
+        ACTIVE_TENANT = 'BIGLINE';
+        document.getElementById('crm-login-modal').style.display = 'flex';
+    }
+
     window.addEventListener('DOMContentLoaded', () => {
-        const m = document.getElementById('crm-login-modal');
-        if (sessionStorage.getItem('adminToken') === 'authenticated') {
-            if (m) m.style.display = 'none';
-            loadOverview();
-        } else {
-            if (m) m.style.display = 'flex';
+        const bayiRaw = sessionStorage.getItem('bayiSession');
+        if (bayiRaw) {
+            try {
+                const s = JSON.parse(bayiRaw);
+                if (s && s.tenantId) { enterAsBayi(s); return; }
+            } catch (e) {}
         }
+        if (sessionStorage.getItem('adminToken') === 'authenticated') {
+            enterAsAdmin();
+            return;
+        }
+        document.getElementById('crm-login-modal').style.display = 'flex';
     });
 </script>
 
-<!-- Admin Şifre Kilidi (admin.html ile tam uyumlu) -->
+<!-- Çift Modlu Giriş: Bayi CRM Girişi + Merkez Yönetici Girişi -->
 <div id="crm-login-modal" style="position:fixed;inset:0;background:rgba(5,7,13,0.97);z-index:99999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(14px);">
-    <div style="background:var(--card2);border:1.5px solid var(--border);border-radius:20px;padding:34px 28px;max-width:400px;width:92%;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,0.85);">
-        <img src="/logo.png" alt="B-Connect" style="width:48px;height:48px;border-radius:12px;margin-bottom:14px;">
-        <h2 style="font-size:1.35rem;font-weight:900;color:var(--amber-light);margin-bottom:6px;">B-Connect CRM Girişi</h2>
-        <p style="font-size:0.84rem;color:var(--muted);margin-bottom:20px;">Firma kartları ve Mikro fatura paneline erişmek için yönetici şifrenizi girin:</p>
-        <form onsubmit="submitCrmAdminLogin(event)">
-            <input type="password" id="crm-admin-pass" placeholder="Yönetici şifresi..." required autofocus style="width:100%;padding:13px;text-align:center;font-size:1rem;margin-bottom:12px;">
-            <div id="crm-admin-err" style="display:none;color:#fca5a5;font-size:0.82rem;font-weight:700;margin-bottom:10px;"></div>
+    <div style="background:var(--card2);border:1.5px solid var(--border);border-radius:20px;padding:30px 26px;max-width:430px;width:92%;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,0.85);">
+        <img src="/logo.png" alt="B-Connect" style="width:48px;height:48px;border-radius:12px;margin-bottom:12px;">
+        <h2 style="font-size:1.32rem;font-weight:900;color:var(--amber-light);margin-bottom:6px;">B-Connect CRM & Mikro Girişi</h2>
+        <p style="font-size:0.82rem;color:var(--muted);margin-bottom:16px;">Her bayi yalnızca kendi izole müşteri ve fatura alanını görür.</p>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;">
+            <button type="button" id="ltab-bayi" class="btn btn-primary" style="justify-content:center;" onclick="switchLoginTab('bayi')"><i class="fa-solid fa-store"></i> Bayi Girişi</button>
+            <button type="button" id="ltab-admin" class="btn" style="justify-content:center;" onclick="switchLoginTab('admin')"><i class="fa-solid fa-crown"></i> Merkez Admin</button>
+        </div>
+
+        <form id="login-form-bayi" onsubmit="submitCrmBayiLogin(event)">
+            <input type="text" id="crm-bayi-id" placeholder="Bayi Kodu veya E-Posta (örn: BAYI001)" required style="width:100%;padding:12px;text-align:center;font-size:0.95rem;margin-bottom:10px;">
+            <input type="password" id="crm-bayi-pass" placeholder="Bayi Şifreniz..." required style="width:100%;padding:12px;text-align:center;font-size:0.95rem;margin-bottom:12px;">
             <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;padding:12px;font-size:0.95rem;">
-                <i class="fa-solid fa-lock"></i> Giriş Yap & CRM'i Aç
+                <i class="fa-solid fa-right-to-bracket"></i> Bayi CRM'ine Giriş Yap
             </button>
         </form>
+
+        <form id="login-form-admin" style="display:none;" onsubmit="submitCrmAdminLogin(event)">
+            <input type="password" id="crm-admin-pass" placeholder="Merkez Yönetici Şifresi..." required style="width:100%;padding:12px;text-align:center;font-size:0.95rem;margin-bottom:12px;">
+            <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;padding:12px;font-size:0.95rem;">
+                <i class="fa-solid fa-lock"></i> Merkez Yönetici Girişi
+            </button>
+        </form>
+
+        <div id="crm-login-err" style="display:none;color:#fca5a5;font-size:0.82rem;font-weight:700;margin-top:10px;"></div>
     </div>
 </div>
 </body>

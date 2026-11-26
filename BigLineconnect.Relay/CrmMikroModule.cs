@@ -108,20 +108,69 @@ public static class CrmMikroModule
     private static volatile bool _sqlHealthy = false;
     private static readonly Dictionary<string, string> _memCache = new(StringComparer.OrdinalIgnoreCase);
 
-    private static string DataDir
+    private static string NormalizeTenant(string? raw)
     {
-        get
+        if (string.IsNullOrWhiteSpace(raw)) return "BIGLINE";
+        var sb = new StringBuilder();
+        foreach (char ch in raw.Trim().ToUpperInvariant())
         {
-            string dir = Path.Combine(AppContext.BaseDirectory, "crm_data");
-            if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
-            return dir;
+            if (char.IsLetterOrDigit(ch) || ch == '-' || ch == '_') sb.Append(ch);
         }
+        string t = sb.ToString();
+        return string.IsNullOrEmpty(t) ? "BIGLINE" : (t.Length > 32 ? t.Substring(0, 32) : t);
     }
 
-    private static string CategoriesPath => Path.Combine(DataDir, "crm_categories.json");
-    private static string CompaniesPath => Path.Combine(DataDir, "crm_companies.json");
-    private static string RecordsPath => Path.Combine(DataDir, "crm_records.json");
-    private static string MikroConfigPath => Path.Combine(DataDir, "crm_mikro_config.json");
+    private static string ResolveTenant(HttpContext ctx)
+    {
+        string? q = ctx.Request.Query["tenantId"].ToString();
+        if (string.IsNullOrWhiteSpace(q)) q = ctx.Request.Headers["X-Tenant-Id"].ToString();
+        return NormalizeTenant(q);
+    }
+
+    private static string TenantDataDir(string tenant)
+    {
+        string t = NormalizeTenant(tenant);
+        string dir = Path.Combine(AppContext.BaseDirectory, "crm_data", t);
+        if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
+        return dir;
+    }
+
+    private static string StoreKeyFor(string tenant, string kind) => $"{NormalizeTenant(tenant)}:{kind}";
+    private static string CategoriesPath(string t) => Path.Combine(TenantDataDir(t), "crm_categories.json");
+    private static string CompaniesPath(string t) => Path.Combine(TenantDataDir(t), "crm_companies.json");
+    private static string RecordsPath(string t) => Path.Combine(TenantDataDir(t), "crm_records.json");
+    private static string MikroConfigPath(string t) => Path.Combine(TenantDataDir(t), "crm_mikro_config.json");
+
+    private static List<string> ListKnownTenants()
+    {
+        var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "BIGLINE" };
+        try
+        {
+            string root = Path.Combine(AppContext.BaseDirectory, "crm_data");
+            if (Directory.Exists(root))
+            {
+                foreach (var d in Directory.GetDirectories(root))
+                    set.Add(NormalizeTenant(Path.GetFileName(d)));
+            }
+        }
+        catch { }
+        try
+        {
+            using var conn = new System.Data.SqlClient.SqlConnection(SqlConnStr);
+            conn.Open();
+            EnsureCrmSqlTable(conn);
+            using var cmd = new System.Data.SqlClient.SqlCommand("SELECT StoreKey FROM BConnect_CrmStore", conn);
+            using var r = cmd.ExecuteReader();
+            while (r.Read())
+            {
+                string k = r.IsDBNull(0) ? "" : r.GetString(0);
+                int idx = k.IndexOf(':');
+                if (idx > 0) set.Add(NormalizeTenant(k.Substring(0, idx)));
+            }
+        }
+        catch { }
+        return set.OrderBy(x => x == "BIGLINE" ? "" : x).ToList();
+    }
 
     private static string NowTr() => DateTime.UtcNow.AddHours(3).ToString("dd.MM.yyyy HH:mm:ss");
 
@@ -250,7 +299,7 @@ public static class CrmMikroModule
         }
     }
 
-    private static List<CrmCategory> LoadCategories() => LoadJson("categories", CategoriesPath, () => new List<CrmCategory>
+    private static List<CrmCategory> LoadCategories(string tenant) => LoadJson(StoreKeyFor(tenant, "categories"), CategoriesPath(tenant), () => new List<CrmCategory>
     {
         new() { Id = "cat-vip", Name = "VIP", Color = "#f59e0b" },
         new() { Id = "cat-kurumsal", Name = "Kurumsal", Color = "#3b82f6" },
@@ -260,9 +309,9 @@ public static class CrmMikroModule
         new() { Id = "cat-uretim", Name = "Üretim / Sanayi", Color = "#ef4444" }
     });
 
-    private static List<CrmCompany> LoadCompanies() => LoadJson("companies", CompaniesPath, () => new List<CrmCompany>());
-    private static List<CrmSupportRecord> LoadRecords() => LoadJson("records", RecordsPath, () => new List<CrmSupportRecord>());
-    private static MikroConfig LoadMikroConfig() => LoadJson("mikro_config", MikroConfigPath, () => new MikroConfig());
+    private static List<CrmCompany> LoadCompanies(string tenant) => LoadJson(StoreKeyFor(tenant, "companies"), CompaniesPath(tenant), () => new List<CrmCompany>());
+    private static List<CrmSupportRecord> LoadRecords(string tenant) => LoadJson(StoreKeyFor(tenant, "records"), RecordsPath(tenant), () => new List<CrmSupportRecord>());
+    private static MikroConfig LoadMikroConfig(string tenant) => LoadJson(StoreKeyFor(tenant, "mikro_config"), MikroConfigPath(tenant), () => new MikroConfig { FirmaKodu = NormalizeTenant(tenant) });
 
     private static (string ContractBadge, string ContractColor, int? DaysRemaining, bool IsExpired) EvaluateContract(CrmCompany c)
     {
@@ -337,9 +386,9 @@ public static class CrmMikroModule
         return JsonSerializer.Serialize(mikroObj, _jsonOpts);
     }
 
-    private static async Task<(bool Ok, string Status, string InvoiceNo, string Payload, string Error)> DispatchToMikroAsync(CrmSupportRecord rec, CrmCompany? comp)
+    private static async Task<(bool Ok, string Status, string InvoiceNo, string Payload, string Error)> DispatchToMikroAsync(string tenant, CrmSupportRecord rec, CrmCompany? comp)
     {
-        var cfg = LoadMikroConfig();
+        var cfg = LoadMikroConfig(tenant);
         string cariKod = !string.IsNullOrWhiteSpace(rec.MikroCariKod) ? rec.MikroCariKod : (comp?.MikroCariKod ?? "");
         if (string.IsNullOrWhiteSpace(cariKod))
         {
@@ -355,7 +404,7 @@ public static class CrmMikroModule
         {
             cfg.LastSimulatedSeq++;
             seqNo = cfg.LastSimulatedSeq;
-            SaveJson("mikro_config", MikroConfigPath, cfg);
+            SaveJson(StoreKeyFor(tenant, "mikro_config"), MikroConfigPath(tenant), cfg);
         }
 
         string invoiceNo = $"{cfg.EvrakSeri}-{cfg.CalismaYili}-{seqNo:D5}";
@@ -420,13 +469,17 @@ public static class CrmMikroModule
             await context.Response.SendFileAsync(crmFile);
         });
 
-        // Overview: categories + enriched companies + records + mikro config + KPIs
-        app.MapGet("/api/crm/overview", () =>
+        // List known tenants (for Super Admin selector)
+        app.MapGet("/api/crm/tenants", () => Results.Ok(new { tenants = ListKnownTenants() }));
+
+        // Overview: categories + enriched companies + records + mikro config + KPIs (strictly scoped to tenantId)
+        app.MapGet("/api/crm/overview", (HttpContext ctx) =>
         {
-            var categories = LoadCategories();
-            var companies = LoadCompanies();
-            var records = LoadRecords().OrderByDescending(r => r.CreatedAt).ToList();
-            var mikro = LoadMikroConfig();
+            string tenant = ResolveTenant(ctx);
+            var categories = LoadCategories(tenant);
+            var companies = LoadCompanies(tenant);
+            var records = LoadRecords(tenant).OrderByDescending(r => r.CreatedAt).ToList();
+            var mikro = LoadMikroConfig(tenant);
 
             var enrichedCompanies = companies.Select(c =>
             {
@@ -480,6 +533,7 @@ public static class CrmMikroModule
 
             return Results.Ok(new
             {
+                tenantId = tenant,
                 categories,
                 companies = enrichedCompanies,
                 records,
@@ -489,13 +543,14 @@ public static class CrmMikroModule
             });
         });
 
-        // Smart Host ID Lookup (for future B-Connect.exe / Web pre-connect intelligence card!)
-        app.MapGet("/api/crm/lookup", (string? hostId) =>
+        // Smart Host ID Lookup (strictly scoped to tenantId)
+        app.MapGet("/api/crm/lookup", (HttpContext ctx, string? hostId) =>
         {
+            string tenant = ResolveTenant(ctx);
             string clean = new string((hostId ?? "").Where(char.IsDigit).ToArray());
             if (string.IsNullOrEmpty(clean)) return Results.Ok(new { found = false });
 
-            var companies = LoadCompanies();
+            var companies = LoadCompanies(tenant);
             var match = companies.FirstOrDefault(c =>
                 (c.HostIds ?? "").Split(new[] { ',', ';', ' ', '\n' }, StringSplitOptions.RemoveEmptyEntries)
                 .Any(h => new string(h.Where(char.IsDigit).ToArray()) == clean));
@@ -503,10 +558,11 @@ public static class CrmMikroModule
             if (match == null) return Results.Ok(new { found = false });
 
             var eval = EvaluateContract(match);
-            var recent = LoadRecords().Where(r => r.CompanyId == match.Id).OrderByDescending(r => r.CreatedAt).Take(3).ToList();
+            var recent = LoadRecords(tenant).Where(r => r.CompanyId == match.Id).OrderByDescending(r => r.CreatedAt).Take(3).ToList();
             return Results.Ok(new
             {
                 found = true,
+                tenantId = tenant,
                 company = match,
                 contractBadge = eval.ContractBadge,
                 contractColor = eval.ContractColor,
@@ -519,11 +575,12 @@ public static class CrmMikroModule
         // Save Category
         app.MapPost("/api/crm/categories/save", async (HttpContext ctx) =>
         {
+            string tenant = ResolveTenant(ctx);
             var body = await JsonSerializer.DeserializeAsync<CrmCategory>(ctx.Request.Body, _jsonOpts);
             if (body == null || string.IsNullOrWhiteSpace(body.Name))
                 return Results.BadRequest(new { error = "Kategori adı boş olamaz." });
 
-            var list = LoadCategories();
+            var list = LoadCategories(tenant);
             if (string.IsNullOrWhiteSpace(body.Id))
                 body.Id = "cat-" + Guid.NewGuid().ToString("N").Substring(0, 8);
 
@@ -538,29 +595,31 @@ public static class CrmMikroModule
                 body.Name = body.Name.Trim();
                 list.Add(body);
             }
-            SaveJson("categories", CategoriesPath, list);
+            SaveJson(StoreKeyFor(tenant, "categories"), CategoriesPath(tenant), list);
             return Results.Ok(new { success = true, categories = list });
         });
 
         // Delete Category
         app.MapPost("/api/crm/categories/delete", async (HttpContext ctx) =>
         {
+            string tenant = ResolveTenant(ctx);
             using var doc = await JsonDocument.ParseAsync(ctx.Request.Body);
             string id = doc.RootElement.TryGetProperty("id", out var p) ? p.GetString() ?? "" : "";
-            var list = LoadCategories();
+            var list = LoadCategories(tenant);
             list.RemoveAll(x => x.Id == id);
-            SaveJson("categories", CategoriesPath, list);
+            SaveJson(StoreKeyFor(tenant, "categories"), CategoriesPath(tenant), list);
             return Results.Ok(new { success = true, categories = list });
         });
 
         // Save Company
         app.MapPost("/api/crm/companies/save", async (HttpContext ctx) =>
         {
+            string tenant = ResolveTenant(ctx);
             var body = await JsonSerializer.DeserializeAsync<CrmCompany>(ctx.Request.Body, _jsonOpts);
             if (body == null || string.IsNullOrWhiteSpace(body.Name))
                 return Results.BadRequest(new { error = "Firma adı zorunludur." });
 
-            var list = LoadCompanies();
+            var list = LoadCompanies(tenant);
             string now = NowTr();
             if (string.IsNullOrWhiteSpace(body.Id))
             {
@@ -585,24 +644,26 @@ public static class CrmMikroModule
                     list.Add(body);
                 }
             }
-            SaveJson("companies", CompaniesPath, list);
+            SaveJson(StoreKeyFor(tenant, "companies"), CompaniesPath(tenant), list);
             return Results.Ok(new { success = true, company = body });
         });
 
         // Delete Company
         app.MapPost("/api/crm/companies/delete", async (HttpContext ctx) =>
         {
+            string tenant = ResolveTenant(ctx);
             using var doc = await JsonDocument.ParseAsync(ctx.Request.Body);
             string id = doc.RootElement.TryGetProperty("id", out var p) ? p.GetString() ?? "" : "";
-            var list = LoadCompanies();
+            var list = LoadCompanies(tenant);
             list.RemoveAll(x => x.Id == id);
-            SaveJson("companies", CompaniesPath, list);
+            SaveJson(StoreKeyFor(tenant, "companies"), CompaniesPath(tenant), list);
             return Results.Ok(new { success = true });
         });
 
         // Save Support Record & optionally create Mikro Service Invoice
         app.MapPost("/api/crm/records/save", async (HttpContext ctx) =>
         {
+            string tenant = ResolveTenant(ctx);
             using var doc = await JsonDocument.ParseAsync(ctx.Request.Body);
             var root = doc.RootElement;
             bool sendToMikro = root.TryGetProperty("sendToMikro", out var sm) && sm.GetBoolean();
@@ -611,7 +672,7 @@ public static class CrmMikroModule
             if (rec == null || string.IsNullOrWhiteSpace(rec.Issue))
                 return Results.BadRequest(new { error = "Destek açıklaması zorunludur." });
 
-            var companies = LoadCompanies();
+            var companies = LoadCompanies(tenant);
             var comp = companies.FirstOrDefault(c => c.Id == rec.CompanyId);
             if (comp != null)
             {
@@ -642,7 +703,7 @@ public static class CrmMikroModule
             }
             else if (sendToMikro)
             {
-                var res = await DispatchToMikroAsync(rec, comp);
+                var res = await DispatchToMikroAsync(tenant, rec, comp);
                 rec.MikroInvoiceStatus = res.Status;
                 rec.MikroInvoiceNo = res.InvoiceNo;
                 rec.MikroPayloadPreview = res.Payload;
@@ -653,11 +714,11 @@ public static class CrmMikroModule
                 rec.MikroInvoiceStatus = "Bekliyor";
             }
 
-            var records = LoadRecords();
+            var records = LoadRecords(tenant);
             int idx = records.FindIndex(x => x.Id == rec.Id);
             if (idx >= 0) records[idx] = rec;
             else records.Insert(0, rec);
-            SaveJson("records", RecordsPath, records);
+            SaveJson(StoreKeyFor(tenant, "records"), RecordsPath(tenant), records);
 
             return Results.Ok(new { success = true, record = rec });
         });
@@ -665,19 +726,20 @@ public static class CrmMikroModule
         // Re-send / Trigger Mikro Invoice on existing record
         app.MapPost("/api/crm/records/send-mikro", async (HttpContext ctx) =>
         {
+            string tenant = ResolveTenant(ctx);
             using var doc = await JsonDocument.ParseAsync(ctx.Request.Body);
             string id = doc.RootElement.TryGetProperty("id", out var p) ? p.GetString() ?? "" : "";
-            var records = LoadRecords();
+            var records = LoadRecords(tenant);
             var rec = records.FirstOrDefault(x => x.Id == id);
             if (rec == null) return Results.NotFound(new { error = "Kayıt bulunamadı." });
 
-            var comp = LoadCompanies().FirstOrDefault(c => c.Id == rec.CompanyId);
-            var res = await DispatchToMikroAsync(rec, comp);
+            var comp = LoadCompanies(tenant).FirstOrDefault(c => c.Id == rec.CompanyId);
+            var res = await DispatchToMikroAsync(tenant, rec, comp);
             rec.MikroInvoiceStatus = res.Status;
             rec.MikroInvoiceNo = res.InvoiceNo;
             rec.MikroPayloadPreview = res.Payload;
             rec.MikroError = res.Error;
-            SaveJson("records", RecordsPath, records);
+            SaveJson(StoreKeyFor(tenant, "records"), RecordsPath(tenant), records);
 
             return Results.Ok(new { success = res.Ok, record = rec, error = res.Error });
         });
@@ -685,29 +747,32 @@ public static class CrmMikroModule
         // Delete Support Record
         app.MapPost("/api/crm/records/delete", async (HttpContext ctx) =>
         {
+            string tenant = ResolveTenant(ctx);
             using var doc = await JsonDocument.ParseAsync(ctx.Request.Body);
             string id = doc.RootElement.TryGetProperty("id", out var p) ? p.GetString() ?? "" : "";
-            var records = LoadRecords();
+            var records = LoadRecords(tenant);
             records.RemoveAll(x => x.Id == id);
-            SaveJson("records", RecordsPath, records);
+            SaveJson(StoreKeyFor(tenant, "records"), RecordsPath(tenant), records);
             return Results.Ok(new { success = true });
         });
 
         // Save Mikro Config
         app.MapPost("/api/crm/mikro/config", async (HttpContext ctx) =>
         {
+            string tenant = ResolveTenant(ctx);
             var cfg = await JsonSerializer.DeserializeAsync<MikroConfig>(ctx.Request.Body, _jsonOpts);
             if (cfg == null) return Results.BadRequest(new { error = "Geçersiz ayar." });
-            var old = LoadMikroConfig();
+            var old = LoadMikroConfig(tenant);
             if (cfg.LastSimulatedSeq < old.LastSimulatedSeq) cfg.LastSimulatedSeq = old.LastSimulatedSeq;
-            SaveJson("mikro_config", MikroConfigPath, cfg);
+            SaveJson(StoreKeyFor(tenant, "mikro_config"), MikroConfigPath(tenant), cfg);
             return Results.Ok(new { success = true, mikroConfig = cfg });
         });
 
         // Test Mikro Connection
         app.MapPost("/api/crm/mikro/test", async (HttpContext ctx) =>
         {
-            var cfg = await JsonSerializer.DeserializeAsync<MikroConfig>(ctx.Request.Body, _jsonOpts) ?? LoadMikroConfig();
+            string tenant = ResolveTenant(ctx);
+            var cfg = await JsonSerializer.DeserializeAsync<MikroConfig>(ctx.Request.Body, _jsonOpts) ?? LoadMikroConfig(tenant);
             if (string.Equals(cfg.Mode, "Simulation", StringComparison.OrdinalIgnoreCase))
             {
                 return Results.Ok(new { success = true, message = "🧪 Simülasyon (Test) Modu aktif! Gerçek Mikro veritabanına dokunmadan tüm Hizmet Satış Faturası akışını güvenle test edebilirsiniz." });
@@ -744,10 +809,11 @@ public static class CrmMikroModule
             return Results.Ok(new { success = false, message = "Geçersiz mod." });
         });
 
-        // Seed 3 realistic Turkish demo companies for instant testing
-        app.MapPost("/api/crm/seed-demo", () =>
+        // Seed 3 realistic Turkish demo companies for instant testing (scoped to tenantId)
+        app.MapPost("/api/crm/seed-demo", (HttpContext ctx) =>
         {
-            var companies = LoadCompanies();
+            string tenant = ResolveTenant(ctx);
+            var companies = LoadCompanies(tenant);
             string now = NowTr();
             var demos = new List<CrmCompany>
             {
@@ -827,8 +893,8 @@ public static class CrmMikroModule
                 if (!companies.Any(x => x.Id == d.Id))
                     companies.Add(d);
             }
-            SaveJson("companies", CompaniesPath, companies);
-            return Results.Ok(new { success = true, count = companies.Count });
+            SaveJson(StoreKeyFor(tenant, "companies"), CompaniesPath(tenant), companies);
+            return Results.Ok(new { success = true, tenantId = tenant, count = companies.Count });
         });
     }
 }
