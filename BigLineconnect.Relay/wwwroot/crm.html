@@ -164,7 +164,7 @@
         <img src="/logo.png" alt="B-Connect">
         <div>
             <h1>B-Connect CRM & Mikro Fatura Merkezi</h1>
-            <div class="sub">🧪 İzole Test Modu — Mevcut Canlı Veriler %100 Korunur</div>
+            <div class="sub" id="storage-badge">🔒 Yönetici Korumalı • Kalıcı Depolama Kontrol Ediliyor...</div>
         </div>
     </div>
     <div class="top-actions">
@@ -602,6 +602,12 @@
         const res = await fetch('/api/crm/overview');
         if (!res.ok) return toast('Veri yüklenemedi!');
         STATE = await res.json();
+        const sb = document.getElementById('storage-badge');
+        if (sb) {
+            sb.innerText = STATE.sqlPersistent
+                ? '🗄️ SQL Server (BigusDb) Kalıcı Kayıt Aktif • Mevcut Canlı Veriler %100 Korunur'
+                : '💾 Yerel JSON Yedek Modu • Mevcut Canlı Veriler %100 Korunur';
+        }
         renderKpis();
         populateCategorySelects();
         renderCompanies();
@@ -1069,7 +1075,55 @@
         }
     }
 
-    loadOverview();
+    async function submitCrmAdminLogin(e) {
+        if (e) e.preventDefault();
+        const pass = document.getElementById('crm-admin-pass').value.trim();
+        const errEl = document.getElementById('crm-admin-err');
+        if (errEl) errEl.style.display = 'none';
+        try {
+            const res = await fetch('/api/admin/verify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password: pass })
+            });
+            const data = await res.json();
+            if (data.success) {
+                sessionStorage.setItem('adminToken', 'authenticated');
+                document.getElementById('crm-login-modal').style.display = 'none';
+                loadOverview();
+            } else {
+                if (errEl) { errEl.innerText = 'Geçersiz yönetici şifresi!'; errEl.style.display = 'block'; }
+            }
+        } catch (err) {
+            if (errEl) { errEl.innerText = 'Sunucu doğrulama hatası.'; errEl.style.display = 'block'; }
+        }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+        const m = document.getElementById('crm-login-modal');
+        if (sessionStorage.getItem('adminToken') === 'authenticated') {
+            if (m) m.style.display = 'none';
+            loadOverview();
+        } else {
+            if (m) m.style.display = 'flex';
+        }
+    });
 </script>
+
+<!-- Admin Şifre Kilidi (admin.html ile tam uyumlu) -->
+<div id="crm-login-modal" style="position:fixed;inset:0;background:rgba(5,7,13,0.97);z-index:99999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(14px);">
+    <div style="background:var(--card2);border:1.5px solid var(--border);border-radius:20px;padding:34px 28px;max-width:400px;width:92%;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,0.85);">
+        <img src="/logo.png" alt="B-Connect" style="width:48px;height:48px;border-radius:12px;margin-bottom:14px;">
+        <h2 style="font-size:1.35rem;font-weight:900;color:var(--amber-light);margin-bottom:6px;">B-Connect CRM Girişi</h2>
+        <p style="font-size:0.84rem;color:var(--muted);margin-bottom:20px;">Firma kartları ve Mikro fatura paneline erişmek için yönetici şifrenizi girin:</p>
+        <form onsubmit="submitCrmAdminLogin(event)">
+            <input type="password" id="crm-admin-pass" placeholder="Yönetici şifresi..." required autofocus style="width:100%;padding:13px;text-align:center;font-size:1rem;margin-bottom:12px;">
+            <div id="crm-admin-err" style="display:none;color:#fca5a5;font-size:0.82rem;font-weight:700;margin-bottom:10px;"></div>
+            <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;padding:12px;font-size:0.95rem;">
+                <i class="fa-solid fa-lock"></i> Giriş Yap & CRM'i Aç
+            </button>
+        </form>
+    </div>
+</div>
 </body>
 </html>

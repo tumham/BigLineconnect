@@ -102,6 +102,11 @@ public static class CrmMikroModule
         PropertyNameCaseInsensitive = true
     };
     private static readonly HttpClient _http = new() { Timeout = TimeSpan.FromSeconds(10) };
+    private static readonly string SqlConnStr = Environment.GetEnvironmentVariable("BCONNECT_SQL_CONN")
+        ?? "Server=213.142.159.18;Database=BigusDb;User Id=sa;Password=Bm1453;Encrypt=False;Connection Timeout=8;";
+    private static volatile bool _sqlTableEnsured = false;
+    private static volatile bool _sqlHealthy = false;
+    private static readonly Dictionary<string, string> _memCache = new(StringComparer.OrdinalIgnoreCase);
 
     private static string DataDir
     {
@@ -120,43 +125,132 @@ public static class CrmMikroModule
 
     private static string NowTr() => DateTime.UtcNow.AddHours(3).ToString("dd.MM.yyyy HH:mm:ss");
 
-    private static T LoadJson<T>(string path, Func<T> defaultFactory)
+    private static void EnsureCrmSqlTable(System.Data.SqlClient.SqlConnection conn)
+    {
+        if (_sqlTableEnsured) return;
+        string ddl = @"
+        IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'BConnect_CrmStore')
+        BEGIN
+            CREATE TABLE BConnect_CrmStore (
+                StoreKey NVARCHAR(64) NOT NULL PRIMARY KEY,
+                JsonData NVARCHAR(MAX) NOT NULL,
+                UpdatedAt NVARCHAR(64) NOT NULL
+            );
+        END";
+        using var cmd = new System.Data.SqlClient.SqlCommand(ddl, conn);
+        cmd.ExecuteNonQuery();
+        _sqlTableEnsured = true;
+    }
+
+    private static string? TryLoadFromSql(string storeKey)
+    {
+        try
+        {
+            using var conn = new System.Data.SqlClient.SqlConnection(SqlConnStr);
+            conn.Open();
+            EnsureCrmSqlTable(conn);
+            _sqlHealthy = true;
+            using var cmd = new System.Data.SqlClient.SqlCommand("SELECT JsonData FROM BConnect_CrmStore WHERE StoreKey = @k", conn);
+            cmd.Parameters.AddWithValue("@k", storeKey);
+            var obj = cmd.ExecuteScalar();
+            if (obj != null && obj != DBNull.Value)
+                return obj.ToString();
+        }
+        catch { }
+        return null;
+    }
+
+    private static void SaveToSqlAsync(string storeKey, string json)
+    {
+        string now = NowTr();
+        _ = Task.Run(() =>
+        {
+            try
+            {
+                using var conn = new System.Data.SqlClient.SqlConnection(SqlConnStr);
+                conn.Open();
+                EnsureCrmSqlTable(conn);
+                _sqlHealthy = true;
+                string upsert = @"
+                IF EXISTS (SELECT 1 FROM BConnect_CrmStore WHERE StoreKey = @k)
+                    UPDATE BConnect_CrmStore SET JsonData = @j, UpdatedAt = @u WHERE StoreKey = @k;
+                ELSE
+                    INSERT INTO BConnect_CrmStore (StoreKey, JsonData, UpdatedAt) VALUES (@k, @j, @u);";
+                using var cmd = new System.Data.SqlClient.SqlCommand(upsert, conn);
+                cmd.Parameters.AddWithValue("@k", storeKey);
+                cmd.Parameters.AddWithValue("@j", json);
+                cmd.Parameters.AddWithValue("@u", now);
+                cmd.ExecuteNonQuery();
+            }
+            catch { }
+        });
+    }
+
+    private static T LoadJson<T>(string storeKey, string path, Func<T> defaultFactory)
     {
         lock (_lock)
         {
             try
             {
+                // 1) Hızlı bellek önbelleği
+                if (_memCache.TryGetValue(storeKey, out var cachedJson) && !string.IsNullOrWhiteSpace(cachedJson))
+                {
+                    var cv = JsonSerializer.Deserialize<T>(cachedJson, _jsonOpts);
+                    if (cv != null) return cv;
+                }
+
+                // 2) Soğuk başlangıçta (Railway yeniden başlatma dahil) önce kalıcı SQL Server (BigusDb) kontrolü
+                string? sqlJson = TryLoadFromSql(storeKey);
+                if (!string.IsNullOrWhiteSpace(sqlJson))
+                {
+                    var sv = JsonSerializer.Deserialize<T>(sqlJson, _jsonOpts);
+                    if (sv != null)
+                    {
+                        _memCache[storeKey] = sqlJson;
+                        try { File.WriteAllText(path, sqlJson, Encoding.UTF8); } catch { }
+                        return sv;
+                    }
+                }
+
+                // 3) Yerel JSON yedek
                 if (File.Exists(path))
                 {
                     string txt = File.ReadAllText(path, Encoding.UTF8);
                     if (!string.IsNullOrWhiteSpace(txt))
                     {
                         var val = JsonSerializer.Deserialize<T>(txt, _jsonOpts);
-                        if (val != null) return val;
+                        if (val != null)
+                        {
+                            _memCache[storeKey] = txt;
+                            SaveToSqlAsync(storeKey, txt);
+                            return val;
+                        }
                     }
                 }
             }
             catch { }
             var def = defaultFactory();
-            SaveJson(path, def);
+            SaveJson(storeKey, path, def);
             return def;
         }
     }
 
-    private static void SaveJson<T>(string path, T data)
+    private static void SaveJson<T>(string storeKey, string path, T data)
     {
         lock (_lock)
         {
             try
             {
                 string json = JsonSerializer.Serialize(data, _jsonOpts);
+                _memCache[storeKey] = json;
                 File.WriteAllText(path, json, Encoding.UTF8);
+                SaveToSqlAsync(storeKey, json);
             }
             catch { }
         }
     }
 
-    private static List<CrmCategory> LoadCategories() => LoadJson(CategoriesPath, () => new List<CrmCategory>
+    private static List<CrmCategory> LoadCategories() => LoadJson("categories", CategoriesPath, () => new List<CrmCategory>
     {
         new() { Id = "cat-vip", Name = "VIP", Color = "#f59e0b" },
         new() { Id = "cat-kurumsal", Name = "Kurumsal", Color = "#3b82f6" },
@@ -166,9 +260,9 @@ public static class CrmMikroModule
         new() { Id = "cat-uretim", Name = "Üretim / Sanayi", Color = "#ef4444" }
     });
 
-    private static List<CrmCompany> LoadCompanies() => LoadJson(CompaniesPath, () => new List<CrmCompany>());
-    private static List<CrmSupportRecord> LoadRecords() => LoadJson(RecordsPath, () => new List<CrmSupportRecord>());
-    private static MikroConfig LoadMikroConfig() => LoadJson(MikroConfigPath, () => new MikroConfig());
+    private static List<CrmCompany> LoadCompanies() => LoadJson("companies", CompaniesPath, () => new List<CrmCompany>());
+    private static List<CrmSupportRecord> LoadRecords() => LoadJson("records", RecordsPath, () => new List<CrmSupportRecord>());
+    private static MikroConfig LoadMikroConfig() => LoadJson("mikro_config", MikroConfigPath, () => new MikroConfig());
 
     private static (string ContractBadge, string ContractColor, int? DaysRemaining, bool IsExpired) EvaluateContract(CrmCompany c)
     {
@@ -261,7 +355,7 @@ public static class CrmMikroModule
         {
             cfg.LastSimulatedSeq++;
             seqNo = cfg.LastSimulatedSeq;
-            SaveJson(MikroConfigPath, cfg);
+            SaveJson("mikro_config", MikroConfigPath, cfg);
         }
 
         string invoiceNo = $"{cfg.EvrakSeri}-{cfg.CalismaYili}-{seqNo:D5}";
@@ -390,7 +484,8 @@ public static class CrmMikroModule
                 companies = enrichedCompanies,
                 records,
                 mikroConfig = mikro,
-                kpis
+                kpis,
+                sqlPersistent = _sqlHealthy
             });
         });
 
@@ -443,7 +538,7 @@ public static class CrmMikroModule
                 body.Name = body.Name.Trim();
                 list.Add(body);
             }
-            SaveJson(CategoriesPath, list);
+            SaveJson("categories", CategoriesPath, list);
             return Results.Ok(new { success = true, categories = list });
         });
 
@@ -454,7 +549,7 @@ public static class CrmMikroModule
             string id = doc.RootElement.TryGetProperty("id", out var p) ? p.GetString() ?? "" : "";
             var list = LoadCategories();
             list.RemoveAll(x => x.Id == id);
-            SaveJson(CategoriesPath, list);
+            SaveJson("categories", CategoriesPath, list);
             return Results.Ok(new { success = true, categories = list });
         });
 
@@ -490,7 +585,7 @@ public static class CrmMikroModule
                     list.Add(body);
                 }
             }
-            SaveJson(CompaniesPath, list);
+            SaveJson("companies", CompaniesPath, list);
             return Results.Ok(new { success = true, company = body });
         });
 
@@ -501,7 +596,7 @@ public static class CrmMikroModule
             string id = doc.RootElement.TryGetProperty("id", out var p) ? p.GetString() ?? "" : "";
             var list = LoadCompanies();
             list.RemoveAll(x => x.Id == id);
-            SaveJson(CompaniesPath, list);
+            SaveJson("companies", CompaniesPath, list);
             return Results.Ok(new { success = true });
         });
 
@@ -562,7 +657,7 @@ public static class CrmMikroModule
             int idx = records.FindIndex(x => x.Id == rec.Id);
             if (idx >= 0) records[idx] = rec;
             else records.Insert(0, rec);
-            SaveJson(RecordsPath, records);
+            SaveJson("records", RecordsPath, records);
 
             return Results.Ok(new { success = true, record = rec });
         });
@@ -582,7 +677,7 @@ public static class CrmMikroModule
             rec.MikroInvoiceNo = res.InvoiceNo;
             rec.MikroPayloadPreview = res.Payload;
             rec.MikroError = res.Error;
-            SaveJson(RecordsPath, records);
+            SaveJson("records", RecordsPath, records);
 
             return Results.Ok(new { success = res.Ok, record = rec, error = res.Error });
         });
@@ -594,7 +689,7 @@ public static class CrmMikroModule
             string id = doc.RootElement.TryGetProperty("id", out var p) ? p.GetString() ?? "" : "";
             var records = LoadRecords();
             records.RemoveAll(x => x.Id == id);
-            SaveJson(RecordsPath, records);
+            SaveJson("records", RecordsPath, records);
             return Results.Ok(new { success = true });
         });
 
@@ -605,7 +700,7 @@ public static class CrmMikroModule
             if (cfg == null) return Results.BadRequest(new { error = "Geçersiz ayar." });
             var old = LoadMikroConfig();
             if (cfg.LastSimulatedSeq < old.LastSimulatedSeq) cfg.LastSimulatedSeq = old.LastSimulatedSeq;
-            SaveJson(MikroConfigPath, cfg);
+            SaveJson("mikro_config", MikroConfigPath, cfg);
             return Results.Ok(new { success = true, mikroConfig = cfg });
         });
 
@@ -732,7 +827,7 @@ public static class CrmMikroModule
                 if (!companies.Any(x => x.Id == d.Id))
                     companies.Add(d);
             }
-            SaveJson(CompaniesPath, companies);
+            SaveJson("companies", CompaniesPath, companies);
             return Results.Ok(new { success = true, count = companies.Count });
         });
     }
