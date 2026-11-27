@@ -4,6 +4,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -12,6 +13,13 @@ using Microsoft.AspNetCore.Http;
 
 public static class CrmMikroModule
 {
+    public class CrmSecurityConfig
+    {
+        public bool TwoFactorEnabled { get; set; } = false;
+        public string TotpSecret { get; set; } = "";
+        public string PendingSecret { get; set; } = "";
+        public string EnabledAt { get; set; } = "";
+    }
     public class CrmCategory
     {
         public string Id { get; set; } = "";
@@ -140,6 +148,84 @@ public static class CrmMikroModule
     private static string CompaniesPath(string t) => Path.Combine(TenantDataDir(t), "crm_companies.json");
     private static string RecordsPath(string t) => Path.Combine(TenantDataDir(t), "crm_records.json");
     private static string MikroConfigPath(string t) => Path.Combine(TenantDataDir(t), "crm_mikro_config.json");
+    private static string SecurityPath(string t) => Path.Combine(TenantDataDir(t), "crm_security.json");
+
+    private static CrmSecurityConfig LoadSecurity(string tenant) =>
+        LoadJson(StoreKeyFor(tenant, "security"), SecurityPath(tenant), () => new CrmSecurityConfig());
+
+    // Pure RFC 6238 TOTP (Google Authenticator / Microsoft Authenticator uyumlu — 0 TL, sıfır dış kütüphane)
+    private const string Base32Alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+
+    private static string GenerateBase32Secret(int byteLen = 20)
+    {
+        byte[] bytes = RandomNumberGenerator.GetBytes(byteLen);
+        var sb = new StringBuilder();
+        int bits = 0, value = 0;
+        foreach (byte b in bytes)
+        {
+            value = (value << 8) | b;
+            bits += 8;
+            while (bits >= 5)
+            {
+                sb.Append(Base32Alphabet[(value >> (bits - 5)) & 31]);
+                bits -= 5;
+            }
+        }
+        if (bits > 0) sb.Append(Base32Alphabet[(value << (5 - bits)) & 31]);
+        return sb.ToString();
+    }
+
+    private static byte[] DecodeBase32(string base32)
+    {
+        string clean = (base32 ?? "").Trim().Replace(" ", "").Replace("-", "").ToUpperInvariant();
+        var output = new List<byte>();
+        int bits = 0, value = 0;
+        foreach (char c in clean)
+        {
+            int idx = Base32Alphabet.IndexOf(c);
+            if (idx < 0) continue;
+            value = (value << 5) | idx;
+            bits += 5;
+            if (bits >= 8)
+            {
+                output.Add((byte)((value >> (bits - 8)) & 0xFF));
+                bits -= 8;
+            }
+        }
+        return output.ToArray();
+    }
+
+    private static string ComputeTotpAtStep(string base32Secret, long timeStep)
+    {
+        byte[] key = DecodeBase32(base32Secret);
+        if (key.Length == 0) return "";
+        byte[] counter = new byte[8];
+        for (int i = 7; i >= 0; i--) { counter[i] = (byte)(timeStep & 0xFF); timeStep >>= 8; }
+        using var hmac = new HMACSHA1(key);
+        byte[] hash = hmac.ComputeHash(counter);
+        int offset = hash[hash.Length - 1] & 0x0F;
+        int binary = ((hash[offset] & 0x7F) << 24)
+                   | ((hash[offset + 1] & 0xFF) << 16)
+                   | ((hash[offset + 2] & 0xFF) << 8)
+                   | (hash[offset + 3] & 0xFF);
+        int otp = binary % 1000000;
+        return otp.ToString("D6");
+    }
+
+    private static bool VerifyTotpCode(string base32Secret, string? code)
+    {
+        if (string.IsNullOrWhiteSpace(base32Secret)) return false;
+        string cleanCode = new string((code ?? "").Where(char.IsDigit).ToArray());
+        if (cleanCode.Length != 6) return false;
+        long currentStep = DateTimeOffset.UtcNow.ToUnixTimeSeconds() / 30L;
+        // ±1 adım (30 sn) saat farkı toleransı
+        for (long delta = -1; delta <= 1; delta++)
+        {
+            if (ComputeTotpAtStep(base32Secret, currentStep + delta) == cleanCode)
+                return true;
+        }
+        return false;
+    }
 
     private static List<string> ListKnownTenants()
     {
@@ -491,6 +577,73 @@ public static class CrmMikroModule
 
         // List known tenants (for Super Admin selector)
         app.MapGet("/api/crm/tenants", () => Results.Ok(new { tenants = ListKnownTenants() }));
+
+        // --- İSTEĞE BAĞLI 2FA (GOOGLE AUTHENTICATOR / TOTP) ---
+        app.MapGet("/api/crm/2fa/status", (HttpContext ctx) =>
+        {
+            string tenant = ResolveTenant(ctx);
+            var sec = LoadSecurity(tenant);
+            return Results.Ok(new { tenantId = tenant, enabled = sec.TwoFactorEnabled, enabledAt = sec.EnabledAt });
+        });
+
+        app.MapPost("/api/crm/2fa/setup", (HttpContext ctx) =>
+        {
+            string tenant = ResolveTenant(ctx);
+            var sec = LoadSecurity(tenant);
+            string pending = GenerateBase32Secret(20);
+            sec.PendingSecret = pending;
+            SaveJson(StoreKeyFor(tenant, "security"), SecurityPath(tenant), sec);
+            string label = Uri.EscapeDataString($"B-Connect CRM ({tenant})");
+            string otpAuthUri = $"otpauth://totp/{label}?secret={pending}&issuer=B-Connect&digits=6&period=30";
+            return Results.Ok(new { success = true, secret = pending, otpAuthUri, enabled = sec.TwoFactorEnabled });
+        });
+
+        app.MapPost("/api/crm/2fa/enable", async (HttpContext ctx) =>
+        {
+            string tenant = ResolveTenant(ctx);
+            using var doc = await JsonDocument.ParseAsync(ctx.Request.Body);
+            string code = doc.RootElement.TryGetProperty("code", out var p) ? p.GetString() ?? "" : "";
+            var sec = LoadSecurity(tenant);
+            if (string.IsNullOrWhiteSpace(sec.PendingSecret))
+                return Results.BadRequest(new { success = false, error = "Önce QR kod oluşturun." });
+            if (!VerifyTotpCode(sec.PendingSecret, code))
+                return Results.Ok(new { success = false, error = "6 haneli doğrulama kodu eşleşmedi. Telefon saatinizi kontrol edip tekrar deneyin." });
+
+            sec.TotpSecret = sec.PendingSecret;
+            sec.PendingSecret = "";
+            sec.TwoFactorEnabled = true;
+            sec.EnabledAt = NowTr();
+            SaveJson(StoreKeyFor(tenant, "security"), SecurityPath(tenant), sec);
+            return Results.Ok(new { success = true, enabled = true, enabledAt = sec.EnabledAt });
+        });
+
+        app.MapPost("/api/crm/2fa/verify", async (HttpContext ctx) =>
+        {
+            string tenant = ResolveTenant(ctx);
+            using var doc = await JsonDocument.ParseAsync(ctx.Request.Body);
+            string code = doc.RootElement.TryGetProperty("code", out var p) ? p.GetString() ?? "" : "";
+            var sec = LoadSecurity(tenant);
+            if (!sec.TwoFactorEnabled || string.IsNullOrWhiteSpace(sec.TotpSecret))
+                return Results.Ok(new { success = true });
+            bool ok = VerifyTotpCode(sec.TotpSecret, code);
+            return Results.Ok(new { success = ok, error = ok ? "" : "6 haneli doğrulama kodu hatalı!" });
+        });
+
+        app.MapPost("/api/crm/2fa/disable", async (HttpContext ctx) =>
+        {
+            string tenant = ResolveTenant(ctx);
+            using var doc = await JsonDocument.ParseAsync(ctx.Request.Body);
+            string code = doc.RootElement.TryGetProperty("code", out var p) ? p.GetString() ?? "" : "";
+            var sec = LoadSecurity(tenant);
+            if (sec.TwoFactorEnabled && !VerifyTotpCode(sec.TotpSecret, code))
+                return Results.Ok(new { success = false, error = "Kapatmak için mevcut 6 haneli doğrulama kodunu girin." });
+            sec.TwoFactorEnabled = false;
+            sec.TotpSecret = "";
+            sec.PendingSecret = "";
+            sec.EnabledAt = "";
+            SaveJson(StoreKeyFor(tenant, "security"), SecurityPath(tenant), sec);
+            return Results.Ok(new { success = true, enabled = false });
+        });
 
         // Overview: categories + enriched companies + records + mikro config + KPIs (strictly scoped to tenantId)
         app.MapGet("/api/crm/overview", (HttpContext ctx) =>

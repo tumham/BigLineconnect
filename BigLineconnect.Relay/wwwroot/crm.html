@@ -164,15 +164,16 @@
         <img src="/logo.png" alt="B-Connect">
         <div>
             <h1>B-Connect CRM & Mikro Fatura Merkezi</h1>
-            <div class="sub" id="storage-badge">🔒 Yönetici Korumalı • Kalıcı Depolama Kontrol Ediliyor...</div>
+            <div class="sub" id="storage-badge">🔒 Güvenli İzole Bayi Alanı</div>
         </div>
     </div>
     <div class="top-actions">
         <select id="admin-tenant-select" style="display:none; background:#0b1220; border:1px solid var(--amber); color:var(--amber-light); font-weight:800; padding:8px 12px; border-radius:10px;" onchange="switchAdminTenant(this.value)"></select>
-        <span id="active-tenant-pill" class="pill" style="background:rgba(16,185,129,0.16);color:#6ee7b7;border:1px solid rgba(16,185,129,0.45);padding:7px 12px;font-size:0.8rem;">🏢 BIGLINE</span>
+        <span id="active-tenant-pill" class="pill" style="background:rgba(16,185,129,0.16);color:#6ee7b7;border:1px solid rgba(16,185,129,0.45);padding:7px 12px;font-size:0.8rem;">🏢 Bayi</span>
+        <button class="btn" id="btn-2fa-modal" onclick="open2FAModal()" title="İsteğe Bağlı 2 Aşamalı Doğrulama"><i class="fa-solid fa-shield-halved" style="color:var(--green);"></i> Güvenlik (2FA)</button>
         <button class="btn btn-green" onclick="seedDemoData()"><i class="fa-solid fa-wand-magic-sparkles"></i> 3 Örnek Firma Yükle</button>
         <button class="btn" onclick="loadOverview()"><i class="fa-solid fa-rotate-right"></i> Yenile</button>
-        <a id="back-portal-btn" href="/admin.html" class="btn"><i class="fa-solid fa-chart-line"></i> Yönetim Paneli</a>
+        <a id="back-portal-btn" href="/bayi.html" class="btn"><i class="fa-solid fa-store"></i> Bayi Portalı</a>
         <button class="btn btn-danger" onclick="crmLogout()" title="Çıkış Yap"><i class="fa-solid fa-right-from-bracket"></i></button>
     </div>
 </div>
@@ -615,8 +616,9 @@
         STATE = await res.json();
         const sb = document.getElementById('storage-badge');
         if (sb) {
-            const roleTxt = IS_SUPER_ADMIN ? `👑 Süper Admin • Görüntülenen: ${ACTIVE_TENANT}` : `🏢 Bayi İzole Alanı: ${ACTIVE_COMPANY_LABEL}`;
-            sb.innerText = (STATE.sqlPersistent ? '🗄️ SQL Kalıcı Kayıt Aktif • ' : '💾 Yerel Yedek • ') + roleTxt;
+            sb.innerText = IS_SUPER_ADMIN
+                ? `👑 Merkez Yönetim • Görüntülenen: ${ACTIVE_TENANT}`
+                : `🔒 ${ACTIVE_COMPANY_LABEL} — %100 İzole Bayi Alanı`;
         }
         const pill = document.getElementById('active-tenant-pill');
         if (pill) pill.innerText = (IS_SUPER_ADMIN ? '👑 ' : '🏢 ') + ACTIVE_TENANT;
@@ -1139,6 +1141,89 @@
         loadOverview();
     }
 
+    // --- İSTEĞE BAĞLI 2FA (GOOGLE / MICROSOFT AUTHENTICATOR) ---
+    let PENDING_BAYI_SESSION = null;
+
+    async function open2FAModal() {
+        openModal('modal-2fa');
+        document.getElementById('twofa-body').innerHTML = '<div style="text-align:center;color:var(--muted);padding:16px;">Durum kontrol ediliyor...</div>';
+        const res = await crmFetch('/api/crm/2fa/status');
+        const st = await res.json();
+        if (st.enabled) {
+            document.getElementById('twofa-body').innerHTML = `
+                <div class="alert-box" style="background:rgba(16,185,129,0.14);border:1px solid #10b981;color:#6ee7b7;">
+                    ✅ <b>İki Aşamalı Doğrulama (2FA) AKTİF</b><br>
+                    <span style="font-size:0.78rem;color:#cbd5e1;">Etkinleştirme: ${esc(st.enabledAt || '-')} — Girişleriniz 6 haneli Authenticator koduyla korunuyor.</span>
+                </div>
+                <p style="font-size:0.84rem;color:var(--muted);margin-bottom:10px;">2FA tamamen isteğe bağlıdır. Kapatmak isterseniz telefonunuzdaki mevcut 6 haneli kodu girin:</p>
+                <div style="display:flex;gap:8px;">
+                    <input type="text" id="twofa-disable-code" maxlength="6" placeholder="6 haneli kod" style="flex:1;text-align:center;font-size:1.1rem;letter-spacing:4px;font-weight:800;">
+                    <button class="btn btn-danger" onclick="disable2FA()">2FA'yı Kapat</button>
+                </div>
+                <div id="twofa-msg" style="margin-top:10px;font-size:0.82rem;font-weight:700;"></div>
+            `;
+        } else {
+            document.getElementById('twofa-body').innerHTML = `
+                <div class="alert-box" style="background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.4);color:#fde68a;">
+                    ℹ️ <b>İki Aşamalı Doğrulama (2FA) KAPALI (İsteğe Bağlı)</b><br>
+                    <span style="font-size:0.78rem;color:#cbd5e1;">Ücretsiz Google Authenticator veya Microsoft Authenticator ile hesabınıza banka seviyesinde koruma ekleyebilirsiniz.</span>
+                </div>
+                <button class="btn btn-primary" style="width:100%;justify-content:center;padding:12px;" onclick="start2FASetup()">
+                    <i class="fa-solid fa-qrcode"></i> QR Kod Oluştur ve 2FA'yı Etkinleştir
+                </button>
+                <div id="twofa-setup-area" style="margin-top:14px;"></div>
+                <div id="twofa-msg" style="margin-top:10px;font-size:0.82rem;font-weight:700;"></div>
+            `;
+        }
+    }
+
+    async function start2FASetup() {
+        const res = await crmFetch('/api/crm/2fa/setup', { method: 'POST' });
+        const d = await res.json();
+        if (!d.success) return;
+        const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=190x190&data=' + encodeURIComponent(d.otpAuthUri);
+        document.getElementById('twofa-setup-area').innerHTML = `
+            <div style="text-align:center;background:#090c14;border:1px solid var(--border-soft);border-radius:14px;padding:16px;">
+                <p style="font-size:0.82rem;color:#cbd5e1;margin-bottom:10px;"><b>1. Adım:</b> Google / Microsoft Authenticator uygulamasıyla QR kodu okutun:</p>
+                <img src="${qrUrl}" alt="2FA QR" style="width:180px;height:180px;border-radius:10px;background:#fff;padding:6px;margin-bottom:10px;">
+                <div style="font-size:0.74rem;color:var(--muted);margin-bottom:12px;">Manuel Anahtar: <code class="mono" style="color:var(--amber-light);">${esc(d.secret)}</code></div>
+                <p style="font-size:0.82rem;color:#cbd5e1;margin-bottom:8px;"><b>2. Adım:</b> Uygulamada görünen 6 haneli kodu girin:</p>
+                <div style="display:flex;gap:8px;max-width:300px;margin:0 auto;">
+                    <input type="text" id="twofa-enable-code" maxlength="6" placeholder="000000" style="flex:1;text-align:center;font-size:1.15rem;letter-spacing:4px;font-weight:800;">
+                    <button class="btn btn-primary" onclick="confirmEnable2FA()">Onayla</button>
+                </div>
+            </div>
+        `;
+    }
+
+    async function confirmEnable2FA() {
+        const code = (document.getElementById('twofa-enable-code')?.value || '').trim();
+        const res = await crmFetch('/api/crm/2fa/enable', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ code }) });
+        const d = await res.json();
+        const msg = document.getElementById('twofa-msg');
+        if (d.success) {
+            toast('🔐 2 Aşamalı Doğrulama başarıyla açıldı!');
+            open2FAModal();
+        } else if (msg) {
+            msg.style.color = '#fca5a5';
+            msg.innerText = d.error || 'Kod doğrulanamadı.';
+        }
+    }
+
+    async function disable2FA() {
+        const code = (document.getElementById('twofa-disable-code')?.value || '').trim();
+        const res = await crmFetch('/api/crm/2fa/disable', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ code }) });
+        const d = await res.json();
+        const msg = document.getElementById('twofa-msg');
+        if (d.success) {
+            toast('2FA kapatıldı');
+            open2FAModal();
+        } else if (msg) {
+            msg.style.color = '#fca5a5';
+            msg.innerText = d.error || 'Kod hatalı.';
+        }
+    }
+
     async function submitCrmBayiLogin(e) {
         if (e) e.preventDefault();
         const id = document.getElementById('crm-bayi-id').value.trim();
@@ -1153,6 +1238,17 @@
             });
             const data = await res.json();
             if (res.ok && data.tenantId) {
+                // İsteğe bağlı 2FA aktif mi kontrol et
+                const stRes = await fetch('/api/crm/2fa/status?tenantId=' + encodeURIComponent(data.tenantId));
+                const st = await stRes.json();
+                if (st && st.enabled) {
+                    PENDING_BAYI_SESSION = data;
+                    document.getElementById('login-form-bayi').style.display = 'none';
+                    document.getElementById('login-form-2fa').style.display = 'block';
+                    document.getElementById('crm-2fa-code').value = '';
+                    document.getElementById('crm-2fa-code').focus();
+                    return;
+                }
                 sessionStorage.removeItem('adminToken');
                 sessionStorage.setItem('bayiSession', JSON.stringify(data));
                 enterAsBayi(data);
@@ -1161,6 +1257,32 @@
             }
         } catch (err) {
             if (errEl) { errEl.innerText = 'Sunucu bağlantı hatası.'; errEl.style.display = 'block'; }
+        }
+    }
+
+    async function submitCrm2FAVerify(e) {
+        if (e) e.preventDefault();
+        if (!PENDING_BAYI_SESSION) return;
+        const code = document.getElementById('crm-2fa-code').value.trim();
+        const errEl = document.getElementById('crm-login-err');
+        if (errEl) errEl.style.display = 'none';
+        const res = await fetch('/api/crm/2fa/verify?tenantId=' + encodeURIComponent(PENDING_BAYI_SESSION.tenantId), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code })
+        });
+        const d = await res.json();
+        if (d.success) {
+            const s = PENDING_BAYI_SESSION;
+            PENDING_BAYI_SESSION = null;
+            document.getElementById('login-form-2fa').style.display = 'none';
+            document.getElementById('login-form-bayi').style.display = 'block';
+            sessionStorage.removeItem('adminToken');
+            sessionStorage.setItem('bayiSession', JSON.stringify(s));
+            enterAsBayi(s);
+        } else if (errEl) {
+            errEl.innerText = d.error || '6 haneli doğrulama kodu hatalı!';
+            errEl.style.display = 'block';
         }
     }
 
@@ -1197,8 +1319,14 @@
     }
 
     window.addEventListener('DOMContentLoaded', () => {
+        const params = new URLSearchParams(window.location.search);
+        const isAdminLink = params.get('admin') === '1';
+        if (isAdminLink) {
+            document.getElementById('login-tabs-row').style.display = 'grid';
+            switchLoginTab('admin');
+        }
         const bayiRaw = sessionStorage.getItem('bayiSession');
-        if (bayiRaw) {
+        if (bayiRaw && !isAdminLink) {
             try {
                 const s = JSON.parse(bayiRaw);
                 if (s && s.tenantId) { enterAsBayi(s); return; }
@@ -1212,30 +1340,51 @@
     });
 </script>
 
-<!-- Çift Modlu Giriş: Bayi CRM Girişi + Merkez Yönetici Girişi -->
+<!-- MODAL: İSTEĞE BAĞLI 2FA GÜVENLİK AYARLARI -->
+<div class="modal-bg" id="modal-2fa">
+    <div class="modal" style="max-width:480px;">
+        <div class="modal-head">
+            <h2>🔐 İki Aşamalı Doğrulama (2FA)</h2>
+            <button class="btn btn-sm" onclick="closeModal('modal-2fa')">✕</button>
+        </div>
+        <div id="twofa-body"></div>
+    </div>
+</div>
+
+<!-- Sade Bayi CRM Girişi (Merkez Admin sekmesi normal bayilere gizlidir, yalnızca ?admin=1 ile açılır) -->
 <div id="crm-login-modal" style="position:fixed;inset:0;background:rgba(5,7,13,0.97);z-index:99999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(14px);">
     <div style="background:var(--card2);border:1.5px solid var(--border);border-radius:20px;padding:30px 26px;max-width:430px;width:92%;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,0.85);">
         <img src="/logo.png" alt="B-Connect" style="width:48px;height:48px;border-radius:12px;margin-bottom:12px;">
-        <h2 style="font-size:1.32rem;font-weight:900;color:var(--amber-light);margin-bottom:6px;">B-Connect CRM & Mikro Girişi</h2>
-        <p style="font-size:0.82rem;color:var(--muted);margin-bottom:16px;">Her bayi yalnızca kendi izole müşteri ve fatura alanını görür.</p>
+        <h2 style="font-size:1.32rem;font-weight:900;color:var(--amber-light);margin-bottom:6px;">Bayi CRM & Mikro Girişi</h2>
+        <p style="font-size:0.82rem;color:var(--muted);margin-bottom:16px;">Müşteri kayıtlarınız ve fatura bilgileriniz yalnızca size özel izole alanda korunur.</p>
 
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;">
+        <div id="login-tabs-row" style="display:none;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;">
             <button type="button" id="ltab-bayi" class="btn btn-primary" style="justify-content:center;" onclick="switchLoginTab('bayi')"><i class="fa-solid fa-store"></i> Bayi Girişi</button>
             <button type="button" id="ltab-admin" class="btn" style="justify-content:center;" onclick="switchLoginTab('admin')"><i class="fa-solid fa-crown"></i> Merkez Admin</button>
         </div>
 
         <form id="login-form-bayi" onsubmit="submitCrmBayiLogin(event)">
-            <input type="text" id="crm-bayi-id" placeholder="Bayi Kodu veya E-Posta (örn: BAYI001)" required style="width:100%;padding:12px;text-align:center;font-size:0.95rem;margin-bottom:10px;">
+            <input type="text" id="crm-bayi-id" placeholder="Bayi Kodu veya E-Posta" required style="width:100%;padding:12px;text-align:center;font-size:0.95rem;margin-bottom:10px;">
             <input type="password" id="crm-bayi-pass" placeholder="Bayi Şifreniz..." required style="width:100%;padding:12px;text-align:center;font-size:0.95rem;margin-bottom:12px;">
             <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;padding:12px;font-size:0.95rem;">
-                <i class="fa-solid fa-right-to-bracket"></i> Bayi CRM'ine Giriş Yap
+                <i class="fa-solid fa-right-to-bracket"></i> CRM Paneline Giriş Yap
+            </button>
+        </form>
+
+        <form id="login-form-2fa" style="display:none;" onsubmit="submitCrm2FAVerify(event)">
+            <div style="font-size:0.84rem;color:#6ee7b7;font-weight:700;margin-bottom:10px;">
+                <i class="fa-solid fa-shield-halved"></i> Authenticator uygulamanızdaki 6 haneli doğrulama kodunu girin:
+            </div>
+            <input type="text" id="crm-2fa-code" maxlength="6" inputmode="numeric" placeholder="000000" required style="width:100%;padding:13px;text-align:center;font-size:1.3rem;letter-spacing:6px;font-weight:900;margin-bottom:12px;">
+            <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;padding:12px;font-size:0.95rem;">
+                <i class="fa-solid fa-check"></i> Kodu Doğrula ve Gir
             </button>
         </form>
 
         <form id="login-form-admin" style="display:none;" onsubmit="submitCrmAdminLogin(event)">
-            <input type="password" id="crm-admin-pass" placeholder="Merkez Yönetici Şifresi..." required style="width:100%;padding:12px;text-align:center;font-size:0.95rem;margin-bottom:12px;">
+            <input type="password" id="crm-admin-pass" placeholder="Yönetici Şifresi..." required style="width:100%;padding:12px;text-align:center;font-size:0.95rem;margin-bottom:12px;">
             <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;padding:12px;font-size:0.95rem;">
-                <i class="fa-solid fa-lock"></i> Merkez Yönetici Girişi
+                <i class="fa-solid fa-lock"></i> Yönetici Girişi
             </button>
         </form>
 
