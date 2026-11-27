@@ -1689,6 +1689,10 @@
                     var fallbackImg = document.getElementById('screen-img');
 
                     var payloadOffset = 12;
+                    // Fallback: if a raw JPEG (FF D8) arrives without the 12-byte header, do not slice off its SOI header!
+                    if (view.getUint8(0) === 0xFF && view.getUint8(1) === 0xD8) {
+                        payloadOffset = 0;
+                    }
                     var payloadLen = rawBuf.byteLength - payloadOffset;
                     if (payloadLen <= 4) { sendFrameAck(); return; }
 
@@ -1779,10 +1783,10 @@
                         if (window.createImageBitmap) {
                             createImageBitmap(blob).then(function(bmp) {
                                 if (cv && ctx) {
-                                    var subX = (view && view.byteLength >= 8) ? view.getUint16(0, true) : 0;
-                                    var subY = (view && view.byteLength >= 8) ? view.getUint16(2, true) : 0;
-                                    var subW = (view && view.byteLength >= 8) ? view.getUint16(4, true) : 0;
-                                    var subH = (view && view.byteLength >= 8) ? view.getUint16(6, true) : 0;
+                                    var subX = (payloadOffset === 12 && view && view.byteLength >= 8) ? view.getUint16(0, true) : 0;
+                                    var subY = (payloadOffset === 12 && view && view.byteLength >= 8) ? view.getUint16(2, true) : 0;
+                                    var subW = (payloadOffset === 12 && view && view.byteLength >= 8) ? view.getUint16(4, true) : 0;
+                                    var subH = (payloadOffset === 12 && view && view.byteLength >= 8) ? view.getUint16(6, true) : 0;
 
                                     var isKeyframe = (cv.width === 0 || cv.height === 0) || (subX === 0 && subY === 0 && (subW >= cv.width || bmp.width >= cv.width || cv.width <= 100));
                                     if (isKeyframe) {
@@ -2864,6 +2868,6 @@
         });
     </script>
     <script src="i18n.js?v=3901"></script>
-    <script src="app.js?v=3804"></script>
+    <script src="app.js?v=3805"></script>
 </body>
 </html>

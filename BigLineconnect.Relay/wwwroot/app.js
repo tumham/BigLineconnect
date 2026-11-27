@@ -986,8 +986,51 @@ async function startWebScreenShare() {
         const hiddenCanvas = document.createElement('canvas');
         const hiddenCtx = hiddenCanvas.getContext('2d');
         const videoElement = document.createElement('video');
+        videoElement.muted = true;
+        videoElement.playsInline = true;
         videoElement.srcObject = webHostMediaStream;
-        videoElement.play();
+        await videoElement.play().catch(() => {});
+
+        let webHostFrameSeq = 0;
+        let webHostSending = false;
+
+        const sendWebHostFrame = () => {
+            if (webHostSending) return;
+            if (!webHostMediaStream || !webHostSocket || webHostSocket.readyState !== WebSocket.OPEN) return;
+            if (webHostSocket.bufferedAmount > 512 * 1024) return;
+            if (!videoElement.videoWidth || !videoElement.videoHeight) return;
+
+            const w = videoElement.videoWidth;
+            const h = videoElement.videoHeight;
+            if (hiddenCanvas.width !== w || hiddenCanvas.height !== h) {
+                hiddenCanvas.width = w;
+                hiddenCanvas.height = h;
+            }
+            hiddenCtx.drawImage(videoElement, 0, 0, w, h);
+
+            webHostSending = true;
+            hiddenCanvas.toBlob((blob) => {
+                if (!blob || !webHostSocket || webHostSocket.readyState !== WebSocket.OPEN) {
+                    webHostSending = false;
+                    return;
+                }
+                blob.arrayBuffer().then(buf => {
+                    if (webHostSocket && webHostSocket.readyState === WebSocket.OPEN) {
+                        // Standard 12-byte BigLine binary frame header: [subX:u16][subY:u16][subW:u16][subH:u16][seq:u32] + JPEG
+                        const packet = new Uint8Array(12 + buf.byteLength);
+                        const dv = new DataView(packet.buffer);
+                        dv.setUint16(0, 0, true);
+                        dv.setUint16(2, 0, true);
+                        dv.setUint16(4, w, true);
+                        dv.setUint16(6, h, true);
+                        dv.setUint32(8, (++webHostFrameSeq) >>> 0, true);
+                        packet.set(new Uint8Array(buf), 12);
+                        webHostSocket.send(packet.buffer);
+                    }
+                    webHostSending = false;
+                }).catch(() => { webHostSending = false; });
+            }, 'image/jpeg', 0.65);
+        };
 
         webHostSocket.onmessage = (e) => {
             if (typeof e.data === 'string') {
@@ -996,30 +1039,18 @@ async function startWebScreenShare() {
                     const passInput = e.data.substring(10).trim();
                     if (passInput === myWebHostPass) {
                         webHostSocket.send("AUTH_OK");
+                        setTimeout(sendWebHostFrame, 50);
                     } else {
                         webHostSocket.send("AUTH_FAIL");
                     }
+                } else if (e.data === "VIEWER_CONNECTED" || e.data.indexOf("REQ_KEYFRAME") !== -1) {
+                    setTimeout(sendWebHostFrame, 30);
                 }
             }
         };
 
         // Frame capture loop (~15 FPS)
-        webHostInterval = setInterval(() => {
-            if (!webHostMediaStream || !webHostSocket || webHostSocket.readyState !== WebSocket.OPEN) return;
-            if (!videoElement.videoWidth || !videoElement.videoHeight) return;
-
-            hiddenCanvas.width = videoElement.videoWidth;
-            hiddenCanvas.height = videoElement.videoHeight;
-            hiddenCtx.drawImage(videoElement, 0, 0, hiddenCanvas.width, hiddenCanvas.height);
-
-            hiddenCanvas.toBlob((blob) => {
-                if (blob && webHostSocket && webHostSocket.readyState === WebSocket.OPEN) {
-                    blob.arrayBuffer().then(buf => {
-                        webHostSocket.send(buf);
-                    });
-                }
-            }, 'image/jpeg', 0.6);
-        }, 66);
+        webHostInterval = setInterval(sendWebHostFrame, 66);
 
         document.getElementById('my-web-id-display').innerText = `${myWebHostId.substring(0,3)} ${myWebHostId.substring(3,6)} ${myWebHostId.substring(6)}`;
         document.getElementById('my-web-pass-display').innerText = myWebHostPass;
