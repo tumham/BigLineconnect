@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>B-Connect Bayi Eğitim & Platform Rehberi | Videolu Anlatım</title>
+    <meta name="description" content="B-Connect tüm platformlar bayi eğitim videosu: Masaüstü (B-Connect.exe), Web, Mobil Bayi, Android, Linux SSH, yetki matrisi ve CRM rehberi.">
+    <link rel="icon" type="image/png" href="/logo.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg: #05070d;
+            --panel: #0b101b;
+            --card: rgba(17, 24, 39, 0.88);
+            --amber: #fbbf24;
+            --orange: #ea580c;
+            --green: #10b981;
+            --green-light: #34d399;
+            --blue: #38bdf8;
+            --purple: #a78bfa;
+            --red: #f87171;
+            --text: #f8fafc;
+            --muted: #94a3b8;
+            --border: rgba(251, 191, 36, 0.28);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif; }
+        body {
+            background: radial-gradient(circle at 10% 10%, rgba(251, 191, 36, 0.13), transparent 40%),
+                        radial-gradient(circle at 90% 90%, rgba(56, 189, 248, 0.12), transparent 42%),
+                        var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 14px 12px 26px;
+        }
+        .player-shell {
+            width: 100%;
+            max-width: 1180px;
+            background: var(--panel);
+            border: 1.5px solid var(--border);
+            border-radius: 24px;
+            box-shadow: 0 30px 80px rgba(0,0,0,0.88), 0 0 44px rgba(251, 191, 36, 0.12);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+        /* Header */
+        .p-head {
+            display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+            padding: 13px 20px; background: rgba(7, 10, 18, 0.96); border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+        .brand { display: flex; align-items: center; gap: 11px; flex-wrap: wrap; }
+        .brand img { width: 36px; height: 36px; border-radius: 10px; border: 1.5px solid var(--amber); }
+        .brand-name { font-size: 1.12rem; font-weight: 900; letter-spacing: 0.4px; }
+        .brand-tag {
+            font-size: 0.68rem; font-weight: 800; color: var(--amber);
+            background: rgba(251, 191, 36, 0.14); border: 1px solid rgba(251, 191, 36, 0.4);
+            padding: 3px 10px; border-radius: 999px; letter-spacing: 0.6px; text-transform: uppercase;
+        }
+        .head-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+        .h-btn {
+            display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 10px;
+            font-size: 0.78rem; font-weight: 800; text-decoration: none; cursor: pointer;
+            border: 1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.06); color: #fff;
+            transition: transform 0.15s ease, background 0.15s ease;
+        }
+        .h-btn:hover { transform: translateY(-1px); background: rgba(255,255,255,0.12); }
+        .h-btn.wa { background: rgba(37, 211, 102, 0.16); border-color: rgba(37, 211, 102, 0.45); color: #86efac; }
+        .h-btn.dl { background: linear-gradient(135deg, var(--amber), var(--orange)); color: #05070d; border: none; }
+
+        /* Stage */
+        .stage {
+            position: relative;
+            min-height: 520px;
+            padding: 26px 28px 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        /* Welcome Play Overlay */
+        .start-overlay {
+            position: absolute; inset: 0; z-index: 30;
+            background: rgba(5, 7, 13, 0.84);
+            backdrop-filter: blur(8px);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            text-align: center; padding: 24px; gap: 16px;
+            transition: opacity 0.35s ease;
+        }
+        .start-overlay.hidden { opacity: 0; pointer-events: none; }
+        .big-play-btn {
+            display: inline-flex; align-items: center; gap: 12px;
+            padding: 16px 32px; border-radius: 999px; border: none; cursor: pointer;
+            background: linear-gradient(135deg, var(--amber), var(--orange));
+            color: #05070d; font-size: 1.08rem; font-weight: 900; letter-spacing: 0.3px;
+            box-shadow: 0 12px 35px rgba(234, 88, 12, 0.45);
+            transition: transform 0.18s ease, box-shadow 0.18s ease;
+        }
+        .big-play-btn:hover { transform: scale(1.04); box-shadow: 0 16px 42px rgba(251, 191, 36, 0.55); }
+        .start-meta { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; font-size: 0.82rem; color: var(--muted); }
+        .start-meta span { display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.05); padding: 5px 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.1); }
+
+        .scene { display: none; width: 100%; animation: fadeUp 0.45s ease; }
+        .scene.active { display: grid; grid-template-columns: 1.08fr 0.92fr; gap: 26px; align-items: center; }
+        .scene.full.active { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 18px; }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+
+        .step-pill {
+            display: inline-flex; align-items: center; gap: 7px;
+            font-size: 0.72rem; font-weight: 800; letter-spacing: 0.8px; text-transform: uppercase;
+            padding: 5px 12px; border-radius: 999px; margin-bottom: 10px;
+            background: rgba(251, 191, 36, 0.14); border: 1px solid rgba(251, 191, 36, 0.4); color: var(--amber);
+        }
+        .step-pill.green { background: rgba(16, 185, 129, 0.14); border-color: rgba(16, 185, 129, 0.45); color: var(--green-light); }
+        .step-pill.blue { background: rgba(56, 189, 248, 0.14); border-color: rgba(56, 189, 248, 0.45); color: var(--blue); }
+        .step-pill.purple { background: rgba(167, 139, 250, 0.14); border-color: rgba(167, 139, 250, 0.45); color: var(--purple); }
+
+        h1.hero-h { font-size: clamp(1.6rem, 3vw, 2.35rem); font-weight: 900; line-height: 1.15; margin-bottom: 10px; }
+        h2.scene-h { font-size: clamp(1.3rem, 2.3vw, 1.88rem); font-weight: 900; line-height: 1.2; margin-bottom: 10px; }
+        .grad { background: linear-gradient(135deg, #fff 35%, var(--amber) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .grad-g { background: linear-gradient(135deg, #fff 30%, var(--green-light) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .grad-b { background: linear-gradient(135deg, #fff 30%, var(--blue) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        p.lead { font-size: 0.94rem; color: #cbd5e1; line-height: 1.55; margin-bottom: 14px; }
+
+        .feat-list { list-style: none; display: flex; flex-direction: column; gap: 9px; text-align: left; }
+        .feat-list li {
+            display: flex; align-items: flex-start; gap: 10px;
+            background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+            padding: 10px 13px; border-radius: 12px; font-size: 0.87rem; line-height: 1.42; color: #e2e8f0;
+        }
+        .feat-list li i { margin-top: 3px; font-size: 0.96rem; flex-shrink: 0; }
+
+        /* Ecosystem Grid (Scene 1) */
+        .eco-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; width: 100%; max-width: 1020px; }
+        .eco-card {
+            background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px; padding: 18px 14px; text-align: left;
+            display: flex; flex-direction: column; gap: 8px;
+            transition: transform 0.25s ease, border-color 0.25s ease;
+        }
+        .eco-card:hover { transform: translateY(-4px); border-color: var(--amber); }
+        .eco-icon {
+            width: 42px; height: 42px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;
+        }
+        .eco-card h3 { font-size: 0.98rem; font-weight: 800; color: #fff; }
+        .eco-card p { font-size: 0.78rem; color: var(--muted); line-height: 1.4; }
+        .eco-badge { font-size: 0.68rem; font-weight: 800; padding: 3px 8px; border-radius: 6px; width: fit-content; margin-top: auto; }
+
+        .url-banner {
+            display: inline-flex; align-items: center; gap: 10px; padding: 10px 20px; border-radius: 14px;
+            background: rgba(251, 191, 36, 0.12); border: 1.5px solid rgba(251, 191, 36, 0.45);
+            font-size: 1rem; font-weight: 900; color: var(--amber); letter-spacing: 0.4px;
+        }
+
+        /* Mockup Panels */
+        .mock-card {
+            background: linear-gradient(160deg, rgba(15, 23, 42, 0.95), rgba(7, 10, 18, 0.98));
+            border: 1.5px solid rgba(255,255,255,0.12);
+            border-radius: 18px; padding: 16px; box-shadow: 0 20px 50px rgba(0,0,0,0.65);
+            text-align: left;
+        }
+        .mock-titlebar {
+            display: flex; align-items: center; justify-content: space-between;
+            padding-bottom: 10px; margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.08);
+            font-size: 0.78rem; font-weight: 800; color: #e2e8f0;
+        }
+        .dots { display: flex; gap: 5px; }
+        .dots span { width: 9px; height: 9px; border-radius: 50%; }
+        .mock-row {
+            display: flex; align-items: center; justify-content: space-between; gap: 10px;
+            background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; font-size: 0.82rem;
+        }
+        .uac-pop {
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.14), rgba(16, 185, 129, 0.12));
+            border: 1.5px solid rgba(16, 185, 129, 0.45);
+            border-radius: 12px; padding: 12px; margin-top: 10px;
+            display: flex; align-items: center; justify-content: space-between; gap: 10px;
+        }
+        .uac-yes {
+            background: var(--green); color: #05070d; font-weight: 900; font-size: 0.78rem;
+            padding: 6px 14px; border-radius: 8px; white-space: nowrap;
+            animation: pulseYes 1.8s infinite;
+        }
+        @keyframes pulseYes {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.6); }
+            50% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+        }
+
+        /* Matrix Table (Scene 3) */
+        .matrix-wrap { width: 100%; max-width: 1040px; overflow-x: auto; }
+        table.matrix {
+            width: 100%; border-collapse: separate; border-spacing: 0 8px; text-align: left; font-size: 0.84rem;
+        }
+        table.matrix th {
+            padding: 8px 14px; color: var(--muted); font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.7px;
+        }
+        table.matrix td {
+            background: rgba(15, 23, 42, 0.88); padding: 12px 14px;
+            border-top: 1px solid rgba(255,255,255,0.08); border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+        table.matrix td:first-child { border-left: 1px solid rgba(255,255,255,0.08); border-radius: 12px 0 0 12px; font-weight: 800; color: #fff; }
+        table.matrix td:last-child { border-right: 1px solid rgba(255,255,255,0.08); border-radius: 0 12px 12px 0; }
+        .pill-ok { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 999px; font-size: 0.74rem; font-weight: 800; background: rgba(16, 185, 129, 0.16); color: var(--green-light); border: 1px solid rgba(16, 185, 129, 0.35); }
+        .pill-warn { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 999px; font-size: 0.74rem; font-weight: 800; background: rgba(251, 191, 36, 0.14); color: var(--amber); border: 1px solid rgba(251, 191, 36, 0.35); }
+        .pill-no { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 999px; font-size: 0.74rem; font-weight: 800; background: rgba(248, 113, 113, 0.14); color: var(--red); border: 1px solid rgba(248, 113, 113, 0.35); }
+
+        /* Dual Mobile Cards (Scene 4) */
+        .dual-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+        .mini-phone {
+            background: rgba(15, 23, 42, 0.92); border: 1.5px solid rgba(255,255,255,0.12);
+            border-radius: 18px; padding: 15px; display: flex; flex-direction: column; gap: 9px;
+        }
+        .mini-phone h4 { font-size: 0.92rem; font-weight: 800; display: flex; align-items: center; gap: 7px; }
+        .mini-phone p { font-size: 0.78rem; color: var(--muted); line-height: 1.45; }
+
+        /* Checklist (Scene 7) */
+        .steps-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; width: 100%; max-width: 980px; }
+        .step-box {
+            background: rgba(15, 23, 42, 0.88); border: 1px solid rgba(251, 191, 36, 0.25);
+            border-radius: 16px; padding: 20px 16px; text-align: left; display: flex; flex-direction: column; gap: 8px;
+        }
+        .step-num {
+            width: 34px; height: 34px; border-radius: 10px; background: linear-gradient(135deg, var(--amber), var(--orange));
+            color: #05070d; font-weight: 900; font-size: 1rem; display: flex; align-items: center; justify-content: center;
+        }
+        .cta-row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 6px; }
+        .cta-btn {
+            display: inline-flex; align-items: center; gap: 8px; padding: 11px 18px; border-radius: 12px;
+            font-size: 0.86rem; font-weight: 800; text-decoration: none; cursor: pointer; border: none;
+            transition: transform 0.15s ease;
+        }
+        .cta-btn:hover { transform: translateY(-2px); }
+        .cta-btn.pri { background: linear-gradient(135deg, var(--amber), var(--orange)); color: #05070d; }
+        .cta-btn.sec { background: rgba(56, 189, 248, 0.14); border: 1px solid rgba(56, 189, 248, 0.45); color: var(--blue); }
+        .cta-btn.grn { background: rgba(16, 185, 129, 0.16); border: 1px solid rgba(16, 185, 129, 0.45); color: var(--green-light); }
+        .cta-btn.ghost { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.16); color: #fff; }
+
+        /* Subtitle Bar */
+        .subtitle-bar {
+            background: rgba(5, 7, 13, 0.92);
+            border-top: 1px solid rgba(255,255,255,0.07);
+            padding: 11px 22px; text-align: center; font-size: 0.9rem; color: #f1f5f9;
+            min-height: 46px; display: flex; align-items: center; justify-content: center; line-height: 1.4;
+        }
+        .subtitle-bar.off { display: none; }
+
+        /* Controls & Timeline */
+        .controls {
+            background: rgba(7, 10, 18, 0.98);
+            border-top: 1px solid rgba(255,255,255,0.08);
+            padding: 12px 18px 15px;
+            display: flex; flex-direction: column; gap: 10px;
+        }
+        .chapters {
+            display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px;
+        }
+        .chap {
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 9px; padding: 6px 8px; cursor: pointer; text-align: left;
+            position: relative; overflow: hidden; transition: border-color 0.2s;
+        }
+        .chap:hover { border-color: rgba(251, 191, 36, 0.5); }
+        .chap.active { border-color: var(--amber); background: rgba(251, 191, 36, 0.12); }
+        .chap.done { border-color: rgba(16, 185, 129, 0.35); }
+        .chap-num { font-size: 0.64rem; font-weight: 800; color: var(--amber); text-transform: uppercase; }
+        .chap-t { font-size: 0.72rem; font-weight: 700; color: #e2e8f0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .chap-bar { position: absolute; left: 0; bottom: 0; height: 3px; width: 0%; background: var(--amber); transition: width 0.2s linear; }
+        .chap.done .chap-bar { width: 100%; background: var(--green); }
+
+        .ctrl-row {
+            display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+        }
+        .ctrl-left, .ctrl-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .c-btn {
+            display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 10px;
+            background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
+            color: #fff; font-size: 0.8rem; font-weight: 700; cursor: pointer;
+        }
+        .c-btn:hover { background: rgba(255,255,255,0.12); }
+        .c-btn.play-main {
+            background: linear-gradient(135deg, var(--amber), var(--orange)); color: #05070d; border: none; font-weight: 900; padding: 8px 16px;
+        }
+        .c-btn.on { border-color: rgba(16, 185, 129, 0.5); color: var(--green-light); background: rgba(16, 185, 129, 0.12); }
+        .scene-counter { font-size: 0.8rem; font-weight: 800; color: var(--muted); padding: 0 6px; }
+
+        @media (max-width: 900px) {
+            .scene.active { grid-template-columns: 1fr; }
+            .eco-grid { grid-template-columns: 1fr 1fr; }
+            .steps-3 { grid-template-columns: 1fr; }
+            .dual-cards { grid-template-columns: 1fr; }
+            .chapters { grid-template-columns: repeat(4, 1fr); }
+            .stage { min-height: 460px; padding: 18px 16px; }
+        }
+        @media (max-width: 560px) {
+            .eco-grid { grid-template-columns: 1fr; }
+            .chapters { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+    <div class="player-shell" id="playerShell">
+        <!-- HEADER -->
+        <div class="p-head">
+            <div class="brand">
+                <img src="/logo.png" alt="B-Connect">
+                <div>
+                    <div class="brand-name">B-CONNECT</div>
+                </div>
+                <span class="brand-tag"><i class="fa-solid fa-graduation-cap"></i> Bayi Eğitim &amp; Platform Rehberi</span>
+            </div>
+            <div class="head-btns">
+                <button class="h-btn wa" onclick="shareWhatsApp()"><i class="fa-brands fa-whatsapp"></i> Bayiye Gönder</button>
+                <button class="h-btn" onclick="copyPageLink(this)"><i class="fa-solid fa-link"></i> Linki Kopyala</button>
+                <a class="h-btn dl" href="/B-Connect.exe" download="B-Connect.exe"><i class="fa-solid fa-download"></i> B-Connect.exe</a>
+            </div>
+        </div>
+
+        <!-- STAGE -->
+        <div class="stage">
+            <!-- Welcome Overlay (Unlocks Audio Cleanly) -->
+            <div class="start-overlay" id="startOverlay">
+                <div class="step-pill"><i class="fa-solid fa-play-circle"></i> 7 Bölümlük Sesli Bayi Eğitimi (~2 Dakika)</div>
+                <h1 class="hero-h"><span class="grad">B-Connect Tüm Platformlar</span><br>Bayi Eğitim Videosu</h1>
+                <p class="lead" style="max-width: 620px; margin-bottom: 4px;">
+                    Masaüstü, Web, Mobil Bayi, Android, Linux SSH, yetki sınırları ve Bayi CRM &amp; Servis Faturası kullanımını 2 dakikada adım adım izleyin.
+                </p>
+                <button class="big-play-btn" onclick="startTraining()">
+                    <i class="fa-solid fa-play"></i> Sesli Eğitimi Başlat
+                </button>
+                <div class="start-meta">
+                    <span><i class="fa-solid fa-volume-high" style="color:var(--amber);"></i> Türkçe Sesli Anlatım</span>
+                    <span><i class="fa-solid fa-closed-captioning" style="color:var(--blue);"></i> Altyazılı</span>
+                    <span><i class="fa-solid fa-table-cells" style="color:var(--green-light);"></i> Yetki Matrisi Dahil</span>
+                </div>
+            </div>
+
+            <!-- SCENE 1: ECOSYSTEM -->
+            <section class="scene full active" data-scene="0">
+                <div>
+                    <div class="step-pill"><i class="fa-solid fa-globe"></i> Bölüm 1 / 7 • Tek Adres, 4 Platform</div>
+                    <h1 class="hero-h"><span class="grad">Tüm Destek Araçlarınız</span> Tek Adreste</h1>
+                    <p class="lead" style="max-width: 720px; margin: 0 auto 10px;">
+                        Bayileriniz ve müşterileriniz ayrı ayrı link ezberlemek zorunda değil. Bilgisayar, telefon veya tablet fark etmeksizin tek adres yeterlidir:
+                    </p>
+                    <div class="url-banner"><i class="fa-solid fa-lock"></i> https://biglineconnect.bigus.com.tr</div>
+                </div>
+                <div class="eco-grid">
+                    <div class="eco-card">
+                        <div class="eco-icon" style="background:rgba(251,191,36,0.15);color:var(--amber);"><i class="fa-brands fa-windows"></i></div>
+                        <h3>Windows Masaüstü</h3>
+                        <p>B-Connect.exe ile tam yetkili destek, UAC "Evet" tıklama, 2 GB dosya &amp; klasör aktarımı.</p>
+                        <span class="eco-badge" style="background:rgba(16,185,129,0.16);color:var(--green-light);">Tam Yetki</span>
+                    </div>
+                    <div class="eco-card">
+                        <div class="eco-icon" style="background:rgba(56,189,248,0.15);color:var(--blue);"><i class="fa-solid fa-globe"></i></div>
+                        <h3>Web Portalı</h3>
+                        <p>Program kurmadan tarayıcıdan müşteri PC'sine tam kontrol + Linux SSH Terminali.</p>
+                        <span class="eco-badge" style="background:rgba(56,189,248,0.16);color:var(--blue);">Kurulumsuz</span>
+                    </div>
+                    <div class="eco-card">
+                        <div class="eco-icon" style="background:rgba(16,185,129,0.15);color:var(--green-light);"><i class="fa-solid fa-mobile-screen-button"></i></div>
+                        <h3>Mobil Bayi &amp; Android</h3>
+                        <p>iPhone/Android'den müşteri PC'sine bağlanın veya PC'den müşteri Android telefonunu yönetin.</p>
+                        <span class="eco-badge" style="background:rgba(251,191,36,0.16);color:var(--amber);">Çift Yönlü</span>
+                    </div>
+                    <div class="eco-card">
+                        <div class="eco-icon" style="background:rgba(167,139,250,0.15);color:var(--purple);"><i class="fa-solid fa-file-invoice-dollar"></i></div>
+                        <h3>Bayi CRM &amp; Fatura</h3>
+                        <p>%100 bayiye özel izole portföy, servis geçmişi, Mikro fatura &amp; isteğe bağlı 2FA.</p>
+                        <span class="eco-badge" style="background:rgba(167,139,250,0.16);color:var(--purple);">%100 İzole</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SCENE 2: WINDOWS DESKTOP -->
+            <section class="scene" data-scene="1">
+                <div>
+                    <div class="step-pill"><i class="fa-brands fa-windows"></i> Bölüm 2 / 7 • Windows Masaüstü</div>
+                    <h2 class="scene-h"><span class="grad">B-Connect.exe:</span> Tam Yetkili Kurumsal Destek</h2>
+                    <p class="lead">Bayilerin birincil çalışma aracıdır. Kurulum istemez, resmi Certum dijital imzalıdır ve doğrudan Standart Kurumsal Panel ile açılır.</p>
+                    <ul class="feat-list">
+                        <li><i class="fa-solid fa-shield-halved" style="color:var(--green-light);"></i><div><strong>UAC "Evet" / Yönetici Onayı Tıklama:</strong> Karşı PC'de yönetici olarak çalıştırıldığında geçici sistem köprüsüyle Windows UAC pencerelerini bile uzaktan tıklarsınız. <strong>Kapanınca kendini siler, sıfır iz bırakır!</strong></div></li>
+                        <li><i class="fa-solid fa-folder-open" style="color:var(--amber);"></i><div><strong>2 GB Akışlı Dosya &amp; Klasör Transferi:</strong> RAM'i şişirmeden büyük yedek ve klasörleri çift yönlü aktarın.</div></li>
+                        <li><i class="fa-solid fa-display" style="color:var(--blue);"></i><div><strong>Çoklu Monitör, Uzaktan Yazdırma &amp; Gizlilik Perdesi:</strong> Kurumsal destek için gereken tüm araçlar tek pencerede.</div></li>
+                    </ul>
+                </div>
+                <div class="mock-card">
+                    <div class="mock-titlebar">
+                        <span><i class="fa-solid fa-shield-check" style="color:var(--amber);"></i> B-Connect.exe — Standart Kurumsal Panel</span>
+                        <div class="dots"><span style="background:#ef4444;"></span><span style="background:#fbbf24;"></span><span style="background:#22c55e;"></span></div>
+                    </div>
+                    <div class="mock-row">
+                        <span><i class="fa-solid fa-id-card" style="color:var(--amber);"></i> Uzak Bilgisayar ID</span>
+                        <strong style="letter-spacing:2px;color:var(--amber);">482 910 356</strong>
+                    </div>
+                    <div class="mock-row">
+                        <span><i class="fa-solid fa-certificate" style="color:var(--green-light);"></i> Dijital İmza</span>
+                        <span class="pill-ok"><i class="fa-solid fa-check"></i> Certum Doğrulandı</span>
+                    </div>
+                    <div class="mock-row">
+                        <span><i class="fa-solid fa-hard-drive" style="color:var(--blue);"></i> Dosya &amp; Klasör Limiti</span>
+                        <strong>2 GB Akışlı (64 KB)</strong>
+                    </div>
+                    <div class="uac-pop">
+                        <div>
+                            <div style="font-size:0.78rem;font-weight:800;color:#fff;"><i class="fa-solid fa-user-shield" style="color:var(--amber);"></i> Windows UAC Onayı</div>
+                            <div style="font-size:0.72rem;color:var(--muted);">Geçici Sistem Köprüsü Aktif • Kapanışta Sıfır İz</div>
+                        </div>
+                        <div class="uac-yes"><i class="fa-solid fa-arrow-pointer"></i> EVET TIKLANIR</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SCENE 3: CONNECTION & PERMISSION MATRIX -->
+            <section class="scene full" data-scene="2">
+                <div>
+                    <div class="step-pill green"><i class="fa-solid fa-table-cells"></i> Bölüm 3 / 7 • Bağlantı &amp; Yetki Matrisi</div>
+                    <h2 class="scene-h"><span class="grad-g">Kim Nereye Bağlanır,</span> Ne Kadar Yetki Alır?</h2>
+                    <p class="lead" style="max-width: 760px; margin: 0 auto;">Destek verirken hangi kombinasyonda hangi yetkiye sahip olduğunuzu tek tabloda görün:</p>
+                </div>
+                <div class="matrix-wrap">
+                    <table class="matrix">
+                        <thead>
+                            <tr>
+                                <th>Bağlantı Yönü (Bayi → Müşteri)</th>
+                                <th>Ekran Görüntüsü</th>
+                                <th>Fare &amp; Klavye</th>
+                                <th>UAC "Evet" &amp; Dosya</th>
+                                <th>Ne Zaman Kullanılır?</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><i class="fa-brands fa-windows" style="color:var(--amber);"></i> PC (B-Connect.exe) → PC (B-Connect.exe)</td>
+                                <td><span class="pill-ok"><i class="fa-solid fa-check"></i> 60 FPS</span></td>
+                                <td><span class="pill-ok"><i class="fa-solid fa-check"></i> Tam Kontrol</span></td>
+                                <td><span class="pill-ok"><i class="fa-solid fa-check"></i> UAC + 2 GB</span></td>
+                                <td style="color:#cbd5e1;">Günlük tüm teknik destek ve kurulumlar</td>
+                            </tr>
+                            <tr>
+                                <td><i class="fa-solid fa-globe" style="color:var(--blue);"></i> Web / Mobil → PC (B-Connect.exe)</td>
+                                <td><span class="pill-ok"><i class="fa-solid fa-check"></i> Canlı HD</span></td>
+                                <td><span class="pill-ok"><i class="fa-solid fa-check"></i> Tam Kontrol</span></td>
+                                <td><span class="pill-ok"><i class="fa-solid fa-check"></i> UAC Destekli</span></td>
+                                <td style="color:#cbd5e1;">Dışarıdayken telefondan veya başka PC'den acil destek</td>
+                            </tr>
+                            <tr>
+                                <td><i class="fa-brands fa-android" style="color:var(--green-light);"></i> PC (B-Connect.exe) → Android (+ Eklenti)</td>
+                                <td><span class="pill-ok"><i class="fa-solid fa-check"></i> Dikey HD</span></td>
+                                <td><span class="pill-ok"><i class="fa-solid fa-check"></i> Dokunma / Kaydır</span></td>
+                                <td><span class="pill-warn"><i class="fa-solid fa-shield"></i> Erişilebilirlik</span></td>
+                                <td style="color:#cbd5e1;">Müşteri cep telefonuna/saha terminaline destek</td>
+                            </tr>
+                            <tr>
+                                <td><i class="fa-solid fa-window-maximize" style="color:var(--amber);"></i> Web → Web (Sadece Tarayıcı)</td>
+                                <td><span class="pill-ok"><i class="fa-solid fa-check"></i> Canlı İzleme</span></td>
+                                <td><span class="pill-no"><i class="fa-solid fa-xmark"></i> Salt İzleme</span></td>
+                                <td><span class="pill-no"><i class="fa-solid fa-lock"></i> Tarayıcı Sınırı</span></td>
+                                <td style="color:#cbd5e1;">Program indirmeden hızlı ekran gösterme / sunum</td>
+                            </tr>
+                            <tr>
+                                <td><i class="fa-solid fa-terminal" style="color:var(--purple);"></i> Web / Mobil → Linux Sunucu (SSH)</td>
+                                <td><span class="pill-ok"><i class="fa-solid fa-check"></i> Canlı Konsol</span></td>
+                                <td><span class="pill-ok"><i class="fa-solid fa-check"></i> Tam Terminal</span></td>
+                                <td><span class="pill-ok"><i class="fa-solid fa-key"></i> SSH Yetkisi</span></td>
+                                <td style="color:#cbd5e1;">Sunucu bakım, servis restart ve log kontrolü</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- SCENE 4: MOBILE BAYI & ANDROID -->
+            <section class="scene" data-scene="3">
+                <div>
+                    <div class="step-pill green"><i class="fa-solid fa-mobile-screen-button"></i> Bölüm 4 / 7 • Mobil Bayi &amp; Android</div>
+                    <h2 class="scene-h"><span class="grad-g">Cepten PC'ye,</span> PC'den Android'e Tam Destek</h2>
+                    <p class="lead">İster yolda cep telefonunuzdan müşterinin bilgisayarına bağlanın, ister ofisteki PC'nizden müşterinin Android telefonunu yönetin.</p>
+                    <ul class="feat-list">
+                        <li><i class="fa-solid fa-mobile-retro" style="color:var(--amber);"></i><div><strong>Telefondan PC'ye (Kurulumsuz):</strong> iPhone Safari veya Android Chrome'dan <code style="color:var(--amber);">biglineconnect.bigus.com.tr</code> açın → sistem otomatik <strong>Mobil Bayi Konsolu'nu (/mobil)</strong> açar. Touchpad, Sol/Sağ Tık ve Klavye ile PC'yi yönetin.</div></li>
+                        <li><i class="fa-brands fa-google-play" style="color:var(--green-light);"></i><div><strong>PC'den Android'e (Google Play):</strong> Müşteri telefonuna <em>B-Connect Uzak Masaüstü</em> + <em>Kontrol Eklentisi</em> kurulur. Eklentinin internet izni bile yoktur; yalnızca şifreli ana uygulamadan dokunma komutu alır.</div></li>
+                    </ul>
+                </div>
+                <div class="dual-cards">
+                    <div class="mini-phone" style="border-color:rgba(251,191,36,0.38);">
+                        <h4 style="color:var(--amber);"><i class="fa-solid fa-compass"></i> Mobil Bayi (/mobil)</h4>
+                        <p>Uygulama indirmeden tarayıcıdan müşteri PC'sine bağlanın.</p>
+                        <div class="mock-row" style="margin:0;"><span>Dokunmatik Mod</span><strong style="color:var(--amber);">Touchpad</strong></div>
+                        <div class="mock-row" style="margin:0;"><span>PC Fare &amp; Klavye</span><span class="pill-ok">Aktif</span></div>
+                        <div class="mock-row" style="margin:0;"><span>Ana Ekrana Ekle</span><span class="pill-ok">PWA</span></div>
+                    </div>
+                    <div class="mini-phone" style="border-color:rgba(16,185,129,0.4);">
+                        <h4 style="color:var(--green-light);"><i class="fa-brands fa-android"></i> Android Host</h4>
+                        <p>PC'nizden müşterinin Android telefonunu parmak gibi yönetin.</p>
+                        <div class="mock-row" style="margin:0;"><span>1. Ana Uygulama</span><strong style="color:var(--green-light);">Google Play</strong></div>
+                        <div class="mock-row" style="margin:0;"><span>2. Kontrol Eklentisi</span><span class="pill-ok">0 İnternet İzni</span></div>
+                        <div class="mock-row" style="margin:0;"><span>Kurulum Süresi</span><strong>30 Saniye</strong></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SCENE 5: WEB PLATFORM & BROWSER RULE -->
+            <section class="scene" data-scene="4">
+                <div>
+                    <div class="step-pill blue"><i class="fa-solid fa-globe"></i> Bölüm 5 / 7 • Web Platformu &amp; Güvenlik</div>
+                    <h2 class="scene-h"><span class="grad-b">Web'den Hızlı Bağlan</span> &amp; Tarayıcı Sınırları</h2>
+                    <p class="lead">Kendi bilgisayarınızda B-Connect kurulu olmasa bile herhangi bir tarayıcıdan <strong>Hızlı Bağlan</strong> ile müşteri bilgisayarına bağlanabilirsiniz.</p>
+                    <ul class="feat-list">
+                        <li><i class="fa-solid fa-check-circle" style="color:var(--green-light);"></i><div><strong>Web → PC (B-Connect.exe):</strong> Karşı tarafta B-Connect.exe açıksa tarayıcıdan <strong>tam fare ve klavye kontrolü</strong> alırsınız.</div></li>
+                        <li><i class="fa-solid fa-circle-info" style="color:var(--amber);"></i><div><strong>Web → Web (Ekran Paylaşımı):</strong> Tarayıcı güvenlik kuralları gereği hiçbir web sayfası Windows'un faresini veya klavyesini yönetemez. Bu mod <strong>salt izleme / sunum</strong> içindir; müdahale gerekiyorsa karşı tarafta <code style="color:var(--blue);">B-Connect.exe</code> açılır.</div></li>
+                        <li><i class="fa-solid fa-terminal" style="color:var(--purple);"></i><div><strong>Linux SSH Terminali:</strong> Web ve Mobil içinden doğrudan Linux sunucularınıza güvenli terminal bağlantısı kurun.</div></li>
+                    </ul>
+                </div>
+                <div class="mock-card">
+                    <div class="mock-titlebar">
+                        <span><i class="fa-solid fa-globe" style="color:var(--blue);"></i> biglineconnect.bigus.com.tr</span>
+                        <span class="pill-ok">SSL Şifreli</span>
+                    </div>
+                    <div class="mock-row">
+                        <span><strong>Hızlı Bağlan</strong> → PC'deki B-Connect.exe</span>
+                        <span class="pill-ok">Tam Kontrol</span>
+                    </div>
+                    <div class="mock-row">
+                        <span><strong>Ekranımı Paylaş</strong> → Tarayıcıdan Tarayıcıya</span>
+                        <span class="pill-warn">Salt İzleme</span>
+                    </div>
+                    <div class="mock-row">
+                        <span><strong>Linux SSH</strong> → Sunucu Terminali</span>
+                        <span class="pill-ok">Aktif</span>
+                    </div>
+                    <div style="margin-top:10px;padding:11px 12px;border-radius:10px;background:rgba(56,189,248,0.09);border:1px solid rgba(56,189,248,0.32);font-size:0.78rem;line-height:1.45;color:#cbd5e1;">
+                        <strong style="color:var(--blue);"><i class="fa-solid fa-shield-halved"></i> Tarayıcı Güvenlik Kuralı:</strong>
+                        Web sayfası işletim sisteminin faresine erişemez. Müşteriye tam müdahale için tek tıkla <strong>B-Connect.exe</strong> açtırmanız yeterlidir.
+                    </div>
+                </div>
+            </section>
+
+            <!-- SCENE 6: DEALER PORTAL, CRM & PRIVACY -->
+            <section class="scene" data-scene="5">
+                <div>
+                    <div class="step-pill purple"><i class="fa-solid fa-briefcase"></i> Bölüm 6 / 7 • Bayi CRM, Fatura &amp; Gizlilik</div>
+                    <h2 class="scene-h"><span class="grad">İzole Portföyünüz,</span> Tek Tıkla Servis Faturası</h2>
+                    <p class="lead">Müşteri portföyünüz sizin en değerli varlığınızdır. B-Connect Bayi Portalı ve CRM tamamen <strong>bayiye özel izole</strong> mimariyle çalışır.</p>
+                    <ul class="feat-list">
+                        <li><i class="fa-solid fa-user-lock" style="color:var(--green-light);"></i><div><strong>%100 İzole Bayi Verisi:</strong> Her bayi yalnızca kendi Bayi Kodu ve şifresiyle giriş yapar; müşteri kartları, Host ID'leri ve servis notları başka hiçbir bayi tarafından görülemez.</div></li>
+                        <li><i class="fa-solid fa-file-invoice" style="color:var(--amber);"></i><div><strong>CRM &amp; Servis Faturalama (/crm):</strong> Bağlantı süreleri ve destek notları kayıt altına alınır; tek tıkla Mikro servis faturası, Excel veya HTML rapor oluşturursunuz.</div></li>
+                        <li><i class="fa-solid fa-key" style="color:var(--blue);"></i><div><strong>İsteğe Bağlı 2FA (Google Authenticator):</strong> Zorlama yok! Dileyen bayiler ücretsiz 2 aşamalı doğrulamayı açıp hesabına ekstra kilit ekleyebilir.</div></li>
+                    </ul>
+                </div>
+                <div class="mock-card">
+                    <div class="mock-titlebar">
+                        <span><i class="fa-solid fa-store" style="color:var(--purple);"></i> Bayi CRM &amp; Servis Paneli (/crm)</span>
+                        <span class="pill-ok"><i class="fa-solid fa-lock"></i> İzole Alan</span>
+                    </div>
+                    <div class="mock-row">
+                        <span><i class="fa-solid fa-users" style="color:var(--blue);"></i> Müşteri Portföyü &amp; Host ID'ler</span>
+                        <strong style="color:var(--green-light);">Sadece Size Özel</strong>
+                    </div>
+                    <div class="mock-row">
+                        <span><i class="fa-solid fa-clock" style="color:var(--amber);"></i> Destek Süre &amp; Servis Kayıtları</span>
+                        <strong>Otomatik Kayıt</strong>
+                    </div>
+                    <div class="mock-row">
+                        <span><i class="fa-solid fa-file-excel" style="color:var(--green-light);"></i> Raporlama &amp; Servis Faturası</span>
+                        <strong>Mikro / Excel / HTML</strong>
+                    </div>
+                    <div class="mock-row" style="margin-bottom:0;border-color:rgba(167,139,250,0.4);background:rgba(167,139,250,0.1);">
+                        <span><i class="fa-solid fa-mobile-screen" style="color:var(--purple);"></i> 2 Aşamalı Doğrulama (2FA)</span>
+                        <span class="pill-warn">İsteğe Bağlı • Ücretsiz</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SCENE 7: QUICK START CHECKLIST & CTA -->
+            <section class="scene full" data-scene="6">
+                <div>
+                    <div class="step-pill"><i class="fa-solid fa-rocket"></i> Bölüm 7 / 7 • 3 Adımda Hemen Başlayın</div>
+                    <h2 class="scene-h"><span class="grad">Bayi Hızlı Başlangıç</span> Kontrol Listesi</h2>
+                    <p class="lead" style="max-width: 680px; margin: 0 auto;">Eğitimi tamamladınız! Günlük operasyonlarınızda bu 3 adımla tüm müşterilerinize saniyeler içinde destek verebilirsiniz:</p>
+                </div>
+                <div class="steps-3">
+                    <div class="step-box">
+                        <div class="step-num">1</div>
+                        <h3 style="font-size:1rem;font-weight:800;">B-Connect.exe'yi İndirin</h3>
+                        <p style="font-size:0.82rem;color:var(--muted);line-height:1.45;">Kendi bilgisayarınıza resmi dijital imzalı <strong>B-Connect.exe</strong> dosyasını indirip masaüstüne koyun. Kurulum gerekmez.</p>
+                    </div>
+                    <div class="step-box">
+                        <div class="step-num">2</div>
+                        <h3 style="font-size:1rem;font-weight:800;">Tek Adresi Paylaşın</h3>
+                        <p style="font-size:0.82rem;color:var(--muted);line-height:1.45;">Müşterilerinize yalnızca <strong style="color:var(--amber);">biglineconnect.bigus.com.tr</strong> adresini verin; PC, Web veya Android'den anında bağlanın.</p>
+                    </div>
+                    <div class="step-box">
+                        <div class="step-num">3</div>
+                        <h3 style="font-size:1rem;font-weight:800;">CRM'den Takip Edin</h3>
+                        <p style="font-size:0.82rem;color:var(--muted);line-height:1.45;"><strong>/crm</strong> üzerinden kendi izole müşteri portföyünüzü, destek sürelerinizi ve servis faturalarınızı yönetin.</p>
+                    </div>
+                </div>
+                <div class="cta-row">
+                    <a class="cta-btn pri" href="/B-Connect.exe" download="B-Connect.exe"><i class="fa-solid fa-download"></i> B-Connect.exe İndir</a>
+                    <a class="cta-btn sec" href="/crm" target="_blank"><i class="fa-solid fa-briefcase"></i> Bayi CRM Paneli</a>
+                    <a class="cta-btn grn" href="/mobil" target="_blank"><i class="fa-solid fa-mobile-screen"></i> Mobil Bayi Konsolu</a>
+                    <button class="cta-btn ghost" onclick="restartTraining()"><i class="fa-solid fa-rotate-left"></i> Baştan İzle</button>
+                </div>
+            </section>
+        </div>
+
+        <!-- SUBTITLE BAR -->
+        <div class="subtitle-bar" id="subtitleBar">
+            Başlatmak için yukarıdaki "Sesli Eğitimi Başlat" butonuna veya aşağıdaki oynat tuşuna tıklayın.
+        </div>
+
+        <!-- CONTROLS & 7-CHAPTER TIMELINE -->
+        <div class="controls">
+            <div class="chapters" id="chaptersBar"></div>
+            <div class="ctrl-row">
+                <div class="ctrl-left">
+                    <button class="c-btn play-main" id="btnPlayPause" onclick="togglePlay()"><i class="fa-solid fa-play"></i> Oynat</button>
+                    <button class="c-btn" onclick="prevScene()"><i class="fa-solid fa-backward-step"></i> Önceki</button>
+                    <button class="c-btn" onclick="nextScene()"><i class="fa-solid fa-forward-step"></i> Sonraki</button>
+                    <span class="scene-counter" id="sceneCounter">1 / 7</span>
+                </div>
+                <div class="ctrl-right">
+                    <button class="c-btn on" id="btnVoice" onclick="toggleVoice()"><i class="fa-solid fa-volume-high"></i> Sesli Anlatım: Açık</button>
+                    <button class="c-btn on" id="btnSubs" onclick="toggleSubs()"><i class="fa-solid fa-closed-captioning"></i> Altyazı</button>
+                    <button class="c-btn" id="btnSpeed" onclick="cycleSpeed()"><i class="fa-solid fa-gauge-high"></i> 1.0x</button>
+                    <button class="c-btn" onclick="toggleFullscreen()"><i class="fa-solid fa-expand"></i> Tam Ekran</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <audio id="voiceAudio" preload="auto"></audio>
+
+    <script>
+        const SCENES = [
+            {
+                title: "Tek Adres",
+                audio: "/audio/bayi_s1.mp3",
+                fallbackMs: 13000,
+                subtitle: "B-Connect Bayi Eğitim Rehberi: Tek adresle (biglineconnect.bigus.com.tr) Masaüstü, Web, Mobil ve CRM platformlarına ulaşın."
+            },
+            {
+                title: "Masaüstü",
+                audio: "/audio/bayi_s2.mp3",
+                fallbackMs: 20000,
+                subtitle: "B-Connect.exe kurulumsuzdur; geçici sistem köprüsüyle Windows UAC 'Evet' pencerelerini tıklar, kapanınca sıfır iz bırakır ve 2 GB akışlı dosya aktarır."
+            },
+            {
+                title: "Yetki Matrisi",
+                audio: "/audio/bayi_s3.mp3",
+                fallbackMs: 18500,
+                subtitle: "Karşıda B-Connect.exe açıksa PC, Web ve Mobilden tam kontrol alırsınız. Web-to-Web ise tarayıcı güvenliği gereği salt izleme modundadır."
+            },
+            {
+                title: "Mobil & Android",
+                audio: "/audio/bayi_s4.mp3",
+                fallbackMs: 18000,
+                subtitle: "Telefonunuzdan siteye girince Mobil Bayi (/mobil) otomatik açılır. PC'den Android'e destek için Google Play Kontrol Eklentisi 30 saniyede kurulur."
+            },
+            {
+                title: "Web & SSH",
+                audio: "/audio/bayi_s5.mp3",
+                fallbackMs: 16500,
+                subtitle: "Web'den Hızlı Bağlan ile PC'lere tam kontrolle erişin. Web-to-Web sadece ekran izlemedir. Linux SSH Terminali ile sunuculara doğrudan bağlanın."
+            },
+            {
+                title: "CRM & Gizlilik",
+                audio: "/audio/bayi_s6.mp3",
+                fallbackMs: 17500,
+                subtitle: "Müşteri portföyünüz %100 size özel izole saklanır. Tek tıkla servis faturası/Excel rapor çıkarın; dilerseniz ücretsiz 2FA açın."
+            },
+            {
+                title: "Hemen Başla",
+                audio: "/audio/bayi_s7.mp3",
+                fallbackMs: 15500,
+                subtitle: "3 Adımda Hazırsınız: 1) B-Connect.exe indirin  2) Müşteriye biglineconnect.bigus.com.tr verin  3) /crm üzerinden portföyünüzü yönetin!"
+            }
+        ];
+
+        let cur = 0;
+        let isPlaying = false;
+        let voiceEnabled = true;
+        let subsEnabled = true;
+        const speeds = [0.9, 1.0, 1.15];
+        let speedIdx = 1;
+        let fallbackTimer = null;
+        let progressRaf = null;
+        let sceneStartTs = 0;
+
+        const audioEl = document.getElementById('voiceAudio');
+        const sceneEls = Array.from(document.querySelectorAll('.scene'));
+        const chaptersBar = document.getElementById('chaptersBar');
+        const subtitleBar = document.getElementById('subtitleBar');
+        const btnPlayPause = document.getElementById('btnPlayPause');
+        const sceneCounter = document.getElementById('sceneCounter');
+        const startOverlay = document.getElementById('startOverlay');
+
+        function buildChapters() {
+            chaptersBar.innerHTML = '';
+            SCENES.forEach((s, idx) => {
+                const div = document.createElement('button');
+                div.className = 'chap' + (idx === 0 ? ' active' : '');
+                div.onclick = () => { hideOverlay(); goToScene(idx, true); };
+                div.innerHTML = `<div class="chap-num">Bölüm ${idx + 1}</div><div class="chap-t">${s.title}</div><div class="chap-bar" id="cbar-${idx}"></div>`;
+                chaptersBar.appendChild(div);
+            });
+        }
+
+        function hideOverlay() {
+            startOverlay.classList.add('hidden');
+        }
+
+        function updatePlayButton() {
+            btnPlayPause.innerHTML = isPlaying
+                ? '<i class="fa-solid fa-pause"></i> Duraklat'
+                : '<i class="fa-solid fa-play"></i> Oynat';
+        }
+
+        function clearTimers() {
+            if (fallbackTimer) { clearTimeout(fallbackTimer); fallbackTimer = null; }
+            if (progressRaf) { cancelAnimationFrame(progressRaf); progressRaf = null; }
+        }
+
+        function updateChapterStyles() {
+            const chaps = chaptersBar.querySelectorAll('.chap');
+            chaps.forEach((el, idx) => {
+                el.classList.toggle('active', idx === cur);
+                el.classList.toggle('done', idx < cur);
+                const bar = document.getElementById('cbar-' + idx);
+                if (bar && idx > cur) bar.style.width = '0%';
+                if (bar && idx < cur) bar.style.width = '100%';
+            });
+            sceneCounter.textContent = `${cur + 1} / ${SCENES.length}`;
+        }
+
+        function tickProgress() {
+            if (!isPlaying) return;
+            const bar = document.getElementById('cbar-' + cur);
+            if (bar) {
+                let pct = 0;
+                if (voiceEnabled && audioEl.duration && !isNaN(audioEl.duration) && audioEl.duration > 0) {
+                    pct = Math.min(100, (audioEl.currentTime / audioEl.duration) * 100);
+                } else {
+                    const elapsed = performance.now() - sceneStartTs;
+                    pct = Math.min(100, (elapsed / (SCENES[cur].fallbackMs / speeds[speedIdx])) * 100);
+                }
+                bar.style.width = pct.toFixed(1) + '%';
+            }
+            progressRaf = requestAnimationFrame(tickProgress);
+        }
+
+        function goToScene(idx, autoPlay) {
+            clearTimers();
+            audioEl.pause();
+            cur = Math.max(0, Math.min(SCENES.length - 1, idx));
+
+            sceneEls.forEach((el, i) => el.classList.toggle('active', i === cur));
+            subtitleBar.textContent = SCENES[cur].subtitle;
+            updateChapterStyles();
+
+            const bar = document.getElementById('cbar-' + cur);
+            if (bar) bar.style.width = '0%';
+
+            if (autoPlay) {
+                isPlaying = true;
+                updatePlayButton();
+                playCurrentScene();
+            } else {
+                isPlaying = false;
+                updatePlayButton();
+            }
+        }
+
+        function playCurrentScene() {
+            clearTimers();
+            sceneStartTs = performance.now();
+            const sc = SCENES[cur];
+
+            if (voiceEnabled) {
+                audioEl.src = sc.audio;
+                audioEl.playbackRate = speeds[speedIdx];
+                audioEl.currentTime = 0;
+                const p = audioEl.play();
+                if (p && typeof p.catch === 'function') {
+                    p.catch(() => {
+                        // Fallback timer if browser blocks audio
+                        fallbackTimer = setTimeout(onSceneFinished, sc.fallbackMs / speeds[speedIdx]);
+                    });
+                }
+            } else {
+                fallbackTimer = setTimeout(onSceneFinished, sc.fallbackMs / speeds[speedIdx]);
+            }
+            tickProgress();
+        }
+
+        function onSceneFinished() {
+            const bar = document.getElementById('cbar-' + cur);
+            if (bar) bar.style.width = '100%';
+            if (cur < SCENES.length - 1) {
+                goToScene(cur + 1, true);
+            } else {
+                // Stop cleanly on final CTA scene
+                isPlaying = false;
+                clearTimers();
+                updatePlayButton();
+            }
+        }
+
+        audioEl.addEventListener('ended', () => {
+            if (isPlaying) onSceneFinished();
+        });
+
+        function startTraining() {
+            hideOverlay();
+            goToScene(0, true);
+        }
+
+        function restartTraining() {
+            hideOverlay();
+            goToScene(0, true);
+        }
+
+        function togglePlay() {
+            hideOverlay();
+            if (isPlaying) {
+                isPlaying = false;
+                clearTimers();
+                audioEl.pause();
+                updatePlayButton();
+            } else {
+                isPlaying = true;
+                updatePlayButton();
+                if (voiceEnabled && audioEl.src && audioEl.currentTime > 0 && !audioEl.ended) {
+                    audioEl.playbackRate = speeds[speedIdx];
+                    audioEl.play().catch(() => {});
+                    tickProgress();
+                } else {
+                    playCurrentScene();
+                }
+            }
+        }
+
+        function prevScene() { hideOverlay(); goToScene(cur > 0 ? cur - 1 : 0, isPlaying); }
+        function nextScene() { hideOverlay(); goToScene(cur < SCENES.length - 1 ? cur + 1 : SCENES.length - 1, isPlaying); }
+
+        function toggleVoice() {
+            voiceEnabled = !voiceEnabled;
+            const btn = document.getElementById('btnVoice');
+            btn.classList.toggle('on', voiceEnabled);
+            btn.innerHTML = voiceEnabled
+                ? '<i class="fa-solid fa-volume-high"></i> Sesli Anlatım: Açık'
+                : '<i class="fa-solid fa-volume-xmark"></i> Sesli Anlatım: Kapalı';
+            if (isPlaying) {
+                if (!voiceEnabled) {
+                    audioEl.pause();
+                    sceneStartTs = performance.now();
+                    fallbackTimer = setTimeout(onSceneFinished, SCENES[cur].fallbackMs / speeds[speedIdx]);
+                } else {
+                    playCurrentScene();
+                }
+            }
+        }
+
+        function toggleSubs() {
+            subsEnabled = !subsEnabled;
+            subtitleBar.classList.toggle('off', !subsEnabled);
+            document.getElementById('btnSubs').classList.toggle('on', subsEnabled);
+        }
+
+        function cycleSpeed() {
+            speedIdx = (speedIdx + 1) % speeds.length;
+            const s = speeds[speedIdx];
+            document.getElementById('btnSpeed').innerHTML = `<i class="fa-solid fa-gauge-high"></i> ${s.toFixed(s === 1 ? 1 : 2)}x`;
+            audioEl.playbackRate = s;
+        }
+
+        function toggleFullscreen() {
+            const el = document.getElementById('playerShell');
+            if (!document.fullscreenElement) {
+                if (el.requestFullscreen) el.requestFullscreen();
+            } else {
+                if (document.exitFullscreen) document.exitFullscreen();
+            }
+        }
+
+        function shareWhatsApp() {
+            const url = 'https://biglineconnect.bigus.com.tr/bayi-egitim.html';
+            const msg = 'B-Connect Tüm Platformlar Bayi Eğitim Videosu (Masaüstü, Web, Mobil, Android & CRM):\n' + url;
+            window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+        }
+
+        function copyPageLink(btn) {
+            const url = 'https://biglineconnect.bigus.com.tr/bayi-egitim.html';
+            navigator.clipboard.writeText(url).then(() => {
+                const old = btn.innerHTML;
+                btn.innerHTML = '<i class="fa-solid fa-check"></i> Kopyalandı!';
+                setTimeout(() => { btn.innerHTML = old; }, 2000);
+            });
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
+            if (e.code === 'ArrowRight') nextScene();
+            if (e.code === 'ArrowLeft') prevScene();
+        });
+
+        buildChapters();
+    </script>
+</body>
+</html>
