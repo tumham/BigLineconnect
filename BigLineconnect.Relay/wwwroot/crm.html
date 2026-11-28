@@ -214,7 +214,7 @@
     <button class="tab-btn" onclick="switchTab('records', this)"><i class="fa-solid fa-headset"></i> Destek & Hizmet Faturaları</button>
     <button class="tab-btn" onclick="switchTab('lookup', this)"><i class="fa-solid fa-bolt"></i> ID İstihbarat Testi</button>
     <button class="tab-btn" onclick="switchTab('channels', this); loadChannels();"><i class="fa-solid fa-sitemap"></i> Destek Kanalları / Birimler</button>
-    <button class="tab-btn" onclick="switchTab('mikro', this)"><i class="fa-solid fa-plug"></i> Mikro ERP Ayarları</button>
+    <button class="tab-btn" onclick="switchTab('mikro', this)"><i class="fa-solid fa-plug"></i> ERP / Fatura Ayarları (Opsiyonel)</button>
 </div>
 
 <!-- TAB 1: COMPANIES -->
@@ -273,7 +273,10 @@
                     <option value="Gerekmiyor">➖ Fatura Gerekmiyor</option>
                 </select>
             </div>
-            <button class="btn btn-primary" onclick="openRecordModal()"><i class="fa-solid fa-plus"></i> Yeni Destek Kaydı / Fatura Kes</button>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <button class="btn btn-green" onclick="exportRecordsExcel()" title="Mikro, Logo, Netsis, Zirve ve Paraşüt ile uyumlu Excel fatura listesi indir"><i class="fa-solid fa-file-excel"></i> Excel'e Aktar (Tüm ERP'ler)</button>
+                <button class="btn btn-primary" onclick="openRecordModal()"><i class="fa-solid fa-plus"></i> Yeni Destek Kaydı / Fatura Kes</button>
+            </div>
         </div>
         <div class="table-wrap">
             <table>
@@ -309,20 +312,23 @@
     </div>
 </div>
 
-<!-- TAB 4: MIKRO ERP CONFIG -->
+<!-- TAB 4: ERP / FATURA AYARLARI (OPSİYONEL) -->
 <div id="tab-mikro" class="panel">
     <div class="card" style="max-width: 780px;">
-        <h2 style="font-size:1.1rem; color:var(--amber-light); margin-bottom:6px;">🔌 Mikro ERP Hizmet Satış Faturası Entegrasyon Ayarları</h2>
-        <p style="font-size:0.84rem; color:var(--muted); margin-bottom:16px;">
-            Önce <b>Simülasyon (Test) Modu</b> ile tüm akışı güvenle test edin. Onay verdiğinizde <b>Mikro API</b> bilgilerinizi girip canlı aktarıma geçebilirsiniz.
+        <h2 style="font-size:1.1rem; color:var(--amber-light); margin-bottom:6px;">🔌 ERP & Hizmet Faturası Ayarları (Opsiyonel / Gelişmiş)</h2>
+        <div style="padding:12px 14px; border-radius:10px; background:rgba(16,185,129,0.09); border:1px solid rgba(16,185,129,0.35); font-size:0.82rem; color:#d1fae5; line-height:1.5; margin-bottom:14px;">
+            <b style="color:#34d399;"><i class="fa-solid fa-shield-halved"></i> Önerilen Sıfır Riskli Yöntem (Tüm ERP'ler):</b><br>
+            Mikro, Logo, Netsis, Zirve veya Paraşüt fark etmeksizin; port açmadan ve veritabanı şifresi paylaşmadan <b>Destek & Hizmet Faturaları</b> sekmesindeki <b>📊 Excel'e Aktar</b> butonuyla tüm faturalanacak destekleri Cari Kodu, VKN, KDV ve Toplam hazır olarak indirebilirsiniz.
+        </div>
+        <p style="font-size:0.82rem; color:var(--muted); margin-bottom:16px;">
+            Aşağıdaki <b>Mikro API</b> entegrasyonu tamamen isteğe bağlıdır; yalnızca dış erişime açık kendi Mikro API sunucusu bulunan bayiler içindir. <em>(Güvenlik gereği doğrudan SQL şifresi istenmez.)</em>
         </p>
         <div class="form-grid">
             <div class="fg form-full">
                 <label>Çalışma Modu</label>
                 <select id="m-mode" onchange="toggleMikroModeFields()">
-                    <option value="Simulation">🧪 Simülasyon / Test Modu (Gerçek Mikro'ya Dokunmaz — Güvenli)</option>
-                    <option value="Api">🌐 Mikro API Modu (Önerilen Canlı — API Key ile Hizmet Satış Faturası)</option>
-                    <option value="Sql">🗄️ Doğrudan SQL Modu (Yerel SQL Server Bağlantı Testi)</option>
+                    <option value="Simulation">🧪 Simülasyon / Excel Modu (Önerilen — Muhasebeye Dokunmaz, %100 Güvenli)</option>
+                    <option value="Api">🌐 Mikro API Modu (İsteğe Bağlı Gelişmiş — Kendi Mikro API Sunucusu Olanlar İçin)</option>
                 </select>
             </div>
             <div class="fg">
@@ -1423,6 +1429,45 @@
             toast('Kanal silindi.');
             loadChannels();
         }
+    }
+
+    function exportRecordsExcel() {
+        const q = (document.getElementById('r-search')?.value || '').toLowerCase().trim();
+        const mf = document.getElementById('r-mikro-filter')?.value || '';
+        const list = (STATE.records || []).filter(r => {
+            if (mf && r.mikroInvoiceStatus !== mf) return false;
+            if (q) {
+                const hay = `${r.companyName} ${r.issue} ${r.solutionNotes} ${r.mikroInvoiceNo} ${r.mikroCariKod} ${r.operatorName}`.toLowerCase();
+                if (!hay.includes(q)) return false;
+            }
+            return true;
+        });
+        if (!list.length) { toast('Dışa aktarılacak destek/fatura kaydı bulunamadı.'); return; }
+        const sep = ';';
+        const qCsv = (v) => '"' + String(v ?? '').replace(/"/g, '""').replace(/\r?\n/g, ' ') + '"';
+        const header = ['Tarih', 'Firma Adı', 'Mikro/ERP Cari Kodu', 'Hizmet Kodu', 'Host ID', 'Uzman', 'Süre (dk)', 'Yapılan İşlem / Not', 'Ücretli mi', 'Net Tutar (TL)', 'KDV (%)', 'KDV Tutarı (TL)', 'Genel Toplam (TL)', 'Fatura Durumu', 'Evrak No'];
+        const rows = [header.map(qCsv).join(sep)];
+        list.forEach(r => {
+            rows.push([
+                r.createdAt || '', r.companyName || '', r.mikroCariKod || '', r.mikroServiceCode || '',
+                r.hostId || '', r.operatorName || '', r.durationMinutes || 0,
+                (r.issue || '') + (r.solutionNotes ? ' | ' + r.solutionNotes : ''),
+                r.isBillable ? 'Evet' : 'Hayır',
+                Number(r.netAmount || 0).toFixed(2).replace('.', ','),
+                r.vatRate || 0,
+                Number(r.vatAmount || 0).toFixed(2).replace('.', ','),
+                Number(r.totalAmount || 0).toFixed(2).replace('.', ','),
+                r.mikroInvoiceStatus || '', r.mikroInvoiceNo || ''
+            ].map(qCsv).join(sep));
+        });
+        const blob = new Blob(['\uFEFF' + rows.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        const dt = new Date().toISOString().slice(0, 10);
+        a.download = `B-Connect_Fatura_Listesi_${ACTIVE_TENANT}_${dt}.csv`;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(a.href), 1500);
+        toast(`✅ ${list.length} kayıt Excel (CSV) olarak indirildi!`);
     }
 </script>
 

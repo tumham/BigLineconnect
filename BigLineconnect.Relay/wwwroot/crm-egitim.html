@@ -594,33 +594,32 @@
             </div>
         </section>
 
-        <!-- 10. MİKRO ERP AYARLARI (SİMÜLASYON -> CANLI API) -->
+        <!-- 10. ERP & FATURA AKTARIMI (EXCEL EVRENSEL + OPSİYONEL MİKRO API) -->
         <section class="scene" data-s="9">
             <div>
-                <div class="pill"><i class="fa-solid fa-plug"></i> Bölüm 10 / 12 • 5. Sekme: Mikro ERP Entegrasyonu</div>
-                <h2 class="sc-h"><span class="grad">Önce Güvenli Test,</span> Sonra Canlı Mikro API!</h2>
-                <p class="lead">Gerçek muhasebe kayıtlarınıza zarar vermeden önce test edin, emin olunca canlıya geçin:</p>
+                <div class="pill"><i class="fa-solid fa-file-excel"></i> Bölüm 10 / 12 • 5. Sekme: Sıfır Riskli ERP &amp; Fatura Aktarımı</div>
+                <h2 class="sc-h"><span class="grad">Tüm ERP'lere %100 Uyumlu</span> Excel &amp; Opsiyonel API</h2>
+                <p class="lead">Hiçbir bayiden SQL şifresi veya port açma istemiyoruz! Her muhasebe programıyla sıfır riskle çalışın:</p>
                 <ol class="step-list">
-                    <li><span class="sn">1</span><div><strong>🔌 Mikro ERP Ayarları</strong> sekmesini açın. Varsayılan olarak <strong>🧪 Simülasyon (Test) Modu</strong> açıktır — gerçek Mikro'ya dokunmadan fatura önizlemesi üretir.</div></li>
-                    <li><span class="sn">2</span><div>Canlıya geçmek için modu <strong>🌐 Mikro API Modu</strong> yapın; <strong>Mikro API URL</strong> (<code>.../FaturaKaydetV2</code>), <strong>API Key</strong>, <strong>Firma Kodu</strong>, <strong>Şube No</strong> ve <strong>Evrak Seri</strong> (<code>HZM</code>) bilgilerini girin.</div></li>
-                    <li><span class="sn">3</span><div><strong>Bağlantıyı Test Et</strong>'e basın → yeşil onay alınca <strong>Ayarları Kaydet</strong> deyin. Artık tüm faturalar doğrudan Mikro'ya akar!</div></li>
+                    <li><span class="sn">1</span><div><strong>Önerilen Evrensel Yöntem (📊 Excel'e Aktar):</strong> <em>Destek &amp; Hizmet Faturaları</em> sekmesinden tek tıkla <strong>Cari Kodu, Hizmet Kodu, Süre, Net, KDV ve Toplam</strong> hazır Excel dosyasını indirin — <strong>Mikro, Logo, Netsis, Zirve ve Paraşüt</strong> ile %100 uyumludur!</div></li>
+                    <li><span class="sn">2</span><div><strong>Sıfır Muhasebe Riski:</strong> Veritabanı şifreniz buluta çıkmaz, modemden port açılmaz, resmi e-Fatura/muhasebe kayıtlarınız %100 güvende kalır.</div></li>
+                    <li><span class="sn">3</span><div><strong>Opsiyonel Mikro API:</strong> Dış erişime açık kendi Mikro API sunucusu olan bayiler isterse <strong>ERP / Fatura Ayarları</strong> sekmesinden önce <em>Simülasyon</em>, sonra <em>Mikro API</em> modunu açabilir.</div></li>
                 </ol>
             </div>
             <div class="ui-box">
                 <div class="ui-tabs">
                     <span class="ui-tab">🏢 Firmalar</span>
-                    <span class="ui-tab">🎧 Faturalar</span>
-                    <span class="ui-tab on">🔌 Mikro ERP Ayarları</span>
+                    <span class="ui-tab on">🎧 Destek &amp; Faturalar</span>
+                    <span class="ui-tab">🔌 ERP Ayarları (Ops.)</span>
                 </div>
-                <div class="ui-row hl"><span><strong>Çalışma Modu:</strong> 🧪 Simülasyon ➔ 🌐 Mikro API</span><span class="tap-arrow">1. Mod Seç</span></div>
-                <div class="ui-input" style="font-size:0.73rem;"><span>http://192.168.1.10:8094/Api/APIMethods/FaturaKaydetV2</span></div>
-                <div class="ui-row"><span><strong>Firma:</strong> BIGUS • <strong>Yıl:</strong> 2026 • <strong>Seri:</strong> HZM</span><span class="tag-blue">HZM-DESTEK-01</span></div>
-                <div style="display:flex; gap:8px; align-items:center; justify-content:space-between; margin-top:8px;">
-                    <div style="display:flex; gap:8px;">
-                        <span class="ui-btn g"><i class="fa-solid fa-vial"></i> Bağlantıyı Test Et</span>
-                        <span class="ui-btn"><i class="fa-solid fa-floppy-disk"></i> Kaydet</span>
-                    </div>
-                    <span class="tap-arrow g"><i class="fa-solid fa-arrow-left"></i> 2. Test Et &amp; Kaydet</span>
+                <div class="ui-row hl-g">
+                    <span><i class="fa-solid fa-file-excel" style="color:var(--green-light);"></i> <strong>📊 Excel'e Aktar (Tüm ERP'ler)</strong><br><small style="color:var(--muted);">Mikro • Logo • Netsis • Zirve • Paraşüt</small></span>
+                    <span class="tap-arrow g"><i class="fa-solid fa-arrow-left"></i> 1. Önerilen</span>
+                </div>
+                <div class="ui-row"><span><strong>Hazır Kolonlar:</strong> Cari Kod, Hizmet Kodu, Net, KDV, Toplam</span><span class="tag-ok">0 Risk</span></div>
+                <div class="ui-row hl" style="margin-bottom:0;">
+                    <span><strong>Opsiyonel Mikro API:</strong> Kendi API sunucusu olan bayiler için<br><small style="color:var(--muted);">SQL şifresi istenmez • Port açma zorunluluğu yok</small></span>
+                    <span class="tag-warn">İsteğe Bağlı</span>
                 </div>
             </div>
         </section>
@@ -715,7 +714,7 @@ const CHAPTERS = [
     { t: "7. Host Talebi", ms: 14000, audio: "/audio/crm_s7.wav", sub: "7. Adım: Müşteri B-Connect_BAYIKODU.exe açar veya kodu yazar; açılır liste sizin kanallarınızla anında dolar ve talep ilgili uzmanda çalar." },
     { t: "8. ID İstihbarat", ms: 11500, audio: "/audio/crm_s8.wav", sub: "8. Adım: 'ID İstihbarat Testi'ne 9 haneli Host ID'yi yazıp Sorgula dediğinizde firmanın cari kodu, anlaşma ve ücret durumu anında çıkar." },
     { t: "9. Kayıt & Fatura", ms: 13500, audio: "/audio/crm_s9.wav", sub: "9. Adım: '+ Yeni Destek Kaydı / Fatura Kes' ile süreyi ve çözümü girin; Net + %20 KDV + Genel Toplam otomatik hesaplanıp faturaya dönüşür." },
-    { t: "10. Mikro API", ms: 13500, audio: "/audio/crm_s10.wav", sub: "10. Adım: 'Mikro ERP Ayarları'nda önce güvenli Simülasyon Modunda test edin; onaylayınca Mikro API bilgilerini girip canlı fatura aktarın." },
+    { t: "10. Excel & ERP", ms: 13500, audio: "/audio/crm_s10.wav", sub: "10. Adım: SQL şifresi veya port açma yok! 'Excel'e Aktar' ile Mikro, Logo, Netsis, Zirve ve Paraşüt için hazır fatura listesi indirin; Mikro API tamamen isteğe bağlıdır." },
     { t: "11. 2FA Güvenlik", ms: 12000, audio: "/audio/crm_s11.wav", sub: "11. Adım: Üstteki 'Güvenlik (2FA)' butonundan QR kodu Google Authenticator'a okutarak müşteri portföyünüze ücretsiz ekstra kilit ekleyin." },
     { t: "12. Büyük Özet", ms: 13000, audio: "/audio/crm_s12.wav", sub: "12. Adım: Giriş ➔ Firma & Garanti ➔ Kanallar ➔ B-Connect Ayarı ➔ Talep & Destek ➔ Tek Tıkla Mikro Fatura! Hemen CRM'i açıp deneyebilirsiniz." }
 ];
