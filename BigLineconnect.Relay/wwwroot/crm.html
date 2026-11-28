@@ -212,6 +212,7 @@
     <button class="tab-btn active" onclick="switchTab('companies', this)"><i class="fa-solid fa-building"></i> Firmalar & Anlaşmalar</button>
     <button class="tab-btn" onclick="switchTab('records', this)"><i class="fa-solid fa-headset"></i> Destek & Hizmet Faturaları</button>
     <button class="tab-btn" onclick="switchTab('lookup', this)"><i class="fa-solid fa-bolt"></i> ID İstihbarat Testi</button>
+    <button class="tab-btn" onclick="switchTab('channels', this); loadChannels();"><i class="fa-solid fa-sitemap"></i> Destek Kanalları / Birimler</button>
     <button class="tab-btn" onclick="switchTab('mikro', this)"><i class="fa-solid fa-plug"></i> Mikro ERP Ayarları</button>
 </div>
 
@@ -368,6 +369,31 @@
         <div style="display:flex; gap:10px; margin-top:16px;">
             <button class="btn btn-green" onclick="testMikroConfig()"><i class="fa-solid fa-vial"></i> Bağlantıyı Test Et</button>
             <button class="btn btn-primary" onclick="saveMikroConfig()"><i class="fa-solid fa-floppy-disk"></i> Ayarları Kaydet</button>
+        </div>
+    </div>
+</div>
+
+<!-- TAB 5: DİNAMİK DESTEK KANALLARI / BİRİMLER (PERSONEL VEYA DEPARTMAN — SIFIR SABİT KALIP) -->
+<div id="tab-channels" class="panel">
+    <div class="card">
+        <h2 style="font-size:1.12rem; color:var(--amber-light); margin-bottom:6px;"><i class="fa-solid fa-sitemap"></i> Dinamik Destek Kanalları (Personel veya Departman)</h2>
+        <p style="font-size:0.84rem; color:var(--muted); margin-bottom:16px; line-height:1.5;">
+            Sabit bir kalıp zorlamıyoruz! İsterseniz <b>personel bazlı</b> (örn: <i>Ahmet, Mehmet, Hatice</i>), isterseniz <b>departman bazlı</b> (örn: <i>Teknik Destek, Eğitim, Muhasebe</i>) ekleyin.
+            Müşteriniz <b>B-Connect.exe</b> içinden destek talebi açarken sizin buradaki listenizi görür ve ilgili kişiyi veya departmanı seçebilir.
+        </p>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:18px;">
+            <input type="text" id="ch-name" placeholder="Kanal / Personel / Departman Adı (Örn: Hatice Hanım veya Muhasebe)" style="flex:2; min-width:240px;">
+            <input type="text" id="ch-note" placeholder="Kısa Açıklama / Unvan (Opsiyonel — Örn: Mikro Eğitim)" style="flex:1.5; min-width:200px;">
+            <button class="btn btn-primary" onclick="addChannel()"><i class="fa-solid fa-plus"></i> Ekle</button>
+        </div>
+        <div id="channels-list" style="display:flex; flex-direction:column; gap:8px;">
+            <div style="color:var(--muted); font-size:0.84rem;">Yükleniyor...</div>
+        </div>
+        <div style="margin-top:16px; padding:12px 14px; border-radius:10px; background:rgba(56,189,248,0.08); border:1px solid rgba(56,189,248,0.28); font-size:0.8rem; color:#cbd5e1; line-height:1.5;">
+            <b style="color:#38bdf8;"><i class="fa-solid fa-circle-info"></i> Nasıl Çalışır?</b><br>
+            • Hiç kanal eklemezseniz müşterilerin tüm talepleri bayinizin ortak <b>Genel Havuzuna</b> düşer.<br>
+            • Kanal eklediğinizde müşteri destek talebi açarken eklediğiniz isim/departmanlardan birini (veya <i>Fark Etmez</i>) seçebilir.<br>
+            • Uzmanınız kendi <b>B-Connect.exe</b>'sinde kendi kanalını/adını girdiğinde yalnızca genel + kendisine açılan talepler sesli çalar!
         </div>
     </div>
 </div>
@@ -1338,6 +1364,61 @@
         }
         document.getElementById('crm-login-modal').style.display = 'flex';
     });
+
+    async function loadChannels() {
+        const box = document.getElementById('channels-list');
+        if (!box) return;
+        try {
+            const res = await fetch(withTenant('/api/crm/channels'));
+            const data = await res.json();
+            const list = data.channels || [];
+            if (!list.length) {
+                box.innerHTML = '<div style="padding:14px;border-radius:10px;background:rgba(255,255,255,0.03);border:1px dashed rgba(255,255,255,0.12);color:var(--muted);font-size:0.84rem;">Henüz özel bir kanal, personel veya departman eklemediniz. Tüm talepler şu an ortak havuzunuza düşer.</div>';
+                return;
+            }
+            box.innerHTML = list.map(c => `
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 14px;border-radius:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);">
+                    <div>
+                        <div style="font-weight:800;color:#fff;font-size:0.92rem;"><i class="fa-solid fa-tag" style="color:var(--amber);margin-right:6px;"></i>${esc(c.name)}</div>
+                        ${c.note ? `<div style="font-size:0.78rem;color:var(--muted);margin-top:2px;">${esc(c.note)}</div>` : ''}
+                    </div>
+                    <button class="btn btn-sm" style="background:rgba(239,68,68,0.14);border-color:rgba(239,68,68,0.4);color:#fca5a5;" onclick="deleteChannel('${esc(c.id)}')"><i class="fa-solid fa-trash"></i> Sil</button>
+                </div>
+            `).join('');
+        } catch (e) {
+            box.innerHTML = '<div style="color:#fca5a5;">Kanallar yüklenemedi.</div>';
+        }
+    }
+
+    async function addChannel() {
+        const nameEl = document.getElementById('ch-name');
+        const noteEl = document.getElementById('ch-note');
+        const name = (nameEl.value || '').trim();
+        const note = (noteEl.value || '').trim();
+        if (!name) { toast('Lütfen bir personel veya departman adı yazın', 'error'); return; }
+        const res = await fetch(withTenant('/api/crm/channels'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, note })
+        });
+        if (res.ok) {
+            nameEl.value = '';
+            noteEl.value = '';
+            toast('Destek kanalı eklendi!', 'success');
+            loadChannels();
+        } else {
+            toast('Kanal eklenemedi.', 'error');
+        }
+    }
+
+    async function deleteChannel(id) {
+        if (!confirm('Bu destek kanalını listeden kaldırmak istiyor musunuz?')) return;
+        const res = await fetch(withTenant('/api/crm/channels/' + encodeURIComponent(id)), { method: 'DELETE' });
+        if (res.ok) {
+            toast('Kanal silindi.', 'info');
+            loadChannels();
+        }
+    }
 </script>
 
 <!-- MODAL: İSTEĞE BAĞLI 2FA GÜVENLİK AYARLARI -->

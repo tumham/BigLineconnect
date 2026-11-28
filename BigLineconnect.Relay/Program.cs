@@ -1845,13 +1845,21 @@ END";
         public static List<OperatorPresence> GetTenantOperators(string tenantId)
         {
             string t = string.IsNullOrEmpty(tenantId) ? "BIGLINE" : tenantId.Trim().ToUpperInvariant();
-            return TenantOperators.GetOrAdd(t, key => new List<OperatorPresence>
+            var customChannels = CrmMikroModule.GetDealerChannels(t);
+            if (customChannels != null && customChannels.Count > 0)
             {
-                new OperatorPresence { Name = "Uzman Mahmut", TenantId = key, IsOnline = true, Title = "KÄ±demli Destek UzmanÄ±" },
-                new OperatorPresence { Name = "Uzman Berivan", TenantId = key, IsOnline = true, Title = "ERP & Sistem UzmanÄ±" },
-                new OperatorPresence { Name = "Uzman Saliha", TenantId = key, IsOnline = true, Title = "Destek UzmanÄ±" },
-                new OperatorPresence { Name = "Uzman Mehmet", TenantId = key, IsOnline = true, Title = "Teknik Destek UzmanÄ±" }
-            });
+                return customChannels
+                    .Where(c => c.Active && !string.IsNullOrWhiteSpace(c.Name))
+                    .Select(c => new OperatorPresence
+                    {
+                        Name = c.Name,
+                        TenantId = t,
+                        IsOnline = true,
+                        Title = string.IsNullOrWhiteSpace(c.Note) ? "Destek Kanalı" : c.Note
+                    })
+                    .ToList();
+            }
+            return new List<OperatorPresence>();
         }
 
         public sealed class ClientPeer
@@ -3788,11 +3796,28 @@ td{{padding:10px 12px;border-bottom:1px solid #e2e8f0;vertical-align:top;}}
             {
                 context.Response.ContentType = "application/json; charset=utf-8";
                 string tenantId = context.Request.Query["tenantId"].ToString() ?? "";
+                string opFilter = (context.Request.Query["operator"].ToString() ?? "").Trim();
+                if (string.IsNullOrEmpty(opFilter)) opFilter = (context.Request.Query["channel"].ToString() ?? "").Trim();
                 
                 var requests = ActiveSupportRequests.Values.AsEnumerable();
                 if (!string.IsNullOrEmpty(tenantId) && !tenantId.Equals("SUPERADMIN", StringComparison.OrdinalIgnoreCase))
                 {
                     requests = requests.Where(r => r.TenantId.Equals(tenantId, StringComparison.OrdinalIgnoreCase));
+                }
+
+                // Opsiyonel Kanal / Birim / Personel filtresi:
+                // Bos veya "Tumu" ise bayinin TUM talepleri gelir; doluysa (ornegin "Hatice" veya "Muhasebe")
+                // sadece genel talepler + o kanala/kiseye acilan talepler gelir!
+                if (!string.IsNullOrEmpty(opFilter) &&
+                    !opFilter.Equals("Tümü", StringComparison.OrdinalIgnoreCase) &&
+                    !opFilter.Equals("Tumu", StringComparison.OrdinalIgnoreCase) &&
+                    !opFilter.Equals("Genel", StringComparison.OrdinalIgnoreCase))
+                {
+                    requests = requests.Where(r =>
+                        string.IsNullOrWhiteSpace(r.PreferredOperator) ||
+                        r.PreferredOperator.Contains("Fark Etmez", StringComparison.OrdinalIgnoreCase) ||
+                        r.PreferredOperator.Equals("Genel", StringComparison.OrdinalIgnoreCase) ||
+                        r.PreferredOperator.Equals(opFilter, StringComparison.OrdinalIgnoreCase));
                 }
 
                 int GetRank(string p)

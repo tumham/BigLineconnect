@@ -27,6 +27,14 @@ public static class CrmMikroModule
         public string Color { get; set; } = "#f59e0b";
     }
 
+    public class CrmChannel
+    {
+        public string Id { get; set; } = "";
+        public string Name { get; set; } = "";
+        public string Note { get; set; } = "";
+        public bool Active { get; set; } = true;
+    }
+
     public class CrmCompany
     {
         public string Id { get; set; } = "";
@@ -149,6 +157,13 @@ public static class CrmMikroModule
     private static string RecordsPath(string t) => Path.Combine(TenantDataDir(t), "crm_records.json");
     private static string MikroConfigPath(string t) => Path.Combine(TenantDataDir(t), "crm_mikro_config.json");
     private static string SecurityPath(string t) => Path.Combine(TenantDataDir(t), "crm_security.json");
+    private static string ChannelsPath(string t) => Path.Combine(TenantDataDir(t), "crm_channels.json");
+
+    public static List<CrmChannel> GetDealerChannels(string tenantId)
+    {
+        string t = NormalizeTenant(tenantId);
+        return LoadJson(StoreKeyFor(t, "channels"), ChannelsPath(t), () => new List<CrmChannel>());
+    }
 
     private static CrmSecurityConfig LoadSecurity(string tenant) =>
         LoadJson(StoreKeyFor(tenant, "security"), SecurityPath(tenant), () => new CrmSecurityConfig());
@@ -1068,6 +1083,55 @@ public static class CrmMikroModule
             }
             SaveJson(StoreKeyFor(tenant, "companies"), CompaniesPath(tenant), companies);
             return Results.Ok(new { success = true, tenantId = tenant, count = companies.Count });
+        });
+
+        // Dinamik Bayi Destek Kanalları / Birimler (Personel veya Departman — sıfır sabit kalıp!)
+        app.MapGet("/api/crm/channels", (HttpContext ctx) =>
+        {
+            string tenant = ResolveTenant(ctx);
+            var list = GetDealerChannels(tenant);
+            return Results.Ok(new { tenantId = tenant, channels = list });
+        });
+
+        app.MapPost("/api/crm/channels", async (HttpContext ctx) =>
+        {
+            string tenant = ResolveTenant(ctx);
+            using var reader = new StreamReader(ctx.Request.Body);
+            string body = await reader.ReadToEndAsync();
+            var dto = JsonSerializer.Deserialize<CrmChannel>(body, _jsonOpts);
+            if (dto == null || string.IsNullOrWhiteSpace(dto.Name))
+                return Results.BadRequest(new { error = "Kanal / Birim adı boş olamaz." });
+
+            string cleanName = dto.Name.Trim();
+            if (cleanName.Length > 60) cleanName = cleanName.Substring(0, 60);
+            string cleanNote = (dto.Note ?? "").Trim();
+            if (cleanNote.Length > 80) cleanNote = cleanNote.Substring(0, 80);
+
+            var list = GetDealerChannels(tenant);
+            if (!list.Any(c => c.Name.Equals(cleanName, StringComparison.OrdinalIgnoreCase)))
+            {
+                list.Add(new CrmChannel
+                {
+                    Id = "ch-" + Guid.NewGuid().ToString("N").Substring(0, 8),
+                    Name = cleanName,
+                    Note = cleanNote,
+                    Active = true
+                });
+                SaveJson(StoreKeyFor(tenant, "channels"), ChannelsPath(tenant), list);
+            }
+            return Results.Ok(new { success = true, tenantId = tenant, channels = list });
+        });
+
+        app.MapDelete("/api/crm/channels/{id}", (HttpContext ctx, string id) =>
+        {
+            string tenant = ResolveTenant(ctx);
+            var list = GetDealerChannels(tenant);
+            int removed = list.RemoveAll(c => c.Id.Equals(id, StringComparison.OrdinalIgnoreCase) || c.Name.Equals(id, StringComparison.OrdinalIgnoreCase));
+            if (removed > 0)
+            {
+                SaveJson(StoreKeyFor(tenant, "channels"), ChannelsPath(tenant), list);
+            }
+            return Results.Ok(new { success = true, removed, channels = list });
         });
     }
 }
