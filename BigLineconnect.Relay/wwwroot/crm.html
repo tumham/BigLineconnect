@@ -1369,7 +1369,7 @@
         const box = document.getElementById('channels-list');
         if (!box) return;
         try {
-            const res = await fetch(withTenant('/api/crm/channels'));
+            const res = await crmFetch('/api/crm/channels');
             const data = await res.json();
             const list = data.channels || [];
             if (!list.length) {
@@ -1395,8 +1395,8 @@
         const noteEl = document.getElementById('ch-note');
         const name = (nameEl.value || '').trim();
         const note = (noteEl.value || '').trim();
-        if (!name) { toast('Lütfen bir personel veya departman adı yazın', 'error'); return; }
-        const res = await fetch(withTenant('/api/crm/channels'), {
+        if (!name) { toast('Lütfen bir personel veya departman adı yazın'); return; }
+        const res = await crmFetch('/api/crm/channels', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name, note })
@@ -1404,18 +1404,18 @@
         if (res.ok) {
             nameEl.value = '';
             noteEl.value = '';
-            toast('Destek kanalı eklendi!', 'success');
+            toast('Destek kanalı eklendi ✅');
             loadChannels();
         } else {
-            toast('Kanal eklenemedi.', 'error');
+            toast('Kanal eklenemedi.');
         }
     }
 
     async function deleteChannel(id) {
         if (!confirm('Bu destek kanalını listeden kaldırmak istiyor musunuz?')) return;
-        const res = await fetch(withTenant('/api/crm/channels/' + encodeURIComponent(id)), { method: 'DELETE' });
+        const res = await crmFetch('/api/crm/channels/' + encodeURIComponent(id), { method: 'DELETE' });
         if (res.ok) {
-            toast('Kanal silindi.', 'info');
+            toast('Kanal silindi.');
             loadChannels();
         }
     }
