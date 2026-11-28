@@ -1142,6 +1142,7 @@
         if (!IS_SUPER_ADMIN) return;
         ACTIVE_TENANT = t || 'BIGLINE';
         loadOverview();
+        loadChannels();
     }
 
     function enterAsBayi(session) {
@@ -1154,6 +1155,7 @@
         if (sel) sel.style.display = 'none';
         document.getElementById('crm-login-modal').style.display = 'none';
         loadOverview();
+        loadChannels();
     }
 
     function enterAsAdmin() {
@@ -1165,6 +1167,7 @@
         document.getElementById('crm-login-modal').style.display = 'none';
         loadAdminTenantSelector();
         loadOverview();
+        loadChannels();
     }
 
     // --- İSTEĞE BAĞLI 2FA (GOOGLE / MICROSOFT AUTHENTICATOR) ---
@@ -1368,8 +1371,9 @@
     async function loadChannels() {
         const box = document.getElementById('channels-list');
         if (!box) return;
+        box.innerHTML = '<div style="color:var(--muted); font-size:0.84rem;">Yükleniyor...</div>';
         try {
-            const res = await crmFetch('/api/crm/channels');
+            const res = await crmFetch('/api/crm/channels?tenantId=' + encodeURIComponent(ACTIVE_TENANT) + '&_t=' + Date.now());
             const data = await res.json();
             const list = data.channels || [];
             if (!list.length) {
