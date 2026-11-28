@@ -5256,9 +5256,13 @@ td{{padding:10px 12px;border-bottom:1px solid #e2e8f0;vertical-align:top;}}
             <h1><span>B-</span>CONNECT <span>//</span> PANELI</h1>
             <div class='subtitle'>Gerçek Zamanlı Cihaz ve Bağlantı İzleme Ekranı</div>
         </div>
-        <div style='text-align: right'>
-            <div style='font-size: 12px; color: #888'>Son Güncelleme</div>
-            <div id='update-timer' style='font-size: 14px; color: var(--cyan); font-weight: bold;'>Yükleniyor...</div>
+        <div style='display:flex; align-items:center; gap:12px; flex-wrap:wrap;'>
+            <a href='/admin.html' style='padding:8px 14px; border-radius:8px; background:rgba(245,158,11,0.16); border:1px solid rgba(245,158,11,0.45); color:#fbbf24; font-weight:700; font-size:13px; text-decoration:none;'>📋 Türkiye Analiz Paneli</a>
+            <a href='/crm?admin=1' style='padding:8px 14px; border-radius:8px; background:rgba(16,185,129,0.16); border:1px solid rgba(16,185,129,0.45); color:#6ee7b7; font-weight:700; font-size:13px; text-decoration:none;'>🏢 Merkez CRM</a>
+            <div style='text-align: right'>
+                <div style='font-size: 12px; color: #888'>Son Güncelleme</div>
+                <div id='update-timer' style='font-size: 14px; color: var(--cyan); font-weight: bold;'>Yükleniyor...</div>
+            </div>
         </div>
     </header>
 
